@@ -1446,7 +1446,7 @@ pre code {
   vertical-align: middle;
 }
 .links-of-author a::before {
-  background: #522aff;
+  background: #ffff17;
   display: inline-block;
   margin-right: 3px;
   transform: translateY(-2px);
@@ -2895,6 +2895,10 @@ header.header {
   .sidebar-active .footer-fixed {
     left: 320px;
   }
+}
+.giscus {
+  max-width: unset;
+  box-sizing: border-box;
 }
 .posts-expand .post-body img {
   max-width: 80%;
