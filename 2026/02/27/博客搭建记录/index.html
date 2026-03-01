@@ -20,20 +20,22 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
 
-    <meta name="description" content="前言终于拥有了自己的技术博客！这篇文章记录了整个搭建过程，方便以后回顾，也希望能帮助到想搭建博客的朋友。 技术选型   组件 选择 理由    静态生成器 Hexo 中文生态好，主题丰富，文档完善   主题 NexT 简约清爽，功能强大，支持暗色模式   托管 GitHub Pages 免费，稳定，自带 HTTPS   搭建步骤1. 环境准备确保已安装：  Node.js 18+ Git  2.">
+    <meta name="description" content="终于拥有了自己的技术博客！这篇文章记录了整个搭建过程，从 Hexo 安装到 GitHub Pages 部署，希望能帮助到想搭建博客的朋友。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="博客搭建记录">
 <meta property="og:url" content="https://zhlifeiy.codes/2026/02/27/%E5%8D%9A%E5%AE%A2%E6%90%AD%E5%BB%BA%E8%AE%B0%E5%BD%95/index.html">
 <meta property="og:site_name" content="我的技术博客">
-<meta property="og:description" content="前言终于拥有了自己的技术博客！这篇文章记录了整个搭建过程，方便以后回顾，也希望能帮助到想搭建博客的朋友。 技术选型   组件 选择 理由    静态生成器 Hexo 中文生态好，主题丰富，文档完善   主题 NexT 简约清爽，功能强大，支持暗色模式   托管 GitHub Pages 免费，稳定，自带 HTTPS   搭建步骤1. 环境准备确保已安装：  Node.js 18+ Git  2.">
+<meta property="og:description" content="终于拥有了自己的技术博客！这篇文章记录了整个搭建过程，从 Hexo 安装到 GitHub Pages 部署，希望能帮助到想搭建博客的朋友。">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhlifeiy.codes/images/%E5%8D%9A%E5%AE%A2%E6%90%AD%E5%BB%BA.png">
 <meta property="article:published_time" content="2026-02-27T04:00:00.000Z">
-<meta property="article:modified_time" content="2026-02-27T13:48:47.232Z">
+<meta property="article:modified_time" content="2026-03-01T05:25:20.283Z">
 <meta property="article:author" content="zhlifeiy35">
 <meta property="article:tag" content="Hexo">
 <meta property="article:tag" content="博客">
 <meta property="article:tag" content="NexT">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/%E5%8D%9A%E5%AE%A2%E6%90%AD%E5%BB%BA.png">
 
 
 <link rel="canonical" href="https://zhlifeiy.codes/2026/02/27/%E5%8D%9A%E5%AE%A2%E6%90%AD%E5%BB%BA%E8%AE%B0%E5%BD%95/">
@@ -161,7 +163,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8A%80%E6%9C%AF%E9%80%89%E5%9E%8B"><span class="nav-number">2.</span> <span class="nav-text">技术选型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%90%AD%E5%BB%BA%E6%AD%A5%E9%AA%A4"><span class="nav-number">3.</span> <span class="nav-text">搭建步骤</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E7%8E%AF%E5%A2%83%E5%87%86%E5%A4%87"><span class="nav-number">3.1.</span> <span class="nav-text">1. 环境准备</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-%E5%AE%89%E8%A3%85-Hexo"><span class="nav-number">3.2.</span> <span class="nav-text">2. 安装 Hexo</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-%E5%AE%89%E8%A3%85-NexT-%E4%B8%BB%E9%A2%98"><span class="nav-number">3.3.</span> <span class="nav-text">3. 安装 NexT 主题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-%E9%85%8D%E7%BD%AE%E7%AB%99%E7%82%B9%E4%BF%A1%E6%81%AF"><span class="nav-number">3.4.</span> <span class="nav-text">4. 配置站点信息</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-%E9%85%8D%E7%BD%AE%E4%B8%BB%E9%A2%98%E5%8A%9F%E8%83%BD"><span class="nav-number">3.5.</span> <span class="nav-text">5. 配置主题功能</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-%E5%AE%89%E8%A3%85%E6%90%9C%E7%B4%A2%E6%8F%92%E4%BB%B6"><span class="nav-number">3.6.</span> <span class="nav-text">6. 安装搜索插件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#7-%E9%83%A8%E7%BD%B2%E5%88%B0-GitHub-Pages"><span class="nav-number">3.7.</span> <span class="nav-text">7. 部署到 GitHub Pages</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%9A%E5%AE%A2%E5%8A%9F%E8%83%BD"><span class="nav-number">4.</span> <span class="nav-text">博客功能</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%A5%E5%B8%B8%E5%86%99%E4%BD%9C%E6%B5%81%E7%A8%8B"><span class="nav-number">5.</span> <span class="nav-text">日常写作流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%8E%E7%BB%AD%E8%AE%A1%E5%88%92"><span class="nav-number">6.</span> <span class="nav-text">后续计划</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">7.</span> <span class="nav-text">总结</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8A%80%E6%9C%AF%E9%80%89%E5%9E%8B"><span class="nav-number">1.</span> <span class="nav-text">技术选型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%90%AD%E5%BB%BA%E6%AD%A5%E9%AA%A4"><span class="nav-number">2.</span> <span class="nav-text">搭建步骤</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E7%8E%AF%E5%A2%83%E5%87%86%E5%A4%87"><span class="nav-number">2.1.</span> <span class="nav-text">1. 环境准备</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-%E5%AE%89%E8%A3%85-Hexo"><span class="nav-number">2.2.</span> <span class="nav-text">2. 安装 Hexo</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-%E5%AE%89%E8%A3%85-NexT-%E4%B8%BB%E9%A2%98"><span class="nav-number">2.3.</span> <span class="nav-text">3. 安装 NexT 主题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-%E9%85%8D%E7%BD%AE%E7%AB%99%E7%82%B9%E4%BF%A1%E6%81%AF"><span class="nav-number">2.4.</span> <span class="nav-text">4. 配置站点信息</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-%E9%85%8D%E7%BD%AE%E4%B8%BB%E9%A2%98%E5%8A%9F%E8%83%BD"><span class="nav-number">2.5.</span> <span class="nav-text">5. 配置主题功能</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-%E5%AE%89%E8%A3%85%E6%90%9C%E7%B4%A2%E6%8F%92%E4%BB%B6"><span class="nav-number">2.6.</span> <span class="nav-text">6. 安装搜索插件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#7-%E9%83%A8%E7%BD%B2%E5%88%B0-GitHub-Pages"><span class="nav-number">2.7.</span> <span class="nav-text">7. 部署到 GitHub Pages</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%9A%E5%AE%A2%E5%8A%9F%E8%83%BD"><span class="nav-number">3.</span> <span class="nav-text">博客功能</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%A5%E5%B8%B8%E5%86%99%E4%BD%9C%E6%B5%81%E7%A8%8B"><span class="nav-number">4.</span> <span class="nav-text">日常写作流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%8E%E7%BB%AD%E8%AE%A1%E5%88%92"><span class="nav-number">5.</span> <span class="nav-text">后续计划</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">6.</span> <span class="nav-text">总结</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -214,7 +216,12 @@
 
 <div class="post-block">
   
-  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/%E5%8D%9A%E5%AE%A2%E6%90%AD%E5%BB%BA.png" itemprop="contentUrl">
+    </div>
+    </div>
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/02/27/%E5%8D%9A%E5%AE%A2%E6%90%AD%E5%BB%BA%E8%AE%B0%E5%BD%95/">
@@ -245,9 +252,15 @@
         <i class="far fa-calendar"></i>
       </span>
       <span class="post-meta-item-text">发表于</span>
-      
 
-      <time title="创建时间：2026-02-27 12:00:00 / 修改时间：21:48:47" itemprop="dateCreated datePublished" datetime="2026-02-27T12:00:00+08:00">2026-02-27</time>
+      <time title="创建时间：2026-02-27 12:00:00" itemprop="dateCreated datePublished" datetime="2026-02-27T12:00:00+08:00">2026-02-27</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-03-01 13:25:20" itemprop="dateModified" datetime="2026-03-01T13:25:20+08:00">2026-03-01</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -268,7 +281,9 @@
     
     
     
-    <div class="post-body" itemprop="articleBody"><h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>终于拥有了自己的技术博客！这篇文章记录了整个搭建过程，方便以后回顾，也希望能帮助到想搭建博客的朋友。</p>
+    <div class="post-body" itemprop="articleBody"><p>终于拥有了自己的技术博客！这篇文章记录了整个搭建过程，从 Hexo 安装到 GitHub Pages 部署，希望能帮助到想搭建博客的朋友。</p>
+<span id="more"></span>
+
 <h2 id="技术选型"><a href="#技术选型" class="headerlink" title="技术选型"></a>技术选型</h2><table>
 <thead>
 <tr>
@@ -365,10 +380,13 @@
 
           <div class="post-nav">
             <div class="post-nav-item">
+                <a href="/2026/02/27/hello-world/" rel="prev" title="Hello World">
+                  <i class="fa fa-angle-left"></i> Hello World
+                </a>
             </div>
             <div class="post-nav-item">
-                <a href="/2026/02/27/hello-world/" rel="next" title="Hello World">
-                  Hello World <i class="fa fa-angle-right"></i>
+                <a href="/2026/02/28/Spring-Boot%E5%A4%9A%E6%95%B0%E6%8D%AE%E6%BA%90%E5%BC%80%E5%8F%91%E5%AE%9E%E8%B7%B5%EF%BC%9A%E4%BB%8E%E8%B8%A9%E5%9D%91%E5%88%B0%E8%A7%A3%E5%86%B3/" rel="next" title="Spring Boot多数据源开发实践：从踩坑到解决">
+                  Spring Boot多数据源开发实践：从踩坑到解决 <i class="fa fa-angle-right"></i>
                 </a>
             </div>
           </div>
