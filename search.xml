@@ -123,7 +123,9 @@
   <entry>
     <title>aioffice 反向代理开发：将 AI 编程工具额度转化为 OpenAI 兼容 API</title>
     <url>/2026/03/01/aioffice-%E5%8F%8D%E5%90%91%E4%BB%A3%E7%90%86%E5%BC%80%E5%8F%91%EF%BC%9A%E5%B0%86-AI-%E7%BC%96%E7%A8%8B%E5%B7%A5%E5%85%B7%E9%A2%9D%E5%BA%A6%E8%BD%AC%E5%8C%96%E4%B8%BA-OpenAI-%E5%85%BC%E5%AE%B9-API/</url>
-    <content><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>aioffice 是一款基于 VSCode 二次开发的 AI 编程工具，提供了 AI 对话、代码补全等功能。为了能在其他工具（如 opencode、Continue 等）中复用 aioffice 的 AI 调用额度，我开发了一个反向代理服务，将 aioffice 的后端 API 转化为标准的 OpenAI 兼容格式。</p>
+    <content><![CDATA[<p>aioffice 是一款基于 VSCode 二次开发的 AI 编程工具，提供了 AI 对话、代码补全等功能。为了能在其他工具（如 opencode、Continue 等）中复用 aioffice 的 AI 调用额度，我开发了一个反向代理服务，将 aioffice 的后端 API 转化为标准的 OpenAI 兼容格式。</p>
+<span id="more"></span>
+
 <h2 id="技术分析"><a href="#技术分析" class="headerlink" title="技术分析"></a>技术分析</h2><h3 id="通信架构分析"><a href="#通信架构分析" class="headerlink" title="通信架构分析"></a>通信架构分析</h3><p>通过分析 aioffice 的源代码和配置文件，发现：</p>
 <table>
 <thead>
@@ -274,6 +276,32 @@
       </tags>
   </entry>
   <entry>
+    <title>Hello World</title>
+    <url>/2026/02/27/hello-world/</url>
+    <content><![CDATA[<p>欢迎来到我的技术博客！这是第一篇测试文章，用于验证博客系统是否正常工作。</p>
+<span id="more"></span>
+
+<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p>
+<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p>
+<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p>
+<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
+]]></content>
+      <categories>
+        <category>其他</category>
+      </categories>
+      <tags>
+        <tag>Hexo</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>博客搭建记录</title>
     <url>/2026/02/27/%E5%8D%9A%E5%AE%A2%E6%90%AD%E5%BB%BA%E8%AE%B0%E5%BD%95/</url>
     <content><![CDATA[<p>终于拥有了自己的技术博客！这篇文章记录了整个搭建过程，从 Hexo 安装到 GitHub Pages 部署，希望能帮助到想搭建博客的朋友。</p>
@@ -365,32 +393,6 @@
         <tag>Hexo</tag>
         <tag>博客</tag>
         <tag>NexT</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Hello World</title>
-    <url>/2026/02/27/hello-world/</url>
-    <content><![CDATA[<p>欢迎来到我的技术博客！这是第一篇测试文章，用于验证博客系统是否正常工作。</p>
-<span id="more"></span>
-
-<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p>
-<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p>
-<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p>
-<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
-]]></content>
-      <categories>
-        <category>其他</category>
-      </categories>
-      <tags>
-        <tag>Hexo</tag>
       </tags>
   </entry>
 </search>
