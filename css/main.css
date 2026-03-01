@@ -1446,7 +1446,7 @@ pre code {
   vertical-align: middle;
 }
 .links-of-author a::before {
-  background: #fbcc77;
+  background: #522aff;
   display: inline-block;
   margin-right: 3px;
   transform: translateY(-2px);
@@ -2897,18 +2897,8 @@ header.header {
   }
 }
 .posts-expand .post-body img {
-  max-height: 520px;
-  width: auto;
-  object-fit: cover;
+  max-width: 80%;
+  height: auto;
   margin: 0 auto;
   display: block;
-}
-.post-gallery {
-  max-height: 200px;
-  overflow: hidden;
-}
-.post-gallery img {
-  max-height: 200px;
-  width: auto;
-  object-fit: cover;
 }
