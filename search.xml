@@ -121,6 +121,126 @@
       </tags>
   </entry>
   <entry>
+    <title>Hello World</title>
+    <url>/2026/02/27/hello-world/</url>
+    <content><![CDATA[<p>欢迎来到我的技术博客！这是第一篇测试文章，用于验证博客系统是否正常工作。</p>
+<span id="more"></span>
+
+<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p>
+<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p>
+<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p>
+<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
+]]></content>
+      <categories>
+        <category>其他</category>
+      </categories>
+      <tags>
+        <tag>Hexo</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>博客搭建记录</title>
+    <url>/2026/02/27/%E5%8D%9A%E5%AE%A2%E6%90%AD%E5%BB%BA%E8%AE%B0%E5%BD%95/</url>
+    <content><![CDATA[<p>终于拥有了自己的技术博客！这篇文章记录了整个搭建过程，从 Hexo 安装到 GitHub Pages 部署，希望能帮助到想搭建博客的朋友。</p>
+<span id="more"></span>
+
+<h2 id="技术选型"><a href="#技术选型" class="headerlink" title="技术选型"></a>技术选型</h2><table>
+<thead>
+<tr>
+<th>组件</th>
+<th>选择</th>
+<th>理由</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>静态生成器</td>
+<td>Hexo</td>
+<td>中文生态好，主题丰富，文档完善</td>
+</tr>
+<tr>
+<td>主题</td>
+<td>NexT</td>
+<td>简约清爽，功能强大，支持暗色模式</td>
+</tr>
+<tr>
+<td>托管</td>
+<td>GitHub Pages</td>
+<td>免费，稳定，自带 HTTPS</td>
+</tr>
+</tbody></table>
+<h2 id="搭建步骤"><a href="#搭建步骤" class="headerlink" title="搭建步骤"></a>搭建步骤</h2><h3 id="1-环境准备"><a href="#1-环境准备" class="headerlink" title="1. 环境准备"></a>1. 环境准备</h3><p>确保已安装：</p>
+<ul>
+<li>Node.js 18+</li>
+<li>Git</li>
+</ul>
+<h3 id="2-安装-Hexo"><a href="#2-安装-Hexo" class="headerlink" title="2. 安装 Hexo"></a>2. 安装 Hexo</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npm install -g hexo-cli</span><br><span class="line">hexo init blog</span><br><span class="line"><span class="built_in">cd</span> blog &amp;&amp; npm install</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-安装-NexT-主题"><a href="#3-安装-NexT-主题" class="headerlink" title="3. 安装 NexT 主题"></a>3. 安装 NexT 主题</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npm install hexo-theme-next</span><br></pre></td></tr></table></figure>
+
+<p>修改 <code>_config.yml</code> 启用主题：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">theme:</span> <span class="string">next</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="4-配置站点信息"><a href="#4-配置站点信息" class="headerlink" title="4. 配置站点信息"></a>4. 配置站点信息</h3><p>编辑 <code>_config.yml</code>：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">title:</span> <span class="string">我的技术博客</span></span><br><span class="line"><span class="attr">author:</span> <span class="string">zhlifeiy35</span></span><br><span class="line"><span class="attr">language:</span> <span class="string">zh-CN</span></span><br><span class="line"><span class="attr">timezone:</span> <span class="string">&#x27;Asia/Shanghai&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="5-配置主题功能"><a href="#5-配置主题功能" class="headerlink" title="5. 配置主题功能"></a>5. 配置主题功能</h3><p>创建 <code>_config.next.yml</code> 文件，配置：</p>
+<ul>
+<li>暗色&#x2F;亮色模式切换</li>
+<li>本地搜索</li>
+<li>代码高亮与复制</li>
+<li>分类和标签页面</li>
+</ul>
+<h3 id="6-安装搜索插件"><a href="#6-安装搜索插件" class="headerlink" title="6. 安装搜索插件"></a>6. 安装搜索插件</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npm install hexo-generator-searchdb</span><br></pre></td></tr></table></figure>
+
+<h3 id="7-部署到-GitHub-Pages"><a href="#7-部署到-GitHub-Pages" class="headerlink" title="7. 部署到 GitHub Pages"></a>7. 部署到 GitHub Pages</h3><ol>
+<li>在 GitHub 创建 <code>用户名.github.io</code> 仓库</li>
+<li>安装部署插件：<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npm install hexo-deployer-git</span><br></pre></td></tr></table></figure></li>
+<li>配置 <code>_config.yml</code>：<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">deploy:</span></span><br><span class="line">  <span class="attr">type:</span> <span class="string">git</span></span><br><span class="line">  <span class="attr">repo:</span> <span class="string">https://github.com/用户名/用户名.github.io.git</span></span><br><span class="line">  <span class="attr">branch:</span> <span class="string">main</span></span><br></pre></td></tr></table></figure></li>
+<li>部署：<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean &amp;&amp; hexo generate &amp;&amp; hexo deploy</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h2 id="博客功能"><a href="#博客功能" class="headerlink" title="博客功能"></a>博客功能</h2><ul>
+<li><input checked="" disabled="" type="checkbox"> 简约清爽的界面</li>
+<li><input checked="" disabled="" type="checkbox"> 暗色&#x2F;亮色模式切换</li>
+<li><input checked="" disabled="" type="checkbox"> 本地搜索</li>
+<li><input checked="" disabled="" type="checkbox"> 代码高亮与一键复制</li>
+<li><input checked="" disabled="" type="checkbox"> 分类和标签</li>
+<li><input checked="" disabled="" type="checkbox"> RSS 订阅</li>
+<li><input disabled="" type="checkbox"> 评论系统（计划中）</li>
+<li><input disabled="" type="checkbox"> 自定义域名（计划中）</li>
+</ul>
+<h2 id="日常写作流程"><a href="#日常写作流程" class="headerlink" title="日常写作流程"></a>日常写作流程</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 新建文章</span></span><br><span class="line">hexo new post <span class="string">&quot;文章标题&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 本地预览</span></span><br><span class="line">hexo server</span><br><span class="line"></span><br><span class="line"><span class="comment"># 生成并部署</span></span><br><span class="line">hexo clean &amp;&amp; hexo generate &amp;&amp; hexo deploy</span><br><span class="line"></span><br><span class="line"><span class="comment"># 或一键部署</span></span><br><span class="line">hexo d -g</span><br></pre></td></tr></table></figure>
+
+<h2 id="后续计划"><a href="#后续计划" class="headerlink" title="后续计划"></a>后续计划</h2><ul>
+<li><input disabled="" type="checkbox"> 完善 About 页面</li>
+<li><input disabled="" type="checkbox"> 添加评论系统（Giscus）</li>
+<li><input disabled="" type="checkbox"> 绑定自定义域名</li>
+<li><input disabled="" type="checkbox"> 开始持续写作！</li>
+</ul>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>整个搭建过程比想象中简单，Hexo + NexT 的组合对中文用户非常友好。从零到上线只需要不到一小时。</p>
+<p>接下来就是开始积累内容了。技术博客不仅是知识分享的平台，更是自己成长的记录。坚持写作，持续进步！</p>
+<hr>
+<blockquote>
+<p>如果这篇文章对你有帮助，欢迎在 GitHub 上 Follow 我~</p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>其他</category>
+      </categories>
+      <tags>
+        <tag>Hexo</tag>
+        <tag>博客</tag>
+        <tag>NexT</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>aioffice 反向代理开发：将 AI 编程工具额度转化为 OpenAI 兼容 API</title>
     <url>/2026/03/01/aioffice-%E5%8F%8D%E5%90%91%E4%BB%A3%E7%90%86%E5%BC%80%E5%8F%91%EF%BC%9A%E5%B0%86-AI-%E7%BC%96%E7%A8%8B%E5%B7%A5%E5%85%B7%E9%A2%9D%E5%BA%A6%E8%BD%AC%E5%8C%96%E4%B8%BA-OpenAI-%E5%85%BC%E5%AE%B9-API/</url>
     <content><![CDATA[<p>aioffice 是一款基于 VSCode 二次开发的 AI 编程工具，提供了 AI 对话、代码补全等功能。为了能在其他工具（如 opencode、Continue 等）中复用 aioffice 的 AI 调用额度，我开发了一个反向代理服务，将 aioffice 的后端 API 转化为标准的 OpenAI 兼容格式。</p>
@@ -276,123 +396,185 @@
       </tags>
   </entry>
   <entry>
-    <title>Hello World</title>
-    <url>/2026/02/27/hello-world/</url>
-    <content><![CDATA[<p>欢迎来到我的技术博客！这是第一篇测试文章，用于验证博客系统是否正常工作。</p>
+    <title>让AI写出产品级前端：frontend-design skill实战对比</title>
+    <url>/2026/03/02/%E8%AE%A9AI%E5%86%99%E5%87%BA%E4%BA%A7%E5%93%81%E7%BA%A7%E5%89%8D%E7%AB%AF%EF%BC%9Afrontend-design-skill%E5%AE%9E%E6%88%98%E5%AF%B9%E6%AF%94/</url>
+    <content><![CDATA[<p>你有没有发现，让 AI 写前端代码时，出来的页面总有一种”能用但不精致”的感觉？组件像默认样式拼装、颜色只用一两个、层级靠字体大小硬拉开——功能是实现了，但就是不像一个成熟的产品。</p>
+<p>今天我用一个任务管理界面的实际案例，对比展示<strong>使用 frontend-design skill 前后的差异</strong>。看完你就会明白：一个小小的 skill，如何让 AI 输出从”表单页”进化成”产品级界面”。</p>
 <span id="more"></span>
 
-<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p>
-<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p>
-<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p>
-<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
-]]></content>
-      <categories>
-        <category>其他</category>
-      </categories>
-      <tags>
-        <tag>Hexo</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>博客搭建记录</title>
-    <url>/2026/02/27/%E5%8D%9A%E5%AE%A2%E6%90%AD%E5%BB%BA%E8%AE%B0%E5%BD%95/</url>
-    <content><![CDATA[<p>终于拥有了自己的技术博客！这篇文章记录了整个搭建过程，从 Hexo 安装到 GitHub Pages 部署，希望能帮助到想搭建博客的朋友。</p>
-<span id="more"></span>
-
-<h2 id="技术选型"><a href="#技术选型" class="headerlink" title="技术选型"></a>技术选型</h2><table>
+<h2 id="问题背景"><a href="#问题背景" class="headerlink" title="问题背景"></a>问题背景</h2><p>在 Claude Code 中开发前端界面时，默认情况下 AI 会：</p>
+<ul>
+<li>使用基础的 HTML&#x2F;CSS 结构</li>
+<li>选择安全但不突出的配色方案</li>
+<li>布局偏”表单流”，缺乏视觉节奏</li>
+<li>组件样式偏”系统默认”</li>
+</ul>
+<p>这对于内部管理后台或许够用，但如果你要做<strong>演示、作品集、面向用户的产品界面</strong>，这样的输出明显不够”有设计感”。</p>
+<p><strong>frontend-design skill</strong> 正是为了解决这个问题而生的。</p>
+<h2 id="效果对比"><a href="#效果对比" class="headerlink" title="效果对比"></a>效果对比</h2><p>先看两张截图的直观对比：</p>
+<h3 id="使用-skill-前"><a href="#使用-skill-前" class="headerlink" title="使用 skill 前"></a>使用 skill 前</h3><p><img src="/images/posts/frontend-design-skill/before.png" alt="使用skill前"></p>
+<p>典型的”浅色表单 + 管理后台”风格：</p>
+<ul>
+<li>白底、浅灰分割线、轻微阴影</li>
+<li>UI 很”系统默认”：输入框、按钮、分段选择都偏素</li>
+<li>整体更像”页面组件拼起来”，而不是统一的视觉语言</li>
+</ul>
+<h3 id="使用-skill-后"><a href="#使用-skill-后" class="headerlink" title="使用 skill 后"></a>使用 skill 后</h3><p><img src="/images/posts/frontend-design-skill/after.png" alt="使用skill后"></p>
+<p>深色现代风格（偏 glass &#x2F; neon &#x2F; dashboard）：</p>
+<ul>
+<li>大面积深色背景 + 暗部渐变，营造氛围</li>
+<li>卡片有明显”层叠深度”：更强阴影、柔和边框、高光描边</li>
+<li>整体更像”有品牌的应用”，而不是”通用模板页”</li>
+</ul>
+<h2 id="核心差异分析"><a href="#核心差异分析" class="headerlink" title="核心差异分析"></a>核心差异分析</h2><h3 id="1-设计风格"><a href="#1-设计风格" class="headerlink" title="1. 设计风格"></a>1. 设计风格</h3><table>
 <thead>
 <tr>
-<th>组件</th>
-<th>选择</th>
-<th>理由</th>
+<th>维度</th>
+<th>使用前</th>
+<th>使用后</th>
 </tr>
 </thead>
 <tbody><tr>
-<td>静态生成器</td>
-<td>Hexo</td>
-<td>中文生态好，主题丰富，文档完善</td>
+<td>整体风格</td>
+<td>浅色表单流</td>
+<td>深色现代风</td>
 </tr>
 <tr>
-<td>主题</td>
-<td>NexT</td>
-<td>简约清爽，功能强大，支持暗色模式</td>
+<td>视觉语言</td>
+<td>组件拼装感</td>
+<td>统一的设计系统</td>
 </tr>
 <tr>
-<td>托管</td>
-<td>GitHub Pages</td>
-<td>免费，稳定，自带 HTTPS</td>
+<td>品牌感</td>
+<td>无明显特征</td>
+<td>有氛围、有质感</td>
 </tr>
 </tbody></table>
-<h2 id="搭建步骤"><a href="#搭建步骤" class="headerlink" title="搭建步骤"></a>搭建步骤</h2><h3 id="1-环境准备"><a href="#1-环境准备" class="headerlink" title="1. 环境准备"></a>1. 环境准备</h3><p>确保已安装：</p>
+<h3 id="2-布局结构"><a href="#2-布局结构" class="headerlink" title="2. 布局结构"></a>2. 布局结构</h3><p><strong>使用前</strong>：纵向信息流</p>
 <ul>
-<li>Node.js 18+</li>
-<li>Git</li>
+<li>顶部标题 → 中间筛选 → 下方列表式任务卡片</li>
+<li>空白较多，信息分散</li>
 </ul>
-<h3 id="2-安装-Hexo"><a href="#2-安装-Hexo" class="headerlink" title="2. 安装 Hexo"></a>2. 安装 Hexo</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npm install -g hexo-cli</span><br><span class="line">hexo init blog</span><br><span class="line"><span class="built_in">cd</span> blog &amp;&amp; npm install</span><br></pre></td></tr></table></figure>
-
-<h3 id="3-安装-NexT-主题"><a href="#3-安装-NexT-主题" class="headerlink" title="3. 安装 NexT 主题"></a>3. 安装 NexT 主题</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npm install hexo-theme-next</span><br></pre></td></tr></table></figure>
-
-<p>修改 <code>_config.yml</code> 启用主题：</p>
-<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">theme:</span> <span class="string">next</span></span><br></pre></td></tr></table></figure>
-
-<h3 id="4-配置站点信息"><a href="#4-配置站点信息" class="headerlink" title="4. 配置站点信息"></a>4. 配置站点信息</h3><p>编辑 <code>_config.yml</code>：</p>
-<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">title:</span> <span class="string">我的技术博客</span></span><br><span class="line"><span class="attr">author:</span> <span class="string">zhlifeiy35</span></span><br><span class="line"><span class="attr">language:</span> <span class="string">zh-CN</span></span><br><span class="line"><span class="attr">timezone:</span> <span class="string">&#x27;Asia/Shanghai&#x27;</span></span><br></pre></td></tr></table></figure>
-
-<h3 id="5-配置主题功能"><a href="#5-配置主题功能" class="headerlink" title="5. 配置主题功能"></a>5. 配置主题功能</h3><p>创建 <code>_config.next.yml</code> 文件，配置：</p>
+<p><strong>使用后</strong>：Dashboard 布局</p>
 <ul>
-<li>暗色&#x2F;亮色模式切换</li>
-<li>本地搜索</li>
-<li>代码高亮与复制</li>
-<li>分类和标签页面</li>
+<li>顶部工具栏（搜索、筛选、排序、主按钮同一行）</li>
+<li>网格卡片（两张并排），更像”看板”</li>
+<li>信息层级集中：卡片上方是优先级与状态，正文是标题，底部是操作区</li>
 </ul>
-<h3 id="6-安装搜索插件"><a href="#6-安装搜索插件" class="headerlink" title="6. 安装搜索插件"></a>6. 安装搜索插件</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npm install hexo-generator-searchdb</span><br></pre></td></tr></table></figure>
-
-<h3 id="7-部署到-GitHub-Pages"><a href="#7-部署到-GitHub-Pages" class="headerlink" title="7. 部署到 GitHub Pages"></a>7. 部署到 GitHub Pages</h3><ol>
-<li>在 GitHub 创建 <code>用户名.github.io</code> 仓库</li>
-<li>安装部署插件：<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npm install hexo-deployer-git</span><br></pre></td></tr></table></figure></li>
-<li>配置 <code>_config.yml</code>：<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">deploy:</span></span><br><span class="line">  <span class="attr">type:</span> <span class="string">git</span></span><br><span class="line">  <span class="attr">repo:</span> <span class="string">https://github.com/用户名/用户名.github.io.git</span></span><br><span class="line">  <span class="attr">branch:</span> <span class="string">main</span></span><br></pre></td></tr></table></figure></li>
-<li>部署：<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean &amp;&amp; hexo generate &amp;&amp; hexo deploy</span><br></pre></td></tr></table></figure></li>
+<h3 id="3-UI-组件差异"><a href="#3-UI-组件差异" class="headerlink" title="3. UI 组件差异"></a>3. UI 组件差异</h3><table>
+<thead>
+<tr>
+<th>组件类型</th>
+<th>使用前</th>
+<th>使用后</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>筛选控件</td>
+<td>分段按钮&#x2F;胶囊按钮</td>
+<td>下拉选择 + 搜索框 + 强 CTA</td>
+</tr>
+<tr>
+<td>状态展示</td>
+<td>表单控件风格</td>
+<td>Badge&#x2F;Chip 系统（P1&#x2F;P3、待办）</td>
+</tr>
+<tr>
+<td>操作按钮</td>
+<td>文字按钮”编辑&#x2F;删除”</td>
+<td>图标按钮 + 主按钮”开始”</td>
+</tr>
+</tbody></table>
+<h3 id="4-颜色方案"><a href="#4-颜色方案" class="headerlink" title="4. 颜色方案"></a>4. 颜色方案</h3><p><strong>使用前</strong>：浅色中性 + 单一强调色</p>
+<ul>
+<li>主背景白，边框浅灰</li>
+<li>强调色偏蓝紫</li>
+<li>整体对比弱、氛围轻</li>
+</ul>
+<p><strong>使用后</strong>：深色中性 + 高对比强调色</p>
+<ul>
+<li>主色深灰&#x2F;黑，辅以渐变阴影</li>
+<li>强调色明确：绿色 CTA，优先级用红&#x2F;绿 badge</li>
+<li>视觉对比强，信息更”跳出来”</li>
+</ul>
+<h3 id="5-整体视觉效果"><a href="#5-整体视觉效果" class="headerlink" title="5. 整体视觉效果"></a>5. 整体视觉效果</h3><p>使用 skill 后的界面显著更强，体现在：</p>
+<ul>
+<li><strong>统一性</strong>：同一套圆角、阴影、边框亮度贯穿全页</li>
+<li><strong>层级感</strong>：背景 → 容器 → 卡片 → 徽标 → 按钮，层次分明</li>
+<li><strong>节奏</strong>：留白更”设计化”，卡片间距和对齐更舒服</li>
+<li><strong>情绪</strong>：有”氛围”，不像偏”办公表单感”</li>
+</ul>
+<h2 id="如何使用-frontend-design-skill"><a href="#如何使用-frontend-design-skill" class="headerlink" title="如何使用 frontend-design skill"></a>如何使用 frontend-design skill</h2><p>在 Claude Code 中，只需在开发前端界面时说：</p>
+<blockquote>
+<p>使用 frontend-design skill 帮我做一个任务管理界面</p>
+</blockquote>
+<p>或者直接：</p>
+<blockquote>
+<p>&#x2F;frontend-design 做一个任务管理看板</p>
+</blockquote>
+<p>skill 会自动：</p>
+<ol>
+<li>引导你确认设计风格（现代&#x2F;极简&#x2F;玻璃拟态等）</li>
+<li>建立统一的视觉系统</li>
+<li>选择合适的配色方案</li>
+<li>设计有层级感的信息架构</li>
+<li>输出产品级的组件代码</li>
 </ol>
-<h2 id="博客功能"><a href="#博客功能" class="headerlink" title="博客功能"></a>博客功能</h2><ul>
-<li><input checked="" disabled="" type="checkbox"> 简约清爽的界面</li>
-<li><input checked="" disabled="" type="checkbox"> 暗色&#x2F;亮色模式切换</li>
-<li><input checked="" disabled="" type="checkbox"> 本地搜索</li>
-<li><input checked="" disabled="" type="checkbox"> 代码高亮与一键复制</li>
-<li><input checked="" disabled="" type="checkbox"> 分类和标签</li>
-<li><input checked="" disabled="" type="checkbox"> RSS 订阅</li>
-<li><input disabled="" type="checkbox"> 评论系统（计划中）</li>
-<li><input disabled="" type="checkbox"> 自定义域名（计划中）</li>
-</ul>
-<h2 id="日常写作流程"><a href="#日常写作流程" class="headerlink" title="日常写作流程"></a>日常写作流程</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 新建文章</span></span><br><span class="line">hexo new post <span class="string">&quot;文章标题&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 本地预览</span></span><br><span class="line">hexo server</span><br><span class="line"></span><br><span class="line"><span class="comment"># 生成并部署</span></span><br><span class="line">hexo clean &amp;&amp; hexo generate &amp;&amp; hexo deploy</span><br><span class="line"></span><br><span class="line"><span class="comment"># 或一键部署</span></span><br><span class="line">hexo d -g</span><br></pre></td></tr></table></figure>
-
-<h2 id="后续计划"><a href="#后续计划" class="headerlink" title="后续计划"></a>后续计划</h2><ul>
-<li><input disabled="" type="checkbox"> 完善 About 页面</li>
-<li><input disabled="" type="checkbox"> 添加评论系统（Giscus）</li>
-<li><input disabled="" type="checkbox"> 绑定自定义域名</li>
-<li><input disabled="" type="checkbox"> 开始持续写作！</li>
-</ul>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>整个搭建过程比想象中简单，Hexo + NexT 的组合对中文用户非常友好。从零到上线只需要不到一小时。</p>
-<p>接下来就是开始积累内容了。技术博客不仅是知识分享的平台，更是自己成长的记录。坚持写作，持续进步！</p>
+<h2 id="适用场景"><a href="#适用场景" class="headerlink" title="适用场景"></a>适用场景</h2><table>
+<thead>
+<tr>
+<th>场景</th>
+<th>推荐使用</th>
+<th>原因</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>作品集&#x2F;演示</td>
+<td>✅ 强烈推荐</td>
+<td>需要视觉冲击力</td>
+</tr>
+<tr>
+<td>面向用户的产品</td>
+<td>✅ 强烈推荐</td>
+<td>品牌感、用户体验</td>
+</tr>
+<tr>
+<td>Landing Page</td>
+<td>✅ 强烈推荐</td>
+<td>需要吸引眼球</td>
+</tr>
+<tr>
+<td>内部管理后台</td>
+<td>⚠️ 可选</td>
+<td>功能优先，朴素也可</td>
+</tr>
+<tr>
+<td>打印&#x2F;高信息密度</td>
+<td>⚠️ 可选</td>
+<td>深色不适合打印</td>
+</tr>
+</tbody></table>
+<h2 id="经验总结"><a href="#经验总结" class="headerlink" title="经验总结"></a>经验总结</h2><ol>
+<li>**skill 的本质是”规范”**：它不是魔法，而是让 AI 遵循一套产品级设计规范</li>
+<li><strong>视觉系统很重要</strong>：统一圆角、阴影、间距比”画得好看”更关键</li>
+<li><strong>层级感 &gt; 装饰</strong>：好的设计是让用户快速找到信息，而不是堆砌效果</li>
+<li><strong>深色模式更适合展示</strong>：高对比度让信息更突出，适合演示和产品界面</li>
+</ol>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>frontend-design skill 让 AI 从”写代码”进化到”做产品”。如果你也厌倦了千篇一律的”表单页”，不妨试试这个 skill——它会让你的前端输出，从”能用”变成”想用”。</p>
 <hr>
 <blockquote>
-<p>如果这篇文章对你有帮助，欢迎在 GitHub 上 Follow 我~</p>
+<p>💡 <strong>提示</strong>：frontend-design skill 是 Claude Code 的内置技能，无需额外安装，直接调用即可。</p>
 </blockquote>
 ]]></content>
       <categories>
-        <category>其他</category>
+        <category>AI经验</category>
       </categories>
       <tags>
-        <tag>Hexo</tag>
-        <tag>博客</tag>
-        <tag>NexT</tag>
+        <tag>Claude Code</tag>
+        <tag>Skill</tag>
+        <tag>前端设计</tag>
+        <tag>AI编程</tag>
+        <tag>效率提升</tag>
       </tags>
   </entry>
 </search>
