@@ -282,32 +282,6 @@
       </tags>
   </entry>
   <entry>
-    <title>Hello World</title>
-    <url>/2026/02/27/hello-world/</url>
-    <content><![CDATA[<p>欢迎来到我的技术博客！这是第一篇测试文章，用于验证博客系统是否正常工作。</p>
-<span id="more"></span>
-
-<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p>
-<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p>
-<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p>
-<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
-]]></content>
-      <categories>
-        <category>其他</category>
-      </categories>
-      <tags>
-        <tag>Hexo</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>aioffice 反向代理开发：将 AI 编程工具额度转化为 OpenAI 兼容 API</title>
     <url>/2026/03/01/aioffice-%E5%8F%8D%E5%90%91%E4%BB%A3%E7%90%86%E5%BC%80%E5%8F%91%EF%BC%9A%E5%B0%86-AI-%E7%BC%96%E7%A8%8B%E5%B7%A5%E5%85%B7%E9%A2%9D%E5%BA%A6%E8%BD%AC%E5%8C%96%E4%B8%BA-OpenAI-%E5%85%BC%E5%AE%B9-API/</url>
     <content><![CDATA[<p>aioffice 是一款基于 VSCode 二次开发的 AI 编程工具，提供了 AI 对话、代码补全等功能。为了能在其他工具（如 opencode、Continue 等）中复用 aioffice 的 AI 调用额度，我开发了一个反向代理服务，将 aioffice 的后端 API 转化为标准的 OpenAI 兼容格式。</p>
@@ -460,6 +434,32 @@
         <tag>Node.js</tag>
         <tag>OpenAI</tag>
         <tag>SQLite</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Hello World</title>
+    <url>/2026/02/27/hello-world/</url>
+    <content><![CDATA[<p>欢迎来到我的技术博客！这是第一篇测试文章，用于验证博客系统是否正常工作。</p>
+<span id="more"></span>
+
+<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p>
+<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p>
+<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p>
+<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
+]]></content>
+      <categories>
+        <category>其他</category>
+      </categories>
+      <tags>
+        <tag>Hexo</tag>
       </tags>
   </entry>
   <entry>
@@ -855,32 +855,32 @@
 </thead>
 <tbody><tr>
 <td>1</td>
-<td><a href="mailto:&#109;&#116;&#102;&#54;&#99;&#x6d;&#x66;&#x63;&#x40;&#100;&#111;&#108;&#x6c;&#x69;&#x63;&#111;&#x6e;&#115;&#46;&#x63;&#x6f;&#x6d;">&#109;&#116;&#102;&#54;&#99;&#x6d;&#x66;&#x63;&#x40;&#100;&#111;&#108;&#x6c;&#x69;&#x63;&#111;&#x6e;&#115;&#46;&#x63;&#x6f;&#x6d;</a></td>
+<td><a href="mailto:&#109;&#116;&#102;&#x36;&#99;&#109;&#102;&#x63;&#64;&#100;&#x6f;&#x6c;&#x6c;&#105;&#99;&#111;&#110;&#115;&#x2e;&#99;&#111;&#x6d;">&#109;&#116;&#102;&#x36;&#99;&#109;&#102;&#x63;&#64;&#100;&#x6f;&#x6c;&#x6c;&#105;&#99;&#111;&#110;&#115;&#x2e;&#99;&#111;&#x6d;</a></td>
 <td>✅</td>
 </tr>
 <tr>
 <td>2</td>
-<td><a href="mailto:&#119;&#x7a;&#x77;&#x76;&#x6f;&#x75;&#x6a;&#109;&#x66;&#x36;&#x6f;&#x69;&#55;&#64;&#x64;&#x6f;&#108;&#x6c;&#105;&#99;&#111;&#x6e;&#x73;&#x2e;&#99;&#x6f;&#x6d;">&#119;&#x7a;&#x77;&#x76;&#x6f;&#x75;&#x6a;&#109;&#x66;&#x36;&#x6f;&#x69;&#55;&#64;&#x64;&#x6f;&#108;&#x6c;&#105;&#99;&#111;&#x6e;&#x73;&#x2e;&#99;&#x6f;&#x6d;</a></td>
+<td><a href="mailto:&#x77;&#122;&#x77;&#118;&#x6f;&#117;&#106;&#109;&#x66;&#54;&#111;&#x69;&#x37;&#64;&#x64;&#x6f;&#x6c;&#108;&#105;&#99;&#x6f;&#110;&#115;&#x2e;&#99;&#111;&#109;">&#x77;&#122;&#x77;&#118;&#x6f;&#117;&#106;&#109;&#x66;&#54;&#111;&#x69;&#x37;&#64;&#x64;&#x6f;&#x6c;&#108;&#105;&#99;&#x6f;&#110;&#115;&#x2e;&#99;&#111;&#109;</a></td>
 <td>✅</td>
 </tr>
 <tr>
 <td>3</td>
-<td><a href="mailto:&#104;&#48;&#x62;&#x67;&#117;&#x72;&#x32;&#x78;&#x40;&#100;&#x6f;&#x6c;&#108;&#105;&#99;&#111;&#110;&#115;&#x2e;&#99;&#111;&#x6d;">&#104;&#48;&#x62;&#x67;&#117;&#x72;&#x32;&#x78;&#x40;&#100;&#x6f;&#x6c;&#108;&#105;&#99;&#111;&#110;&#115;&#x2e;&#99;&#111;&#x6d;</a></td>
+<td><a href="mailto:&#x68;&#48;&#x62;&#103;&#x75;&#x72;&#x32;&#120;&#64;&#100;&#x6f;&#108;&#x6c;&#x69;&#x63;&#x6f;&#x6e;&#115;&#x2e;&#x63;&#x6f;&#x6d;">&#x68;&#48;&#x62;&#103;&#x75;&#x72;&#x32;&#120;&#64;&#100;&#x6f;&#108;&#x6c;&#x69;&#x63;&#x6f;&#x6e;&#115;&#x2e;&#x63;&#x6f;&#x6d;</a></td>
 <td>✅</td>
 </tr>
 <tr>
 <td>4</td>
-<td><a href="mailto:&#x36;&#112;&#114;&#x6b;&#102;&#x37;&#110;&#x36;&#x31;&#64;&#100;&#111;&#x6c;&#x6c;&#105;&#x63;&#x6f;&#110;&#x73;&#46;&#99;&#111;&#109;">&#x36;&#112;&#114;&#x6b;&#102;&#x37;&#110;&#x36;&#x31;&#64;&#100;&#111;&#x6c;&#x6c;&#105;&#x63;&#x6f;&#110;&#x73;&#46;&#99;&#111;&#109;</a></td>
+<td><a href="mailto:&#x36;&#112;&#114;&#107;&#102;&#x37;&#110;&#54;&#49;&#64;&#x64;&#x6f;&#108;&#108;&#105;&#x63;&#111;&#110;&#x73;&#x2e;&#x63;&#111;&#x6d;">&#x36;&#112;&#114;&#107;&#102;&#x37;&#110;&#54;&#49;&#64;&#x64;&#x6f;&#108;&#108;&#105;&#x63;&#111;&#110;&#x73;&#x2e;&#x63;&#111;&#x6d;</a></td>
 <td>✅</td>
 </tr>
 <tr>
 <td>5</td>
-<td><a href="mailto:&#x77;&#110;&#97;&#49;&#56;&#x68;&#x6c;&#111;&#x38;&#109;&#103;&#x40;&#100;&#x6f;&#108;&#x6c;&#105;&#x63;&#x6f;&#x6e;&#115;&#x2e;&#99;&#x6f;&#x6d;">&#x77;&#110;&#97;&#49;&#56;&#x68;&#x6c;&#111;&#x38;&#109;&#103;&#x40;&#100;&#x6f;&#108;&#x6c;&#105;&#x63;&#x6f;&#x6e;&#115;&#x2e;&#99;&#x6f;&#x6d;</a></td>
+<td><a href="mailto:&#119;&#x6e;&#x61;&#49;&#56;&#x68;&#x6c;&#x6f;&#56;&#109;&#103;&#64;&#100;&#x6f;&#108;&#x6c;&#105;&#x63;&#111;&#110;&#x73;&#x2e;&#x63;&#x6f;&#x6d;">&#119;&#x6e;&#x61;&#49;&#56;&#x68;&#x6c;&#x6f;&#56;&#109;&#103;&#64;&#100;&#x6f;&#108;&#x6c;&#105;&#x63;&#111;&#110;&#x73;&#x2e;&#x63;&#x6f;&#x6d;</a></td>
 <td>✅</td>
 </tr>
 <tr>
 <td>6</td>
-<td><a href="mailto:&#x67;&#108;&#x61;&#x79;&#51;&#x6b;&#x68;&#53;&#x71;&#106;&#64;&#100;&#111;&#x6c;&#108;&#x69;&#99;&#x6f;&#x6e;&#x73;&#46;&#99;&#111;&#109;">&#x67;&#108;&#x61;&#x79;&#51;&#x6b;&#x68;&#53;&#x71;&#106;&#64;&#100;&#111;&#x6c;&#108;&#x69;&#99;&#x6f;&#x6e;&#x73;&#46;&#99;&#111;&#109;</a></td>
+<td><a href="mailto:&#x67;&#108;&#97;&#x79;&#51;&#107;&#104;&#x35;&#x71;&#106;&#64;&#x64;&#x6f;&#108;&#x6c;&#x69;&#99;&#x6f;&#x6e;&#x73;&#x2e;&#99;&#111;&#x6d;">&#x67;&#108;&#97;&#x79;&#51;&#107;&#104;&#x35;&#x71;&#106;&#64;&#x64;&#x6f;&#108;&#x6c;&#x69;&#99;&#x6f;&#x6e;&#x73;&#x2e;&#99;&#111;&#x6d;</a></td>
 <td>✅</td>
 </tr>
 </tbody></table>
@@ -904,6 +904,10 @@
 <li>解析错误（代码逻辑问题）</li>
 </ul>
 <p>这大大缩短了排查时间。</p>
+<h2 id="相关资源"><a href="#相关资源" class="headerlink" title="相关资源"></a>相关资源</h2><ul>
+<li><strong>完整代码</strong>：<a href="https://github.com/zhdmm35/chatgpt-mailtm-register">GitHub 仓库 - chatgpt-mailtm-register</a></li>
+<li><strong>原工具</strong>：<a href="https://github.com/adminlove520/chatgpt_register">chatgpt_register</a></li>
+</ul>
 <h2 id="封面提示词"><a href="#封面提示词" class="headerlink" title="封面提示词"></a>封面提示词</h2><p>如果你需要生成封面图，可以使用以下提示词：</p>
 <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">A minimalist technical illustration showing email API integration debugging,</span><br><span class="line">with envelope icons and code snippets, clean flat design,</span><br><span class="line">blue and purple gradient background, modern tech style, no text, 16:9 aspect ratio.</span><br></pre></td></tr></table></figure>
 
