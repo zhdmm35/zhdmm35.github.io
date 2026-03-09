@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="一个话题输入，全自动研究输出。本文介绍如何用 Claude Code Skills + NotebookLM 构建端到端的 YouTube 视频研究工作流，实现从搜索、筛选、分析到生成报告的全自动化。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="YouTube Research Pipeline：用 AI 打造自动化视频研究工作流">
+<meta property="og:url" content="https://zhlifeiy.codes/2026/03/09/YouTube-Research-Pipeline-%E8%87%AA%E5%8A%A8%E5%8C%96%E7%A0%94%E7%A9%B6%E5%B7%A5%E4%BD%9C%E6%B5%81/index.html">
+<meta property="og:site_name" content="我的技术博客">
+<meta property="og:description" content="一个话题输入，全自动研究输出。本文介绍如何用 Claude Code Skills + NotebookLM 构建端到端的 YouTube 视频研究工作流，实现从搜索、筛选、分析到生成报告的全自动化。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/claude-code-skills-mcp.png">
+<meta property="article:published_time" content="2026-03-09T08:30:00.000Z">
+<meta property="article:modified_time" content="2026-03-09T08:35:01.090Z">
+<meta property="article:author" content="zhlifeiy35">
+<meta property="article:tag" content="Claude">
+<meta property="article:tag" content="NotebookLM">
+<meta property="article:tag" content="yt-dlp">
+<meta property="article:tag" content="自动化">
+<meta property="article:tag" content="研究工作流">
+<meta property="article:tag" content="Skills">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/claude-code-skills-mcp.png">
+
+
+<link rel="canonical" href="https://zhlifeiy.codes/2026/03/09/YouTube-Research-Pipeline-%E8%87%AA%E5%8A%A8%E5%8C%96%E7%A0%94%E7%A9%B6%E5%B7%A5%E4%BD%9C%E6%B5%81/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://zhlifeiy.codes/2026/03/09/YouTube-Research-Pipeline-%E8%87%AA%E5%8A%A8%E5%8C%96%E7%A0%94%E7%A9%B6%E5%B7%A5%E4%BD%9C%E6%B5%81/","path":"2026/03/09/YouTube-Research-Pipeline-自动化研究工作流/","title":"YouTube Research Pipeline：用 AI 打造自动化视频研究工作流"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>YouTube Research Pipeline：用 AI 打造自动化视频研究工作流 | 我的技术博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">我的技术博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">记录学习与成长</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-guestbook"><a href="/guestbook/" rel="section"><i class="fa fa-comment-dots fa-fw"></i>留言板</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E8%83%8C%E6%99%AF"><span class="nav-number">1.</span> <span class="nav-text">问题背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%EF%BC%9AYouTube-Research-Pipeline"><span class="nav-number">2.</span> <span class="nav-text">解决方案：YouTube Research Pipeline</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E6%8A%80%E6%9C%AF%E6%A0%88"><span class="nav-number">3.</span> <span class="nav-text">核心技术栈</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82"><span class="nav-number">4.</span> <span class="nav-text">实现细节</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Step-1%EF%BC%9A%E6%90%9C%E7%B4%A2-YouTube"><span class="nav-number">4.1.</span> <span class="nav-text">Step 1：搜索 YouTube</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Step-2%EF%BC%9A%E6%99%BA%E8%83%BD%E7%AD%9B%E9%80%89%E6%9C%80%E4%BD%B3%E8%A7%86%E9%A2%91"><span class="nav-number">4.2.</span> <span class="nav-text">Step 2：智能筛选最佳视频</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Step-3%EF%BC%9A%E5%88%9B%E5%BB%BA-NotebookLM-%E7%AC%94%E8%AE%B0%E6%9C%AC"><span class="nav-number">4.3.</span> <span class="nav-text">Step 3：创建 NotebookLM 笔记本</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Step-4%EF%BC%9A%E6%B7%BB%E5%8A%A0%E8%A7%86%E9%A2%91%E6%BA%90"><span class="nav-number">4.4.</span> <span class="nav-text">Step 4：添加视频源</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Step-5%EF%BC%9A%E7%AD%89%E5%BE%85%E5%A4%84%E7%90%86%E5%AE%8C%E6%88%90"><span class="nav-number">4.5.</span> <span class="nav-text">Step 5：等待处理完成</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Step-6%EF%BC%9A%E8%BF%90%E8%A1%8C%E5%88%86%E6%9E%90"><span class="nav-number">4.6.</span> <span class="nav-text">Step 6：运行分析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Step-7%EF%BC%9A%E7%94%9F%E6%88%90%E5%8F%AF%E4%BA%A4%E4%BB%98%E7%89%A9%EF%BC%88%E5%8F%AF%E9%80%89%EF%BC%89"><span class="nav-number">4.7.</span> <span class="nav-text">Step 7：生成可交付物（可选）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BE%93%E5%87%BA%E6%A0%BC%E5%BC%8F%E7%A4%BA%E4%BE%8B"><span class="nav-number">5.</span> <span class="nav-text">输出格式示例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%81%E8%A3%85%E4%B8%BA-Claude-Skill"><span class="nav-number">6.</span> <span class="nav-text">封装为 Claude Skill</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E9%99%85%E6%95%88%E6%9E%9C"><span class="nav-number">7.</span> <span class="nav-text">实际效果</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%8F%E9%AA%8C%E6%80%BB%E7%BB%93"><span class="nav-number">8.</span> <span class="nav-text">经验总结</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E2%9C%85-%E6%88%90%E5%8A%9F%E8%A6%81%E7%B4%A0"><span class="nav-number">8.1.</span> <span class="nav-text">✅ 成功要素</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E2%9A%A0%EF%B8%8F-%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9"><span class="nav-number">8.2.</span> <span class="nav-text">⚠️ 注意事项</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%93%E8%AF%AD"><span class="nav-number">9.</span> <span class="nav-text">结语</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-number">10.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zhlifeiy35</p>
+  <div class="site-description" itemprop="description">分享编程技术、AI经验、学习笔记</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">11</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">35</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zhdmm35" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zhdmm35" rel="noopener me" target="_blank"><i class="fa fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/claude-code-skills-mcp.png" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/03/09/YouTube-Research-Pipeline-%E8%87%AA%E5%8A%A8%E5%8C%96%E7%A0%94%E7%A9%B6%E5%B7%A5%E4%BD%9C%E6%B5%81/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="我的技术博客">
+      <meta itemprop="description" content="分享编程技术、AI经验、学习笔记">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="YouTube Research Pipeline：用 AI 打造自动化视频研究工作流 | 我的技术博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          YouTube Research Pipeline：用 AI 打造自动化视频研究工作流
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2026-03-09 16:30:00 / 修改时间：16:35:01" itemprop="dateCreated datePublished" datetime="2026-03-09T16:30:00+08:00">2026-03-09</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/AI-%E7%BB%8F%E9%AA%8C/" itemprop="url" rel="index"><span itemprop="name">AI 经验</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>一个话题输入，全自动研究输出。本文介绍如何用 Claude Code Skills + NotebookLM 构建端到端的 YouTube 视频研究工作流，实现从搜索、筛选、分析到生成报告的全自动化。</p>
+<span id="more"></span>
+
+<h2 id="问题背景"><a href="#问题背景" class="headerlink" title="问题背景"></a>问题背景</h2><p>做技术调研时，YouTube 往往是最好的学习资源之一。但传统的视频研究流程非常低效：</p>
+<ol>
+<li>手动搜索关键词</li>
+<li>逐个点开视频查看</li>
+<li>跳过广告、调整进度条</li>
+<li>记笔记、整理要点</li>
+<li>不同视频之间对比分析</li>
+</ol>
+<p>一个话题调研下来，可能要花 2-3 个小时。而且容易遗漏重要信息，难以系统化整理。</p>
+<p><strong>能不能让 AI 帮我们完成这一切？</strong></p>
+<h2 id="解决方案：YouTube-Research-Pipeline"><a href="#解决方案：YouTube-Research-Pipeline" class="headerlink" title="解决方案：YouTube Research Pipeline"></a>解决方案：YouTube Research Pipeline</h2><p>我设计了一个全自动化的研究工作流：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">┌─────────────┐    ┌──────────────┐    ┌─────────────┐    ┌──────────────┐    ┌─────────────┐</span><br><span class="line">│   Search    │ -&gt; │   Select     │ -&gt; │  NotebookLM │ -&gt; │   Analyze    │ -&gt; │ Deliverable │</span><br><span class="line">│  YouTube    │    │ Best Videos  │    │   Ingest    │    │   &amp; Report   │    │  (optional) │</span><br><span class="line">│  (20-50)    │    │   (5-8)      │    │             │    │              │    │             │</span><br><span class="line">└─────────────┘    └──────────────┘    └─────────────┘    └──────────────┘    └─────────────┘</span><br></pre></td></tr></table></figure>
+
+<p><strong>输入</strong>：一个话题（如 “Claude Code Skills”）</p>
+<p><strong>输出</strong>：完整的研究报告 + 可选的 podcast&#x2F;幻灯片&#x2F;思维导图</p>
+<h2 id="核心技术栈"><a href="#核心技术栈" class="headerlink" title="核心技术栈"></a>核心技术栈</h2><table>
+<thead>
+<tr>
+<th>工具</th>
+<th>用途</th>
+<th>安装方式</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>yt-dlp</strong></td>
+<td>YouTube 搜索和元数据提取</td>
+<td><code>pip install yt-dlp</code></td>
+</tr>
+<tr>
+<td><strong>NotebookLM CLI</strong></td>
+<td>视频内容分析和生成</td>
+<td><code>pip install notebooklm-py</code></td>
+</tr>
+<tr>
+<td><strong>Claude Code</strong></td>
+<td>工作流编排和 Skill 定义</td>
+<td>Claude Code CLI</td>
+</tr>
+</tbody></table>
+<h2 id="实现细节"><a href="#实现细节" class="headerlink" title="实现细节"></a>实现细节</h2><h3 id="Step-1：搜索-YouTube"><a href="#Step-1：搜索-YouTube" class="headerlink" title="Step 1：搜索 YouTube"></a>Step 1：搜索 YouTube</h3><p>使用 yt-dlp 的搜索功能，一次性获取 50 个候选视频：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">yt-dlp <span class="string">&quot;ytsearch50:Claude Code Skills&quot;</span> \</span><br><span class="line">  --flat-playlist \</span><br><span class="line">  --<span class="built_in">print</span> <span class="string">&quot;%(id)s|%(title)s|%(channel)s|%(channel_follower_count)s|%(view_count)s|%(duration_string)s|%(upload_date)s&quot;</span> \</span><br><span class="line">  --dateafter now-6months</span><br></pre></td></tr></table></figure>
+
+<p><strong>参数说明</strong>：</p>
+<ul>
+<li><code>ytsearch50</code>：搜索 50 个结果</li>
+<li><code>--flat-playlist</code>：只获取元数据，不下载视频</li>
+<li><code>--dateafter now-6months</code>：只看最近 6 个月的内容</li>
+</ul>
+<h3 id="Step-2：智能筛选最佳视频"><a href="#Step-2：智能筛选最佳视频" class="headerlink" title="Step 2：智能筛选最佳视频"></a>Step 2：智能筛选最佳视频</h3><p>50 个视频太多，需要筛选出最有价值的 5-8 个。我设计了一个评分系统：</p>
+<table>
+<thead>
+<tr>
+<th>因素</th>
+<th>权重</th>
+<th>评分方法</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>相关性</strong></td>
+<td>40%</td>
+<td>标题与话题的关键词匹配度</td>
+</tr>
+<tr>
+<td><strong>参与度</strong></td>
+<td>30%</td>
+<td><code>播放量 / 频道订阅数</code> 比值</td>
+</tr>
+<tr>
+<td><strong>时效性</strong></td>
+<td>20%</td>
+<td>越新分数越高</td>
+</tr>
+<tr>
+<td><strong>多样性</strong></td>
+<td>10%</td>
+<td>同一频道最多 2 个视频</td>
+</tr>
+</tbody></table>
+<p><strong>参与度比值的含义</strong>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">engagement_ratio = view_count / channel_follower_count</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>&gt; 1.0</code>：爆款视频，表现超过频道平均水平</li>
+<li><code>0.3 - 1.0</code>：参与度良好</li>
+<li><code>&lt; 0.3</code>：正常表现</li>
+</ul>
+<p><strong>筛选规则</strong>：</p>
+<ul>
+<li>每个频道最多 2 个视频（保证多样性）</li>
+<li>优先选择参与度 &gt; 0.3 的视频</li>
+<li>时长 5-60 分钟最佳（跳过短视频和超长内容）</li>
+</ul>
+<h3 id="Step-3：创建-NotebookLM-笔记本"><a href="#Step-3：创建-NotebookLM-笔记本" class="headerlink" title="Step 3：创建 NotebookLM 笔记本"></a>Step 3：创建 NotebookLM 笔记本</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">notebooklm create <span class="string">&quot;Research: Claude Code Skills&quot;</span> --json</span><br></pre></td></tr></table></figure>
+
+<p>NotebookLM 会返回一个 notebook ID，后续操作都需要用到。</p>
+<h3 id="Step-4：添加视频源"><a href="#Step-4：添加视频源" class="headerlink" title="Step 4：添加视频源"></a>Step 4：添加视频源</h3><p>把筛选出的视频作为数据源添加到 NotebookLM：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">notebooklm <span class="built_in">source</span> add <span class="string">&quot;https://www.youtube.com/watch?v=VIDEO_ID&quot;</span> --json</span><br></pre></td></tr></table></figure>
+
+<p>NotebookLM 会自动解析 YouTube 视频，提取字幕和内容。</p>
+<h3 id="Step-5：等待处理完成"><a href="#Step-5：等待处理完成" class="headerlink" title="Step 5：等待处理完成"></a>Step 5：等待处理完成</h3><p>视频处理需要时间（30 秒到 10 分钟不等），需要等待：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">notebooklm <span class="built_in">source</span> <span class="built_in">wait</span> &lt;source_id&gt; -n &lt;notebook_id&gt; --<span class="built_in">timeout</span> 600</span><br></pre></td></tr></table></figure>
+
+<h3 id="Step-6：运行分析"><a href="#Step-6：运行分析" class="headerlink" title="Step 6：运行分析"></a>Step 6：运行分析</h3><p>处理完成后，向 NotebookLM 提问进行分析：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">notebooklm ask <span class="string">&quot;What are the main trends across these videos?&quot;</span> --json</span><br></pre></td></tr></table></figure>
+
+<p><strong>分析维度</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>问题类型</th>
+<th>目的</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>趋势分析</td>
+<td>“这些视频的主要趋势和模式是什么？”</td>
+</tr>
+<tr>
+<td>关键要点</td>
+<td>“最重要的 5 个要点是什么？”</td>
+</tr>
+<tr>
+<td>异常观点</td>
+<td>“有哪些独特或有争议的观点？”</td>
+</tr>
+<tr>
+<td>研究空白</td>
+<td>“哪些话题或角度被忽略了？”</td>
+</tr>
+<tr>
+<td>共识总结</td>
+<td>“所有来源都同意的观点是什么？”</td>
+</tr>
+</tbody></table>
+<h3 id="Step-7：生成可交付物（可选）"><a href="#Step-7：生成可交付物（可选）" class="headerlink" title="Step 7：生成可交付物（可选）"></a>Step 7：生成可交付物（可选）</h3><p>NotebookLM 支持多种输出格式：</p>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>命令</th>
+<th>耗时</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Podcast</strong></td>
+<td><code>notebooklm generate audio &quot;说明&quot;</code></td>
+<td>10-20 分钟</td>
+</tr>
+<tr>
+<td><strong>视频</strong></td>
+<td><code>notebooklm generate video &quot;说明&quot;</code></td>
+<td>15-45 分钟</td>
+</tr>
+<tr>
+<td><strong>报告</strong></td>
+<td><code>notebooklm generate report --format study-guide</code></td>
+<td>5-15 分钟</td>
+</tr>
+<tr>
+<td><strong>幻灯片</strong></td>
+<td><code>notebooklm generate slide-deck</code></td>
+<td>5-15 分钟</td>
+</tr>
+<tr>
+<td><strong>思维导图</strong></td>
+<td><code>notebooklm generate mind-map</code></td>
+<td>即时</td>
+</tr>
+</tbody></table>
+<h2 id="输出格式示例"><a href="#输出格式示例" class="headerlink" title="输出格式示例"></a>输出格式示例</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</span><br><span class="line">YouTube Research Pipeline Complete: Claude Code Skills</span><br><span class="line">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</span><br><span class="line"></span><br><span class="line">📊 Research Summary</span><br><span class="line">   Videos searched: 50</span><br><span class="line">   Videos selected: 8</span><br><span class="line">   Notebook: fcbe7e02-e304-47d0-bbd3-fea0f2eb1284</span><br><span class="line"></span><br><span class="line">🎬 Selected Videos (ranked by score)</span><br><span class="line">   1. Don&#x27;t Build Agents, Build Skills Instead (AI Engineer) - Score: 87</span><br><span class="line">   2. How I use Claude Code (Meta Staff Engineer) - Score: 82</span><br><span class="line">   ...</span><br><span class="line"></span><br><span class="line">🎯 Key Takeaways</span><br><span class="line">   1. Skills 是 AI 的 SOP，确保一致性执行</span><br><span class="line">   2. 渐进式加载机制，仅 30-50 tokens 初始消耗</span><br><span class="line">   3. MCP 连接数据，Skills 处理数据</span><br><span class="line"></span><br><span class="line">📈 Trends</span><br><span class="line">   • Skills + MCP + Sub-agents 组合使用</span><br><span class="line">   • 用脚本替代 LLM 数学计算</span><br><span class="line"></span><br><span class="line">🔍 Outliers</span><br><span class="line">   • &quot;不要构建 Agent，构建 Skills 代替&quot;</span><br><span class="line"></span><br><span class="line">❓ Gaps</span><br><span class="line">   • 企业级部署最佳实践较少</span><br><span class="line">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</span><br></pre></td></tr></table></figure>
+
+<h2 id="封装为-Claude-Skill"><a href="#封装为-Claude-Skill" class="headerlink" title="封装为 Claude Skill"></a>封装为 Claude Skill</h2><p>我把这个工作流封装成了一个 Claude Code Skill，使用时只需要说：</p>
+<blockquote>
+<p>“Research Claude Code Skills on YouTube”</p>
+</blockquote>
+<p>或者：</p>
+<blockquote>
+<p>“Create a podcast about React Server Components from YouTube research”</p>
+</blockquote>
+<p>Claude 会自动执行整个流程，无需人工干预。</p>
+<p><strong>Skill 核心设计原则</strong>：</p>
+<ol>
+<li><strong>全自动化</strong>：步骤之间无需确认</li>
+<li><strong>智能筛选</strong>：基于评分系统选择最佳视频</li>
+<li><strong>并行处理</strong>：多个视频源同时处理</li>
+<li><strong>错误容错</strong>：单个源失败不影响整体流程</li>
+</ol>
+<h2 id="实际效果"><a href="#实际效果" class="headerlink" title="实际效果"></a>实际效果</h2><p>我用这个工作流研究了 “Claude Code Skills 和 MCP”：</p>
+<table>
+<thead>
+<tr>
+<th>指标</th>
+<th>数据</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>搜索结果</td>
+<td>50 个视频</td>
+</tr>
+<tr>
+<td>精选分析</td>
+<td>8 个视频</td>
+</tr>
+<tr>
+<td>处理时间</td>
+<td>约 15 分钟</td>
+</tr>
+<tr>
+<td>产出</td>
+<td>研究笔记 + 知识图谱 + 信息图</td>
+</tr>
+</tbody></table>
+<p>传统方式可能需要 2-3 小时，现在只需要一杯咖啡的时间。</p>
+<h2 id="经验总结"><a href="#经验总结" class="headerlink" title="经验总结"></a>经验总结</h2><h3 id="✅-成功要素"><a href="#✅-成功要素" class="headerlink" title="✅ 成功要素"></a>✅ 成功要素</h3><ol>
+<li><strong>评分系统是关键</strong>：好的评分算法能筛选出高质量内容</li>
+<li><strong>多样性很重要</strong>：限制同一频道数量，获取不同视角</li>
+<li><strong>NotebookLM 的视频理解能力很强</strong>：能准确提取关键信息</li>
+<li><strong>输出格式要标准化</strong>：便于后续处理和引用</li>
+</ol>
+<h3 id="⚠️-注意事项"><a href="#⚠️-注意事项" class="headerlink" title="⚠️ 注意事项"></a>⚠️ 注意事项</h3><ol>
+<li><strong>Windows 编码问题</strong>：NotebookLM CLI 输出包含 Unicode 符号，建议用 <code>--json</code> 参数</li>
+<li><strong>处理时间不稳定</strong>：视频长度影响处理时间，需要设置合理超时</li>
+<li><strong>Rate Limit</strong>：生成 podcast 等可能触发限制，建议等待 5 分钟后重试</li>
+</ol>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>这个 YouTube Research Pipeline 展示了 AI 时代的研究新范式：</p>
+<ul>
+<li><strong>从手动到自动</strong>：AI 替代重复劳动</li>
+<li><strong>从碎片到系统</strong>：结构化输出，便于后续使用</li>
+<li><strong>从单一到多元</strong>：支持多种输出格式</li>
+</ul>
+<p>如果你也想尝试，可以参考本文的实现思路，或者直接使用 Claude Code 和 NotebookLM CLI 搭建自己的研究工作流。</p>
+<hr>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://github.com/yt-dlp/yt-dlp">yt-dlp 官方文档</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/teng-lin/notebooklm-py">NotebookLM CLI (notebooklm-py)</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.anthropic.com/claude-code/skills">Claude Code Skills 文档</a></li>
+<li><a href="/2026/03/09/Claude-Code-Skills%E4%B8%8EMCP%E6%B7%B1%E5%BA%A6%E7%A0%94%E7%A9%B6/">相关文章：Claude Code Skills 与 MCP 深度研究</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Claude/" rel="tag"># Claude</a>
+              <a href="/tags/NotebookLM/" rel="tag"># NotebookLM</a>
+              <a href="/tags/yt-dlp/" rel="tag"># yt-dlp</a>
+              <a href="/tags/%E8%87%AA%E5%8A%A8%E5%8C%96/" rel="tag"># 自动化</a>
+              <a href="/tags/%E7%A0%94%E7%A9%B6%E5%B7%A5%E4%BD%9C%E6%B5%81/" rel="tag"># 研究工作流</a>
+              <a href="/tags/Skills/" rel="tag"># Skills</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/03/09/Claude-Code-Skills%E4%B8%8EMCP%E6%B7%B1%E5%BA%A6%E7%A0%94%E7%A9%B6/" rel="prev" title="Claude Code Skills 与 MCP 深度研究：YouTube 8 个精选视频分析">
+                  <i class="fa fa-angle-left"></i> Claude Code Skills 与 MCP 深度研究：YouTube 8 个精选视频分析
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  
+  <div class="comments giscus-container">
+  </div>
+  
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">zhlifeiy35</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/zhdmm35" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"zhdmm35/zhdmm35.github.io","repo_id":"R_kgDOON4bhg","category":"Announcements","category_id":"DIC_kwDOON4bhs4C3dEc","mapping":"pathname","strict":0,"reactions_enabled":1,"emit_metadata":0,"theme":"preferred_color_scheme","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+
+<script>
+document.addEventListener('page:loaded', () => {
+  if (!CONFIG.page.comments) return;
+
+  NexT.utils.loadComments('.giscus-container')
+    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
+      attributes: {
+        async                   : true,
+        crossOrigin             : 'anonymous',
+        'data-repo'             : CONFIG.giscus.repo,
+        'data-repo-id'          : CONFIG.giscus.repo_id,
+        'data-category'         : CONFIG.giscus.category,
+        'data-category-id'      : CONFIG.giscus.category_id,
+        'data-mapping'          : CONFIG.giscus.mapping,
+        'data-strict'           : CONFIG.giscus.strict,
+        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
+        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
+        'data-theme'            : CONFIG.giscus.theme,
+        'data-lang'             : CONFIG.giscus.lang,
+        'data-input-position'   : CONFIG.giscus.input_position,
+        'data-loading'          : CONFIG.giscus.loading
+      },
+      parentNode: document.querySelector('.giscus-container')
+    }));
+});
+</script>
+
+</body>
+</html>
