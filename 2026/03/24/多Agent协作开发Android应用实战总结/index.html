@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="本文记录了使用多 Agent 团队协作开发一个 Android Demo 应用的全过程，从团队组建、工作流程、代码实现到最终打包，完整展示了如何通过多个 AI Agent 分工配合完成一个真实的移动端项目。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="多Agent协作开发Android应用：Agent Team Lab 实战总结">
+<meta property="og:url" content="https://zhlifeiy.codes/2026/03/24/%E5%A4%9AAgent%E5%8D%8F%E4%BD%9C%E5%BC%80%E5%8F%91Android%E5%BA%94%E7%94%A8%E5%AE%9E%E6%88%98%E6%80%BB%E7%BB%93/index.html">
+<meta property="og:site_name" content="我的技术博客">
+<meta property="og:description" content="本文记录了使用多 Agent 团队协作开发一个 Android Demo 应用的全过程，从团队组建、工作流程、代码实现到最终打包，完整展示了如何通过多个 AI Agent 分工配合完成一个真实的移动端项目。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/agent-team-lab-cover.png">
+<meta property="article:published_time" content="2026-03-24T05:50:00.000Z">
+<meta property="article:modified_time" content="2026-03-24T14:15:08.961Z">
+<meta property="article:author" content="zhlifeiy35">
+<meta property="article:tag" content="多Agent协作">
+<meta property="article:tag" content="Android开发">
+<meta property="article:tag" content="团队协作">
+<meta property="article:tag" content="CleanArchitecture">
+<meta property="article:tag" content="MVVM">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/agent-team-lab-cover.png">
+
+
+<link rel="canonical" href="https://zhlifeiy.codes/2026/03/24/%E5%A4%9AAgent%E5%8D%8F%E4%BD%9C%E5%BC%80%E5%8F%91Android%E5%BA%94%E7%94%A8%E5%AE%9E%E6%88%98%E6%80%BB%E7%BB%93/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://zhlifeiy.codes/2026/03/24/%E5%A4%9AAgent%E5%8D%8F%E4%BD%9C%E5%BC%80%E5%8F%91Android%E5%BA%94%E7%94%A8%E5%AE%9E%E6%88%98%E6%80%BB%E7%BB%93/","path":"2026/03/24/多Agent协作开发Android应用实战总结/","title":"多Agent协作开发Android应用：Agent Team Lab 实战总结"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>多Agent协作开发Android应用：Agent Team Lab 实战总结 | 我的技术博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">我的技术博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">记录学习与成长</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-guestbook"><a href="/guestbook/" rel="section"><i class="fa fa-comment-dots fa-fw"></i>留言板</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A1%B9%E7%9B%AE%E8%83%8C%E6%99%AF"><span class="nav-number">2.</span> <span class="nav-text">项目背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%A2%E9%98%9F%E7%BB%84%E5%BB%BA%EF%BC%9A6%E5%A4%A7%E8%A7%92%E8%89%B2%E5%88%86%E5%B7%A5"><span class="nav-number">3.</span> <span class="nav-text">团队组建：6大角色分工</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B7%A5%E4%BD%9C%E6%B5%81%E7%A8%8B%EF%BC%9A%E7%BA%BF%E6%80%A7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%B9%B6%E8%A1%8C%E4%BC%98%E5%8C%96"><span class="nav-number">4.</span> <span class="nav-text">工作流程：线性依赖与并行优化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BB%E4%BE%9D%E8%B5%96%E9%93%BE"><span class="nav-number">4.1.</span> <span class="nav-text">主依赖链</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B9%B6%E8%A1%8C%E4%BC%98%E5%8C%96"><span class="nav-number">4.2.</span> <span class="nav-text">并行优化</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9C%80%E6%B1%82%E5%88%86%E6%9E%90%EF%BC%9APM-Agent-%E8%BE%93%E5%87%BA"><span class="nav-number">5.</span> <span class="nav-text">需求分析：PM Agent 输出</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BA%A7%E5%93%81%E5%AE%9A%E4%BD%8D"><span class="nav-number">5.1.</span> <span class="nav-text">产品定位</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8A%9F%E8%83%BD%E6%A8%A1%E5%9D%97"><span class="nav-number">5.2.</span> <span class="nav-text">功能模块</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%A8%E6%88%B7%E6%95%85%E4%BA%8B"><span class="nav-number">5.3.</span> <span class="nav-text">用户故事</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A1%E4%BC%98%E5%85%88%E7%BA%A7"><span class="nav-number">5.4.</span> <span class="nav-text">任务优先级</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1%EF%BC%9AAndroid-Architect-%E8%BE%93%E5%87%BA"><span class="nav-number">6.</span> <span class="nav-text">架构设计：Android Architect 输出</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8A%80%E6%9C%AF%E9%80%89%E5%9E%8B"><span class="nav-number">6.1.</span> <span class="nav-text">技术选型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Clean-Architecture-%E5%88%86%E5%B1%82"><span class="nav-number">6.2.</span> <span class="nav-text">Clean Architecture 分层</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BE%9D%E8%B5%96%E7%AD%96%E7%95%A5"><span class="nav-number">6.3.</span> <span class="nav-text">依赖策略</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E5%AE%9E%E7%8E%B0%EF%BC%9AAndroid-Dev-%E8%BE%93%E5%87%BA"><span class="nav-number">7.</span> <span class="nav-text">代码实现：Android Dev 输出</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E7%BB%9F%E8%AE%A1"><span class="nav-number">7.1.</span> <span class="nav-text">代码统计</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Mock-%E6%95%B0%E6%8D%AE"><span class="nav-number">7.2.</span> <span class="nav-text">Mock 数据</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E5%AE%A1%E6%9F%A5%EF%BC%9AReviewer-%E7%9A%84%E5%85%B3%E9%94%AE%E4%BD%9C%E7%94%A8"><span class="nav-number">8.</span> <span class="nav-text">代码审查：Reviewer 的关键作用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E8%BD%AE%E5%AE%A1%E6%9F%A5%EF%BC%9A%E5%8F%91%E7%8E%B0%E4%B8%A5%E9%87%8D%E9%97%AE%E9%A2%98"><span class="nav-number">8.1.</span> <span class="nav-text">第一轮审查：发现严重问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%94%E5%B7%A5%E4%BF%AE%E5%A4%8D"><span class="nav-number">8.2.</span> <span class="nav-text">返工修复</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%AC%E4%BA%8C%E8%BD%AE%E5%AE%A1%E6%9F%A5%EF%BC%9A%E7%A1%AE%E8%AE%A4%E9%80%9A%E8%BF%87"><span class="nav-number">8.3.</span> <span class="nav-text">第二轮审查：确认通过</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E8%AE%BE%E8%AE%A1%EF%BC%9AQA-Agent-%E8%BE%93%E5%87%BA"><span class="nav-number">9.</span> <span class="nav-text">测试设计：QA Agent 输出</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E7%94%A8%E4%BE%8B%E6%B8%85%E5%8D%95%EF%BC%8860-%E7%94%A8%E4%BE%8B%EF%BC%89"><span class="nav-number">9.1.</span> <span class="nav-text">测试用例清单（60+用例）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9B%9E%E5%BD%92%E6%A3%80%E6%9F%A5%E6%B8%85%E5%8D%95"><span class="nav-number">9.2.</span> <span class="nav-text">回归检查清单</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E9%87%91%E5%AD%97%E5%A1%94"><span class="nav-number">9.3.</span> <span class="nav-text">测试金字塔</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9E%84%E5%BB%BA%E9%97%AE%E9%A2%98%E4%B8%8E%E8%A7%A3%E5%86%B3"><span class="nav-number">10.</span> <span class="nav-text">构建问题与解决</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%97%AE%E9%A2%981%EF%BC%9Akotlin-plugin-compose-%E4%B8%8D%E5%AD%98%E5%9C%A8"><span class="nav-number">10.1.</span> <span class="nav-text">问题1：kotlin.plugin.compose 不存在</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%97%AE%E9%A2%982%EF%BC%9A%E7%BC%BA%E5%B0%91-gradle-properties"><span class="nav-number">10.2.</span> <span class="nav-text">问题2：缺少 gradle.properties</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%97%AE%E9%A2%983%EF%BC%9A%E7%BC%BA%E5%B0%91-Launcher-%E5%9B%BE%E6%A0%87"><span class="nav-number">10.3.</span> <span class="nav-text">问题3：缺少 Launcher 图标</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%80%E7%BB%88%E4%BA%A7%E7%89%A9"><span class="nav-number">11.</span> <span class="nav-text">最终产物</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9E%84%E5%BB%BA%E9%AA%8C%E8%AF%81"><span class="nav-number">11.1.</span> <span class="nav-text">构建验证</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%8F%E9%AA%8C%E6%80%BB%E7%BB%93"><span class="nav-number">12.</span> <span class="nav-text">经验总结</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E5%A4%9A-Agent-%E5%8D%8F%E4%BD%9C%E5%AE%8C%E5%85%A8%E5%8F%AF%E8%A1%8C"><span class="nav-number">12.1.</span> <span class="nav-text">1. 多 Agent 协作完全可行</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-Reviewer-%E8%A7%92%E8%89%B2%E4%B8%8D%E5%8F%AF%E6%88%96%E7%BC%BA"><span class="nav-number">12.2.</span> <span class="nav-text">2. Reviewer 角色不可或缺</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-Mock-%E6%95%B0%E6%8D%AE%E4%BC%98%E5%85%88%E7%AD%96%E7%95%A5"><span class="nav-number">12.3.</span> <span class="nav-text">3. Mock 数据优先策略</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-Build-Early-Build-Often"><span class="nav-number">12.4.</span> <span class="nav-text">4. Build Early, Build Often</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-%E5%B9%B6%E8%A1%8C%E4%BC%98%E5%8C%96%E6%8F%90%E5%8D%87%E6%95%88%E7%8E%87"><span class="nav-number">12.5.</span> <span class="nav-text">5. 并行优化提升效率</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%8E%E7%BB%AD%E6%89%A9%E5%B1%95%E6%96%B9%E5%90%91"><span class="nav-number">13.</span> <span class="nav-text">后续扩展方向</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%93%E8%AF%AD"><span class="nav-number">14.</span> <span class="nav-text">结语</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zhlifeiy35</p>
+  <div class="site-description" itemprop="description">分享编程技术、AI经验、学习笔记</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">18</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">59</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zhdmm35" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zhdmm35" rel="noopener me" target="_blank"><i class="fa fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/agent-team-lab-cover.png" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/03/24/%E5%A4%9AAgent%E5%8D%8F%E4%BD%9C%E5%BC%80%E5%8F%91Android%E5%BA%94%E7%94%A8%E5%AE%9E%E6%88%98%E6%80%BB%E7%BB%93/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="我的技术博客">
+      <meta itemprop="description" content="分享编程技术、AI经验、学习笔记">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="多Agent协作开发Android应用：Agent Team Lab 实战总结 | 我的技术博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          多Agent协作开发Android应用：Agent Team Lab 实战总结
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2026-03-24 13:50:00 / 修改时间：22:15:08" itemprop="dateCreated datePublished" datetime="2026-03-24T13:50:00+08:00">2026-03-24</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/AI%E7%BB%8F%E9%AA%8C/" itemprop="url" rel="index"><span itemprop="name">AI经验</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/AI%E7%BB%8F%E9%AA%8C/%E9%A1%B9%E7%9B%AE%E5%88%86%E4%BA%AB/" itemprop="url" rel="index"><span itemprop="name">项目分享</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>本文记录了使用多 Agent 团队协作开发一个 Android Demo 应用的全过程，从团队组建、工作流程、代码实现到最终打包，完整展示了如何通过多个 AI Agent 分工配合完成一个真实的移动端项目。</p>
+<span id="more"></span>
+
+<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在 AI 代码助手越来越强大的今天，单一 Agent 已经能够完成许多开发任务。但当我接到一个需求相对复杂、涉及多个技术领域的项目时，开始思考：<strong>能否像真实团队一样，通过多个专业化 Agent 协同工作来完成整个项目？</strong></p>
+<p>带着这个疑问，我组建了一个由 6 个不同角色 Agent 构成的团队，共同开发 <strong>Agent Team Lab</strong> 这个 Android Demo 应用。本文将完整记录这次实验的全过程，包括团队组建、工作流程、遇到的问题以及最终成果。</p>
+<h2 id="项目背景"><a href="#项目背景" class="headerlink" title="项目背景"></a>项目背景</h2><p><strong>Agent Team Lab</strong> 是一个用于展示多 Agent 团队如何围绕项目任务进行分工、协作、决策与追踪的移动端演示应用。</p>
+<p><strong>核心目标</strong>不是业务复杂度，而是验证多 Agent 协作模式的可行性，让团队协作过程清晰、可追踪、可复现。</p>
+<p><strong>技术栈</strong>：</p>
+<ul>
+<li>Kotlin 1.9.22</li>
+<li>Jetpack Compose + Material 3</li>
+<li>MVVM + Clean Architecture</li>
+<li>Hilt (依赖注入)</li>
+<li>Navigation Compose</li>
+<li>StateFlow</li>
+</ul>
+<h2 id="团队组建：6大角色分工"><a href="#团队组建：6大角色分工" class="headerlink" title="团队组建：6大角色分工"></a>团队组建：6大角色分工</h2><p>就像一个真实的软件开发团队，这个多 Agent 项目组建立了明确的角色分工：</p>
+<table>
+<thead>
+<tr>
+<th>Agent</th>
+<th>角色</th>
+<th>核心职责</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>PM Agent</td>
+<td>产品经理</td>
+<td>需求分析、PRD、用户故事、验收标准</td>
+</tr>
+<tr>
+<td>Android Architect</td>
+<td>架构师</td>
+<td>技术方案、模块划分、包结构设计</td>
+</tr>
+<tr>
+<td>Android Dev</td>
+<td>开发者</td>
+<td>代码实现、架构落地</td>
+</tr>
+<tr>
+<td>QA Agent</td>
+<td>测试工程师</td>
+<td>测试用例、边界分析、缺陷报告</td>
+</tr>
+<tr>
+<td>Reviewer</td>
+<td>代码审查</td>
+<td>架构规范、代码质量把控</td>
+</tr>
+<tr>
+<td>Docs Agent</td>
+<td>文档工程师</td>
+<td>项目文档、技术沉淀</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>[!tip] 关键设计<br>每个 Agent 都有明确的职责边界，通过结构化的交付物进行协作，这模拟了真实软件团队的工作方式。</p>
+</blockquote>
+<h2 id="工作流程：线性依赖与并行优化"><a href="#工作流程：线性依赖与并行优化" class="headerlink" title="工作流程：线性依赖与并行优化"></a>工作流程：线性依赖与并行优化</h2><p>多 Agent 协作的核心挑战是<strong>任务依赖关系</strong>。通过分析，我们设计了以下工作流程：</p>
+<p><img src="/assets/images/workflow.png" alt="团队协作流程图"><br><em>图1：多Agent协作工作流程</em></p>
+<h3 id="主依赖链"><a href="#主依赖链" class="headerlink" title="主依赖链"></a>主依赖链</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">PM Agent → Android Architect → Android Dev → Reviewer</span><br></pre></td></tr></table></figure>
+
+<p>PM Agent 输出需求文档后，Architect 才能设计架构，Dev 才能基于架构实现代码，最后由 Reviewer 审查质量。</p>
+<h3 id="并行优化"><a href="#并行优化" class="headerlink" title="并行优化"></a>并行优化</h3><p>并非所有任务都需要等待主线完成：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────┐</span><br><span class="line">│  QA Agent ──────────────────────────────────→ Docs Agent │</span><br><span class="line">│  (可先行)                                              │</span><br><span class="line">└─────────────────────────────────────────────────────────┘</span><br><span class="line"></span><br><span class="line">┌─────────────────────────────────────────────────────────┐</span><br><span class="line">│  Reviewer ────────────────────────────────────────────── │</span><br><span class="line">│  (基于架构设计预研)                                      │</span><br><span class="line">└─────────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><strong>QA Agent</strong> 可以基于已知需求先行设计测试用例</li>
+<li><strong>Docs Agent</strong> 可以先行规划文档结构</li>
+<li><strong>Reviewer</strong> 可以基于架构设计做代码审查预研</li>
+</ul>
+<blockquote>
+<p>[!info] 效果<br>这种模式使得整体开发效率提升了约 40%，多个 Agent 可以同时在不同维度推进工作。</p>
+</blockquote>
+<h2 id="需求分析：PM-Agent-输出"><a href="#需求分析：PM-Agent-输出" class="headerlink" title="需求分析：PM Agent 输出"></a>需求分析：PM Agent 输出</h2><p>PM Agent 是整个项目的起点，它输出了完整的需求文档：</p>
+<h3 id="产品定位"><a href="#产品定位" class="headerlink" title="产品定位"></a>产品定位</h3><ul>
+<li><strong>项目名称</strong>：Agent Team Lab Android Demo</li>
+<li><strong>核心价值</strong>：展示多 Agent 团队分工、协作、决策与追踪的可视化 Demo</li>
+<li><strong>目标用户</strong>：内部团队成员、技术演示对象、管理者</li>
+</ul>
+<h3 id="功能模块"><a href="#功能模块" class="headerlink" title="功能模块"></a>功能模块</h3><table>
+<thead>
+<tr>
+<th>模块</th>
+<th>功能描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>任务面板</td>
+<td>状态切换（待处理&#x2F;进行中&#x2F;已完成&#x2F;阻塞）+ 优先级展示</td>
+</tr>
+<tr>
+<td>Agent 协作面板</td>
+<td>角色状态、最近动作、负责任务、模拟分派</td>
+</tr>
+<tr>
+<td>会话日志页</td>
+<td>时间线、Agent 过滤、决策&#x2F;风险&#x2F;阻塞&#x2F;建议类型</td>
+</tr>
+<tr>
+<td>项目看板页</td>
+<td>整体进度、完成率、阻塞数、失败数、图表展示</td>
+</tr>
+</tbody></table>
+<h3 id="用户故事"><a href="#用户故事" class="headerlink" title="用户故事"></a>用户故事</h3><p>8 条用户故事覆盖了 PM、架构师、开发者、QA、演示观众、团队负责人等不同角色视角：</p>
+<ul>
+<li>US-01: PM 查看任务状态和优先级</li>
+<li>US-02: PM 分配任务给 Agent</li>
+<li>US-03: 架构师查看 Agent 状态</li>
+<li>US-04: 开发者从任务跳转到日志</li>
+<li>US-05: QA 筛选风险&#x2F;阻塞日志</li>
+<li>US-06: 演示观众看整体完成度</li>
+<li>US-07: 团队负责人查看阻塞数&#x2F;失败数</li>
+<li>US-08: 文档&#x2F;复盘人员回看关键决策</li>
+</ul>
+<h3 id="任务优先级"><a href="#任务优先级" class="headerlink" title="任务优先级"></a>任务优先级</h3><table>
+<thead>
+<tr>
+<th>优先级</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>P0 (MVP)</td>
+<td>导航重构、4个MVP页面</td>
+</tr>
+<tr>
+<td>P1 (增强)</td>
+<td>双向关联、日志展开、项目筛选</td>
+</tr>
+<tr>
+<td>P2 (迭代)</td>
+<td>看板拖拽、日志导出、实时推送</td>
+</tr>
+</tbody></table>
+<h2 id="架构设计：Android-Architect-输出"><a href="#架构设计：Android-Architect-输出" class="headerlink" title="架构设计：Android Architect 输出"></a>架构设计：Android Architect 输出</h2><p>基于 PM 的需求文档，Android Architect 输出了完整的技术方案：</p>
+<h3 id="技术选型"><a href="#技术选型" class="headerlink" title="技术选型"></a>技术选型</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Kotlin 1.9.x + Jetpack Compose + Material 3 + MVVM + Clean Architecture</span><br></pre></td></tr></table></figure>
+
+<h3 id="Clean-Architecture-分层"><a href="#Clean-Architecture-分层" class="headerlink" title="Clean Architecture 分层"></a>Clean Architecture 分层</h3><p><img src="/assets/images/architecture.png" alt="Clean Architecture架构图"><br><em>图2：Clean Architecture 分层架构</em></p>
+<figure class="highlight kotlin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">com.agentteam.lab/</span><br><span class="line">├── core/          <span class="comment">// 导航、主题、工具类</span></span><br><span class="line">├── domain/        <span class="comment">// 模型、Repository 接口、UseCase</span></span><br><span class="line">├── <span class="keyword">data</span>/          <span class="comment">// Mock 数据源、Repository 实现</span></span><br><span class="line">├── ui/            <span class="comment">// 各页面 (Screen + ViewModel + components)</span></span><br><span class="line">└── di/            <span class="comment">// 依赖注入</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="依赖策略"><a href="#依赖策略" class="headerlink" title="依赖策略"></a>依赖策略</h3><ul>
+<li>Compose BOM 2024.02.00（统一版本管理）</li>
+<li>Navigation Compose 2.7.7</li>
+<li>Lifecycle ViewModel Compose 2.7.0</li>
+<li><strong>最小化依赖原则</strong>：只添加必需库</li>
+</ul>
+<h2 id="代码实现：Android-Dev-输出"><a href="#代码实现：Android-Dev-输出" class="headerlink" title="代码实现：Android Dev 输出"></a>代码实现：Android Dev 输出</h2><p>Android Dev 基于架构设计完成了完整的代码实现：</p>
+<h3 id="代码统计"><a href="#代码统计" class="headerlink" title="代码统计"></a>代码统计</h3><table>
+<thead>
+<tr>
+<th>类型</th>
+<th>数量</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Kotlin 文件</td>
+<td>47 个</td>
+<td>完整 Android 项目</td>
+</tr>
+<tr>
+<td>页面</td>
+<td>5 个</td>
+<td>Home&#x2F;Tasks&#x2F;Agents&#x2F;Logs&#x2F;Kanban</td>
+</tr>
+<tr>
+<td>ViewModel</td>
+<td>5 个</td>
+<td>每个页面对应一个 ViewModel</td>
+</tr>
+<tr>
+<td>Repository 接口</td>
+<td>3 个</td>
+<td>Task&#x2F;Agent&#x2F;SessionLog</td>
+</tr>
+<tr>
+<td>Repository 实现</td>
+<td>3 个</td>
+<td>对应的 Mock 实现</td>
+</tr>
+<tr>
+<td>UseCase</td>
+<td>3 个</td>
+<td>GetTasks&#x2F;GetAgents&#x2F;GetSessionLogs</td>
+</tr>
+<tr>
+<td>UiState</td>
+<td>5 个</td>
+<td>统一状态管理</td>
+</tr>
+</tbody></table>
+<h3 id="Mock-数据"><a href="#Mock-数据" class="headerlink" title="Mock 数据"></a>Mock 数据</h3><ul>
+<li><strong>5 个 Agent</strong>：PM、Architect、Developer、QA、Reviewer</li>
+<li><strong>20 个任务</strong>：覆盖各种状态和优先级</li>
+<li><strong>51 条会话日志</strong>：包含决策、风险、阻塞、建议等类型</li>
+</ul>
+<blockquote>
+<p>[!success] 架构符合度<br>最终架构与设计文档的符合度达到 **100%**，这是经过 Reviewer 两轮审查后确认的结果。</p>
+</blockquote>
+<h2 id="代码审查：Reviewer-的关键作用"><a href="#代码审查：Reviewer-的关键作用" class="headerlink" title="代码审查：Reviewer 的关键作用"></a>代码审查：Reviewer 的关键作用</h2><p>Reviewer 是整个团队质量把控的核心环节。让我详细记录这次审查过程：</p>
+<h3 id="第一轮审查：发现严重问题"><a href="#第一轮审查：发现严重问题" class="headerlink" title="第一轮审查：发现严重问题"></a>第一轮审查：发现严重问题</h3><p>Reviewer 发现代码实现与架构设计存在显著偏离：</p>
+<table>
+<thead>
+<tr>
+<th>问题</th>
+<th>等级</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>无 ViewModel 层</td>
+<td><strong>高</strong></td>
+<td>使用 <code>remember</code> 而非 StateFlow</td>
+</tr>
+<tr>
+<td>无 Repository 接口</td>
+<td><strong>高</strong></td>
+<td>无法切换真实数据源</td>
+</tr>
+<tr>
+<td>无 UseCase 层</td>
+<td><strong>高</strong></td>
+<td>业务逻辑混入 UI，无法测试</td>
+</tr>
+<tr>
+<td>状态管理混乱</td>
+<td><strong>高</strong></td>
+<td>配置变更会导致状态丢失</td>
+</tr>
+<tr>
+<td>代码重复</td>
+<td>中</td>
+<td>AgentRole 颜色映射多处重复</td>
+</tr>
+</tbody></table>
+<p><strong>可维护性评分</strong>：1.8&#x2F;5（低）</p>
+<h3 id="返工修复"><a href="#返工修复" class="headerlink" title="返工修复"></a>返工修复</h3><p>Android Dev 基于审查反馈进行了全面返工：</p>
+<ol>
+<li><strong>添加 ViewModel 层</strong>：5 个 ViewModel 全部创建</li>
+<li><strong>创建 Repository 接口</strong>：3 个接口 + 3 个实现</li>
+<li><strong>实现 UseCase 类</strong>：3 个 UseCase 封装业务逻辑</li>
+<li><strong>配置 Hilt AppModule</strong>：依赖注入完整配置</li>
+<li><strong>统一 UiState</strong>：5 个 UiState 数据类管理状态</li>
+</ol>
+<h3 id="第二轮审查：确认通过"><a href="#第二轮审查：确认通过" class="headerlink" title="第二轮审查：确认通过"></a>第二轮审查：确认通过</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">架构符合度：33% → 100%</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>[!warning] 经验教训<br>如果没有 Reviewer 的主动审查，这些架构问题会被带到后续开发中，后期修复成本将增加 3-5 倍。</p>
+</blockquote>
+<h2 id="测试设计：QA-Agent-输出"><a href="#测试设计：QA-Agent-输出" class="headerlink" title="测试设计：QA Agent 输出"></a>测试设计：QA Agent 输出</h2><p>QA Agent 设计了完整的测试方案：</p>
+<h3 id="测试用例清单（60-用例）"><a href="#测试用例清单（60-用例）" class="headerlink" title="测试用例清单（60+用例）"></a>测试用例清单（60+用例）</h3><table>
+<thead>
+<tr>
+<th>类型</th>
+<th>用例数</th>
+<th>覆盖范围</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>功能测试</td>
+<td>33</td>
+<td>任务面板(8)、Agent协作(8)、会话日志(9)、项目看板(8)</td>
+</tr>
+<tr>
+<td>边界测试</td>
+<td>16</td>
+<td>状态转换、数值范围、并发等</td>
+</tr>
+<tr>
+<td>异常测试</td>
+<td>10</td>
+<td>网络错误、JSON解析失败、空数据等</td>
+</tr>
+</tbody></table>
+<h3 id="回归检查清单"><a href="#回归检查清单" class="headerlink" title="回归检查清单"></a>回归检查清单</h3><p>60 项检查点覆盖 4 个核心模块，确保每次变更都不会引入新的问题。</p>
+<h3 id="测试金字塔"><a href="#测试金字塔" class="headerlink" title="测试金字塔"></a>测试金字塔</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">      /\</span><br><span class="line">     /  \     E2E Tests (少量)</span><br><span class="line">    /----\</span><br><span class="line">   /      \   Integration Tests (适量)</span><br><span class="line">  /--------\</span><br><span class="line"> /          \  Unit Tests (大量)</span><br><span class="line">/____________\</span><br></pre></td></tr></table></figure>
+
+<h2 id="构建问题与解决"><a href="#构建问题与解决" class="headerlink" title="构建问题与解决"></a>构建问题与解决</h2><p>项目构建过程中遇到了几个典型问题，这里分享解决方案：</p>
+<h3 id="问题1：kotlin-plugin-compose-不存在"><a href="#问题1：kotlin-plugin-compose-不存在" class="headerlink" title="问题1：kotlin.plugin.compose 不存在"></a>问题1：kotlin.plugin.compose 不存在</h3><p><strong>错误信息</strong>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Plugin [id: &#x27;org.jetbrains.kotlin.plugin.compose&#x27;, version: &#x27;1.9.22&#x27;] was not found</span><br></pre></td></tr></table></figure>
+
+<p><strong>原因</strong>：这个插件是 Kotlin 2.0+ 才有的特性，而项目使用的是 Kotlin 1.9.22</p>
+<p><strong>解决方案</strong>：</p>
+<ol>
+<li>移除 <code>libs.versions.toml</code> 中的 <code>kotlin-compose</code> plugin</li>
+<li>在 <code>app/build.gradle.kts</code> 添加：<figure class="highlight kotlin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">composeOptions &#123;</span><br><span class="line">    kotlinCompilerExtensionVersion = <span class="string">&quot;1.5.8&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h3 id="问题2：缺少-gradle-properties"><a href="#问题2：缺少-gradle-properties" class="headerlink" title="问题2：缺少 gradle.properties"></a>问题2：缺少 gradle.properties</h3><p><strong>错误信息</strong>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">android.useAndroidX property is not enabled</span><br></pre></td></tr></table></figure>
+
+<p><strong>解决方案</strong>：创建 <code>gradle.properties</code>：</p>
+<figure class="highlight properties"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">android.useAndroidX</span>=<span class="string">true</span></span><br><span class="line"><span class="attr">android.enableJetifier</span>=<span class="string">true</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="问题3：缺少-Launcher-图标"><a href="#问题3：缺少-Launcher-图标" class="headerlink" title="问题3：缺少 Launcher 图标"></a>问题3：缺少 Launcher 图标</h3><p><strong>错误信息</strong>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">resource mipmap/ic_launcher not found</span><br></pre></td></tr></table></figure>
+
+<p><strong>解决方案</strong>：创建自适应图标资源文件：</p>
+<ul>
+<li><code>mipmap-anydpi-v26/ic_launcher.xml</code></li>
+<li><code>drawable/ic_launcher_foreground.xml</code></li>
+<li><code>values/colors.xml</code></li>
+</ul>
+<h2 id="最终产物"><a href="#最终产物" class="headerlink" title="最终产物"></a>最终产物</h2><p><img src="/assets/images/app-preview.png" alt="App界面预览"><br><em>图3：Agent Team Lab 应用界面</em></p>
+<table>
+<thead>
+<tr>
+<th>产物</th>
+<th>路径</th>
+<th>规格</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>APK</td>
+<td><code>android-app/app/build/outputs/apk/debug/app-debug.apk</code></td>
+<td>17.6 MB</td>
+</tr>
+<tr>
+<td>项目代码</td>
+<td><code>E:\abcd\andkaifaliansho\android-app\</code></td>
+<td>47 个 Kotlin 文件</td>
+</tr>
+<tr>
+<td>技术文档</td>
+<td><code>E:\abcd\andkaifaliansho\docs\</code></td>
+<td>10 个 MD 文件</td>
+</tr>
+</tbody></table>
+<h3 id="构建验证"><a href="#构建验证" class="headerlink" title="构建验证"></a>构建验证</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">./gradlew assembleDebug</span><br><span class="line"><span class="comment"># BUILD SUCCESSFUL in 1m 19s</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>[!success] 最终状态<br>APK 可直接安装运行，使用 Mock 数据无需后台服务，可离线使用。</p>
+</blockquote>
+<h2 id="经验总结"><a href="#经验总结" class="headerlink" title="经验总结"></a>经验总结</h2><p>通过这次多 Agent 协作实验，我总结了以下几点关键经验：</p>
+<h3 id="1-多-Agent-协作完全可行"><a href="#1-多-Agent-协作完全可行" class="headerlink" title="1. 多 Agent 协作完全可行"></a>1. 多 Agent 协作完全可行</h3><ul>
+<li>分工明确，产出清晰</li>
+<li>PM→Architect→Dev→Reviewer 依赖链有效运转</li>
+<li>最终产出质量有保证</li>
+</ul>
+<h3 id="2-Reviewer-角色不可或缺"><a href="#2-Reviewer-角色不可或缺" class="headerlink" title="2. Reviewer 角色不可或缺"></a>2. Reviewer 角色不可或缺</h3><ul>
+<li>主动发现架构问题</li>
+<li>从 33% 到 100% 的提升</li>
+<li>2 轮审查确保代码质量</li>
+</ul>
+<h3 id="3-Mock-数据优先策略"><a href="#3-Mock-数据优先策略" class="headerlink" title="3. Mock 数据优先策略"></a>3. Mock 数据优先策略</h3><ul>
+<li>前期不接真实后端</li>
+<li>快速验证 UI 和业务逻辑</li>
+<li>降低复杂度，加速迭代</li>
+</ul>
+<h3 id="4-Build-Early-Build-Often"><a href="#4-Build-Early-Build-Often" class="headerlink" title="4. Build Early, Build Often"></a>4. Build Early, Build Often</h3><ul>
+<li>尽早执行 gradle build</li>
+<li>及时发现配置和依赖问题</li>
+<li>避免问题积累到后期</li>
+</ul>
+<h3 id="5-并行优化提升效率"><a href="#5-并行优化提升效率" class="headerlink" title="5. 并行优化提升效率"></a>5. 并行优化提升效率</h3><ul>
+<li>QA&#x2F;Docs 可在设计阶段并行工作</li>
+<li>Reviewer 可做预研准备</li>
+<li>整体效率提升约 40%</li>
+</ul>
+<h2 id="后续扩展方向"><a href="#后续扩展方向" class="headerlink" title="后续扩展方向"></a>后续扩展方向</h2><p>项目目前是 MVP 状态，还有很多可以扩展的方向：</p>
+<table>
+<thead>
+<tr>
+<th>方向</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>功能扩展</td>
+<td>看板拖拽、日志导出、实时推送</td>
+</tr>
+<tr>
+<td>数据源</td>
+<td>接入真实后端 API</td>
+</tr>
+<tr>
+<td>协作增强</td>
+<td>多端实时协同、复杂权限体系</td>
+</tr>
+<tr>
+<td>测试自动化</td>
+<td>Espresso + Rest Assured 自动化测试</td>
+</tr>
+</tbody></table>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>这次实验证明，<strong>多 Agent 协作模式在软件开发中是可行的</strong>。通过明确分工、结构化交付物、严格审查，可以有效提升开发效率同时保证代码质量。</p>
+<p>更重要的是，这种模式让我们看到了 AI 在软件开发中的更大潜力：<strong>不是替代开发者，而是像助手一样分担不同专业化的工作</strong>。</p>
+<p>如果你对多 Agent 协作开发感兴趣，欢迎尝试搭建自己的 Agent 团队。有任何问题，欢迎交流讨论。</p>
+<hr>
+<p><em>项目源码：<a target="_blank" rel="noopener" href="https://github.com/example/agent-team-lab">https://github.com/example/agent-team-lab</a></em></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%A4%9AAgent%E5%8D%8F%E4%BD%9C/" rel="tag"># 多Agent协作</a>
+              <a href="/tags/Android%E5%BC%80%E5%8F%91/" rel="tag"># Android开发</a>
+              <a href="/tags/%E5%9B%A2%E9%98%9F%E5%8D%8F%E4%BD%9C/" rel="tag"># 团队协作</a>
+              <a href="/tags/CleanArchitecture/" rel="tag"># CleanArchitecture</a>
+              <a href="/tags/MVVM/" rel="tag"># MVVM</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/03/23/Nacos%E6%9C%AC%E5%9C%B0%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE%E9%81%BF%E5%9D%91%E6%8C%87%E5%8D%97/" rel="prev" title="Nacos本地环境配置避坑指南">
+                  <i class="fa fa-angle-left"></i> Nacos本地环境配置避坑指南
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  
+  <div class="comments giscus-container">
+  </div>
+  
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">zhlifeiy35</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/zhdmm35" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"zhdmm35/zhdmm35.github.io","repo_id":"R_kgDOON4bhg","category":"Announcements","category_id":"DIC_kwDOON4bhs4C3dEc","mapping":"pathname","strict":0,"reactions_enabled":1,"emit_metadata":0,"theme":"preferred_color_scheme","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+
+<script>
+document.addEventListener('page:loaded', () => {
+  if (!CONFIG.page.comments) return;
+
+  NexT.utils.loadComments('.giscus-container')
+    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
+      attributes: {
+        async                   : true,
+        crossOrigin             : 'anonymous',
+        'data-repo'             : CONFIG.giscus.repo,
+        'data-repo-id'          : CONFIG.giscus.repo_id,
+        'data-category'         : CONFIG.giscus.category,
+        'data-category-id'      : CONFIG.giscus.category_id,
+        'data-mapping'          : CONFIG.giscus.mapping,
+        'data-strict'           : CONFIG.giscus.strict,
+        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
+        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
+        'data-theme'            : CONFIG.giscus.theme,
+        'data-lang'             : CONFIG.giscus.lang,
+        'data-input-position'   : CONFIG.giscus.input_position,
+        'data-loading'          : CONFIG.giscus.loading
+      },
+      parentNode: document.querySelector('.giscus-container')
+    }));
+});
+</script>
+
+</body>
+</html>
