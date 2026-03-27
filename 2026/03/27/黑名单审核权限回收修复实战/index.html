@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="在物联网门禁系统的黑名单审核流程中，我们发现了一个”审核未通过就删权”的严重 Bug。本文记录了从问题定位到完整修复的全过程，包括两次迭代：第一次解决”时机错误”，第二次解决”删权不完整”。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="黑名单审核权限回收修复实战：从时机错误到完整回收">
+<meta property="og:url" content="https://zhlifeiy.codes/2026/03/27/%E9%BB%91%E5%90%8D%E5%8D%95%E5%AE%A1%E6%A0%B8%E6%9D%83%E9%99%90%E5%9B%9E%E6%94%B6%E4%BF%AE%E5%A4%8D%E5%AE%9E%E6%88%98/index.html">
+<meta property="og:site_name" content="我的技术博客">
+<meta property="og:description" content="在物联网门禁系统的黑名单审核流程中，我们发现了一个”审核未通过就删权”的严重 Bug。本文记录了从问题定位到完整修复的全过程，包括两次迭代：第一次解决”时机错误”，第二次解决”删权不完整”。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/blacklist-audit-privilege-recovery.png">
+<meta property="article:published_time" content="2026-03-27T08:00:00.000Z">
+<meta property="article:modified_time" content="2026-03-27T15:55:02.936Z">
+<meta property="article:author" content="zhlifeiy35">
+<meta property="article:tag" content="Spring Boot">
+<meta property="article:tag" content="Java">
+<meta property="article:tag" content="Bug修复">
+<meta property="article:tag" content="权限管理">
+<meta property="article:tag" content="物联网">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/blacklist-audit-privilege-recovery.png">
+
+
+<link rel="canonical" href="https://zhlifeiy.codes/2026/03/27/%E9%BB%91%E5%90%8D%E5%8D%95%E5%AE%A1%E6%A0%B8%E6%9D%83%E9%99%90%E5%9B%9E%E6%94%B6%E4%BF%AE%E5%A4%8D%E5%AE%9E%E6%88%98/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://zhlifeiy.codes/2026/03/27/%E9%BB%91%E5%90%8D%E5%8D%95%E5%AE%A1%E6%A0%B8%E6%9D%83%E9%99%90%E5%9B%9E%E6%94%B6%E4%BF%AE%E5%A4%8D%E5%AE%9E%E6%88%98/","path":"2026/03/27/黑名单审核权限回收修复实战/","title":"黑名单审核权限回收修复实战：从时机错误到完整回收"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>黑名单审核权限回收修复实战：从时机错误到完整回收 | 我的技术博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">我的技术博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">记录学习与成长</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-guestbook"><a href="/guestbook/" rel="section"><i class="fa fa-comment-dots fa-fw"></i>留言板</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E8%83%8C%E6%99%AF"><span class="nav-number">2.</span> <span class="nav-text">问题背景</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%90%86%E6%83%B3%E6%B5%81%E7%A8%8B-vs-%E5%AE%9E%E9%99%85%E6%B5%81%E7%A8%8B"><span class="nav-number">2.1.</span> <span class="nav-text">理想流程 vs 实际流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%9A%E5%8A%A1%E5%BD%B1%E5%93%8D"><span class="nav-number">2.2.</span> <span class="nav-text">业务影响</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E8%BD%AE%E4%BF%AE%E5%A4%8D%EF%BC%9A%E8%A7%A3%E5%86%B3%E2%80%9D%E6%97%B6%E6%9C%BA%E9%94%99%E8%AF%AF%E2%80%9D"><span class="nav-number">3.</span> <span class="nav-text">第一轮修复：解决”时机错误”</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E5%AE%9A%E4%BD%8D"><span class="nav-number">3.1.</span> <span class="nav-text">问题定位</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-%E6%8B%89%E9%BB%91%E7%94%B3%E8%AF%B7%E9%98%B6%E6%AE%B5%E6%8F%90%E5%89%8D%E4%B8%8B%E5%8F%91%E6%9D%83%E9%99%90%E5%88%A0%E9%99%A4"><span class="nav-number">3.1.1.</span> <span class="nav-text">1. 拉黑申请阶段提前下发权限删除</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-%E9%BB%91%E5%90%8D%E5%8D%95%E5%AE%A1%E6%A0%B8%E9%80%9A%E8%BF%87%E6%97%B6%E7%A9%BA%E6%8C%87%E9%92%88"><span class="nav-number">3.1.2.</span> <span class="nav-text">2. 黑名单审核通过时空指针</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BF%AE%E5%A4%8D%E6%96%B9%E6%A1%88"><span class="nav-number">3.2.</span> <span class="nav-text">修复方案</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%94%B9%E5%8A%A8-1%EF%BC%9A%E7%A7%BB%E9%99%A4%E7%94%B3%E8%AF%B7%E9%98%B6%E6%AE%B5%E7%9A%84%E6%9D%83%E9%99%90%E4%B8%8B%E5%8F%91"><span class="nav-number">3.2.1.</span> <span class="nav-text">改动 1：移除申请阶段的权限下发</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%94%B9%E5%8A%A8-2%EF%BC%9A%E5%9C%A8%E5%AE%A1%E6%A0%B8%E9%80%9A%E8%BF%87%E6%97%B6%E7%BB%9F%E4%B8%80%E4%B8%8B%E5%8F%91"><span class="nav-number">3.2.2.</span> <span class="nav-text">改动 2：在审核通过时统一下发</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%94%B9%E5%8A%A8-3%EF%BC%9A%E5%A2%9E%E5%BC%BA%E6%97%A5%E5%BF%97%E4%B8%8E%E5%AE%B9%E9%94%99"><span class="nav-number">3.2.3.</span> <span class="nav-text">改动 3：增强日志与容错</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E8%BD%AE%E9%AA%8C%E8%AF%81"><span class="nav-number">3.3.</span> <span class="nav-text">第一轮验证</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E4%BA%8C%E8%BD%AE%E4%BF%AE%E5%A4%8D%EF%BC%9A%E8%A7%A3%E5%86%B3%E2%80%9D%E5%88%A0%E6%9D%83%E4%B8%8D%E5%AE%8C%E6%95%B4%E2%80%9D"><span class="nav-number">4.</span> <span class="nav-text">第二轮修复：解决”删权不完整”</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E5%8F%91%E7%8E%B0"><span class="nav-number">4.1.</span> <span class="nav-text">问题发现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B9%E5%9B%A0%E5%88%86%E6%9E%90"><span class="nav-number">4.2.</span> <span class="nav-text">根因分析</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-%E4%B8%8B%E5%8F%91%E8%AF%AD%E4%B9%89%E4%B8%8D%E5%AE%8C%E6%95%B4"><span class="nav-number">4.2.1.</span> <span class="nav-text">1. 下发语义不完整</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-%E7%BA%AF%E5%88%A0%E9%99%A4%E8%AE%BE%E5%A4%87%E8%AF%B7%E6%B1%82%E8%A2%AB%E6%8B%A6%E6%88%AA"><span class="nav-number">4.2.2.</span> <span class="nav-text">2. 纯删除设备请求被拦截</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BF%AE%E5%A4%8D%E6%96%B9%E6%A1%88-1"><span class="nav-number">4.3.</span> <span class="nav-text">修复方案</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%94%B9%E5%8A%A8-1%EF%BC%9A%E5%AE%8C%E6%95%B4%E5%9B%9E%E6%94%B6%E6%89%80%E6%9C%89%E6%9D%83%E9%99%90%E7%B1%BB%E5%9E%8B"><span class="nav-number">4.3.1.</span> <span class="nav-text">改动 1：完整回收所有权限类型</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%94%B9%E5%8A%A8-2%EF%BC%9A%E6%94%AF%E6%8C%81%E7%BA%AF%E5%88%A0%E9%99%A4%E8%AF%B7%E6%B1%82"><span class="nav-number">4.3.2.</span> <span class="nav-text">改动 2：支持纯删除请求</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%AC%E4%BA%8C%E8%BD%AE%E9%AA%8C%E8%AF%81"><span class="nav-number">4.4.</span> <span class="nav-text">第二轮验证</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B3%E9%94%AE%E4%BB%A3%E7%A0%81%E5%AF%B9%E6%AF%94"><span class="nav-number">5.</span> <span class="nav-text">关键代码对比</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BF%AE%E5%A4%8D%E5%89%8D%E5%90%8E%E6%B5%81%E7%A8%8B%E5%AF%B9%E6%AF%94"><span class="nav-number">5.1.</span> <span class="nav-text">修复前后流程对比</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9D%83%E9%99%90%E5%9B%9E%E6%94%B6%E8%A6%86%E7%9B%96%E5%AF%B9%E6%AF%94"><span class="nav-number">5.2.</span> <span class="nav-text">权限回收覆盖对比</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%8F%E9%AA%8C%E6%80%BB%E7%BB%93"><span class="nav-number">6.</span> <span class="nav-text">经验总结</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E6%97%B6%E6%9C%BA%E6%8A%8A%E6%8E%A7%E6%98%AF%E6%9D%83%E9%99%90%E6%B5%81%E7%A8%8B%E7%9A%84%E6%A0%B8%E5%BF%83"><span class="nav-number">6.1.</span> <span class="nav-text">1. 时机把控是权限流程的核心</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-%E5%AE%8C%E6%95%B4%E7%9A%84%E6%9D%83%E9%99%90%E7%BB%B4%E5%BA%A6%E6%B8%85%E5%8D%95"><span class="nav-number">6.2.</span> <span class="nav-text">2. 完整的权限维度清单</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-%E5%8E%86%E5%8F%B2%E6%95%B0%E6%8D%AE%E5%85%BC%E5%AE%B9%E6%80%A7%E8%AE%BE%E8%AE%A1"><span class="nav-number">6.3.</span> <span class="nav-text">3. 历史数据兼容性设计</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-%E6%B5%8B%E8%AF%95%E8%A6%86%E7%9B%96%E8%A6%81%E5%85%A8%E9%9D%A2"><span class="nav-number">6.4.</span> <span class="nav-text">4. 测试覆盖要全面</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-%E6%97%A5%E5%BF%97%E6%98%AF%E6%8E%92%E6%9F%A5%E9%97%AE%E9%A2%98%E7%9A%84%E5%85%B3%E9%94%AE"><span class="nav-number">6.5.</span> <span class="nav-text">5. 日志是排查问题的关键</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8E%A8%E8%8D%90%E5%90%8E%E7%BB%AD%E5%8A%A8%E4%BD%9C"><span class="nav-number">7.</span> <span class="nav-text">推荐后续动作</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%93%E8%AF%AD"><span class="nav-number">8.</span> <span class="nav-text">结语</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zhlifeiy35</p>
+  <div class="site-description" itemprop="description">分享编程技术、AI经验、学习笔记</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">19</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">61</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zhdmm35" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zhdmm35" rel="noopener me" target="_blank"><i class="fa fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/blacklist-audit-privilege-recovery.png" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/03/27/%E9%BB%91%E5%90%8D%E5%8D%95%E5%AE%A1%E6%A0%B8%E6%9D%83%E9%99%90%E5%9B%9E%E6%94%B6%E4%BF%AE%E5%A4%8D%E5%AE%9E%E6%88%98/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="我的技术博客">
+      <meta itemprop="description" content="分享编程技术、AI经验、学习笔记">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="黑名单审核权限回收修复实战：从时机错误到完整回收 | 我的技术博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          黑名单审核权限回收修复实战：从时机错误到完整回收
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2026-03-27 16:00:00 / 修改时间：23:55:02" itemprop="dateCreated datePublished" datetime="2026-03-27T16:00:00+08:00">2026-03-27</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">后端开发</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>在物联网门禁系统的黑名单审核流程中，我们发现了一个”审核未通过就删权”的严重 Bug。本文记录了从问题定位到完整修复的全过程，包括两次迭代：第一次解决”时机错误”，第二次解决”删权不完整”。</p>
+<span id="more"></span>
+
+<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在物联网门禁系统中，黑名单审核流程的核心逻辑应该是：</p>
+<ol>
+<li>发起拉黑申请 → 仅进入待审核状态</li>
+<li>审核通过 → 下发权限回收</li>
+<li>审核拒绝 → 权限保持不变</li>
+</ol>
+<p>然而在实际排查中发现，系统存在<strong>两个问题</strong>：</p>
+<blockquote>
+<p>[!warning]</p>
+<ol>
+<li><strong>时机错误</strong>：拉黑申请阶段就提前下发了权限删除任务</li>
+<li><strong>删权不完整</strong>：审核通过后只回收了部分权限（卡、黑名单记录），漏掉了二维码、人脸和临时权限</li>
+</ol>
+</blockquote>
+<p>本文详细记录了这两轮修复的完整过程。</p>
+<h2 id="问题背景"><a href="#问题背景" class="headerlink" title="问题背景"></a>问题背景</h2><h3 id="理想流程-vs-实际流程"><a href="#理想流程-vs-实际流程" class="headerlink" title="理想流程 vs 实际流程"></a>理想流程 vs 实际流程</h3><table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>理想流程</th>
+<th>实际流程（修复前）</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>拉黑申请</td>
+<td>仅记录待审核状态</td>
+<td>❌ 直接下发权限删除任务</td>
+</tr>
+<tr>
+<td>审核通过</td>
+<td>完整回收所有权限</td>
+<td>⚠️ 只回收了部分权限</td>
+</tr>
+<tr>
+<td>审核拒绝</td>
+<td>保持权限不变</td>
+<td>✓ 符合预期</td>
+</tr>
+</tbody></table>
+<h3 id="业务影响"><a href="#业务影响" class="headerlink" title="业务影响"></a>业务影响</h3><ul>
+<li><strong>误删权限</strong>：未审核就删权，可能导致正常用户无法通行</li>
+<li><strong>数据不一致</strong>：审核通过后部分权限残留，黑名单用户仍可通过二维码&#x2F;人脸进出</li>
+<li><strong>审核失败</strong>：历史脏数据导致空指针，审核接口返回 <code>400 + msg:null</code></li>
+</ul>
+<p><img src="/images/posts/%E9%BB%91%E5%90%8D%E5%8D%95%E5%AE%A1%E6%A0%B8%E6%9D%83%E9%99%90%E5%9B%9E%E6%94%B6%E4%BF%AE%E5%A4%8D%E5%AE%9E%E6%88%98/fig3-root-cause.png" alt="Bug根因分析图"><br><em>图1：Bug 根因分析 - 时机错误、空指针、删权不完整</em></p>
+<h2 id="第一轮修复：解决”时机错误”"><a href="#第一轮修复：解决”时机错误”" class="headerlink" title="第一轮修复：解决”时机错误”"></a>第一轮修复：解决”时机错误”</h2><h3 id="问题定位"><a href="#问题定位" class="headerlink" title="问题定位"></a>问题定位</h3><h4 id="1-拉黑申请阶段提前下发权限删除"><a href="#1-拉黑申请阶段提前下发权限删除" class="headerlink" title="1. 拉黑申请阶段提前下发权限删除"></a>1. 拉黑申请阶段提前下发权限删除</h4><p>排查 <code>EmployeeInfoController.pullBlack()</code> 发现：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 原代码逻辑（问题）</span></span><br><span class="line"><span class="meta">@PostMapping(&quot;/pull-black&quot;)</span></span><br><span class="line"><span class="keyword">public</span> Result <span class="title function_">pullBlack</span><span class="params">(<span class="meta">@RequestBody</span> BlackListDTO dto)</span> &#123;</span><br><span class="line">    <span class="comment">// 1. 更新人员状态为&quot;拉黑审核中&quot;</span></span><br><span class="line">    employeeInfoService.updateStatus(employeeId, <span class="number">7</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 2. ❌ 立即创建权限删除下发任务</span></span><br><span class="line">    privilegeDeployService.deploy(employeeId, Arrays.asList(<span class="number">5</span>, <span class="number">9</span>, <span class="number">14</span>, <span class="number">18</span>));</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 3. 写入待审核记录</span></span><br><span class="line">    blackListService.save(blackListEntity);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>问题分析</strong>：</p>
+<ul>
+<li>定时任务只认”待下发记录”，不认”黑名单审核状态”</li>
+<li>一旦创建下发任务，就会直接开始执行权限回收</li>
+<li>这与”审核通过后才删权”的业务期望完全不符</li>
+</ul>
+<h4 id="2-黑名单审核通过时空指针"><a href="#2-黑名单审核通过时空指针" class="headerlink" title="2. 黑名单审核通过时空指针"></a>2. 黑名单审核通过时空指针</h4><p>接口 <code>/v1/employeewhitelist/black-audit</code> 返回 <code>400 + msg:null</code>，最终定位到：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">NullPointerException at DbServiceImpl.getSqlSegment(DbServiceImpl.java:225)</span><br></pre></td></tr></table></figure>
+
+<p><strong>根因</strong>：</p>
+<ul>
+<li><code>blackAudit()</code> 最后会同步僵尸用户状态</li>
+<li>按 <code>phone_no + company_id</code> 查询 <code>visitor_employee_zombie</code></li>
+<li>旧的黑名单记录里 <code>companyId</code> 没有被写入</li>
+<li>对 <code>null</code> 做 <code>toString()</code> 导致空指针</li>
+</ul>
+<h3 id="修复方案"><a href="#修复方案" class="headerlink" title="修复方案"></a>修复方案</h3><h4 id="改动-1：移除申请阶段的权限下发"><a href="#改动-1：移除申请阶段的权限下发" class="headerlink" title="改动 1：移除申请阶段的权限下发"></a>改动 1：移除申请阶段的权限下发</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// EmployeeInfoController.java</span></span><br><span class="line"><span class="meta">@PostMapping(&quot;/pull-black&quot;)</span></span><br><span class="line"><span class="keyword">public</span> Result <span class="title function_">pullBlack</span><span class="params">(<span class="meta">@RequestBody</span> BlackListDTO dto)</span> &#123;</span><br><span class="line">    <span class="comment">// 1. 更新人员状态为&quot;拉黑审核中&quot;</span></span><br><span class="line">    employeeInfoService.updateStatus(employeeId, <span class="number">7</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 2. ✓ 不再提前下发权限删除</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 3. 写入待审核记录（补充 companyId）</span></span><br><span class="line">    blackListEntity.setCompanyId(companyId);  <span class="comment">// 新增：防止后续空指针</span></span><br><span class="line">    blackListService.save(blackListEntity);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="改动-2：在审核通过时统一下发"><a href="#改动-2：在审核通过时统一下发" class="headerlink" title="改动 2：在审核通过时统一下发"></a>改动 2：在审核通过时统一下发</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// EmployeeWhiteListServiceImpl.java</span></span><br><span class="line"><span class="meta">@Transactional</span></span><br><span class="line"><span class="keyword">public</span> Result <span class="title function_">blackAudit</span><span class="params">(BlackAuditDTO dto)</span> &#123;</span><br><span class="line">    <span class="comment">// ... 审核逻辑 ...</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (approved) &#123;</span><br><span class="line">        <span class="comment">// ✓ 审核通过时才下发权限回收</span></span><br><span class="line">        privilegeDeployService.deploy(employeeId, Arrays.asList(<span class="number">5</span>, <span class="number">9</span>, <span class="number">14</span>));</span><br><span class="line">        <span class="comment">// 9 携带电梯操作 18</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ... 同步僵尸用户 ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="改动-3：增强日志与容错"><a href="#改动-3：增强日志与容错" class="headerlink" title="改动 3：增强日志与容错"></a>改动 3：增强日志与容错</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 新增多处日志，便于问题定位</span></span><br><span class="line">log.info(<span class="string">&quot;黑名单记录查询结果: &#123;&#125;&quot;</span>, blackListEntity);</span><br><span class="line">log.info(<span class="string">&quot;当前登录用户: &#123;&#125;&quot;</span>, currentUser);</span><br><span class="line">log.info(<span class="string">&quot;关联员工信息: &#123;&#125;&quot;</span>, employeeInfo);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 对历史脏数据增加兜底</span></span><br><span class="line"><span class="keyword">if</span> (detail.getPhoneNo() == <span class="literal">null</span> || detail.getCompanyId() == <span class="literal">null</span>) &#123;</span><br><span class="line">    log.warn(<span class="string">&quot;跳过僵尸用户同步，数据不完整: phoneNo=&#123;&#125;, companyId=&#123;&#125;&quot;</span>,</span><br><span class="line">             detail.getPhoneNo(), detail.getCompanyId());</span><br><span class="line">    <span class="keyword">return</span>; <span class="comment">// 跳过同步，不打断主流程</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="第一轮验证"><a href="#第一轮验证" class="headerlink" title="第一轮验证"></a>第一轮验证</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">mvn <span class="built_in">test</span> -Dtest=BlacklistAuditTimingTest</span><br><span class="line"></span><br><span class="line"><span class="comment"># 测试结果</span></span><br><span class="line">Tests run: 3, Failures: 0, Errors: 0, Skipped: 0</span><br></pre></td></tr></table></figure>
+
+<p>验证通过：</p>
+<ul>
+<li>✓ 拉黑申请阶段不再调用 <code>privilegeDeployService.deploy()</code></li>
+<li>✓ 新写入的黑名单记录会带上 <code>companyId</code></li>
+<li>✓ 审核通过时才会创建 <code>5 / 9 / 14</code> 任务</li>
+<li>✓ 黑名单记录缺 <code>companyId</code> 时，不再因为同步僵尸用户而抛异常</li>
+</ul>
+<h2 id="第二轮修复：解决”删权不完整”"><a href="#第二轮修复：解决”删权不完整”" class="headerlink" title="第二轮修复：解决”删权不完整”"></a>第二轮修复：解决”删权不完整”</h2><h3 id="问题发现"><a href="#问题发现" class="headerlink" title="问题发现"></a>问题发现</h3><p>第一轮修复后，人工联调发现：</p>
+<blockquote>
+<p>黑名单审核通过后，用户的门禁服务、梯控授权、设备授权状态看起来仍然正常。</p>
+</blockquote>
+<p><strong>排查发现</strong>：原实现只下发了部分回收动作：</p>
+<table>
+<thead>
+<tr>
+<th>操作类型</th>
+<th>编码</th>
+<th>是否下发</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>注销卡</td>
+<td>5</td>
+<td>✓</td>
+<td>已下发</td>
+</tr>
+<tr>
+<td>黑名单</td>
+<td>9</td>
+<td>✓</td>
+<td>已下发，带电梯 18</td>
+</tr>
+<tr>
+<td>权限组删除门禁</td>
+<td>14</td>
+<td>✓</td>
+<td>已下发</td>
+</tr>
+<tr>
+<td><strong>注销二维码</strong></td>
+<td><strong>15</strong></td>
+<td><strong>✗</strong></td>
+<td><strong>遗漏</strong></td>
+</tr>
+<tr>
+<td><strong>注销人脸</strong></td>
+<td><strong>16</strong></td>
+<td><strong>✗</strong></td>
+<td><strong>遗漏</strong></td>
+</tr>
+<tr>
+<td><strong>临时权限清理</strong></td>
+<td>-</td>
+<td><strong>✗</strong></td>
+<td><strong>遗漏</strong></td>
+</tr>
+</tbody></table>
+<p><strong>影响</strong>：如果员工主要靠二维码或人脸通行，看起来就像”没删权限”。</p>
+<h3 id="根因分析"><a href="#根因分析" class="headerlink" title="根因分析"></a>根因分析</h3><h4 id="1-下发语义不完整"><a href="#1-下发语义不完整" class="headerlink" title="1. 下发语义不完整"></a>1. 下发语义不完整</h4><p>原代码只处理了 <code>5 / 9 / 14</code>，没有处理 <code>15 / 16</code>，也没有清理 <code>priviledge_temp</code> 临时权限关系。</p>
+<h4 id="2-纯删除设备请求被拦截"><a href="#2-纯删除设备请求被拦截" class="headerlink" title="2. 纯删除设备请求被拦截"></a>2. 纯删除设备请求被拦截</h4><p><code>PrivilegeDeployServiceImpl.deploy()</code> 有一个限制：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 原代码逻辑（问题）</span></span><br><span class="line"><span class="keyword">public</span> DeployResult <span class="title function_">deploy</span><span class="params">(DeployRequest request)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (CollectionUtils.isEmpty(request.getDeviceIds()) &amp;&amp; !request.isIncludeElevator()) &#123;</span><br><span class="line">        <span class="keyword">return</span> DeployResult.fail(<span class="string">&quot;没有可下发的设备&quot;</span>);  <span class="comment">// ❌ 拦截了纯删除请求</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>问题</strong>：黑名单审核后的删除门禁，语义应该是”只删不保留”。旧逻辑把”只有删除设备、没有保留设备”的请求拦掉了。</p>
+<h3 id="修复方案-1"><a href="#修复方案-1" class="headerlink" title="修复方案"></a>修复方案</h3><h4 id="改动-1：完整回收所有权限类型"><a href="#改动-1：完整回收所有权限类型" class="headerlink" title="改动 1：完整回收所有权限类型"></a>改动 1：完整回收所有权限类型</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// EmployeeWhiteListServiceImpl.java</span></span><br><span class="line"><span class="meta">@Transactional</span></span><br><span class="line"><span class="keyword">public</span> Result <span class="title function_">blackAudit</span><span class="params">(BlackAuditDTO dto)</span> &#123;</span><br><span class="line">    <span class="comment">// ... 审核逻辑 ...</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (approved) &#123;</span><br><span class="line">        <span class="comment">// 1. 先收集当前所有授权设备</span></span><br><span class="line">        List&lt;Long&gt; allDevices = privilegeDeployService.collectAllDevices(employeeId);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 2. 依次下发完整的权限回收</span></span><br><span class="line">        privilegeDeployService.deploy(createRequest(employeeId, <span class="number">5</span>));   <span class="comment">// 注销卡</span></span><br><span class="line">        privilegeDeployService.deploy(createRequest(employeeId, <span class="number">15</span>));  <span class="comment">// ✓ 注销二维码</span></span><br><span class="line">        privilegeDeployService.deploy(createRequest(employeeId, <span class="number">16</span>));  <span class="comment">// ✓ 注销人脸</span></span><br><span class="line">        privilegeDeployService.deploy(createRequest(employeeId, <span class="number">9</span>));   <span class="comment">// 黑名单</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">// 3. 清理业务关系</span></span><br><span class="line">        clearPrivilegeRelations(employeeId);  <span class="comment">// ✓ 删除权限组关系 + 临时权限关系</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">// 4. 最后下发删除门禁（携带收集到的设备作为 deletedDeviceIds）</span></span><br><span class="line">        <span class="type">DeployRequest</span> <span class="variable">deleteRequest</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">DeployRequest</span>();</span><br><span class="line">        deleteRequest.setEmployeeId(employeeId);</span><br><span class="line">        deleteRequest.setOpType(<span class="number">14</span>);  <span class="comment">// 权限组删除门禁</span></span><br><span class="line">        deleteRequest.setDeletedDeviceIds(allDevices);  <span class="comment">// ✓ 纯删除语义</span></span><br><span class="line">        deleteRequest.setIncludeElevator(<span class="literal">true</span>);         <span class="comment">// ✓ 同时注销电梯</span></span><br><span class="line">        deleteRequest.setElevatorOpType(<span class="number">18</span>);</span><br><span class="line">        privilegeDeployService.deploy(deleteRequest);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">clearPrivilegeRelations</span><span class="params">(Long employeeId)</span> &#123;</span><br><span class="line">    <span class="comment">// 删除权限组关系</span></span><br><span class="line">    privilegeGroupRelationService.deleteByEmployeeId(employeeId);</span><br><span class="line">    <span class="comment">// 删除临时权限关系</span></span><br><span class="line">    privilegeTempService.deleteByEmployeeId(employeeId);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="改动-2：支持纯删除请求"><a href="#改动-2：支持纯删除请求" class="headerlink" title="改动 2：支持纯删除请求"></a>改动 2：支持纯删除请求</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// PrivilegeDeployServiceImpl.java</span></span><br><span class="line"><span class="keyword">public</span> DeployResult <span class="title function_">deploy</span><span class="params">(DeployRequest request)</span> &#123;</span><br><span class="line">    <span class="type">boolean</span> <span class="variable">hasDevices</span> <span class="operator">=</span> !CollectionUtils.isEmpty(request.getDeviceIds());</span><br><span class="line">    <span class="type">boolean</span> <span class="variable">hasDeletedDevices</span> <span class="operator">=</span> !CollectionUtils.isEmpty(request.getDeletedDeviceIds());</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ✓ 允许&quot;没有保留设备，但有 deletedDeviceIds&quot;的请求继续下发</span></span><br><span class="line">    <span class="keyword">if</span> (!hasDevices &amp;&amp; !request.isIncludeElevator() &amp;&amp; !hasDeletedDevices) &#123;</span><br><span class="line">        <span class="keyword">return</span> DeployResult.fail(<span class="string">&quot;没有可下发的设备&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ... 执行下发 ...</span></span><br><span class="line"></span><br><span class="line">    result.setSuccess(<span class="literal">true</span>);  <span class="comment">// ✓ 补上成功状态赋值</span></span><br><span class="line">    <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="第二轮验证"><a href="#第二轮验证" class="headerlink" title="第二轮验证"></a>第二轮验证</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">mvn -gs E:\maven363\pai-settings.xml -s E:\maven363\pai-settings.xml \</span><br><span class="line">  -Dmaven.repo.local=C:\Users\张\.m2\repository \</span><br><span class="line">  -Dtest=BlacklistAuditTimingTest <span class="built_in">test</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 测试结果</span></span><br><span class="line">Tests run: 4, Failures: 0, Errors: 0, Skipped: 0</span><br><span class="line">BUILD SUCCESS</span><br></pre></td></tr></table></figure>
+
+<p>完整验证通过：</p>
+<ul>
+<li>✓ 审核通过后完整回收卡、二维码、人脸、门禁、梯控</li>
+<li>✓ 删除权限组关系和临时权限关系</li>
+<li>✓ 纯删除设备任务能够落库（<code>is_delete=1</code>）</li>
+<li>✓ 历史不完整黑名单数据不会导致审核崩溃</li>
+</ul>
+<h2 id="关键代码对比"><a href="#关键代码对比" class="headerlink" title="关键代码对比"></a>关键代码对比</h2><h3 id="修复前后流程对比"><a href="#修复前后流程对比" class="headerlink" title="修复前后流程对比"></a>修复前后流程对比</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">修复前：</span><br><span class="line">pull-black ──→ 改状态(7) ──→ 立即下发(5/9/14/18) ──→ 写入待审核记录</span><br><span class="line">                                              ↓</span><br><span class="line">black-audit ──→ 审核通过 ──→ 下发空操作 ──→ 结束</span><br><span class="line"></span><br><span class="line">修复后：</span><br><span class="line">pull-black ──→ 改状态(7) ──→ 写入待审核记录（带 companyId）</span><br><span class="line">                                              ↓</span><br><span class="line">black-audit ──→ 审核通过 ──→ 下发(5/15/16/9) ──→ 清理关系 ──→ 下发(14+18) ──→ 结束</span><br></pre></td></tr></table></figure>
+
+<p><img src="/images/posts/%E9%BB%91%E5%90%8D%E5%8D%95%E5%AE%A1%E6%A0%B8%E6%9D%83%E9%99%90%E5%9B%9E%E6%94%B6%E4%BF%AE%E5%A4%8D%E5%AE%9E%E6%88%98/fig1-flow-comparison.png" alt="修复前后流程对比"><br><em>图2：修复前后流程对比 - 从”提前下发”到”审核后完整回收”</em></p>
+<h3 id="权限回收覆盖对比"><a href="#权限回收覆盖对比" class="headerlink" title="权限回收覆盖对比"></a>权限回收覆盖对比</h3><table>
+<thead>
+<tr>
+<th>权限类型</th>
+<th>修复前</th>
+<th>修复后</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>卡</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>二维码</td>
+<td>✗</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>人脸</td>
+<td>✗</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>黑名单记录</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>门禁删除</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>电梯注销</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>权限组关系</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td><strong>临时权限关系</strong></td>
+<td><strong>✗</strong></td>
+<td><strong>✓</strong></td>
+</tr>
+</tbody></table>
+<p><img src="/images/posts/%E9%BB%91%E5%90%8D%E5%8D%95%E5%AE%A1%E6%A0%B8%E6%9D%83%E9%99%90%E5%9B%9E%E6%94%B6%E4%BF%AE%E5%A4%8D%E5%AE%9E%E6%88%98/fig2-permission-coverage.png" alt="权限维度覆盖对比"><br><em>图3：权限维度覆盖对比 - 修复后完整覆盖 8 个维度</em></p>
+<h2 id="经验总结"><a href="#经验总结" class="headerlink" title="经验总结"></a>经验总结</h2><h3 id="1-时机把控是权限流程的核心"><a href="#1-时机把控是权限流程的核心" class="headerlink" title="1. 时机把控是权限流程的核心"></a>1. 时机把控是权限流程的核心</h3><p>权限操作必须严格对齐业务状态流转，任何”提前”或”延迟”都可能导致严重的安全隐患。</p>
+<h3 id="2-完整的权限维度清单"><a href="#2-完整的权限维度清单" class="headerlink" title="2. 完整的权限维度清单"></a>2. 完整的权限维度清单</h3><p>在设计权限回收功能时，必须有一份完整的”权限维度清单”：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">物理凭证：卡、二维码、人脸</span><br><span class="line">权限记录：黑名单、白名单、临时权限</span><br><span class="line">设备维度：门禁、梯控、停车场</span><br><span class="line">关系数据：权限组关系、临时权限关系</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-历史数据兼容性设计"><a href="#3-历史数据兼容性设计" class="headerlink" title="3. 历史数据兼容性设计"></a>3. 历史数据兼容性设计</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 好做法：对可能为空的字段做防御</span></span><br><span class="line"><span class="keyword">if</span> (detail.getPhoneNo() == <span class="literal">null</span> || detail.getCompanyId() == <span class="literal">null</span>) &#123;</span><br><span class="line">    log.warn(<span class="string">&quot;数据不完整，跳过附属逻辑&quot;</span>);</span><br><span class="line">    <span class="keyword">return</span>; <span class="comment">// 不打断主流程</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 更好做法：逐步推动数据治理，回填缺失字段</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="4-测试覆盖要全面"><a href="#4-测试覆盖要全面" class="headerlink" title="4. 测试覆盖要全面"></a>4. 测试覆盖要全面</h3><p>这次问题本质是”时机错误 + 历史脏数据兼容不足”，测试需要覆盖：</p>
+<ul>
+<li>正常路径：新数据完整流程</li>
+<li>边界条件：历史脏数据、缺失字段</li>
+<li>异常输入：空指针、非法状态</li>
+</ul>
+<h3 id="5-日志是排查问题的关键"><a href="#5-日志是排查问题的关键" class="headerlink" title="5. 日志是排查问题的关键"></a>5. 日志是排查问题的关键</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 关键位置必须打日志</span></span><br><span class="line">log.info(<span class="string">&quot;入口参数: &#123;&#125;&quot;</span>, dto);</span><br><span class="line">log.info(<span class="string">&quot;查询结果: &#123;&#125;&quot;</span>, entity);</span><br><span class="line">log.info(<span class="string">&quot;当前用户: &#123;&#125;&quot;</span>, currentUser);</span><br><span class="line">log.info(<span class="string">&quot;操作结果: &#123;&#125;&quot;</span>, result);</span><br></pre></td></tr></table></figure>
+
+<h2 id="推荐后续动作"><a href="#推荐后续动作" class="headerlink" title="推荐后续动作"></a>推荐后续动作</h2><ol>
+<li><p><strong>人工再验证一次完整业务流</strong></p>
+<ul>
+<li>发起拉黑申请</li>
+<li>确认申请阶段不产生权限删除下发</li>
+<li>审核通过后再确认产生 <code>5 / 15 / 16 / 9 / 14 / 18</code></li>
+</ul>
+</li>
+<li><p><strong>抽样检查历史黑名单数据</strong></p>
+<ul>
+<li>关注 <code>visit_white_list.type = 2</code> 的记录里 <code>company_id</code> 是否存在为空的情况</li>
+</ul>
+</li>
+<li><p><strong>数据治理（如需要）</strong></p>
+<ul>
+<li>如果业务强依赖 <code>visitor_employee_zombie</code> 的黑名单状态，建议增加一次性数据修复脚本，回填历史黑名单记录的 <code>company_id</code></li>
+</ul>
+</li>
+</ol>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>本次修复经历了两轮迭代：</p>
+<ol>
+<li><strong>第一轮</strong>：解决了”时机错误”，确保权限回收只在审核通过后执行，同时兼容了历史脏数据</li>
+<li><strong>第二轮</strong>：解决了”删权不完整”，扩展了权限回收覆盖面，从”卡 + 黑名单 + 门禁”升级到”卡 + 二维码 + 人脸 + 临时权限 + 门禁 + 梯控”的完整回收</li>
+</ol>
+<p>两次修复都遵循”最小影响面”原则，只修改黑名单审核这条链路，不动全局的停用、离职、注销等其他流程。这种精准打击的策略，既能快速修复问题，又能控制回归风险。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Spring-Boot/" rel="tag"># Spring Boot</a>
+              <a href="/tags/Java/" rel="tag"># Java</a>
+              <a href="/tags/Bug%E4%BF%AE%E5%A4%8D/" rel="tag"># Bug修复</a>
+              <a href="/tags/%E6%9D%83%E9%99%90%E7%AE%A1%E7%90%86/" rel="tag"># 权限管理</a>
+              <a href="/tags/%E7%89%A9%E8%81%94%E7%BD%91/" rel="tag"># 物联网</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/03/24/%E5%A4%9AAgent%E5%8D%8F%E4%BD%9C%E5%BC%80%E5%8F%91Android%E5%BA%94%E7%94%A8%E5%AE%9E%E6%88%98%E6%80%BB%E7%BB%93/" rel="prev" title="多Agent协作开发Android应用：Agent Team Lab 实战总结">
+                  <i class="fa fa-angle-left"></i> 多Agent协作开发Android应用：Agent Team Lab 实战总结
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  
+  <div class="comments giscus-container">
+  </div>
+  
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">zhlifeiy35</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/zhdmm35" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"zhdmm35/zhdmm35.github.io","repo_id":"R_kgDOON4bhg","category":"Announcements","category_id":"DIC_kwDOON4bhs4C3dEc","mapping":"pathname","strict":0,"reactions_enabled":1,"emit_metadata":0,"theme":"preferred_color_scheme","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+
+<script>
+document.addEventListener('page:loaded', () => {
+  if (!CONFIG.page.comments) return;
+
+  NexT.utils.loadComments('.giscus-container')
+    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
+      attributes: {
+        async                   : true,
+        crossOrigin             : 'anonymous',
+        'data-repo'             : CONFIG.giscus.repo,
+        'data-repo-id'          : CONFIG.giscus.repo_id,
+        'data-category'         : CONFIG.giscus.category,
+        'data-category-id'      : CONFIG.giscus.category_id,
+        'data-mapping'          : CONFIG.giscus.mapping,
+        'data-strict'           : CONFIG.giscus.strict,
+        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
+        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
+        'data-theme'            : CONFIG.giscus.theme,
+        'data-lang'             : CONFIG.giscus.lang,
+        'data-input-position'   : CONFIG.giscus.input_position,
+        'data-loading'          : CONFIG.giscus.loading
+      },
+      parentNode: document.querySelector('.giscus-container')
+    }));
+});
+</script>
+
+</body>
+</html>
