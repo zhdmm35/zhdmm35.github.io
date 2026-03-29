@@ -121,281 +121,6 @@
       </tags>
   </entry>
   <entry>
-    <title>aioffice 反向代理开发：将 AI 编程工具额度转化为 OpenAI 兼容 API</title>
-    <url>/2026/03/01/aioffice-%E5%8F%8D%E5%90%91%E4%BB%A3%E7%90%86%E5%BC%80%E5%8F%91%EF%BC%9A%E5%B0%86-AI-%E7%BC%96%E7%A8%8B%E5%B7%A5%E5%85%B7%E9%A2%9D%E5%BA%A6%E8%BD%AC%E5%8C%96%E4%B8%BA-OpenAI-%E5%85%BC%E5%AE%B9-API/</url>
-    <content><![CDATA[<p>aioffice 是一款基于 VSCode 二次开发的 AI 编程工具，提供了 AI 对话、代码补全等功能。为了能在其他工具（如 opencode、Continue 等）中复用 aioffice 的 AI 调用额度，我开发了一个反向代理服务，将 aioffice 的后端 API 转化为标准的 OpenAI 兼容格式。</p>
-<span id="more"></span>
-
-<h2 id="技术分析"><a href="#技术分析" class="headerlink" title="技术分析"></a>技术分析</h2><h3 id="通信架构分析"><a href="#通信架构分析" class="headerlink" title="通信架构分析"></a>通信架构分析</h3><p>通过分析 aioffice 的源代码和配置文件，发现：</p>
-<table>
-<thead>
-<tr>
-<th>项目</th>
-<th>值</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>后端服务器地址</td>
-<td><code>http://14.103.247.146:8094</code></td>
-</tr>
-<tr>
-<td>API 格式</td>
-<td>OpenAI 兼容（<code>/v1/chat/completions</code>）</td>
-</tr>
-<tr>
-<td>认证方式</td>
-<td>Bearer Token（sk- 前缀的 API Key）</td>
-</tr>
-<tr>
-<td>Token 存储位置</td>
-<td>SQLite 数据库</td>
-</tr>
-</tbody></table>
-<p>Token 存储在 SQLite 数据库中：</p>
-<ul>
-<li><strong>路径</strong>：<code>%APPDATA%/AiOffice/User/globalStorage/state.vscdb</code></li>
-<li><strong>键名</strong>：<code>coai.auth.token</code>（登录凭证）、<code>coai.api.key</code>（API 调用密钥）</li>
-</ul>
-<h3 id="源码定位方法"><a href="#源码定位方法" class="headerlink" title="源码定位方法"></a>源码定位方法</h3><p>aioffice 基于 Void Editor 开发，代码位于安装目录的 <code>resources/app</code> 下（未打包为 asar）。通过搜索关键字符串定位到核心逻辑：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">resources/app/out/vs/workbench/workbench.desktop.main.js</span><br></pre></td></tr></table></figure>
-
-<p>关键代码片段：</p>
-<figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="keyword">var</span> <span class="variable constant_">COAI_API_URL</span> = <span class="string">&quot;http://14.103.247.146:8094&quot;</span>;</span><br><span class="line"><span class="comment">// ...</span></span><br><span class="line"><span class="variable language_">this</span>.<span class="property">apiClient</span> = <span class="keyword">new</span> <span class="title class_">CoaiApiClient</span>(<span class="function">() =&gt;</span> <span class="variable constant_">COAI_API_URL</span>, <span class="function">() =&gt;</span> <span class="variable language_">this</span>.<span class="title function_">getToken</span>(), <span class="variable language_">this</span>.<span class="property">requestService</span>);</span><br></pre></td></tr></table></figure>
-
-<h2 id="架构设计"><a href="#架构设计" class="headerlink" title="架构设计"></a>架构设计</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">┌─────────────────┐      ┌──────────────────┐      ┌─────────────────┐</span><br><span class="line">│  任意客户端      │ ──→ │  本地代理服务     │ ──→ │  aioffice 后端  │</span><br><span class="line">│  (Cursor等)     │      │  localhost:18273 │      │  14.103.247.146 │</span><br><span class="line">└─────────────────┘      └──────────────────┘      └─────────────────┘</span><br><span class="line">                                │</span><br><span class="line">                                ↓</span><br><span class="line">                         ┌──────────────┐</span><br><span class="line">                         │ 自动提取 Token│</span><br><span class="line">                         │ (SQLite读取) │</span><br><span class="line">                         └──────────────┘</span><br></pre></td></tr></table></figure>
-
-<h3 id="核心模块"><a href="#核心模块" class="headerlink" title="核心模块"></a>核心模块</h3><table>
-<thead>
-<tr>
-<th>模块</th>
-<th>职责</th>
-</tr>
-</thead>
-<tbody><tr>
-<td><code>token.js</code></td>
-<td>从 SQLite 数据库读取认证信息，支持自动刷新</td>
-</tr>
-<tr>
-<td><code>proxy.js</code></td>
-<td>转发请求到 aioffice 后端，处理流式响应</td>
-</tr>
-<tr>
-<td><code>chat.js</code></td>
-<td><code>/v1/chat/completions</code> 路由处理</td>
-</tr>
-<tr>
-<td><code>models.js</code></td>
-<td><code>/v1/models</code> 路由处理</td>
-</tr>
-</tbody></table>
-<h2 id="踩坑记录"><a href="#踩坑记录" class="headerlink" title="踩坑记录"></a>踩坑记录</h2><h3 id="坑一：better-sqlite3-编译失败"><a href="#坑一：better-sqlite3-编译失败" class="headerlink" title="坑一：better-sqlite3 编译失败"></a>坑一：better-sqlite3 编译失败</h3><p><strong>问题</strong>：最初选择 <code>better-sqlite3</code> 作为 SQLite 驱动，但 Windows 上需要 Visual Studio 编译工具：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">gyp ERR! find VS could not find Visual Studio installation to use</span><br></pre></td></tr></table></figure>
-
-<p><strong>解决</strong>：改用纯 JavaScript 实现的 <code>sql.js</code>，无需编译：</p>
-<figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="comment">// package.json</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;dependencies&quot;</span>: &#123;</span><br><span class="line">    <span class="string">&quot;sql.js&quot;</span>: <span class="string">&quot;^1.10.0&quot;</span>  <span class="comment">// 替代 better-sqlite3</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p><code>sql.js</code> 的 API 略有不同，需要注意：</p>
-<figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="keyword">const</span> initSqlJs = <span class="built_in">require</span>(<span class="string">&#x27;sql.js&#x27;</span>);</span><br><span class="line"><span class="keyword">const</span> fs = <span class="built_in">require</span>(<span class="string">&#x27;fs&#x27;</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 初始化（异步）</span></span><br><span class="line"><span class="keyword">const</span> <span class="variable constant_">SQL</span> = <span class="keyword">await</span> <span class="title function_">initSqlJs</span>();</span><br><span class="line"></span><br><span class="line"><span class="comment">// 读取数据库文件</span></span><br><span class="line"><span class="keyword">const</span> fileBuffer = fs.<span class="title function_">readFileSync</span>(dbPath);</span><br><span class="line"><span class="keyword">const</span> db = <span class="keyword">new</span> <span class="variable constant_">SQL</span>.<span class="title class_">Database</span>(fileBuffer);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 查询（返回格式不同）</span></span><br><span class="line"><span class="keyword">const</span> result = db.<span class="title function_">exec</span>(<span class="string">&quot;SELECT value FROM ItemTable WHERE key = ?&quot;</span>);</span><br><span class="line"><span class="comment">// result[0].values[0][0] 获取第一行第一列的值</span></span><br></pre></td></tr></table></figure>
-
-<h3 id="坑二：Payload-Too-Large-错误"><a href="#坑二：Payload-Too-Large-错误" class="headerlink" title="坑二：Payload Too Large 错误"></a>坑二：Payload Too Large 错误</h3><p><strong>问题</strong>：在 opencode 中使用时报错：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">PayloadTooLargeError: request entity too large</span><br></pre></td></tr></table></figure>
-
-<p><strong>原因</strong>：Express 的 <code>body-parser</code> 默认限制请求体为 100kb，而 AI 对话的上下文可能很大。</p>
-<p><strong>解决</strong>：增加请求体大小限制：</p>
-<figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 原来</span></span><br><span class="line">app.<span class="title function_">use</span>(express.<span class="title function_">json</span>());</span><br><span class="line"></span><br><span class="line"><span class="comment">// 修改为</span></span><br><span class="line">app.<span class="title function_">use</span>(express.<span class="title function_">json</span>(&#123; <span class="attr">limit</span>: <span class="string">&#x27;50mb&#x27;</span> &#125;));</span><br></pre></td></tr></table></figure>
-
-<h3 id="坑三：opencode-配置缺少-apiKey"><a href="#坑三：opencode-配置缺少-apiKey" class="headerlink" title="坑三：opencode 配置缺少 apiKey"></a>坑三：opencode 配置缺少 apiKey</h3><p><strong>问题</strong>：即使代理会自动处理认证，opencode 仍需要一个 apiKey 字段才能发送请求。</p>
-<p><strong>解决</strong>：在 opencode 配置中添加任意 apiKey：</p>
-<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;aioffice&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;name&quot;</span><span class="punctuation">:</span> <span class="string">&quot;ao&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;npm&quot;</span><span class="punctuation">:</span> <span class="string">&quot;@ai-sdk/openai-compatible&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;models&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">      <span class="attr">&quot;claude-sonnet-4-6-thinking&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;name&quot;</span><span class="punctuation">:</span> <span class="string">&quot;claude-sonnet-4-6-thinking&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;glm-4.7&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;name&quot;</span><span class="punctuation">:</span> <span class="string">&quot;glm-4.7&quot;</span> <span class="punctuation">&#125;</span></span><br><span class="line">    <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;options&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">      <span class="attr">&quot;apiKey&quot;</span><span class="punctuation">:</span> <span class="string">&quot;sk-fandai&quot;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;baseURL&quot;</span><span class="punctuation">:</span> <span class="string">&quot;http://localhost:18273/v1&quot;</span></span><br><span class="line">    <span class="punctuation">&#125;</span></span><br><span class="line">  <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
-
-<h3 id="坑四：后台进程不稳定"><a href="#坑四：后台进程不稳定" class="headerlink" title="坑四：后台进程不稳定"></a>坑四：后台进程不稳定</h3><p><strong>问题</strong>：在 Windows 上使用 <code>&amp;</code> 后台运行 Node.js 进程不稳定，容易退出。</p>
-<p><strong>解决</strong>：使用 <code>start</code> 命令在新窗口中运行：</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">cmd //c <span class="string">&quot;start /min cmd /c node src/index.js&quot;</span></span><br></pre></td></tr></table></figure>
-
-<h2 id="最终实现"><a href="#最终实现" class="headerlink" title="最终实现"></a>最终实现</h2><h3 id="项目结构"><a href="#项目结构" class="headerlink" title="项目结构"></a>项目结构</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">fandai/</span><br><span class="line">├── src/</span><br><span class="line">│   ├── index.js          # 入口，Express 服务</span><br><span class="line">│   ├── config.js         # 配置（端口、后端地址）</span><br><span class="line">│   ├── routes/</span><br><span class="line">│   │   ├── chat.js       # /v1/chat/completions</span><br><span class="line">│   │   └── models.js     # /v1/models</span><br><span class="line">│   └── services/</span><br><span class="line">│       ├── token.js      # Token 自动提取</span><br><span class="line">│       └── proxy.js      # 请求转发</span><br><span class="line">├── package.json</span><br><span class="line">└── README.md</span><br></pre></td></tr></table></figure>
-
-<h3 id="核心代码"><a href="#核心代码" class="headerlink" title="核心代码"></a>核心代码</h3><p><strong>Token 自动提取</strong> (<code>services/token.js</code>)：</p>
-<figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="keyword">const</span> initSqlJs = <span class="built_in">require</span>(<span class="string">&#x27;sql.js&#x27;</span>);</span><br><span class="line"><span class="keyword">const</span> fs = <span class="built_in">require</span>(<span class="string">&#x27;fs&#x27;</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">function</span> <span class="title function_">readFromDatabase</span>(<span class="params"></span>) &#123;</span><br><span class="line">  <span class="keyword">const</span> <span class="variable constant_">SQL</span> = <span class="keyword">await</span> <span class="title function_">initSqlJs</span>();</span><br><span class="line">  <span class="keyword">const</span> fileBuffer = fs.<span class="title function_">readFileSync</span>(<span class="variable constant_">DB_PATH</span>);</span><br><span class="line">  <span class="keyword">const</span> db = <span class="keyword">new</span> <span class="variable constant_">SQL</span>.<span class="title class_">Database</span>(fileBuffer);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> result = db.<span class="title function_">exec</span>(<span class="string">&quot;SELECT value FROM ItemTable WHERE key = &#x27;coai.api.key&#x27;&quot;</span>);</span><br><span class="line">  <span class="keyword">return</span> result.<span class="property">length</span> &gt; <span class="number">0</span> ? result[<span class="number">0</span>].<span class="property">values</span>[<span class="number">0</span>]?.[<span class="number">0</span>] : <span class="literal">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p><strong>请求转发</strong> (<code>services/proxy.js</code>)：</p>
-<figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="keyword">async</span> <span class="keyword">function</span> <span class="title function_">proxyChatCompletion</span>(<span class="params">req, res</span>) &#123;</span><br><span class="line">  <span class="keyword">const</span> apiKey = <span class="keyword">await</span> <span class="title function_">getApiKey</span>();</span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> response = <span class="keyword">await</span> axios.<span class="title function_">post</span>(</span><br><span class="line">    <span class="string">`<span class="subst">$&#123;COAI_API_URL&#125;</span>/v1/chat/completions`</span>,</span><br><span class="line">    req.<span class="property">body</span>,</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="attr">headers</span>: &#123; <span class="string">&#x27;Authorization&#x27;</span>: <span class="string">`Bearer <span class="subst">$&#123;apiKey&#125;</span>`</span> &#125;,</span><br><span class="line">      <span class="attr">responseType</span>: req.<span class="property">body</span>.<span class="property">stream</span> ? <span class="string">&#x27;stream&#x27;</span> : <span class="string">&#x27;json&#x27;</span></span><br><span class="line">    &#125;</span><br><span class="line">  );</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (req.<span class="property">body</span>.<span class="property">stream</span>) &#123;</span><br><span class="line">    res.<span class="title function_">setHeader</span>(<span class="string">&#x27;Content-Type&#x27;</span>, <span class="string">&#x27;text/event-stream&#x27;</span>);</span><br><span class="line">    response.<span class="property">data</span>.<span class="title function_">on</span>(<span class="string">&#x27;data&#x27;</span>, <span class="function"><span class="params">chunk</span> =&gt;</span> res.<span class="title function_">write</span>(chunk));</span><br><span class="line">    response.<span class="property">data</span>.<span class="title function_">on</span>(<span class="string">&#x27;end&#x27;</span>, <span class="function">() =&gt;</span> res.<span class="title function_">end</span>());</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    res.<span class="title function_">json</span>(response.<span class="property">data</span>);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="使用方式"><a href="#使用方式" class="headerlink" title="使用方式"></a>使用方式</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 安装依赖</span></span><br><span class="line">npm install</span><br><span class="line"></span><br><span class="line"><span class="comment"># 启动代理</span></span><br><span class="line">npm start</span><br><span class="line"></span><br><span class="line"><span class="comment"># 配置其他工具</span></span><br><span class="line"><span class="built_in">export</span> OPENAI_API_BASE=http://localhost:18273/v1</span><br><span class="line"><span class="built_in">export</span> OPENAI_API_KEY=any</span><br></pre></td></tr></table></figure>
-
-<h2 id="可用模型"><a href="#可用模型" class="headerlink" title="可用模型"></a>可用模型</h2><p>代理支持 aioffice 后端的所有模型，包括：</p>
-<table>
-<thead>
-<tr>
-<th>模型</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody><tr>
-<td><code>glm-4.7</code> &#x2F; <code>glm-5</code></td>
-<td>智谱 GLM 系列</td>
-</tr>
-<tr>
-<td><code>gpt-5.2</code> &#x2F; <code>gpt-5.3-codex</code></td>
-<td>GPT 系列</td>
-</tr>
-<tr>
-<td><code>claude-sonnet-4-6-thinking</code></td>
-<td>Claude 思维链模型</td>
-</tr>
-<tr>
-<td><code>gemini-3-pro-preview</code></td>
-<td>Gemini 3 Pro</td>
-</tr>
-</tbody></table>
-<h2 id="经验总结"><a href="#经验总结" class="headerlink" title="经验总结"></a>经验总结</h2><p>这个项目的核心价值在于：</p>
-<ul>
-<li><strong>协议转换</strong>：将私有 API 转化为标准 OpenAI 格式</li>
-<li><strong>认证自动化</strong>：自动提取和刷新 Token，用户无感知</li>
-<li><strong>通用兼容</strong>：任何支持 OpenAI API 的工具都能使用</li>
-</ul>
-<p>开发过程中主要踩了以下几个坑：</p>
-<ol>
-<li>SQLite 驱动在 Windows 上编译问题 → 用纯 JS 实现的 <code>sql.js</code></li>
-<li>Express 请求体大小限制 → 增加到 50mb</li>
-<li>客户端配置要求 → 填充任意 apiKey</li>
-<li>Windows 后台进程不稳定 → 用 <code>start</code> 命令</li>
-</ol>
-<p>最终都用比较简单的方式解决了，整个项目代码量不大，但实用性很强。</p>
-<hr>
-<p><strong>相关链接</strong>：<a href="https://github.com/zhdmm35/aioffice-proxy">项目仓库 - GitHub</a></p>
-]]></content>
-      <categories>
-        <category>后端开发</category>
-      </categories>
-      <tags>
-        <tag>踩坑记录</tag>
-        <tag>Node.js</tag>
-        <tag>OpenAI</tag>
-        <tag>反向代理</tag>
-        <tag>SQLite</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Hello World</title>
-    <url>/2026/02/27/hello-world/</url>
-    <content><![CDATA[<p>欢迎来到我的技术博客！这是第一篇测试文章，用于验证博客系统是否正常工作。</p>
-<span id="more"></span>
-
-<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p>
-<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p>
-<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p>
-<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
-]]></content>
-      <categories>
-        <category>其他</category>
-      </categories>
-      <tags>
-        <tag>Hexo</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>博客搭建记录</title>
-    <url>/2026/02/27/%E5%8D%9A%E5%AE%A2%E6%90%AD%E5%BB%BA%E8%AE%B0%E5%BD%95/</url>
-    <content><![CDATA[<p>终于拥有了自己的技术博客！这篇文章记录了整个搭建过程，从 Hexo 安装到 GitHub Pages 部署，希望能帮助到想搭建博客的朋友。</p>
-<span id="more"></span>
-
-<h2 id="技术选型"><a href="#技术选型" class="headerlink" title="技术选型"></a>技术选型</h2><table>
-<thead>
-<tr>
-<th>组件</th>
-<th>选择</th>
-<th>理由</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>静态生成器</td>
-<td>Hexo</td>
-<td>中文生态好，主题丰富，文档完善</td>
-</tr>
-<tr>
-<td>主题</td>
-<td>NexT</td>
-<td>简约清爽，功能强大，支持暗色模式</td>
-</tr>
-<tr>
-<td>托管</td>
-<td>GitHub Pages</td>
-<td>免费，稳定，自带 HTTPS</td>
-</tr>
-</tbody></table>
-<h2 id="搭建步骤"><a href="#搭建步骤" class="headerlink" title="搭建步骤"></a>搭建步骤</h2><h3 id="1-环境准备"><a href="#1-环境准备" class="headerlink" title="1. 环境准备"></a>1. 环境准备</h3><p>确保已安装：</p>
-<ul>
-<li>Node.js 18+</li>
-<li>Git</li>
-</ul>
-<h3 id="2-安装-Hexo"><a href="#2-安装-Hexo" class="headerlink" title="2. 安装 Hexo"></a>2. 安装 Hexo</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npm install -g hexo-cli</span><br><span class="line">hexo init blog</span><br><span class="line"><span class="built_in">cd</span> blog &amp;&amp; npm install</span><br></pre></td></tr></table></figure>
-
-<h3 id="3-安装-NexT-主题"><a href="#3-安装-NexT-主题" class="headerlink" title="3. 安装 NexT 主题"></a>3. 安装 NexT 主题</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npm install hexo-theme-next</span><br></pre></td></tr></table></figure>
-
-<p>修改 <code>_config.yml</code> 启用主题：</p>
-<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">theme:</span> <span class="string">next</span></span><br></pre></td></tr></table></figure>
-
-<h3 id="4-配置站点信息"><a href="#4-配置站点信息" class="headerlink" title="4. 配置站点信息"></a>4. 配置站点信息</h3><p>编辑 <code>_config.yml</code>：</p>
-<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">title:</span> <span class="string">我的技术博客</span></span><br><span class="line"><span class="attr">author:</span> <span class="string">zhlifeiy35</span></span><br><span class="line"><span class="attr">language:</span> <span class="string">zh-CN</span></span><br><span class="line"><span class="attr">timezone:</span> <span class="string">&#x27;Asia/Shanghai&#x27;</span></span><br></pre></td></tr></table></figure>
-
-<h3 id="5-配置主题功能"><a href="#5-配置主题功能" class="headerlink" title="5. 配置主题功能"></a>5. 配置主题功能</h3><p>创建 <code>_config.next.yml</code> 文件，配置：</p>
-<ul>
-<li>暗色&#x2F;亮色模式切换</li>
-<li>本地搜索</li>
-<li>代码高亮与复制</li>
-<li>分类和标签页面</li>
-</ul>
-<h3 id="6-安装搜索插件"><a href="#6-安装搜索插件" class="headerlink" title="6. 安装搜索插件"></a>6. 安装搜索插件</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npm install hexo-generator-searchdb</span><br></pre></td></tr></table></figure>
-
-<h3 id="7-部署到-GitHub-Pages"><a href="#7-部署到-GitHub-Pages" class="headerlink" title="7. 部署到 GitHub Pages"></a>7. 部署到 GitHub Pages</h3><ol>
-<li>在 GitHub 创建 <code>用户名.github.io</code> 仓库</li>
-<li>安装部署插件：<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npm install hexo-deployer-git</span><br></pre></td></tr></table></figure></li>
-<li>配置 <code>_config.yml</code>：<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">deploy:</span></span><br><span class="line">  <span class="attr">type:</span> <span class="string">git</span></span><br><span class="line">  <span class="attr">repo:</span> <span class="string">https://github.com/用户名/用户名.github.io.git</span></span><br><span class="line">  <span class="attr">branch:</span> <span class="string">main</span></span><br></pre></td></tr></table></figure></li>
-<li>部署：<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean &amp;&amp; hexo generate &amp;&amp; hexo deploy</span><br></pre></td></tr></table></figure></li>
-</ol>
-<h2 id="博客功能"><a href="#博客功能" class="headerlink" title="博客功能"></a>博客功能</h2><ul>
-<li><input checked="" disabled="" type="checkbox"> 简约清爽的界面</li>
-<li><input checked="" disabled="" type="checkbox"> 暗色&#x2F;亮色模式切换</li>
-<li><input checked="" disabled="" type="checkbox"> 本地搜索</li>
-<li><input checked="" disabled="" type="checkbox"> 代码高亮与一键复制</li>
-<li><input checked="" disabled="" type="checkbox"> 分类和标签</li>
-<li><input checked="" disabled="" type="checkbox"> RSS 订阅</li>
-<li><input disabled="" type="checkbox"> 评论系统（计划中）</li>
-<li><input disabled="" type="checkbox"> 自定义域名（计划中）</li>
-</ul>
-<h2 id="日常写作流程"><a href="#日常写作流程" class="headerlink" title="日常写作流程"></a>日常写作流程</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 新建文章</span></span><br><span class="line">hexo new post <span class="string">&quot;文章标题&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 本地预览</span></span><br><span class="line">hexo server</span><br><span class="line"></span><br><span class="line"><span class="comment"># 生成并部署</span></span><br><span class="line">hexo clean &amp;&amp; hexo generate &amp;&amp; hexo deploy</span><br><span class="line"></span><br><span class="line"><span class="comment"># 或一键部署</span></span><br><span class="line">hexo d -g</span><br></pre></td></tr></table></figure>
-
-<h2 id="后续计划"><a href="#后续计划" class="headerlink" title="后续计划"></a>后续计划</h2><ul>
-<li><input disabled="" type="checkbox"> 完善 About 页面</li>
-<li><input disabled="" type="checkbox"> 添加评论系统（Giscus）</li>
-<li><input disabled="" type="checkbox"> 绑定自定义域名</li>
-<li><input disabled="" type="checkbox"> 开始持续写作！</li>
-</ul>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>整个搭建过程比想象中简单，Hexo + NexT 的组合对中文用户非常友好。从零到上线只需要不到一小时。</p>
-<p>接下来就是开始积累内容了。技术博客不仅是知识分享的平台，更是自己成长的记录。坚持写作，持续进步！</p>
-<hr>
-<blockquote>
-<p>如果这篇文章对你有帮助，欢迎在 GitHub 上 Follow 我~</p>
-</blockquote>
-]]></content>
-      <categories>
-        <category>其他</category>
-      </categories>
-      <tags>
-        <tag>Hexo</tag>
-        <tag>博客</tag>
-        <tag>NexT</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Nginx实现FLV视频流代理转发：跨域与鉴权踩坑全记录</title>
     <url>/2026/03/02/Nginx%E5%AE%9E%E7%8E%B0FLV%E8%A7%86%E9%A2%91%E6%B5%81%E4%BB%A3%E7%90%86%E8%BD%AC%E5%8F%91%EF%BC%9A%E8%B7%A8%E5%9F%9F%E4%B8%8E%E9%89%B4%E6%9D%83%E8%B8%A9%E5%9D%91%E5%85%A8%E8%AE%B0%E5%BD%95/</url>
     <content><![CDATA[<p>前端用 flv.js 播放 HTTP-FLV 视频流时，经常会遇到跨域、HTTPS 混合内容、鉴权等问题。本文记录了我用 Nginx 反向代理解决这些问题的完整过程，以及踩过的坑：HEAD 误判、GET 才触发 401、上游地址混淆等。</p>
@@ -550,10 +275,285 @@
       </categories>
       <tags>
         <tag>踩坑记录</tag>
-        <tag>反向代理</tag>
         <tag>Nginx</tag>
         <tag>FLV</tag>
         <tag>跨域</tag>
+        <tag>反向代理</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Hello World</title>
+    <url>/2026/02/27/hello-world/</url>
+    <content><![CDATA[<p>欢迎来到我的技术博客！这是第一篇测试文章，用于验证博客系统是否正常工作。</p>
+<span id="more"></span>
+
+<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p>
+<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p>
+<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p>
+<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
+]]></content>
+      <categories>
+        <category>其他</category>
+      </categories>
+      <tags>
+        <tag>Hexo</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>aioffice 反向代理开发：将 AI 编程工具额度转化为 OpenAI 兼容 API</title>
+    <url>/2026/03/01/aioffice-%E5%8F%8D%E5%90%91%E4%BB%A3%E7%90%86%E5%BC%80%E5%8F%91%EF%BC%9A%E5%B0%86-AI-%E7%BC%96%E7%A8%8B%E5%B7%A5%E5%85%B7%E9%A2%9D%E5%BA%A6%E8%BD%AC%E5%8C%96%E4%B8%BA-OpenAI-%E5%85%BC%E5%AE%B9-API/</url>
+    <content><![CDATA[<p>aioffice 是一款基于 VSCode 二次开发的 AI 编程工具，提供了 AI 对话、代码补全等功能。为了能在其他工具（如 opencode、Continue 等）中复用 aioffice 的 AI 调用额度，我开发了一个反向代理服务，将 aioffice 的后端 API 转化为标准的 OpenAI 兼容格式。</p>
+<span id="more"></span>
+
+<h2 id="技术分析"><a href="#技术分析" class="headerlink" title="技术分析"></a>技术分析</h2><h3 id="通信架构分析"><a href="#通信架构分析" class="headerlink" title="通信架构分析"></a>通信架构分析</h3><p>通过分析 aioffice 的源代码和配置文件，发现：</p>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>值</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>后端服务器地址</td>
+<td><code>http://14.103.247.146:8094</code></td>
+</tr>
+<tr>
+<td>API 格式</td>
+<td>OpenAI 兼容（<code>/v1/chat/completions</code>）</td>
+</tr>
+<tr>
+<td>认证方式</td>
+<td>Bearer Token（sk- 前缀的 API Key）</td>
+</tr>
+<tr>
+<td>Token 存储位置</td>
+<td>SQLite 数据库</td>
+</tr>
+</tbody></table>
+<p>Token 存储在 SQLite 数据库中：</p>
+<ul>
+<li><strong>路径</strong>：<code>%APPDATA%/AiOffice/User/globalStorage/state.vscdb</code></li>
+<li><strong>键名</strong>：<code>coai.auth.token</code>（登录凭证）、<code>coai.api.key</code>（API 调用密钥）</li>
+</ul>
+<h3 id="源码定位方法"><a href="#源码定位方法" class="headerlink" title="源码定位方法"></a>源码定位方法</h3><p>aioffice 基于 Void Editor 开发，代码位于安装目录的 <code>resources/app</code> 下（未打包为 asar）。通过搜索关键字符串定位到核心逻辑：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">resources/app/out/vs/workbench/workbench.desktop.main.js</span><br></pre></td></tr></table></figure>
+
+<p>关键代码片段：</p>
+<figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="keyword">var</span> <span class="variable constant_">COAI_API_URL</span> = <span class="string">&quot;http://14.103.247.146:8094&quot;</span>;</span><br><span class="line"><span class="comment">// ...</span></span><br><span class="line"><span class="variable language_">this</span>.<span class="property">apiClient</span> = <span class="keyword">new</span> <span class="title class_">CoaiApiClient</span>(<span class="function">() =&gt;</span> <span class="variable constant_">COAI_API_URL</span>, <span class="function">() =&gt;</span> <span class="variable language_">this</span>.<span class="title function_">getToken</span>(), <span class="variable language_">this</span>.<span class="property">requestService</span>);</span><br></pre></td></tr></table></figure>
+
+<h2 id="架构设计"><a href="#架构设计" class="headerlink" title="架构设计"></a>架构设计</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">┌─────────────────┐      ┌──────────────────┐      ┌─────────────────┐</span><br><span class="line">│  任意客户端      │ ──→ │  本地代理服务     │ ──→ │  aioffice 后端  │</span><br><span class="line">│  (Cursor等)     │      │  localhost:18273 │      │  14.103.247.146 │</span><br><span class="line">└─────────────────┘      └──────────────────┘      └─────────────────┘</span><br><span class="line">                                │</span><br><span class="line">                                ↓</span><br><span class="line">                         ┌──────────────┐</span><br><span class="line">                         │ 自动提取 Token│</span><br><span class="line">                         │ (SQLite读取) │</span><br><span class="line">                         └──────────────┘</span><br></pre></td></tr></table></figure>
+
+<h3 id="核心模块"><a href="#核心模块" class="headerlink" title="核心模块"></a>核心模块</h3><table>
+<thead>
+<tr>
+<th>模块</th>
+<th>职责</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>token.js</code></td>
+<td>从 SQLite 数据库读取认证信息，支持自动刷新</td>
+</tr>
+<tr>
+<td><code>proxy.js</code></td>
+<td>转发请求到 aioffice 后端，处理流式响应</td>
+</tr>
+<tr>
+<td><code>chat.js</code></td>
+<td><code>/v1/chat/completions</code> 路由处理</td>
+</tr>
+<tr>
+<td><code>models.js</code></td>
+<td><code>/v1/models</code> 路由处理</td>
+</tr>
+</tbody></table>
+<h2 id="踩坑记录"><a href="#踩坑记录" class="headerlink" title="踩坑记录"></a>踩坑记录</h2><h3 id="坑一：better-sqlite3-编译失败"><a href="#坑一：better-sqlite3-编译失败" class="headerlink" title="坑一：better-sqlite3 编译失败"></a>坑一：better-sqlite3 编译失败</h3><p><strong>问题</strong>：最初选择 <code>better-sqlite3</code> 作为 SQLite 驱动，但 Windows 上需要 Visual Studio 编译工具：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">gyp ERR! find VS could not find Visual Studio installation to use</span><br></pre></td></tr></table></figure>
+
+<p><strong>解决</strong>：改用纯 JavaScript 实现的 <code>sql.js</code>，无需编译：</p>
+<figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="comment">// package.json</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;dependencies&quot;</span>: &#123;</span><br><span class="line">    <span class="string">&quot;sql.js&quot;</span>: <span class="string">&quot;^1.10.0&quot;</span>  <span class="comment">// 替代 better-sqlite3</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>sql.js</code> 的 API 略有不同，需要注意：</p>
+<figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="keyword">const</span> initSqlJs = <span class="built_in">require</span>(<span class="string">&#x27;sql.js&#x27;</span>);</span><br><span class="line"><span class="keyword">const</span> fs = <span class="built_in">require</span>(<span class="string">&#x27;fs&#x27;</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 初始化（异步）</span></span><br><span class="line"><span class="keyword">const</span> <span class="variable constant_">SQL</span> = <span class="keyword">await</span> <span class="title function_">initSqlJs</span>();</span><br><span class="line"></span><br><span class="line"><span class="comment">// 读取数据库文件</span></span><br><span class="line"><span class="keyword">const</span> fileBuffer = fs.<span class="title function_">readFileSync</span>(dbPath);</span><br><span class="line"><span class="keyword">const</span> db = <span class="keyword">new</span> <span class="variable constant_">SQL</span>.<span class="title class_">Database</span>(fileBuffer);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 查询（返回格式不同）</span></span><br><span class="line"><span class="keyword">const</span> result = db.<span class="title function_">exec</span>(<span class="string">&quot;SELECT value FROM ItemTable WHERE key = ?&quot;</span>);</span><br><span class="line"><span class="comment">// result[0].values[0][0] 获取第一行第一列的值</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="坑二：Payload-Too-Large-错误"><a href="#坑二：Payload-Too-Large-错误" class="headerlink" title="坑二：Payload Too Large 错误"></a>坑二：Payload Too Large 错误</h3><p><strong>问题</strong>：在 opencode 中使用时报错：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">PayloadTooLargeError: request entity too large</span><br></pre></td></tr></table></figure>
+
+<p><strong>原因</strong>：Express 的 <code>body-parser</code> 默认限制请求体为 100kb，而 AI 对话的上下文可能很大。</p>
+<p><strong>解决</strong>：增加请求体大小限制：</p>
+<figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 原来</span></span><br><span class="line">app.<span class="title function_">use</span>(express.<span class="title function_">json</span>());</span><br><span class="line"></span><br><span class="line"><span class="comment">// 修改为</span></span><br><span class="line">app.<span class="title function_">use</span>(express.<span class="title function_">json</span>(&#123; <span class="attr">limit</span>: <span class="string">&#x27;50mb&#x27;</span> &#125;));</span><br></pre></td></tr></table></figure>
+
+<h3 id="坑三：opencode-配置缺少-apiKey"><a href="#坑三：opencode-配置缺少-apiKey" class="headerlink" title="坑三：opencode 配置缺少 apiKey"></a>坑三：opencode 配置缺少 apiKey</h3><p><strong>问题</strong>：即使代理会自动处理认证，opencode 仍需要一个 apiKey 字段才能发送请求。</p>
+<p><strong>解决</strong>：在 opencode 配置中添加任意 apiKey：</p>
+<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;aioffice&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;name&quot;</span><span class="punctuation">:</span> <span class="string">&quot;ao&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;npm&quot;</span><span class="punctuation">:</span> <span class="string">&quot;@ai-sdk/openai-compatible&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;models&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">      <span class="attr">&quot;claude-sonnet-4-6-thinking&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;name&quot;</span><span class="punctuation">:</span> <span class="string">&quot;claude-sonnet-4-6-thinking&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;glm-4.7&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;name&quot;</span><span class="punctuation">:</span> <span class="string">&quot;glm-4.7&quot;</span> <span class="punctuation">&#125;</span></span><br><span class="line">    <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;options&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">      <span class="attr">&quot;apiKey&quot;</span><span class="punctuation">:</span> <span class="string">&quot;sk-fandai&quot;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;baseURL&quot;</span><span class="punctuation">:</span> <span class="string">&quot;http://localhost:18273/v1&quot;</span></span><br><span class="line">    <span class="punctuation">&#125;</span></span><br><span class="line">  <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="坑四：后台进程不稳定"><a href="#坑四：后台进程不稳定" class="headerlink" title="坑四：后台进程不稳定"></a>坑四：后台进程不稳定</h3><p><strong>问题</strong>：在 Windows 上使用 <code>&amp;</code> 后台运行 Node.js 进程不稳定，容易退出。</p>
+<p><strong>解决</strong>：使用 <code>start</code> 命令在新窗口中运行：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">cmd //c <span class="string">&quot;start /min cmd /c node src/index.js&quot;</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="最终实现"><a href="#最终实现" class="headerlink" title="最终实现"></a>最终实现</h2><h3 id="项目结构"><a href="#项目结构" class="headerlink" title="项目结构"></a>项目结构</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">fandai/</span><br><span class="line">├── src/</span><br><span class="line">│   ├── index.js          # 入口，Express 服务</span><br><span class="line">│   ├── config.js         # 配置（端口、后端地址）</span><br><span class="line">│   ├── routes/</span><br><span class="line">│   │   ├── chat.js       # /v1/chat/completions</span><br><span class="line">│   │   └── models.js     # /v1/models</span><br><span class="line">│   └── services/</span><br><span class="line">│       ├── token.js      # Token 自动提取</span><br><span class="line">│       └── proxy.js      # 请求转发</span><br><span class="line">├── package.json</span><br><span class="line">└── README.md</span><br></pre></td></tr></table></figure>
+
+<h3 id="核心代码"><a href="#核心代码" class="headerlink" title="核心代码"></a>核心代码</h3><p><strong>Token 自动提取</strong> (<code>services/token.js</code>)：</p>
+<figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="keyword">const</span> initSqlJs = <span class="built_in">require</span>(<span class="string">&#x27;sql.js&#x27;</span>);</span><br><span class="line"><span class="keyword">const</span> fs = <span class="built_in">require</span>(<span class="string">&#x27;fs&#x27;</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">function</span> <span class="title function_">readFromDatabase</span>(<span class="params"></span>) &#123;</span><br><span class="line">  <span class="keyword">const</span> <span class="variable constant_">SQL</span> = <span class="keyword">await</span> <span class="title function_">initSqlJs</span>();</span><br><span class="line">  <span class="keyword">const</span> fileBuffer = fs.<span class="title function_">readFileSync</span>(<span class="variable constant_">DB_PATH</span>);</span><br><span class="line">  <span class="keyword">const</span> db = <span class="keyword">new</span> <span class="variable constant_">SQL</span>.<span class="title class_">Database</span>(fileBuffer);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> result = db.<span class="title function_">exec</span>(<span class="string">&quot;SELECT value FROM ItemTable WHERE key = &#x27;coai.api.key&#x27;&quot;</span>);</span><br><span class="line">  <span class="keyword">return</span> result.<span class="property">length</span> &gt; <span class="number">0</span> ? result[<span class="number">0</span>].<span class="property">values</span>[<span class="number">0</span>]?.[<span class="number">0</span>] : <span class="literal">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>请求转发</strong> (<code>services/proxy.js</code>)：</p>
+<figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="keyword">async</span> <span class="keyword">function</span> <span class="title function_">proxyChatCompletion</span>(<span class="params">req, res</span>) &#123;</span><br><span class="line">  <span class="keyword">const</span> apiKey = <span class="keyword">await</span> <span class="title function_">getApiKey</span>();</span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> response = <span class="keyword">await</span> axios.<span class="title function_">post</span>(</span><br><span class="line">    <span class="string">`<span class="subst">$&#123;COAI_API_URL&#125;</span>/v1/chat/completions`</span>,</span><br><span class="line">    req.<span class="property">body</span>,</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="attr">headers</span>: &#123; <span class="string">&#x27;Authorization&#x27;</span>: <span class="string">`Bearer <span class="subst">$&#123;apiKey&#125;</span>`</span> &#125;,</span><br><span class="line">      <span class="attr">responseType</span>: req.<span class="property">body</span>.<span class="property">stream</span> ? <span class="string">&#x27;stream&#x27;</span> : <span class="string">&#x27;json&#x27;</span></span><br><span class="line">    &#125;</span><br><span class="line">  );</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (req.<span class="property">body</span>.<span class="property">stream</span>) &#123;</span><br><span class="line">    res.<span class="title function_">setHeader</span>(<span class="string">&#x27;Content-Type&#x27;</span>, <span class="string">&#x27;text/event-stream&#x27;</span>);</span><br><span class="line">    response.<span class="property">data</span>.<span class="title function_">on</span>(<span class="string">&#x27;data&#x27;</span>, <span class="function"><span class="params">chunk</span> =&gt;</span> res.<span class="title function_">write</span>(chunk));</span><br><span class="line">    response.<span class="property">data</span>.<span class="title function_">on</span>(<span class="string">&#x27;end&#x27;</span>, <span class="function">() =&gt;</span> res.<span class="title function_">end</span>());</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    res.<span class="title function_">json</span>(response.<span class="property">data</span>);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="使用方式"><a href="#使用方式" class="headerlink" title="使用方式"></a>使用方式</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 安装依赖</span></span><br><span class="line">npm install</span><br><span class="line"></span><br><span class="line"><span class="comment"># 启动代理</span></span><br><span class="line">npm start</span><br><span class="line"></span><br><span class="line"><span class="comment"># 配置其他工具</span></span><br><span class="line"><span class="built_in">export</span> OPENAI_API_BASE=http://localhost:18273/v1</span><br><span class="line"><span class="built_in">export</span> OPENAI_API_KEY=any</span><br></pre></td></tr></table></figure>
+
+<h2 id="可用模型"><a href="#可用模型" class="headerlink" title="可用模型"></a>可用模型</h2><p>代理支持 aioffice 后端的所有模型，包括：</p>
+<table>
+<thead>
+<tr>
+<th>模型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>glm-4.7</code> &#x2F; <code>glm-5</code></td>
+<td>智谱 GLM 系列</td>
+</tr>
+<tr>
+<td><code>gpt-5.2</code> &#x2F; <code>gpt-5.3-codex</code></td>
+<td>GPT 系列</td>
+</tr>
+<tr>
+<td><code>claude-sonnet-4-6-thinking</code></td>
+<td>Claude 思维链模型</td>
+</tr>
+<tr>
+<td><code>gemini-3-pro-preview</code></td>
+<td>Gemini 3 Pro</td>
+</tr>
+</tbody></table>
+<h2 id="经验总结"><a href="#经验总结" class="headerlink" title="经验总结"></a>经验总结</h2><p>这个项目的核心价值在于：</p>
+<ul>
+<li><strong>协议转换</strong>：将私有 API 转化为标准 OpenAI 格式</li>
+<li><strong>认证自动化</strong>：自动提取和刷新 Token，用户无感知</li>
+<li><strong>通用兼容</strong>：任何支持 OpenAI API 的工具都能使用</li>
+</ul>
+<p>开发过程中主要踩了以下几个坑：</p>
+<ol>
+<li>SQLite 驱动在 Windows 上编译问题 → 用纯 JS 实现的 <code>sql.js</code></li>
+<li>Express 请求体大小限制 → 增加到 50mb</li>
+<li>客户端配置要求 → 填充任意 apiKey</li>
+<li>Windows 后台进程不稳定 → 用 <code>start</code> 命令</li>
+</ol>
+<p>最终都用比较简单的方式解决了，整个项目代码量不大，但实用性很强。</p>
+<hr>
+<p><strong>相关链接</strong>：<a href="https://github.com/zhdmm35/aioffice-proxy">项目仓库 - GitHub</a></p>
+]]></content>
+      <categories>
+        <category>后端开发</category>
+      </categories>
+      <tags>
+        <tag>踩坑记录</tag>
+        <tag>反向代理</tag>
+        <tag>Node.js</tag>
+        <tag>OpenAI</tag>
+        <tag>SQLite</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>博客搭建记录</title>
+    <url>/2026/02/27/%E5%8D%9A%E5%AE%A2%E6%90%AD%E5%BB%BA%E8%AE%B0%E5%BD%95/</url>
+    <content><![CDATA[<p>终于拥有了自己的技术博客！这篇文章记录了整个搭建过程，从 Hexo 安装到 GitHub Pages 部署，希望能帮助到想搭建博客的朋友。</p>
+<span id="more"></span>
+
+<h2 id="技术选型"><a href="#技术选型" class="headerlink" title="技术选型"></a>技术选型</h2><table>
+<thead>
+<tr>
+<th>组件</th>
+<th>选择</th>
+<th>理由</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>静态生成器</td>
+<td>Hexo</td>
+<td>中文生态好，主题丰富，文档完善</td>
+</tr>
+<tr>
+<td>主题</td>
+<td>NexT</td>
+<td>简约清爽，功能强大，支持暗色模式</td>
+</tr>
+<tr>
+<td>托管</td>
+<td>GitHub Pages</td>
+<td>免费，稳定，自带 HTTPS</td>
+</tr>
+</tbody></table>
+<h2 id="搭建步骤"><a href="#搭建步骤" class="headerlink" title="搭建步骤"></a>搭建步骤</h2><h3 id="1-环境准备"><a href="#1-环境准备" class="headerlink" title="1. 环境准备"></a>1. 环境准备</h3><p>确保已安装：</p>
+<ul>
+<li>Node.js 18+</li>
+<li>Git</li>
+</ul>
+<h3 id="2-安装-Hexo"><a href="#2-安装-Hexo" class="headerlink" title="2. 安装 Hexo"></a>2. 安装 Hexo</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npm install -g hexo-cli</span><br><span class="line">hexo init blog</span><br><span class="line"><span class="built_in">cd</span> blog &amp;&amp; npm install</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-安装-NexT-主题"><a href="#3-安装-NexT-主题" class="headerlink" title="3. 安装 NexT 主题"></a>3. 安装 NexT 主题</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npm install hexo-theme-next</span><br></pre></td></tr></table></figure>
+
+<p>修改 <code>_config.yml</code> 启用主题：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">theme:</span> <span class="string">next</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="4-配置站点信息"><a href="#4-配置站点信息" class="headerlink" title="4. 配置站点信息"></a>4. 配置站点信息</h3><p>编辑 <code>_config.yml</code>：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">title:</span> <span class="string">我的技术博客</span></span><br><span class="line"><span class="attr">author:</span> <span class="string">zhlifeiy35</span></span><br><span class="line"><span class="attr">language:</span> <span class="string">zh-CN</span></span><br><span class="line"><span class="attr">timezone:</span> <span class="string">&#x27;Asia/Shanghai&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="5-配置主题功能"><a href="#5-配置主题功能" class="headerlink" title="5. 配置主题功能"></a>5. 配置主题功能</h3><p>创建 <code>_config.next.yml</code> 文件，配置：</p>
+<ul>
+<li>暗色&#x2F;亮色模式切换</li>
+<li>本地搜索</li>
+<li>代码高亮与复制</li>
+<li>分类和标签页面</li>
+</ul>
+<h3 id="6-安装搜索插件"><a href="#6-安装搜索插件" class="headerlink" title="6. 安装搜索插件"></a>6. 安装搜索插件</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npm install hexo-generator-searchdb</span><br></pre></td></tr></table></figure>
+
+<h3 id="7-部署到-GitHub-Pages"><a href="#7-部署到-GitHub-Pages" class="headerlink" title="7. 部署到 GitHub Pages"></a>7. 部署到 GitHub Pages</h3><ol>
+<li>在 GitHub 创建 <code>用户名.github.io</code> 仓库</li>
+<li>安装部署插件：<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npm install hexo-deployer-git</span><br></pre></td></tr></table></figure></li>
+<li>配置 <code>_config.yml</code>：<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">deploy:</span></span><br><span class="line">  <span class="attr">type:</span> <span class="string">git</span></span><br><span class="line">  <span class="attr">repo:</span> <span class="string">https://github.com/用户名/用户名.github.io.git</span></span><br><span class="line">  <span class="attr">branch:</span> <span class="string">main</span></span><br></pre></td></tr></table></figure></li>
+<li>部署：<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean &amp;&amp; hexo generate &amp;&amp; hexo deploy</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h2 id="博客功能"><a href="#博客功能" class="headerlink" title="博客功能"></a>博客功能</h2><ul>
+<li><input checked="" disabled="" type="checkbox"> 简约清爽的界面</li>
+<li><input checked="" disabled="" type="checkbox"> 暗色&#x2F;亮色模式切换</li>
+<li><input checked="" disabled="" type="checkbox"> 本地搜索</li>
+<li><input checked="" disabled="" type="checkbox"> 代码高亮与一键复制</li>
+<li><input checked="" disabled="" type="checkbox"> 分类和标签</li>
+<li><input checked="" disabled="" type="checkbox"> RSS 订阅</li>
+<li><input disabled="" type="checkbox"> 评论系统（计划中）</li>
+<li><input disabled="" type="checkbox"> 自定义域名（计划中）</li>
+</ul>
+<h2 id="日常写作流程"><a href="#日常写作流程" class="headerlink" title="日常写作流程"></a>日常写作流程</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 新建文章</span></span><br><span class="line">hexo new post <span class="string">&quot;文章标题&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 本地预览</span></span><br><span class="line">hexo server</span><br><span class="line"></span><br><span class="line"><span class="comment"># 生成并部署</span></span><br><span class="line">hexo clean &amp;&amp; hexo generate &amp;&amp; hexo deploy</span><br><span class="line"></span><br><span class="line"><span class="comment"># 或一键部署</span></span><br><span class="line">hexo d -g</span><br></pre></td></tr></table></figure>
+
+<h2 id="后续计划"><a href="#后续计划" class="headerlink" title="后续计划"></a>后续计划</h2><ul>
+<li><input disabled="" type="checkbox"> 完善 About 页面</li>
+<li><input disabled="" type="checkbox"> 添加评论系统（Giscus）</li>
+<li><input disabled="" type="checkbox"> 绑定自定义域名</li>
+<li><input disabled="" type="checkbox"> 开始持续写作！</li>
+</ul>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>整个搭建过程比想象中简单，Hexo + NexT 的组合对中文用户非常友好。从零到上线只需要不到一小时。</p>
+<p>接下来就是开始积累内容了。技术博客不仅是知识分享的平台，更是自己成长的记录。坚持写作，持续进步！</p>
+<hr>
+<blockquote>
+<p>如果这篇文章对你有帮助，欢迎在 GitHub 上 Follow 我~</p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>其他</category>
+      </categories>
+      <tags>
+        <tag>Hexo</tag>
+        <tag>博客</tag>
+        <tag>NexT</tag>
       </tags>
   </entry>
   <entry>
@@ -984,6 +984,241 @@
       </tags>
   </entry>
   <entry>
+    <title>用AI技能将代码分析文档工作自动化</title>
+    <url>/2026/03/29/ai-skill-automation/</url>
+    <content><![CDATA[<p>在日常开发中，每次排查 Bug 后的文档记录工作往往是重复且耗时的。手动创建「问题分析 + 修复指南 + 代码片段」一套文档需要 10-15 分钟，而且格式难以统一。本文分享如何将这套重复性工作抽象为一个可复用的 AI 技能，将时间缩短至 1-2 分钟。</p>
+<span id="more"></span>
+
+<h2 id="问题背景"><a href="#问题背景" class="headerlink" title="问题背景"></a>问题背景</h2><p>在南沙项目物联网开发中，每次 Bug 排查完成后都需要生成标准化的分析文档：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">问题分析.md      → 根因分析、影响范围、排查过程</span><br><span class="line">修复指南.md      → 修复步骤、前后代码对比、测试清单</span><br><span class="line">代码片段/*.md    → 关键代码片段</span><br></pre></td></tr></table></figure>
+
+<p>以一个月内排查的 3 个 Bug 为例：</p>
+<table>
+<thead>
+<tr>
+<th>Bug</th>
+<th>问题类型</th>
+<th>涉及文件数</th>
+<th>手动文档耗时</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>个人月卡拒绝 404</td>
+<td>接口路径错误</td>
+<td>6</td>
+<td>~12 分钟</td>
+</tr>
+<tr>
+<td>月卡变更审批拒绝 404</td>
+<td>审批状态判断错误</td>
+<td>6</td>
+<td>~12 分钟</td>
+</tr>
+<tr>
+<td>月卡变更车位占用校验</td>
+<td>逻辑错误</td>
+<td>7</td>
+<td>~15 分钟</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>[!tip] 痛点分析<br>这类文档工作有两个显著特点：一是<strong>流程固定</strong>，都是「问题分析 → 修复指南 → 代码片段」三件套；二是<strong>格式规范</strong>，需要统一的 frontmatter、callout、wikilinks 结构。高度模式化的工作，正是自动化的理想场景。</p>
+</blockquote>
+<hr>
+<h2 id="解决方案：创建-obsidian-code-analysis-技能"><a href="#解决方案：创建-obsidian-code-analysis-技能" class="headerlink" title="解决方案：创建 obsidian-code-analysis 技能"></a>解决方案：创建 obsidian-code-analysis 技能</h2><p>基于 Claude Code 的 Skill 机制，将代码分析文档的创建流程封装为一个可复用的技能。</p>
+<h3 id="技能设计"><a href="#技能设计" class="headerlink" title="技能设计"></a>技能设计</h3><p><strong>基本信息：</strong></p>
+<table>
+<thead>
+<tr>
+<th>属性</th>
+<th>值</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>技能名称</td>
+<td><code>obsidian-code-analysis</code></td>
+</tr>
+<tr>
+<td>存放路径</td>
+<td><code>C:\Users\张\.claude\skills\obsidian-code-analysis\</code></td>
+</tr>
+<tr>
+<td>触发条件</td>
+<td>用户说「记录」「写到知识库」「保存分析」等</td>
+</tr>
+</tbody></table>
+<h3 id="核心工作流"><a href="#核心工作流" class="headerlink" title="核心工作流"></a>核心工作流</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">主智能体收集分析上下文</span><br><span class="line">         ↓</span><br><span class="line">   确定文档类型（Bug / Feature / Refactor / General）</span><br><span class="line">         ↓</span><br><span class="line">   启动子智能体创建文件</span><br><span class="line">         ↓</span><br><span class="line">   调用 obsidian-markdown 技能格式化</span><br><span class="line">         ↓</span><br><span class="line">   使用 obsidian-cli 创建文件</span><br><span class="line">         ↓</span><br><span class="line">   更新每日工作记录</span><br></pre></td></tr></table></figure>
+
+<p><img src="/images/posts/ai-skill-automation/fig1.png" alt="手动vs自动流程对比"><br>*图1：手动与自动文档创建流程对比</p>
+<p><strong>关键设计决策：</strong></p>
+<ol>
+<li><p><strong>主从智能体分工</strong>：主智能体负责分析和收集上下文，子智能体负责所有文件创建。这样避免主上下文被大量写入操作污染。</p>
+</li>
+<li><p><strong>obsidian-cli 优先</strong>：<code>obsidian create</code> 比 Write 工具更节省 token，且直接与 Obsidian 集成。</p>
+</li>
+<li><p><strong>模板引用分离</strong>：模板放在 <code>references/</code> 目录，子智能体按需读取，不占用 SKILL.md 本身的空间。</p>
+</li>
+</ol>
+<hr>
+<h2 id="技能文件结构"><a href="#技能文件结构" class="headerlink" title="技能文件结构"></a>技能文件结构</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">obsidian-code-analysis/</span><br><span class="line">├── SKILL.md                          # 主技能文件</span><br><span class="line">│   ├── frontmatter（触发条件）</span><br><span class="line">│   ├── 工作流步骤</span><br><span class="line">│   ├── 子智能体 prompt 模板</span><br><span class="line">│   └── obsidian-cli 快速参考</span><br><span class="line">└── references/</span><br><span class="line">    ├── bug-templates.md              # Bug 分析模板</span><br><span class="line">    ├── feature-templates.md          # 功能设计模板</span><br><span class="line">    └── refactor-templates.md         # 重构分析模板</span><br></pre></td></tr></table></figure>
+
+<p><img src="/images/posts/ai-skill-automation/fig2.png" alt="技能架构图"><br><em>图2：obsidian-code-analysis 技能文件结构</em></p>
+<p><strong>支持的文档类型：</strong></p>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>生成文件</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Bug</td>
+<td>问题分析.md、修复指南.md、代码片段&#x2F;*.md</td>
+<td>包含根因分析、修复步骤、测试清单</td>
+</tr>
+<tr>
+<td>Feature</td>
+<td>需求分析.md、实现方案.md、代码片段&#x2F;*.md</td>
+<td>包含需求拆解、技术选型、接口设计</td>
+</tr>
+<tr>
+<td>Refactor</td>
+<td>重构分析.md、重构方案.md、代码片段&#x2F;*.md</td>
+<td>包含重构动机、影响范围、迁移计划</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="实战验证：车位占用校验-Bug"><a href="#实战验证：车位占用校验-Bug" class="headerlink" title="实战验证：车位占用校验 Bug"></a>实战验证：车位占用校验 Bug</h2><p>以「月卡变更车位占用校验 Bug」作为测试用例，验证技能的实际效果。</p>
+<h3 id="Bug-概要"><a href="#Bug-概要" class="headerlink" title="Bug 概要"></a>Bug 概要</h3><blockquote>
+<p>[!bug] 问题描述<br>个人月卡变更固定车位时，新车位实际空闲，系统却提示「车位已经被占用」，导致无法提交变更申请。</p>
+</blockquote>
+<p><strong>排查发现 3 个 Bug：</strong></p>
+<ol>
+<li><strong>Bug 1</strong>：change() 方法检查的是老车位而非新车位</li>
+<li><strong>Bug 2</strong>：DTO 缺少 newParkingSpotId 字段</li>
+<li><strong>Bug 3</strong>：新旧车位用同一 ID 查询</li>
+</ol>
+<h3 id="技能执行结果"><a href="#技能执行结果" class="headerlink" title="技能执行结果"></a>技能执行结果</h3><p>使用 <code>obsidian-code-analysis</code> 技能自动生成了 7 个文件：</p>
+<table>
+<thead>
+<tr>
+<th>文件</th>
+<th>状态</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>问题分析.md</td>
+<td>pass</td>
+<td>frontmatter 正确、callout 格式正确、根因清晰</td>
+</tr>
+<tr>
+<td>修复指南.md</td>
+<td>pass</td>
+<td>步骤完整、前后代码对比清晰、测试清单齐全</td>
+</tr>
+<tr>
+<td>代码片段&#x2F;change方法.md</td>
+<td>pass</td>
+<td>Bug 标注明确</td>
+</tr>
+<tr>
+<td>代码片段&#x2F;changePass方法.md</td>
+<td>pass</td>
+<td>修复逻辑清晰</td>
+</tr>
+<tr>
+<td>代码片段&#x2F;changeRefuse方法.md</td>
+<td>pass</td>
+<td>无需修改原因说明清晰</td>
+</tr>
+<tr>
+<td>代码片段&#x2F;DTO.md</td>
+<td>pass</td>
+<td>新增字段标注明确</td>
+</tr>
+<tr>
+<td>每日日志</td>
+<td>pass</td>
+<td>正确追加了新记录</td>
+</tr>
+</tbody></table>
+<h3 id="修复方案示例"><a href="#修复方案示例" class="headerlink" title="修复方案示例"></a>修复方案示例</h3><p>以 change() 方法的修复为例，对比修复前后的关键差异：</p>
+<p><strong>修复前（错误）：</strong></p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 检查的是老车位，用错了ID</span></span><br><span class="line"><span class="keyword">if</span>(monthPersonal.getParkingSpotId()!=<span class="literal">null</span>)&#123;</span><br><span class="line">    <span class="type">ParkSlotEntity</span> <span class="variable">spot</span> <span class="operator">=</span> parkSlotService.getById(monthPersonal.getParkingSpotId());</span><br><span class="line">    <span class="keyword">if</span>(!spot.getUsingState().equals(<span class="string">&quot;1&quot;</span>))&#123;</span><br><span class="line">        <span class="keyword">return</span> R.data(<span class="number">500</span>, <span class="literal">null</span>, <span class="string">&quot;车位已经被占用&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>修复后（正确）：</strong></p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 检查新车位，使用 DTO 传入的新车位ID</span></span><br><span class="line"><span class="type">Long</span> <span class="variable">newParkingSpotId</span> <span class="operator">=</span> dto.getNewParkingSpotId();</span><br><span class="line"><span class="keyword">if</span> (newParkingSpotId == <span class="literal">null</span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> R.fail(<span class="string">&quot;缺少新车位ID&quot;</span>);</span><br><span class="line">&#125;</span><br><span class="line"><span class="type">ParkSlotEntity</span> <span class="variable">newSpot</span> <span class="operator">=</span> parkSlotService.getById(newParkingSpotId);</span><br><span class="line"><span class="keyword">if</span> (!<span class="string">&quot;1&quot;</span>.equals(newSpot.getUsingState())) &#123;</span><br><span class="line">    <span class="keyword">return</span> R.data(<span class="number">500</span>, <span class="literal">null</span>, <span class="string">&quot;新车位已经被占用&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="效率对比"><a href="#效率对比" class="headerlink" title="效率对比"></a>效率对比</h2><table>
+<thead>
+<tr>
+<th>指标</th>
+<th>手动操作</th>
+<th>技能自动化</th>
+<th>提升</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>文档创建时间</td>
+<td>10-15 分钟</td>
+<td>1-2 分钟</td>
+<td><strong>~85%</strong></td>
+</tr>
+<tr>
+<td>格式一致性</td>
+<td>因人而异</td>
+<td>100% 统一</td>
+<td>-</td>
+</tr>
+<tr>
+<td>wikilinks 交叉引用</td>
+<td>容易遗漏</td>
+<td>自动生成</td>
+<td>-</td>
+</tr>
+<tr>
+<td>错误率</td>
+<td>较高</td>
+<td>极低</td>
+<td>-</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="经验总结"><a href="#经验总结" class="headerlink" title="经验总结"></a>经验总结</h2><h3 id="何时适合自动化"><a href="#何时适合自动化" class="headerlink" title="何时适合自动化"></a>何时适合自动化</h3><ul>
+<li>工作流程<strong>高度结构化</strong>、模式固定</li>
+<li>重复执行频率高（每月多次）</li>
+<li>涉及多个文件、需要统一格式</li>
+</ul>
+<h3 id="技能创建的关键"><a href="#技能创建的关键" class="headerlink" title="技能创建的关键"></a>技能创建的关键</h3><ol>
+<li><strong>先分析再抽象</strong>：识别重复模式，确认自动化价值</li>
+<li><strong>单一日标</strong>：一个技能只做一件事，通过组合实现复杂流程</li>
+<li><strong>模板与逻辑分离</strong>：模板可独立维护，SKILL.md 保持精简</li>
+<li><strong>子智能体隔离</strong>：文件操作放到子智能体，保护主对话上下文</li>
+</ol>
+<h3 id="适用场景扩展"><a href="#适用场景扩展" class="headerlink" title="适用场景扩展"></a>适用场景扩展</h3><p>除了 Bug 分析，这个思路还适用于：</p>
+<ul>
+<li><strong>接口文档自动生成</strong>：根据代码注释生成 API 文档</li>
+<li><strong>代码审查报告</strong>：自动整理审查意见并格式化</li>
+<li><strong>周报&#x2F;月报汇总</strong>：从分散的工作记录聚合总结</li>
+</ul>
+<hr>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>AI 技能的本质是将人的工作方法论封装为可复用的工具。通过识别重复模式、抽象流程、创建技能，我们能让 AI 从「一次性的助手」变成「长期共事的专家」。文档工作的自动化只是开始，代码分析、架构设计、测试用例生成等环节都值得用同样的思路去探索。</p>
+]]></content>
+      <categories>
+        <category>AI经验</category>
+      </categories>
+      <tags>
+        <tag>Claude Code</tag>
+        <tag>效率提升</tag>
+        <tag>Obsidian</tag>
+        <tag>技能创建</tag>
+        <tag>AI工作流</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Nacos本地环境配置避坑指南</title>
     <url>/2026/03/23/Nacos%E6%9C%AC%E5%9C%B0%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE%E9%81%BF%E5%9D%91%E6%8C%87%E5%8D%97/</url>
     <content><![CDATA[<p>在本地开发物联网平台时，服务注册与配置中心是基础设施的关键一环。本文记录了一次 Nacos 本地链路问题的排查与修复过程，希望能帮助有类似经历的同学少走弯路。</p>
@@ -1233,32 +1468,32 @@
 </thead>
 <tbody><tr>
 <td>1</td>
-<td><a href="mailto:&#109;&#x74;&#x66;&#54;&#x63;&#109;&#x66;&#99;&#64;&#100;&#111;&#108;&#108;&#105;&#x63;&#x6f;&#x6e;&#115;&#x2e;&#99;&#111;&#x6d;">&#109;&#x74;&#x66;&#54;&#x63;&#109;&#x66;&#99;&#64;&#100;&#111;&#108;&#108;&#105;&#x63;&#x6f;&#x6e;&#115;&#x2e;&#99;&#111;&#x6d;</a></td>
+<td><a href="mailto:&#x6d;&#116;&#x66;&#x36;&#x63;&#109;&#102;&#x63;&#x40;&#x64;&#x6f;&#108;&#108;&#105;&#x63;&#x6f;&#x6e;&#115;&#46;&#x63;&#111;&#109;">&#x6d;&#116;&#x66;&#x36;&#x63;&#109;&#102;&#x63;&#x40;&#x64;&#x6f;&#108;&#108;&#105;&#x63;&#x6f;&#x6e;&#115;&#46;&#x63;&#111;&#109;</a></td>
 <td>✅</td>
 </tr>
 <tr>
 <td>2</td>
-<td><a href="mailto:&#x77;&#122;&#119;&#118;&#111;&#117;&#106;&#x6d;&#x66;&#x36;&#111;&#x69;&#55;&#x40;&#100;&#111;&#108;&#x6c;&#105;&#99;&#x6f;&#x6e;&#115;&#x2e;&#x63;&#111;&#x6d;">&#x77;&#122;&#119;&#118;&#111;&#117;&#106;&#x6d;&#x66;&#x36;&#111;&#x69;&#55;&#x40;&#100;&#111;&#108;&#x6c;&#105;&#99;&#x6f;&#x6e;&#115;&#x2e;&#x63;&#111;&#x6d;</a></td>
+<td><a href="mailto:&#x77;&#122;&#x77;&#118;&#x6f;&#117;&#x6a;&#x6d;&#102;&#x36;&#111;&#105;&#55;&#x40;&#x64;&#x6f;&#x6c;&#x6c;&#105;&#x63;&#111;&#110;&#x73;&#46;&#99;&#111;&#109;">&#x77;&#122;&#x77;&#118;&#x6f;&#117;&#x6a;&#x6d;&#102;&#x36;&#111;&#105;&#55;&#x40;&#x64;&#x6f;&#x6c;&#x6c;&#105;&#x63;&#111;&#110;&#x73;&#46;&#99;&#111;&#109;</a></td>
 <td>✅</td>
 </tr>
 <tr>
 <td>3</td>
-<td><a href="mailto:&#104;&#48;&#x62;&#103;&#117;&#x72;&#50;&#120;&#64;&#x64;&#x6f;&#108;&#x6c;&#105;&#99;&#111;&#x6e;&#x73;&#46;&#99;&#x6f;&#109;">&#104;&#48;&#x62;&#103;&#117;&#x72;&#50;&#120;&#64;&#x64;&#x6f;&#108;&#x6c;&#105;&#99;&#111;&#x6e;&#x73;&#46;&#99;&#x6f;&#109;</a></td>
+<td><a href="mailto:&#104;&#x30;&#98;&#x67;&#x75;&#114;&#x32;&#x78;&#x40;&#x64;&#111;&#x6c;&#108;&#105;&#99;&#111;&#x6e;&#x73;&#x2e;&#99;&#x6f;&#x6d;">&#104;&#x30;&#98;&#x67;&#x75;&#114;&#x32;&#x78;&#x40;&#x64;&#111;&#x6c;&#108;&#105;&#99;&#111;&#x6e;&#x73;&#x2e;&#99;&#x6f;&#x6d;</a></td>
 <td>✅</td>
 </tr>
 <tr>
 <td>4</td>
-<td><a href="mailto:&#x36;&#x70;&#x72;&#x6b;&#x66;&#x37;&#x6e;&#x36;&#49;&#64;&#x64;&#111;&#108;&#108;&#105;&#x63;&#x6f;&#x6e;&#115;&#46;&#x63;&#x6f;&#x6d;">&#x36;&#x70;&#x72;&#x6b;&#x66;&#x37;&#x6e;&#x36;&#49;&#64;&#x64;&#111;&#108;&#108;&#105;&#x63;&#x6f;&#x6e;&#115;&#46;&#x63;&#x6f;&#x6d;</a></td>
+<td><a href="mailto:&#x36;&#112;&#x72;&#107;&#x66;&#x37;&#110;&#x36;&#49;&#64;&#100;&#x6f;&#108;&#x6c;&#105;&#99;&#x6f;&#110;&#115;&#x2e;&#99;&#111;&#x6d;">&#x36;&#112;&#x72;&#107;&#x66;&#x37;&#110;&#x36;&#49;&#64;&#100;&#x6f;&#108;&#x6c;&#105;&#99;&#x6f;&#110;&#115;&#x2e;&#99;&#111;&#x6d;</a></td>
 <td>✅</td>
 </tr>
 <tr>
 <td>5</td>
-<td><a href="mailto:&#119;&#x6e;&#x61;&#x31;&#56;&#104;&#x6c;&#111;&#56;&#109;&#103;&#x40;&#100;&#111;&#x6c;&#x6c;&#105;&#99;&#x6f;&#110;&#x73;&#46;&#x63;&#111;&#x6d;">&#119;&#x6e;&#x61;&#x31;&#56;&#104;&#x6c;&#111;&#56;&#109;&#103;&#x40;&#100;&#111;&#x6c;&#x6c;&#105;&#99;&#x6f;&#110;&#x73;&#46;&#x63;&#111;&#x6d;</a></td>
+<td><a href="mailto:&#x77;&#x6e;&#97;&#x31;&#56;&#104;&#x6c;&#x6f;&#x38;&#x6d;&#103;&#64;&#100;&#x6f;&#x6c;&#x6c;&#x69;&#99;&#111;&#110;&#x73;&#x2e;&#99;&#111;&#109;">&#x77;&#x6e;&#97;&#x31;&#56;&#104;&#x6c;&#x6f;&#x38;&#x6d;&#103;&#64;&#100;&#x6f;&#x6c;&#x6c;&#x69;&#99;&#111;&#110;&#x73;&#x2e;&#99;&#111;&#109;</a></td>
 <td>✅</td>
 </tr>
 <tr>
 <td>6</td>
-<td><a href="mailto:&#103;&#108;&#x61;&#121;&#x33;&#x6b;&#104;&#x35;&#x71;&#x6a;&#64;&#100;&#111;&#108;&#x6c;&#105;&#99;&#x6f;&#110;&#115;&#x2e;&#x63;&#111;&#109;">&#103;&#108;&#x61;&#121;&#x33;&#x6b;&#104;&#x35;&#x71;&#x6a;&#64;&#100;&#111;&#108;&#x6c;&#105;&#99;&#x6f;&#110;&#115;&#x2e;&#x63;&#111;&#109;</a></td>
+<td><a href="mailto:&#103;&#108;&#x61;&#x79;&#x33;&#107;&#104;&#x35;&#113;&#106;&#64;&#x64;&#111;&#x6c;&#108;&#105;&#x63;&#x6f;&#110;&#x73;&#x2e;&#x63;&#x6f;&#x6d;">&#103;&#108;&#x61;&#x79;&#x33;&#107;&#104;&#x35;&#113;&#106;&#64;&#x64;&#111;&#x6c;&#108;&#105;&#x63;&#x6f;&#110;&#x73;&#x2e;&#x63;&#x6f;&#x6d;</a></td>
 <td>✅</td>
 </tr>
 </tbody></table>
@@ -1530,6 +1765,115 @@
       </tags>
   </entry>
   <entry>
+    <title>后端 API 优化实战：字段补充与结果排序</title>
+    <url>/2026/03/05/%E5%90%8E%E7%AB%AFAPI%E4%BC%98%E5%8C%96%E5%AE%9E%E6%88%98-%E5%AD%97%E6%AE%B5%E8%A1%A5%E5%85%85%E4%B8%8E%E7%BB%93%E6%9E%9C%E6%8E%92%E5%BA%8F/</url>
+    <content><![CDATA[<p>在实际开发中，接口返回数据不一致、缺少关键字段、返回结果无序等问题经常困扰前端同学。本文记录了两个典型的后端 API 优化场景：为接口补充友好字段、为统计数据添加排序，分享问题定位思路和最小侵入式修改方案。</p>
+<span id="more"></span>
+
+<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在一次需求开发中，前端反馈了两个问题：一是水情汇总接口返回的测站类型是代码（如 <code>ZQ</code>），需要额外查询转换；二是管理单位统计接口返回的数据顺序是随机的，展示效果不佳。这两个问题都属于”不影响功能但影响体验”的类型，本文记录解决过程。</p>
+<h2 id="场景一：为接口新增友好字段"><a href="#场景一：为接口新增友好字段" class="headerlink" title="场景一：为接口新增友好字段"></a>场景一：为接口新增友好字段</h2><h3 id="问题背景"><a href="#问题背景" class="headerlink" title="问题背景"></a>问题背景</h3><p><code>/api/water/summary/list</code> 接口返回的 <code>STTP</code>（测站类型代码）是英文缩写，比如 <code>ZQ</code> 代表水文站、<code>ZZ</code> 代表水位站。前端展示时需要额外维护一套映射关系，将代码转换为中文名称。</p>
+<p>而同一个项目中，<code>/basic/b/list</code> 接口已经返回了 <code>stationTypeName</code> 字段，直接提供中文名称。两处实现不一致，增加了前端的维护成本。</p>
+<h3 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h3><p>参照 <code>/basic/b/list</code> 的实现，为 <code>summary/list</code> 接口新增 <code>stationTypeLabel</code> 字段，复用现有的 <code>MappingService.getStationTypeMap()</code> 获取测站类型映射。</p>
+<h3 id="实现步骤"><a href="#实现步骤" class="headerlink" title="实现步骤"></a>实现步骤</h3><h4 id="1-DTO-新增字段"><a href="#1-DTO-新增字段" class="headerlink" title="1. DTO 新增字段"></a>1. DTO 新增字段</h4><p>在响应 DTO 中添加新字段：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// WaterSummaryListResponseDTO.java</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@Schema(description = &quot;测站类型名称（中文），根据STTP代码转换的中文名称&quot;, example = &quot;水文站&quot;)</span></span><br><span class="line"><span class="keyword">private</span> String stationTypeLabel;</span><br></pre></td></tr></table></figure>
+
+<h4 id="2-Controller-注入-MappingService"><a href="#2-Controller-注入-MappingService" class="headerlink" title="2. Controller 注入 MappingService"></a>2. Controller 注入 MappingService</h4><p>复用现有的映射服务，避免重复造轮子：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// WaterSummaryController.java</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@Autowired</span></span><br><span class="line"><span class="keyword">private</span> MappingService mappingService;</span><br></pre></td></tr></table></figure>
+
+<h4 id="3-数据转换时填充字段"><a href="#3-数据转换时填充字段" class="headerlink" title="3. 数据转换时填充字段"></a>3. 数据转换时填充字段</h4><p>在 DTO 转换逻辑中填充新字段，注意批量获取映射避免 N+1 问题：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 批量转换时获取测站类型映射</span></span><br><span class="line">Map&lt;String, String&gt; stationTypeMap = mappingService.getStationTypeMap();</span><br><span class="line"></span><br><span class="line"><span class="comment">// 单个转换时填充 stationTypeLabel</span></span><br><span class="line"><span class="type">String</span> <span class="variable">sttp</span> <span class="operator">=</span> summary.getSTTP();</span><br><span class="line"><span class="keyword">if</span> (StringUtils.isNotEmpty(sttp) &amp;&amp; stationTypeMap != <span class="literal">null</span>) &#123;</span><br><span class="line">    dto.setStationTypeLabel(stationTypeMap.getOrDefault(sttp, <span class="string">&quot;&quot;</span>));</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    dto.setStationTypeLabel(<span class="string">&quot;&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="返回示例"><a href="#返回示例" class="headerlink" title="返回示例"></a>返回示例</h3><p>优化后的接口返回：</p>
+<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;STCD&quot;</span><span class="punctuation">:</span> <span class="string">&quot;62906600&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;STNM&quot;</span><span class="punctuation">:</span> <span class="string">&quot;加田水文站&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;STTP&quot;</span><span class="punctuation">:</span> <span class="string">&quot;ZQ&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;stationTypeLabel&quot;</span><span class="punctuation">:</span> <span class="string">&quot;水文站&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;LGTD&quot;</span><span class="punctuation">:</span> <span class="number">113.123456</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;LTTD&quot;</span><span class="punctuation">:</span> <span class="number">23.456789</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="场景二：统计接口结果排序"><a href="#场景二：统计接口结果排序" class="headerlink" title="场景二：统计接口结果排序"></a>场景二：统计接口结果排序</h2><h3 id="问题背景-1"><a href="#问题背景-1" class="headerlink" title="问题背景"></a>问题背景</h3><p><code>/basic/b/statistics?staticType=unit</code> 接口返回各机构的测站统计数据，但 <code>data</code> 数组中的顺序是随机的。前端展示时希望按测站总数（<code>total</code>）从大到小排序，让数据量大的机构排在前面。</p>
+<h3 id="解决方案-1"><a href="#解决方案-1" class="headerlink" title="解决方案"></a>解决方案</h3><p>在业务层返回数据前添加排序逻辑，保持对原有代码的最小侵入。</p>
+<h3 id="实现步骤-1"><a href="#实现步骤-1" class="headerlink" title="实现步骤"></a>实现步骤</h3><p>在 <code>StStbprpUnitStatisticsBiz</code> 的两个统计方法中，于 <code>return dataList</code> 前添加一行排序代码：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// StStbprpUnitStatisticsBiz.java</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 按 total 倒序排序</span></span><br><span class="line">dataList.sort((a, b) -&gt; Integer.compare((Integer) b.get(<span class="string">&quot;total&quot;</span>), (Integer) a.get(<span class="string">&quot;total&quot;</span>)));</span><br><span class="line"></span><br><span class="line"><span class="keyword">return</span> dataList;</span><br></pre></td></tr></table></figure>
+
+<p>需要修改的方法：</p>
+<ul>
+<li><code>statisticsForSecondLevel()</code></li>
+<li><code>statisticsForThirdLevel()</code></li>
+</ul>
+<hr>
+<h2 id="影响分析与注意事项"><a href="#影响分析与注意事项" class="headerlink" title="影响分析与注意事项"></a>影响分析与注意事项</h2><h3 id="字段新增场景"><a href="#字段新增场景" class="headerlink" title="字段新增场景"></a>字段新增场景</h3><table>
+<thead>
+<tr>
+<th>检查项</th>
+<th>状态</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>DTO 使用范围</td>
+<td>✅ 安全</td>
+<td>DTO 仅在 Controller 内部使用</td>
+</tr>
+<tr>
+<td>方法签名变更</td>
+<td>✅ 安全</td>
+<td>转换方法是 <code>private</code>，无外部调用</td>
+</tr>
+<tr>
+<td>测试文件</td>
+<td>✅ 无需修改</td>
+<td>现有测试是集成测试</td>
+</tr>
+<tr>
+<td>API 兼容性</td>
+<td>✅ 向后兼容</td>
+<td>新增字段不影响现有前端</td>
+</tr>
+</tbody></table>
+<p><strong>注意事项</strong>：如果使用了缓存（如 <code>cache=1</code>），旧缓存数据不包含新字段，反序列化后为 <code>null</code>。可以等待缓存过期（30 天），或手动清除 Redis 缓存：<code>KEYS water:summary:*</code></p>
+<h3 id="结果排序场景"><a href="#结果排序场景" class="headerlink" title="结果排序场景"></a>结果排序场景</h3><table>
+<thead>
+<tr>
+<th>检查项</th>
+<th>状态</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>业务逻辑</td>
+<td>✅ 无侵入</td>
+<td>只在返回前添加排序</td>
+</tr>
+<tr>
+<td>分页功能</td>
+<td>✅ 无影响</td>
+<td>该接口无分页</td>
+</tr>
+<tr>
+<td>API 兼容性</td>
+<td>✅ 向后兼容</td>
+<td>数据结构不变，只改变顺序</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="经验总结"><a href="#经验总结" class="headerlink" title="经验总结"></a>经验总结</h2><p>本次优化涉及两个小改动，但体现了几个重要的开发原则：</p>
+<ul>
+<li><strong>复用现有服务</strong>：<code>MappingService</code> 已经提供了类型映射，直接复用避免重复维护</li>
+<li><strong>保持一致性</strong>：不同接口的返回结构应保持一致，减少前端适配成本</li>
+<li><strong>最小侵入修改</strong>：排序逻辑只在返回前添加，不侵入核心业务流程</li>
+<li><strong>批量获取映射</strong>：避免在循环中单独查询，防止 N+1 问题</li>
+<li><strong>向后兼容</strong>：新增字段不破坏现有功能，排序不改数据结构</li>
+</ul>
+<p>这些”小优化”看似不起眼，但积累起来能显著提升 API 的易用性和前端开发体验。</p>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>后端开发不仅是实现功能，还要关注 API 的友好性和一致性。希望这两个小案例能给你带来一些启发，在实际项目中遇到类似问题时，可以快速定位并优雅解决。</p>
+]]></content>
+      <categories>
+        <category>后端开发</category>
+      </categories>
+      <tags>
+        <tag>Spring Boot</tag>
+        <tag>踩坑记录</tag>
+        <tag>API 优化</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>YouTube Research Pipeline：用 AI 打造自动化视频研究工作流</title>
     <url>/2026/03/09/YouTube-Research-Pipeline-%E8%87%AA%E5%8A%A8%E5%8C%96%E7%A0%94%E7%A9%B6%E5%B7%A5%E4%BD%9C%E6%B5%81/</url>
     <content><![CDATA[<p>一个话题输入，全自动研究输出。本文介绍如何用 Claude Code Skills + NotebookLM 构建端到端的 YouTube 视频研究工作流，实现从搜索、筛选、分析到生成报告的全自动化。</p>
@@ -1784,521 +2128,6 @@
         <tag>yt-dlp</tag>
         <tag>自动化</tag>
         <tag>研究工作流</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>后端 API 优化实战：字段补充与结果排序</title>
-    <url>/2026/03/05/%E5%90%8E%E7%AB%AFAPI%E4%BC%98%E5%8C%96%E5%AE%9E%E6%88%98-%E5%AD%97%E6%AE%B5%E8%A1%A5%E5%85%85%E4%B8%8E%E7%BB%93%E6%9E%9C%E6%8E%92%E5%BA%8F/</url>
-    <content><![CDATA[<p>在实际开发中，接口返回数据不一致、缺少关键字段、返回结果无序等问题经常困扰前端同学。本文记录了两个典型的后端 API 优化场景：为接口补充友好字段、为统计数据添加排序，分享问题定位思路和最小侵入式修改方案。</p>
-<span id="more"></span>
-
-<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在一次需求开发中，前端反馈了两个问题：一是水情汇总接口返回的测站类型是代码（如 <code>ZQ</code>），需要额外查询转换；二是管理单位统计接口返回的数据顺序是随机的，展示效果不佳。这两个问题都属于”不影响功能但影响体验”的类型，本文记录解决过程。</p>
-<h2 id="场景一：为接口新增友好字段"><a href="#场景一：为接口新增友好字段" class="headerlink" title="场景一：为接口新增友好字段"></a>场景一：为接口新增友好字段</h2><h3 id="问题背景"><a href="#问题背景" class="headerlink" title="问题背景"></a>问题背景</h3><p><code>/api/water/summary/list</code> 接口返回的 <code>STTP</code>（测站类型代码）是英文缩写，比如 <code>ZQ</code> 代表水文站、<code>ZZ</code> 代表水位站。前端展示时需要额外维护一套映射关系，将代码转换为中文名称。</p>
-<p>而同一个项目中，<code>/basic/b/list</code> 接口已经返回了 <code>stationTypeName</code> 字段，直接提供中文名称。两处实现不一致，增加了前端的维护成本。</p>
-<h3 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h3><p>参照 <code>/basic/b/list</code> 的实现，为 <code>summary/list</code> 接口新增 <code>stationTypeLabel</code> 字段，复用现有的 <code>MappingService.getStationTypeMap()</code> 获取测站类型映射。</p>
-<h3 id="实现步骤"><a href="#实现步骤" class="headerlink" title="实现步骤"></a>实现步骤</h3><h4 id="1-DTO-新增字段"><a href="#1-DTO-新增字段" class="headerlink" title="1. DTO 新增字段"></a>1. DTO 新增字段</h4><p>在响应 DTO 中添加新字段：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// WaterSummaryListResponseDTO.java</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@Schema(description = &quot;测站类型名称（中文），根据STTP代码转换的中文名称&quot;, example = &quot;水文站&quot;)</span></span><br><span class="line"><span class="keyword">private</span> String stationTypeLabel;</span><br></pre></td></tr></table></figure>
-
-<h4 id="2-Controller-注入-MappingService"><a href="#2-Controller-注入-MappingService" class="headerlink" title="2. Controller 注入 MappingService"></a>2. Controller 注入 MappingService</h4><p>复用现有的映射服务，避免重复造轮子：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// WaterSummaryController.java</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@Autowired</span></span><br><span class="line"><span class="keyword">private</span> MappingService mappingService;</span><br></pre></td></tr></table></figure>
-
-<h4 id="3-数据转换时填充字段"><a href="#3-数据转换时填充字段" class="headerlink" title="3. 数据转换时填充字段"></a>3. 数据转换时填充字段</h4><p>在 DTO 转换逻辑中填充新字段，注意批量获取映射避免 N+1 问题：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 批量转换时获取测站类型映射</span></span><br><span class="line">Map&lt;String, String&gt; stationTypeMap = mappingService.getStationTypeMap();</span><br><span class="line"></span><br><span class="line"><span class="comment">// 单个转换时填充 stationTypeLabel</span></span><br><span class="line"><span class="type">String</span> <span class="variable">sttp</span> <span class="operator">=</span> summary.getSTTP();</span><br><span class="line"><span class="keyword">if</span> (StringUtils.isNotEmpty(sttp) &amp;&amp; stationTypeMap != <span class="literal">null</span>) &#123;</span><br><span class="line">    dto.setStationTypeLabel(stationTypeMap.getOrDefault(sttp, <span class="string">&quot;&quot;</span>));</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    dto.setStationTypeLabel(<span class="string">&quot;&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="返回示例"><a href="#返回示例" class="headerlink" title="返回示例"></a>返回示例</h3><p>优化后的接口返回：</p>
-<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;STCD&quot;</span><span class="punctuation">:</span> <span class="string">&quot;62906600&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;STNM&quot;</span><span class="punctuation">:</span> <span class="string">&quot;加田水文站&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;STTP&quot;</span><span class="punctuation">:</span> <span class="string">&quot;ZQ&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;stationTypeLabel&quot;</span><span class="punctuation">:</span> <span class="string">&quot;水文站&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;LGTD&quot;</span><span class="punctuation">:</span> <span class="number">113.123456</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;LTTD&quot;</span><span class="punctuation">:</span> <span class="number">23.456789</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="场景二：统计接口结果排序"><a href="#场景二：统计接口结果排序" class="headerlink" title="场景二：统计接口结果排序"></a>场景二：统计接口结果排序</h2><h3 id="问题背景-1"><a href="#问题背景-1" class="headerlink" title="问题背景"></a>问题背景</h3><p><code>/basic/b/statistics?staticType=unit</code> 接口返回各机构的测站统计数据，但 <code>data</code> 数组中的顺序是随机的。前端展示时希望按测站总数（<code>total</code>）从大到小排序，让数据量大的机构排在前面。</p>
-<h3 id="解决方案-1"><a href="#解决方案-1" class="headerlink" title="解决方案"></a>解决方案</h3><p>在业务层返回数据前添加排序逻辑，保持对原有代码的最小侵入。</p>
-<h3 id="实现步骤-1"><a href="#实现步骤-1" class="headerlink" title="实现步骤"></a>实现步骤</h3><p>在 <code>StStbprpUnitStatisticsBiz</code> 的两个统计方法中，于 <code>return dataList</code> 前添加一行排序代码：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// StStbprpUnitStatisticsBiz.java</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 按 total 倒序排序</span></span><br><span class="line">dataList.sort((a, b) -&gt; Integer.compare((Integer) b.get(<span class="string">&quot;total&quot;</span>), (Integer) a.get(<span class="string">&quot;total&quot;</span>)));</span><br><span class="line"></span><br><span class="line"><span class="keyword">return</span> dataList;</span><br></pre></td></tr></table></figure>
-
-<p>需要修改的方法：</p>
-<ul>
-<li><code>statisticsForSecondLevel()</code></li>
-<li><code>statisticsForThirdLevel()</code></li>
-</ul>
-<hr>
-<h2 id="影响分析与注意事项"><a href="#影响分析与注意事项" class="headerlink" title="影响分析与注意事项"></a>影响分析与注意事项</h2><h3 id="字段新增场景"><a href="#字段新增场景" class="headerlink" title="字段新增场景"></a>字段新增场景</h3><table>
-<thead>
-<tr>
-<th>检查项</th>
-<th>状态</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>DTO 使用范围</td>
-<td>✅ 安全</td>
-<td>DTO 仅在 Controller 内部使用</td>
-</tr>
-<tr>
-<td>方法签名变更</td>
-<td>✅ 安全</td>
-<td>转换方法是 <code>private</code>，无外部调用</td>
-</tr>
-<tr>
-<td>测试文件</td>
-<td>✅ 无需修改</td>
-<td>现有测试是集成测试</td>
-</tr>
-<tr>
-<td>API 兼容性</td>
-<td>✅ 向后兼容</td>
-<td>新增字段不影响现有前端</td>
-</tr>
-</tbody></table>
-<p><strong>注意事项</strong>：如果使用了缓存（如 <code>cache=1</code>），旧缓存数据不包含新字段，反序列化后为 <code>null</code>。可以等待缓存过期（30 天），或手动清除 Redis 缓存：<code>KEYS water:summary:*</code></p>
-<h3 id="结果排序场景"><a href="#结果排序场景" class="headerlink" title="结果排序场景"></a>结果排序场景</h3><table>
-<thead>
-<tr>
-<th>检查项</th>
-<th>状态</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>业务逻辑</td>
-<td>✅ 无侵入</td>
-<td>只在返回前添加排序</td>
-</tr>
-<tr>
-<td>分页功能</td>
-<td>✅ 无影响</td>
-<td>该接口无分页</td>
-</tr>
-<tr>
-<td>API 兼容性</td>
-<td>✅ 向后兼容</td>
-<td>数据结构不变，只改变顺序</td>
-</tr>
-</tbody></table>
-<hr>
-<h2 id="经验总结"><a href="#经验总结" class="headerlink" title="经验总结"></a>经验总结</h2><p>本次优化涉及两个小改动，但体现了几个重要的开发原则：</p>
-<ul>
-<li><strong>复用现有服务</strong>：<code>MappingService</code> 已经提供了类型映射，直接复用避免重复维护</li>
-<li><strong>保持一致性</strong>：不同接口的返回结构应保持一致，减少前端适配成本</li>
-<li><strong>最小侵入修改</strong>：排序逻辑只在返回前添加，不侵入核心业务流程</li>
-<li><strong>批量获取映射</strong>：避免在循环中单独查询，防止 N+1 问题</li>
-<li><strong>向后兼容</strong>：新增字段不破坏现有功能，排序不改数据结构</li>
-</ul>
-<p>这些”小优化”看似不起眼，但积累起来能显著提升 API 的易用性和前端开发体验。</p>
-<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>后端开发不仅是实现功能，还要关注 API 的友好性和一致性。希望这两个小案例能给你带来一些启发，在实际项目中遇到类似问题时，可以快速定位并优雅解决。</p>
-]]></content>
-      <categories>
-        <category>后端开发</category>
-      </categories>
-      <tags>
-        <tag>Spring Boot</tag>
-        <tag>踩坑记录</tag>
-        <tag>API 优化</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>多Agent协作开发Android应用：Agent Team Lab 实战总结</title>
-    <url>/2026/03/24/%E5%A4%9AAgent%E5%8D%8F%E4%BD%9C%E5%BC%80%E5%8F%91Android%E5%BA%94%E7%94%A8%E5%AE%9E%E6%88%98%E6%80%BB%E7%BB%93/</url>
-    <content><![CDATA[<p>本文记录了使用多 Agent 团队协作开发一个 Android Demo 应用的全过程，从团队组建、工作流程、代码实现到最终打包，完整展示了如何通过多个 AI Agent 分工配合完成一个真实的移动端项目。</p>
-<span id="more"></span>
-
-<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在 AI 代码助手越来越强大的今天，单一 Agent 已经能够完成许多开发任务。但当我接到一个需求相对复杂、涉及多个技术领域的项目时，开始思考：<strong>能否像真实团队一样，通过多个专业化 Agent 协同工作来完成整个项目？</strong></p>
-<p>带着这个疑问，我组建了一个由 6 个不同角色 Agent 构成的团队，共同开发 <strong>Agent Team Lab</strong> 这个 Android Demo 应用。本文将完整记录这次实验的全过程，包括团队组建、工作流程、遇到的问题以及最终成果。</p>
-<h2 id="项目背景"><a href="#项目背景" class="headerlink" title="项目背景"></a>项目背景</h2><p><strong>Agent Team Lab</strong> 是一个用于展示多 Agent 团队如何围绕项目任务进行分工、协作、决策与追踪的移动端演示应用。</p>
-<p><strong>核心目标</strong>不是业务复杂度，而是验证多 Agent 协作模式的可行性，让团队协作过程清晰、可追踪、可复现。</p>
-<p><strong>技术栈</strong>：</p>
-<ul>
-<li>Kotlin 1.9.22</li>
-<li>Jetpack Compose + Material 3</li>
-<li>MVVM + Clean Architecture</li>
-<li>Hilt (依赖注入)</li>
-<li>Navigation Compose</li>
-<li>StateFlow</li>
-</ul>
-<h2 id="团队组建：6大角色分工"><a href="#团队组建：6大角色分工" class="headerlink" title="团队组建：6大角色分工"></a>团队组建：6大角色分工</h2><p>就像一个真实的软件开发团队，这个多 Agent 项目组建立了明确的角色分工：</p>
-<table>
-<thead>
-<tr>
-<th>Agent</th>
-<th>角色</th>
-<th>核心职责</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>PM Agent</td>
-<td>产品经理</td>
-<td>需求分析、PRD、用户故事、验收标准</td>
-</tr>
-<tr>
-<td>Android Architect</td>
-<td>架构师</td>
-<td>技术方案、模块划分、包结构设计</td>
-</tr>
-<tr>
-<td>Android Dev</td>
-<td>开发者</td>
-<td>代码实现、架构落地</td>
-</tr>
-<tr>
-<td>QA Agent</td>
-<td>测试工程师</td>
-<td>测试用例、边界分析、缺陷报告</td>
-</tr>
-<tr>
-<td>Reviewer</td>
-<td>代码审查</td>
-<td>架构规范、代码质量把控</td>
-</tr>
-<tr>
-<td>Docs Agent</td>
-<td>文档工程师</td>
-<td>项目文档、技术沉淀</td>
-</tr>
-</tbody></table>
-<blockquote>
-<p>[!tip] 关键设计<br>每个 Agent 都有明确的职责边界，通过结构化的交付物进行协作，这模拟了真实软件团队的工作方式。</p>
-</blockquote>
-<h2 id="工作流程：线性依赖与并行优化"><a href="#工作流程：线性依赖与并行优化" class="headerlink" title="工作流程：线性依赖与并行优化"></a>工作流程：线性依赖与并行优化</h2><p>多 Agent 协作的核心挑战是<strong>任务依赖关系</strong>。通过分析，我们设计了以下工作流程：</p>
-<p><img src="/images/posts/%E5%A4%9AAgent%E5%8D%8F%E4%BD%9C%E5%BC%80%E5%8F%91Android%E5%BA%94%E7%94%A8%E5%AE%9E%E6%88%98%E6%80%BB%E7%BB%93/workflow.png" alt="团队协作流程图"><br><em>图1：多Agent协作工作流程</em></p>
-<h3 id="主依赖链"><a href="#主依赖链" class="headerlink" title="主依赖链"></a>主依赖链</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">PM Agent → Android Architect → Android Dev → Reviewer</span><br></pre></td></tr></table></figure>
-
-<p>PM Agent 输出需求文档后，Architect 才能设计架构，Dev 才能基于架构实现代码，最后由 Reviewer 审查质量。</p>
-<h3 id="并行优化"><a href="#并行优化" class="headerlink" title="并行优化"></a>并行优化</h3><p>并非所有任务都需要等待主线完成：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────┐</span><br><span class="line">│  QA Agent ──────────────────────────────────→ Docs Agent │</span><br><span class="line">│  (可先行)                                              │</span><br><span class="line">└─────────────────────────────────────────────────────────┘</span><br><span class="line"></span><br><span class="line">┌─────────────────────────────────────────────────────────┐</span><br><span class="line">│  Reviewer ────────────────────────────────────────────── │</span><br><span class="line">│  (基于架构设计预研)                                      │</span><br><span class="line">└─────────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><strong>QA Agent</strong> 可以基于已知需求先行设计测试用例</li>
-<li><strong>Docs Agent</strong> 可以先行规划文档结构</li>
-<li><strong>Reviewer</strong> 可以基于架构设计做代码审查预研</li>
-</ul>
-<blockquote>
-<p>[!info] 效果<br>这种模式使得整体开发效率提升了约 40%，多个 Agent 可以同时在不同维度推进工作。</p>
-</blockquote>
-<h2 id="需求分析：PM-Agent-输出"><a href="#需求分析：PM-Agent-输出" class="headerlink" title="需求分析：PM Agent 输出"></a>需求分析：PM Agent 输出</h2><p>PM Agent 是整个项目的起点，它输出了完整的需求文档：</p>
-<h3 id="产品定位"><a href="#产品定位" class="headerlink" title="产品定位"></a>产品定位</h3><ul>
-<li><strong>项目名称</strong>：Agent Team Lab Android Demo</li>
-<li><strong>核心价值</strong>：展示多 Agent 团队分工、协作、决策与追踪的可视化 Demo</li>
-<li><strong>目标用户</strong>：内部团队成员、技术演示对象、管理者</li>
-</ul>
-<h3 id="功能模块"><a href="#功能模块" class="headerlink" title="功能模块"></a>功能模块</h3><table>
-<thead>
-<tr>
-<th>模块</th>
-<th>功能描述</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>任务面板</td>
-<td>状态切换（待处理&#x2F;进行中&#x2F;已完成&#x2F;阻塞）+ 优先级展示</td>
-</tr>
-<tr>
-<td>Agent 协作面板</td>
-<td>角色状态、最近动作、负责任务、模拟分派</td>
-</tr>
-<tr>
-<td>会话日志页</td>
-<td>时间线、Agent 过滤、决策&#x2F;风险&#x2F;阻塞&#x2F;建议类型</td>
-</tr>
-<tr>
-<td>项目看板页</td>
-<td>整体进度、完成率、阻塞数、失败数、图表展示</td>
-</tr>
-</tbody></table>
-<h3 id="用户故事"><a href="#用户故事" class="headerlink" title="用户故事"></a>用户故事</h3><p>8 条用户故事覆盖了 PM、架构师、开发者、QA、演示观众、团队负责人等不同角色视角：</p>
-<ul>
-<li>US-01: PM 查看任务状态和优先级</li>
-<li>US-02: PM 分配任务给 Agent</li>
-<li>US-03: 架构师查看 Agent 状态</li>
-<li>US-04: 开发者从任务跳转到日志</li>
-<li>US-05: QA 筛选风险&#x2F;阻塞日志</li>
-<li>US-06: 演示观众看整体完成度</li>
-<li>US-07: 团队负责人查看阻塞数&#x2F;失败数</li>
-<li>US-08: 文档&#x2F;复盘人员回看关键决策</li>
-</ul>
-<h3 id="任务优先级"><a href="#任务优先级" class="headerlink" title="任务优先级"></a>任务优先级</h3><table>
-<thead>
-<tr>
-<th>优先级</th>
-<th>内容</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>P0 (MVP)</td>
-<td>导航重构、4个MVP页面</td>
-</tr>
-<tr>
-<td>P1 (增强)</td>
-<td>双向关联、日志展开、项目筛选</td>
-</tr>
-<tr>
-<td>P2 (迭代)</td>
-<td>看板拖拽、日志导出、实时推送</td>
-</tr>
-</tbody></table>
-<h2 id="架构设计：Android-Architect-输出"><a href="#架构设计：Android-Architect-输出" class="headerlink" title="架构设计：Android Architect 输出"></a>架构设计：Android Architect 输出</h2><p>基于 PM 的需求文档，Android Architect 输出了完整的技术方案：</p>
-<h3 id="技术选型"><a href="#技术选型" class="headerlink" title="技术选型"></a>技术选型</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Kotlin 1.9.x + Jetpack Compose + Material 3 + MVVM + Clean Architecture</span><br></pre></td></tr></table></figure>
-
-<h3 id="Clean-Architecture-分层"><a href="#Clean-Architecture-分层" class="headerlink" title="Clean Architecture 分层"></a>Clean Architecture 分层</h3><p><img src="/images/posts/%E5%A4%9AAgent%E5%8D%8F%E4%BD%9C%E5%BC%80%E5%8F%91Android%E5%BA%94%E7%94%A8%E5%AE%9E%E6%88%98%E6%80%BB%E7%BB%93/architecture.png" alt="Clean Architecture架构图"><br><em>图2：Clean Architecture 分层架构</em></p>
-<figure class="highlight kotlin"><table><tr><td class="code"><pre><span class="line">com.agentteam.lab/</span><br><span class="line">├── core/          <span class="comment">// 导航、主题、工具类</span></span><br><span class="line">├── domain/        <span class="comment">// 模型、Repository 接口、UseCase</span></span><br><span class="line">├── <span class="keyword">data</span>/          <span class="comment">// Mock 数据源、Repository 实现</span></span><br><span class="line">├── ui/            <span class="comment">// 各页面 (Screen + ViewModel + components)</span></span><br><span class="line">└── di/            <span class="comment">// 依赖注入</span></span><br></pre></td></tr></table></figure>
-
-<h3 id="依赖策略"><a href="#依赖策略" class="headerlink" title="依赖策略"></a>依赖策略</h3><ul>
-<li>Compose BOM 2024.02.00（统一版本管理）</li>
-<li>Navigation Compose 2.7.7</li>
-<li>Lifecycle ViewModel Compose 2.7.0</li>
-<li><strong>最小化依赖原则</strong>：只添加必需库</li>
-</ul>
-<h2 id="代码实现：Android-Dev-输出"><a href="#代码实现：Android-Dev-输出" class="headerlink" title="代码实现：Android Dev 输出"></a>代码实现：Android Dev 输出</h2><p>Android Dev 基于架构设计完成了完整的代码实现：</p>
-<h3 id="代码统计"><a href="#代码统计" class="headerlink" title="代码统计"></a>代码统计</h3><table>
-<thead>
-<tr>
-<th>类型</th>
-<th>数量</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>Kotlin 文件</td>
-<td>47 个</td>
-<td>完整 Android 项目</td>
-</tr>
-<tr>
-<td>页面</td>
-<td>5 个</td>
-<td>Home&#x2F;Tasks&#x2F;Agents&#x2F;Logs&#x2F;Kanban</td>
-</tr>
-<tr>
-<td>ViewModel</td>
-<td>5 个</td>
-<td>每个页面对应一个 ViewModel</td>
-</tr>
-<tr>
-<td>Repository 接口</td>
-<td>3 个</td>
-<td>Task&#x2F;Agent&#x2F;SessionLog</td>
-</tr>
-<tr>
-<td>Repository 实现</td>
-<td>3 个</td>
-<td>对应的 Mock 实现</td>
-</tr>
-<tr>
-<td>UseCase</td>
-<td>3 个</td>
-<td>GetTasks&#x2F;GetAgents&#x2F;GetSessionLogs</td>
-</tr>
-<tr>
-<td>UiState</td>
-<td>5 个</td>
-<td>统一状态管理</td>
-</tr>
-</tbody></table>
-<h3 id="Mock-数据"><a href="#Mock-数据" class="headerlink" title="Mock 数据"></a>Mock 数据</h3><ul>
-<li><strong>5 个 Agent</strong>：PM、Architect、Developer、QA、Reviewer</li>
-<li><strong>20 个任务</strong>：覆盖各种状态和优先级</li>
-<li><strong>51 条会话日志</strong>：包含决策、风险、阻塞、建议等类型</li>
-</ul>
-<blockquote>
-<p>[!success] 架构符合度<br>最终架构与设计文档的符合度达到 **100%**，这是经过 Reviewer 两轮审查后确认的结果。</p>
-</blockquote>
-<h2 id="代码审查：Reviewer-的关键作用"><a href="#代码审查：Reviewer-的关键作用" class="headerlink" title="代码审查：Reviewer 的关键作用"></a>代码审查：Reviewer 的关键作用</h2><p>Reviewer 是整个团队质量把控的核心环节。让我详细记录这次审查过程：</p>
-<h3 id="第一轮审查：发现严重问题"><a href="#第一轮审查：发现严重问题" class="headerlink" title="第一轮审查：发现严重问题"></a>第一轮审查：发现严重问题</h3><p>Reviewer 发现代码实现与架构设计存在显著偏离：</p>
-<table>
-<thead>
-<tr>
-<th>问题</th>
-<th>等级</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>无 ViewModel 层</td>
-<td><strong>高</strong></td>
-<td>使用 <code>remember</code> 而非 StateFlow</td>
-</tr>
-<tr>
-<td>无 Repository 接口</td>
-<td><strong>高</strong></td>
-<td>无法切换真实数据源</td>
-</tr>
-<tr>
-<td>无 UseCase 层</td>
-<td><strong>高</strong></td>
-<td>业务逻辑混入 UI，无法测试</td>
-</tr>
-<tr>
-<td>状态管理混乱</td>
-<td><strong>高</strong></td>
-<td>配置变更会导致状态丢失</td>
-</tr>
-<tr>
-<td>代码重复</td>
-<td>中</td>
-<td>AgentRole 颜色映射多处重复</td>
-</tr>
-</tbody></table>
-<p><strong>可维护性评分</strong>：1.8&#x2F;5（低）</p>
-<h3 id="返工修复"><a href="#返工修复" class="headerlink" title="返工修复"></a>返工修复</h3><p>Android Dev 基于审查反馈进行了全面返工：</p>
-<ol>
-<li><strong>添加 ViewModel 层</strong>：5 个 ViewModel 全部创建</li>
-<li><strong>创建 Repository 接口</strong>：3 个接口 + 3 个实现</li>
-<li><strong>实现 UseCase 类</strong>：3 个 UseCase 封装业务逻辑</li>
-<li><strong>配置 Hilt AppModule</strong>：依赖注入完整配置</li>
-<li><strong>统一 UiState</strong>：5 个 UiState 数据类管理状态</li>
-</ol>
-<h3 id="第二轮审查：确认通过"><a href="#第二轮审查：确认通过" class="headerlink" title="第二轮审查：确认通过"></a>第二轮审查：确认通过</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">架构符合度：33% → 100%</span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<p>[!warning] 经验教训<br>如果没有 Reviewer 的主动审查，这些架构问题会被带到后续开发中，后期修复成本将增加 3-5 倍。</p>
-</blockquote>
-<h2 id="测试设计：QA-Agent-输出"><a href="#测试设计：QA-Agent-输出" class="headerlink" title="测试设计：QA Agent 输出"></a>测试设计：QA Agent 输出</h2><p>QA Agent 设计了完整的测试方案：</p>
-<h3 id="测试用例清单（60-用例）"><a href="#测试用例清单（60-用例）" class="headerlink" title="测试用例清单（60+用例）"></a>测试用例清单（60+用例）</h3><table>
-<thead>
-<tr>
-<th>类型</th>
-<th>用例数</th>
-<th>覆盖范围</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>功能测试</td>
-<td>33</td>
-<td>任务面板(8)、Agent协作(8)、会话日志(9)、项目看板(8)</td>
-</tr>
-<tr>
-<td>边界测试</td>
-<td>16</td>
-<td>状态转换、数值范围、并发等</td>
-</tr>
-<tr>
-<td>异常测试</td>
-<td>10</td>
-<td>网络错误、JSON解析失败、空数据等</td>
-</tr>
-</tbody></table>
-<h3 id="回归检查清单"><a href="#回归检查清单" class="headerlink" title="回归检查清单"></a>回归检查清单</h3><p>60 项检查点覆盖 4 个核心模块，确保每次变更都不会引入新的问题。</p>
-<h3 id="测试金字塔"><a href="#测试金字塔" class="headerlink" title="测试金字塔"></a>测试金字塔</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">      /\</span><br><span class="line">     /  \     E2E Tests (少量)</span><br><span class="line">    /----\</span><br><span class="line">   /      \   Integration Tests (适量)</span><br><span class="line">  /--------\</span><br><span class="line"> /          \  Unit Tests (大量)</span><br><span class="line">/____________\</span><br></pre></td></tr></table></figure>
-
-<h2 id="构建问题与解决"><a href="#构建问题与解决" class="headerlink" title="构建问题与解决"></a>构建问题与解决</h2><p>项目构建过程中遇到了几个典型问题，这里分享解决方案：</p>
-<h3 id="问题1：kotlin-plugin-compose-不存在"><a href="#问题1：kotlin-plugin-compose-不存在" class="headerlink" title="问题1：kotlin.plugin.compose 不存在"></a>问题1：kotlin.plugin.compose 不存在</h3><p><strong>错误信息</strong>：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Plugin [id: &#x27;org.jetbrains.kotlin.plugin.compose&#x27;, version: &#x27;1.9.22&#x27;] was not found</span><br></pre></td></tr></table></figure>
-
-<p><strong>原因</strong>：这个插件是 Kotlin 2.0+ 才有的特性，而项目使用的是 Kotlin 1.9.22</p>
-<p><strong>解决方案</strong>：</p>
-<ol>
-<li>移除 <code>libs.versions.toml</code> 中的 <code>kotlin-compose</code> plugin</li>
-<li>在 <code>app/build.gradle.kts</code> 添加：<figure class="highlight kotlin"><table><tr><td class="code"><pre><span class="line">composeOptions &#123;</span><br><span class="line">    kotlinCompilerExtensionVersion = <span class="string">&quot;1.5.8&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
-</ol>
-<h3 id="问题2：缺少-gradle-properties"><a href="#问题2：缺少-gradle-properties" class="headerlink" title="问题2：缺少 gradle.properties"></a>问题2：缺少 gradle.properties</h3><p><strong>错误信息</strong>：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">android.useAndroidX property is not enabled</span><br></pre></td></tr></table></figure>
-
-<p><strong>解决方案</strong>：创建 <code>gradle.properties</code>：</p>
-<figure class="highlight properties"><table><tr><td class="code"><pre><span class="line"><span class="attr">android.useAndroidX</span>=<span class="string">true</span></span><br><span class="line"><span class="attr">android.enableJetifier</span>=<span class="string">true</span></span><br></pre></td></tr></table></figure>
-
-<h3 id="问题3：缺少-Launcher-图标"><a href="#问题3：缺少-Launcher-图标" class="headerlink" title="问题3：缺少 Launcher 图标"></a>问题3：缺少 Launcher 图标</h3><p><strong>错误信息</strong>：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">resource mipmap/ic_launcher not found</span><br></pre></td></tr></table></figure>
-
-<p><strong>解决方案</strong>：创建自适应图标资源文件：</p>
-<ul>
-<li><code>mipmap-anydpi-v26/ic_launcher.xml</code></li>
-<li><code>drawable/ic_launcher_foreground.xml</code></li>
-<li><code>values/colors.xml</code></li>
-</ul>
-<h2 id="最终产物"><a href="#最终产物" class="headerlink" title="最终产物"></a>最终产物</h2><p><img src="/images/posts/%E5%A4%9AAgent%E5%8D%8F%E4%BD%9C%E5%BC%80%E5%8F%91Android%E5%BA%94%E7%94%A8%E5%AE%9E%E6%88%98%E6%80%BB%E7%BB%93/app-preview.png" alt="App界面预览"><br><em>图3：Agent Team Lab 应用界面</em></p>
-<table>
-<thead>
-<tr>
-<th>产物</th>
-<th>路径</th>
-<th>规格</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>APK</td>
-<td><code>android-app/app/build/outputs/apk/debug/app-debug.apk</code></td>
-<td>17.6 MB</td>
-</tr>
-<tr>
-<td>项目代码</td>
-<td><code>E:\abcd\andkaifaliansho\android-app\</code></td>
-<td>47 个 Kotlin 文件</td>
-</tr>
-<tr>
-<td>技术文档</td>
-<td><code>E:\abcd\andkaifaliansho\docs\</code></td>
-<td>10 个 MD 文件</td>
-</tr>
-</tbody></table>
-<h3 id="构建验证"><a href="#构建验证" class="headerlink" title="构建验证"></a>构建验证</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">./gradlew assembleDebug</span><br><span class="line"><span class="comment"># BUILD SUCCESSFUL in 1m 19s</span></span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<p>[!success] 最终状态<br>APK 可直接安装运行，使用 Mock 数据无需后台服务，可离线使用。</p>
-</blockquote>
-<h2 id="经验总结"><a href="#经验总结" class="headerlink" title="经验总结"></a>经验总结</h2><p>通过这次多 Agent 协作实验，我总结了以下几点关键经验：</p>
-<h3 id="1-多-Agent-协作完全可行"><a href="#1-多-Agent-协作完全可行" class="headerlink" title="1. 多 Agent 协作完全可行"></a>1. 多 Agent 协作完全可行</h3><ul>
-<li>分工明确，产出清晰</li>
-<li>PM→Architect→Dev→Reviewer 依赖链有效运转</li>
-<li>最终产出质量有保证</li>
-</ul>
-<h3 id="2-Reviewer-角色不可或缺"><a href="#2-Reviewer-角色不可或缺" class="headerlink" title="2. Reviewer 角色不可或缺"></a>2. Reviewer 角色不可或缺</h3><ul>
-<li>主动发现架构问题</li>
-<li>从 33% 到 100% 的提升</li>
-<li>2 轮审查确保代码质量</li>
-</ul>
-<h3 id="3-Mock-数据优先策略"><a href="#3-Mock-数据优先策略" class="headerlink" title="3. Mock 数据优先策略"></a>3. Mock 数据优先策略</h3><ul>
-<li>前期不接真实后端</li>
-<li>快速验证 UI 和业务逻辑</li>
-<li>降低复杂度，加速迭代</li>
-</ul>
-<h3 id="4-Build-Early-Build-Often"><a href="#4-Build-Early-Build-Often" class="headerlink" title="4. Build Early, Build Often"></a>4. Build Early, Build Often</h3><ul>
-<li>尽早执行 gradle build</li>
-<li>及时发现配置和依赖问题</li>
-<li>避免问题积累到后期</li>
-</ul>
-<h3 id="5-并行优化提升效率"><a href="#5-并行优化提升效率" class="headerlink" title="5. 并行优化提升效率"></a>5. 并行优化提升效率</h3><ul>
-<li>QA&#x2F;Docs 可在设计阶段并行工作</li>
-<li>Reviewer 可做预研准备</li>
-<li>整体效率提升约 40%</li>
-</ul>
-<h2 id="后续扩展方向"><a href="#后续扩展方向" class="headerlink" title="后续扩展方向"></a>后续扩展方向</h2><p>项目目前是 MVP 状态，还有很多可以扩展的方向：</p>
-<table>
-<thead>
-<tr>
-<th>方向</th>
-<th>内容</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>功能扩展</td>
-<td>看板拖拽、日志导出、实时推送</td>
-</tr>
-<tr>
-<td>数据源</td>
-<td>接入真实后端 API</td>
-</tr>
-<tr>
-<td>协作增强</td>
-<td>多端实时协同、复杂权限体系</td>
-</tr>
-<tr>
-<td>测试自动化</td>
-<td>Espresso + Rest Assured 自动化测试</td>
-</tr>
-</tbody></table>
-<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>这次实验证明，<strong>多 Agent 协作模式在软件开发中是可行的</strong>。通过明确分工、结构化交付物、严格审查，可以有效提升开发效率同时保证代码质量。</p>
-<p>更重要的是，这种模式让我们看到了 AI 在软件开发中的更大潜力：<strong>不是替代开发者，而是像助手一样分担不同专业化的工作</strong>。</p>
-<p>如果你对多 Agent 协作开发感兴趣，欢迎尝试搭建自己的 Agent 团队。有任何问题，欢迎交流讨论。</p>
-<hr>
-<p><em>项目源码：<a href="https://github.com/example/agent-team-lab">https://github.com/example/agent-team-lab</a></em></p>
-]]></content>
-      <categories>
-        <category>AI经验</category>
-        <category>项目分享</category>
-      </categories>
-      <tags>
-        <tag>多Agent协作</tag>
-        <tag>Android开发</tag>
-        <tag>团队协作</tag>
-        <tag>CleanArchitecture</tag>
-        <tag>MVVM</tag>
       </tags>
   </entry>
   <entry>
@@ -3146,6 +2975,412 @@
       </tags>
   </entry>
   <entry>
+    <title>多Agent协作开发Android应用：Agent Team Lab 实战总结</title>
+    <url>/2026/03/24/%E5%A4%9AAgent%E5%8D%8F%E4%BD%9C%E5%BC%80%E5%8F%91Android%E5%BA%94%E7%94%A8%E5%AE%9E%E6%88%98%E6%80%BB%E7%BB%93/</url>
+    <content><![CDATA[<p>本文记录了使用多 Agent 团队协作开发一个 Android Demo 应用的全过程，从团队组建、工作流程、代码实现到最终打包，完整展示了如何通过多个 AI Agent 分工配合完成一个真实的移动端项目。</p>
+<span id="more"></span>
+
+<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在 AI 代码助手越来越强大的今天，单一 Agent 已经能够完成许多开发任务。但当我接到一个需求相对复杂、涉及多个技术领域的项目时，开始思考：<strong>能否像真实团队一样，通过多个专业化 Agent 协同工作来完成整个项目？</strong></p>
+<p>带着这个疑问，我组建了一个由 6 个不同角色 Agent 构成的团队，共同开发 <strong>Agent Team Lab</strong> 这个 Android Demo 应用。本文将完整记录这次实验的全过程，包括团队组建、工作流程、遇到的问题以及最终成果。</p>
+<h2 id="项目背景"><a href="#项目背景" class="headerlink" title="项目背景"></a>项目背景</h2><p><strong>Agent Team Lab</strong> 是一个用于展示多 Agent 团队如何围绕项目任务进行分工、协作、决策与追踪的移动端演示应用。</p>
+<p><strong>核心目标</strong>不是业务复杂度，而是验证多 Agent 协作模式的可行性，让团队协作过程清晰、可追踪、可复现。</p>
+<p><strong>技术栈</strong>：</p>
+<ul>
+<li>Kotlin 1.9.22</li>
+<li>Jetpack Compose + Material 3</li>
+<li>MVVM + Clean Architecture</li>
+<li>Hilt (依赖注入)</li>
+<li>Navigation Compose</li>
+<li>StateFlow</li>
+</ul>
+<h2 id="团队组建：6大角色分工"><a href="#团队组建：6大角色分工" class="headerlink" title="团队组建：6大角色分工"></a>团队组建：6大角色分工</h2><p>就像一个真实的软件开发团队，这个多 Agent 项目组建立了明确的角色分工：</p>
+<table>
+<thead>
+<tr>
+<th>Agent</th>
+<th>角色</th>
+<th>核心职责</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>PM Agent</td>
+<td>产品经理</td>
+<td>需求分析、PRD、用户故事、验收标准</td>
+</tr>
+<tr>
+<td>Android Architect</td>
+<td>架构师</td>
+<td>技术方案、模块划分、包结构设计</td>
+</tr>
+<tr>
+<td>Android Dev</td>
+<td>开发者</td>
+<td>代码实现、架构落地</td>
+</tr>
+<tr>
+<td>QA Agent</td>
+<td>测试工程师</td>
+<td>测试用例、边界分析、缺陷报告</td>
+</tr>
+<tr>
+<td>Reviewer</td>
+<td>代码审查</td>
+<td>架构规范、代码质量把控</td>
+</tr>
+<tr>
+<td>Docs Agent</td>
+<td>文档工程师</td>
+<td>项目文档、技术沉淀</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>[!tip] 关键设计<br>每个 Agent 都有明确的职责边界，通过结构化的交付物进行协作，这模拟了真实软件团队的工作方式。</p>
+</blockquote>
+<h2 id="工作流程：线性依赖与并行优化"><a href="#工作流程：线性依赖与并行优化" class="headerlink" title="工作流程：线性依赖与并行优化"></a>工作流程：线性依赖与并行优化</h2><p>多 Agent 协作的核心挑战是<strong>任务依赖关系</strong>。通过分析，我们设计了以下工作流程：</p>
+<p><img src="/images/posts/%E5%A4%9AAgent%E5%8D%8F%E4%BD%9C%E5%BC%80%E5%8F%91Android%E5%BA%94%E7%94%A8%E5%AE%9E%E6%88%98%E6%80%BB%E7%BB%93/workflow.png" alt="团队协作流程图"><br><em>图1：多Agent协作工作流程</em></p>
+<h3 id="主依赖链"><a href="#主依赖链" class="headerlink" title="主依赖链"></a>主依赖链</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">PM Agent → Android Architect → Android Dev → Reviewer</span><br></pre></td></tr></table></figure>
+
+<p>PM Agent 输出需求文档后，Architect 才能设计架构，Dev 才能基于架构实现代码，最后由 Reviewer 审查质量。</p>
+<h3 id="并行优化"><a href="#并行优化" class="headerlink" title="并行优化"></a>并行优化</h3><p>并非所有任务都需要等待主线完成：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────┐</span><br><span class="line">│  QA Agent ──────────────────────────────────→ Docs Agent │</span><br><span class="line">│  (可先行)                                              │</span><br><span class="line">└─────────────────────────────────────────────────────────┘</span><br><span class="line"></span><br><span class="line">┌─────────────────────────────────────────────────────────┐</span><br><span class="line">│  Reviewer ────────────────────────────────────────────── │</span><br><span class="line">│  (基于架构设计预研)                                      │</span><br><span class="line">└─────────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><strong>QA Agent</strong> 可以基于已知需求先行设计测试用例</li>
+<li><strong>Docs Agent</strong> 可以先行规划文档结构</li>
+<li><strong>Reviewer</strong> 可以基于架构设计做代码审查预研</li>
+</ul>
+<blockquote>
+<p>[!info] 效果<br>这种模式使得整体开发效率提升了约 40%，多个 Agent 可以同时在不同维度推进工作。</p>
+</blockquote>
+<h2 id="需求分析：PM-Agent-输出"><a href="#需求分析：PM-Agent-输出" class="headerlink" title="需求分析：PM Agent 输出"></a>需求分析：PM Agent 输出</h2><p>PM Agent 是整个项目的起点，它输出了完整的需求文档：</p>
+<h3 id="产品定位"><a href="#产品定位" class="headerlink" title="产品定位"></a>产品定位</h3><ul>
+<li><strong>项目名称</strong>：Agent Team Lab Android Demo</li>
+<li><strong>核心价值</strong>：展示多 Agent 团队分工、协作、决策与追踪的可视化 Demo</li>
+<li><strong>目标用户</strong>：内部团队成员、技术演示对象、管理者</li>
+</ul>
+<h3 id="功能模块"><a href="#功能模块" class="headerlink" title="功能模块"></a>功能模块</h3><table>
+<thead>
+<tr>
+<th>模块</th>
+<th>功能描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>任务面板</td>
+<td>状态切换（待处理&#x2F;进行中&#x2F;已完成&#x2F;阻塞）+ 优先级展示</td>
+</tr>
+<tr>
+<td>Agent 协作面板</td>
+<td>角色状态、最近动作、负责任务、模拟分派</td>
+</tr>
+<tr>
+<td>会话日志页</td>
+<td>时间线、Agent 过滤、决策&#x2F;风险&#x2F;阻塞&#x2F;建议类型</td>
+</tr>
+<tr>
+<td>项目看板页</td>
+<td>整体进度、完成率、阻塞数、失败数、图表展示</td>
+</tr>
+</tbody></table>
+<h3 id="用户故事"><a href="#用户故事" class="headerlink" title="用户故事"></a>用户故事</h3><p>8 条用户故事覆盖了 PM、架构师、开发者、QA、演示观众、团队负责人等不同角色视角：</p>
+<ul>
+<li>US-01: PM 查看任务状态和优先级</li>
+<li>US-02: PM 分配任务给 Agent</li>
+<li>US-03: 架构师查看 Agent 状态</li>
+<li>US-04: 开发者从任务跳转到日志</li>
+<li>US-05: QA 筛选风险&#x2F;阻塞日志</li>
+<li>US-06: 演示观众看整体完成度</li>
+<li>US-07: 团队负责人查看阻塞数&#x2F;失败数</li>
+<li>US-08: 文档&#x2F;复盘人员回看关键决策</li>
+</ul>
+<h3 id="任务优先级"><a href="#任务优先级" class="headerlink" title="任务优先级"></a>任务优先级</h3><table>
+<thead>
+<tr>
+<th>优先级</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>P0 (MVP)</td>
+<td>导航重构、4个MVP页面</td>
+</tr>
+<tr>
+<td>P1 (增强)</td>
+<td>双向关联、日志展开、项目筛选</td>
+</tr>
+<tr>
+<td>P2 (迭代)</td>
+<td>看板拖拽、日志导出、实时推送</td>
+</tr>
+</tbody></table>
+<h2 id="架构设计：Android-Architect-输出"><a href="#架构设计：Android-Architect-输出" class="headerlink" title="架构设计：Android Architect 输出"></a>架构设计：Android Architect 输出</h2><p>基于 PM 的需求文档，Android Architect 输出了完整的技术方案：</p>
+<h3 id="技术选型"><a href="#技术选型" class="headerlink" title="技术选型"></a>技术选型</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Kotlin 1.9.x + Jetpack Compose + Material 3 + MVVM + Clean Architecture</span><br></pre></td></tr></table></figure>
+
+<h3 id="Clean-Architecture-分层"><a href="#Clean-Architecture-分层" class="headerlink" title="Clean Architecture 分层"></a>Clean Architecture 分层</h3><p><img src="/images/posts/%E5%A4%9AAgent%E5%8D%8F%E4%BD%9C%E5%BC%80%E5%8F%91Android%E5%BA%94%E7%94%A8%E5%AE%9E%E6%88%98%E6%80%BB%E7%BB%93/architecture.png" alt="Clean Architecture架构图"><br><em>图2：Clean Architecture 分层架构</em></p>
+<figure class="highlight kotlin"><table><tr><td class="code"><pre><span class="line">com.agentteam.lab/</span><br><span class="line">├── core/          <span class="comment">// 导航、主题、工具类</span></span><br><span class="line">├── domain/        <span class="comment">// 模型、Repository 接口、UseCase</span></span><br><span class="line">├── <span class="keyword">data</span>/          <span class="comment">// Mock 数据源、Repository 实现</span></span><br><span class="line">├── ui/            <span class="comment">// 各页面 (Screen + ViewModel + components)</span></span><br><span class="line">└── di/            <span class="comment">// 依赖注入</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="依赖策略"><a href="#依赖策略" class="headerlink" title="依赖策略"></a>依赖策略</h3><ul>
+<li>Compose BOM 2024.02.00（统一版本管理）</li>
+<li>Navigation Compose 2.7.7</li>
+<li>Lifecycle ViewModel Compose 2.7.0</li>
+<li><strong>最小化依赖原则</strong>：只添加必需库</li>
+</ul>
+<h2 id="代码实现：Android-Dev-输出"><a href="#代码实现：Android-Dev-输出" class="headerlink" title="代码实现：Android Dev 输出"></a>代码实现：Android Dev 输出</h2><p>Android Dev 基于架构设计完成了完整的代码实现：</p>
+<h3 id="代码统计"><a href="#代码统计" class="headerlink" title="代码统计"></a>代码统计</h3><table>
+<thead>
+<tr>
+<th>类型</th>
+<th>数量</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Kotlin 文件</td>
+<td>47 个</td>
+<td>完整 Android 项目</td>
+</tr>
+<tr>
+<td>页面</td>
+<td>5 个</td>
+<td>Home&#x2F;Tasks&#x2F;Agents&#x2F;Logs&#x2F;Kanban</td>
+</tr>
+<tr>
+<td>ViewModel</td>
+<td>5 个</td>
+<td>每个页面对应一个 ViewModel</td>
+</tr>
+<tr>
+<td>Repository 接口</td>
+<td>3 个</td>
+<td>Task&#x2F;Agent&#x2F;SessionLog</td>
+</tr>
+<tr>
+<td>Repository 实现</td>
+<td>3 个</td>
+<td>对应的 Mock 实现</td>
+</tr>
+<tr>
+<td>UseCase</td>
+<td>3 个</td>
+<td>GetTasks&#x2F;GetAgents&#x2F;GetSessionLogs</td>
+</tr>
+<tr>
+<td>UiState</td>
+<td>5 个</td>
+<td>统一状态管理</td>
+</tr>
+</tbody></table>
+<h3 id="Mock-数据"><a href="#Mock-数据" class="headerlink" title="Mock 数据"></a>Mock 数据</h3><ul>
+<li><strong>5 个 Agent</strong>：PM、Architect、Developer、QA、Reviewer</li>
+<li><strong>20 个任务</strong>：覆盖各种状态和优先级</li>
+<li><strong>51 条会话日志</strong>：包含决策、风险、阻塞、建议等类型</li>
+</ul>
+<blockquote>
+<p>[!success] 架构符合度<br>最终架构与设计文档的符合度达到 **100%**，这是经过 Reviewer 两轮审查后确认的结果。</p>
+</blockquote>
+<h2 id="代码审查：Reviewer-的关键作用"><a href="#代码审查：Reviewer-的关键作用" class="headerlink" title="代码审查：Reviewer 的关键作用"></a>代码审查：Reviewer 的关键作用</h2><p>Reviewer 是整个团队质量把控的核心环节。让我详细记录这次审查过程：</p>
+<h3 id="第一轮审查：发现严重问题"><a href="#第一轮审查：发现严重问题" class="headerlink" title="第一轮审查：发现严重问题"></a>第一轮审查：发现严重问题</h3><p>Reviewer 发现代码实现与架构设计存在显著偏离：</p>
+<table>
+<thead>
+<tr>
+<th>问题</th>
+<th>等级</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>无 ViewModel 层</td>
+<td><strong>高</strong></td>
+<td>使用 <code>remember</code> 而非 StateFlow</td>
+</tr>
+<tr>
+<td>无 Repository 接口</td>
+<td><strong>高</strong></td>
+<td>无法切换真实数据源</td>
+</tr>
+<tr>
+<td>无 UseCase 层</td>
+<td><strong>高</strong></td>
+<td>业务逻辑混入 UI，无法测试</td>
+</tr>
+<tr>
+<td>状态管理混乱</td>
+<td><strong>高</strong></td>
+<td>配置变更会导致状态丢失</td>
+</tr>
+<tr>
+<td>代码重复</td>
+<td>中</td>
+<td>AgentRole 颜色映射多处重复</td>
+</tr>
+</tbody></table>
+<p><strong>可维护性评分</strong>：1.8&#x2F;5（低）</p>
+<h3 id="返工修复"><a href="#返工修复" class="headerlink" title="返工修复"></a>返工修复</h3><p>Android Dev 基于审查反馈进行了全面返工：</p>
+<ol>
+<li><strong>添加 ViewModel 层</strong>：5 个 ViewModel 全部创建</li>
+<li><strong>创建 Repository 接口</strong>：3 个接口 + 3 个实现</li>
+<li><strong>实现 UseCase 类</strong>：3 个 UseCase 封装业务逻辑</li>
+<li><strong>配置 Hilt AppModule</strong>：依赖注入完整配置</li>
+<li><strong>统一 UiState</strong>：5 个 UiState 数据类管理状态</li>
+</ol>
+<h3 id="第二轮审查：确认通过"><a href="#第二轮审查：确认通过" class="headerlink" title="第二轮审查：确认通过"></a>第二轮审查：确认通过</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">架构符合度：33% → 100%</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>[!warning] 经验教训<br>如果没有 Reviewer 的主动审查，这些架构问题会被带到后续开发中，后期修复成本将增加 3-5 倍。</p>
+</blockquote>
+<h2 id="测试设计：QA-Agent-输出"><a href="#测试设计：QA-Agent-输出" class="headerlink" title="测试设计：QA Agent 输出"></a>测试设计：QA Agent 输出</h2><p>QA Agent 设计了完整的测试方案：</p>
+<h3 id="测试用例清单（60-用例）"><a href="#测试用例清单（60-用例）" class="headerlink" title="测试用例清单（60+用例）"></a>测试用例清单（60+用例）</h3><table>
+<thead>
+<tr>
+<th>类型</th>
+<th>用例数</th>
+<th>覆盖范围</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>功能测试</td>
+<td>33</td>
+<td>任务面板(8)、Agent协作(8)、会话日志(9)、项目看板(8)</td>
+</tr>
+<tr>
+<td>边界测试</td>
+<td>16</td>
+<td>状态转换、数值范围、并发等</td>
+</tr>
+<tr>
+<td>异常测试</td>
+<td>10</td>
+<td>网络错误、JSON解析失败、空数据等</td>
+</tr>
+</tbody></table>
+<h3 id="回归检查清单"><a href="#回归检查清单" class="headerlink" title="回归检查清单"></a>回归检查清单</h3><p>60 项检查点覆盖 4 个核心模块，确保每次变更都不会引入新的问题。</p>
+<h3 id="测试金字塔"><a href="#测试金字塔" class="headerlink" title="测试金字塔"></a>测试金字塔</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">      /\</span><br><span class="line">     /  \     E2E Tests (少量)</span><br><span class="line">    /----\</span><br><span class="line">   /      \   Integration Tests (适量)</span><br><span class="line">  /--------\</span><br><span class="line"> /          \  Unit Tests (大量)</span><br><span class="line">/____________\</span><br></pre></td></tr></table></figure>
+
+<h2 id="构建问题与解决"><a href="#构建问题与解决" class="headerlink" title="构建问题与解决"></a>构建问题与解决</h2><p>项目构建过程中遇到了几个典型问题，这里分享解决方案：</p>
+<h3 id="问题1：kotlin-plugin-compose-不存在"><a href="#问题1：kotlin-plugin-compose-不存在" class="headerlink" title="问题1：kotlin.plugin.compose 不存在"></a>问题1：kotlin.plugin.compose 不存在</h3><p><strong>错误信息</strong>：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Plugin [id: &#x27;org.jetbrains.kotlin.plugin.compose&#x27;, version: &#x27;1.9.22&#x27;] was not found</span><br></pre></td></tr></table></figure>
+
+<p><strong>原因</strong>：这个插件是 Kotlin 2.0+ 才有的特性，而项目使用的是 Kotlin 1.9.22</p>
+<p><strong>解决方案</strong>：</p>
+<ol>
+<li>移除 <code>libs.versions.toml</code> 中的 <code>kotlin-compose</code> plugin</li>
+<li>在 <code>app/build.gradle.kts</code> 添加：<figure class="highlight kotlin"><table><tr><td class="code"><pre><span class="line">composeOptions &#123;</span><br><span class="line">    kotlinCompilerExtensionVersion = <span class="string">&quot;1.5.8&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h3 id="问题2：缺少-gradle-properties"><a href="#问题2：缺少-gradle-properties" class="headerlink" title="问题2：缺少 gradle.properties"></a>问题2：缺少 gradle.properties</h3><p><strong>错误信息</strong>：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">android.useAndroidX property is not enabled</span><br></pre></td></tr></table></figure>
+
+<p><strong>解决方案</strong>：创建 <code>gradle.properties</code>：</p>
+<figure class="highlight properties"><table><tr><td class="code"><pre><span class="line"><span class="attr">android.useAndroidX</span>=<span class="string">true</span></span><br><span class="line"><span class="attr">android.enableJetifier</span>=<span class="string">true</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="问题3：缺少-Launcher-图标"><a href="#问题3：缺少-Launcher-图标" class="headerlink" title="问题3：缺少 Launcher 图标"></a>问题3：缺少 Launcher 图标</h3><p><strong>错误信息</strong>：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">resource mipmap/ic_launcher not found</span><br></pre></td></tr></table></figure>
+
+<p><strong>解决方案</strong>：创建自适应图标资源文件：</p>
+<ul>
+<li><code>mipmap-anydpi-v26/ic_launcher.xml</code></li>
+<li><code>drawable/ic_launcher_foreground.xml</code></li>
+<li><code>values/colors.xml</code></li>
+</ul>
+<h2 id="最终产物"><a href="#最终产物" class="headerlink" title="最终产物"></a>最终产物</h2><p><img src="/images/posts/%E5%A4%9AAgent%E5%8D%8F%E4%BD%9C%E5%BC%80%E5%8F%91Android%E5%BA%94%E7%94%A8%E5%AE%9E%E6%88%98%E6%80%BB%E7%BB%93/app-preview.png" alt="App界面预览"><br><em>图3：Agent Team Lab 应用界面</em></p>
+<table>
+<thead>
+<tr>
+<th>产物</th>
+<th>路径</th>
+<th>规格</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>APK</td>
+<td><code>android-app/app/build/outputs/apk/debug/app-debug.apk</code></td>
+<td>17.6 MB</td>
+</tr>
+<tr>
+<td>项目代码</td>
+<td><code>E:\abcd\andkaifaliansho\android-app\</code></td>
+<td>47 个 Kotlin 文件</td>
+</tr>
+<tr>
+<td>技术文档</td>
+<td><code>E:\abcd\andkaifaliansho\docs\</code></td>
+<td>10 个 MD 文件</td>
+</tr>
+</tbody></table>
+<h3 id="构建验证"><a href="#构建验证" class="headerlink" title="构建验证"></a>构建验证</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">./gradlew assembleDebug</span><br><span class="line"><span class="comment"># BUILD SUCCESSFUL in 1m 19s</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>[!success] 最终状态<br>APK 可直接安装运行，使用 Mock 数据无需后台服务，可离线使用。</p>
+</blockquote>
+<h2 id="经验总结"><a href="#经验总结" class="headerlink" title="经验总结"></a>经验总结</h2><p>通过这次多 Agent 协作实验，我总结了以下几点关键经验：</p>
+<h3 id="1-多-Agent-协作完全可行"><a href="#1-多-Agent-协作完全可行" class="headerlink" title="1. 多 Agent 协作完全可行"></a>1. 多 Agent 协作完全可行</h3><ul>
+<li>分工明确，产出清晰</li>
+<li>PM→Architect→Dev→Reviewer 依赖链有效运转</li>
+<li>最终产出质量有保证</li>
+</ul>
+<h3 id="2-Reviewer-角色不可或缺"><a href="#2-Reviewer-角色不可或缺" class="headerlink" title="2. Reviewer 角色不可或缺"></a>2. Reviewer 角色不可或缺</h3><ul>
+<li>主动发现架构问题</li>
+<li>从 33% 到 100% 的提升</li>
+<li>2 轮审查确保代码质量</li>
+</ul>
+<h3 id="3-Mock-数据优先策略"><a href="#3-Mock-数据优先策略" class="headerlink" title="3. Mock 数据优先策略"></a>3. Mock 数据优先策略</h3><ul>
+<li>前期不接真实后端</li>
+<li>快速验证 UI 和业务逻辑</li>
+<li>降低复杂度，加速迭代</li>
+</ul>
+<h3 id="4-Build-Early-Build-Often"><a href="#4-Build-Early-Build-Often" class="headerlink" title="4. Build Early, Build Often"></a>4. Build Early, Build Often</h3><ul>
+<li>尽早执行 gradle build</li>
+<li>及时发现配置和依赖问题</li>
+<li>避免问题积累到后期</li>
+</ul>
+<h3 id="5-并行优化提升效率"><a href="#5-并行优化提升效率" class="headerlink" title="5. 并行优化提升效率"></a>5. 并行优化提升效率</h3><ul>
+<li>QA&#x2F;Docs 可在设计阶段并行工作</li>
+<li>Reviewer 可做预研准备</li>
+<li>整体效率提升约 40%</li>
+</ul>
+<h2 id="后续扩展方向"><a href="#后续扩展方向" class="headerlink" title="后续扩展方向"></a>后续扩展方向</h2><p>项目目前是 MVP 状态，还有很多可以扩展的方向：</p>
+<table>
+<thead>
+<tr>
+<th>方向</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>功能扩展</td>
+<td>看板拖拽、日志导出、实时推送</td>
+</tr>
+<tr>
+<td>数据源</td>
+<td>接入真实后端 API</td>
+</tr>
+<tr>
+<td>协作增强</td>
+<td>多端实时协同、复杂权限体系</td>
+</tr>
+<tr>
+<td>测试自动化</td>
+<td>Espresso + Rest Assured 自动化测试</td>
+</tr>
+</tbody></table>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>这次实验证明，<strong>多 Agent 协作模式在软件开发中是可行的</strong>。通过明确分工、结构化交付物、严格审查，可以有效提升开发效率同时保证代码质量。</p>
+<p>更重要的是，这种模式让我们看到了 AI 在软件开发中的更大潜力：<strong>不是替代开发者，而是像助手一样分担不同专业化的工作</strong>。</p>
+<p>如果你对多 Agent 协作开发感兴趣，欢迎尝试搭建自己的 Agent 团队。有任何问题，欢迎交流讨论。</p>
+<hr>
+<p><em>项目源码：<a href="https://github.com/example/agent-team-lab">https://github.com/example/agent-team-lab</a></em></p>
+]]></content>
+      <categories>
+        <category>AI经验</category>
+        <category>项目分享</category>
+      </categories>
+      <tags>
+        <tag>多Agent协作</tag>
+        <tag>Android开发</tag>
+        <tag>团队协作</tag>
+        <tag>CleanArchitecture</tag>
+        <tag>MVVM</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>广东水文项目问题排查实录：2026年3月19日技术挑战</title>
     <url>/2026/03/19/%E5%B9%BF%E4%B8%9C%E6%B0%B4%E6%96%87%E9%A1%B9%E7%9B%AE%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5%E5%AE%9E%E5%BD%952026%E5%B9%B43%E6%9C%8819%E6%97%A5%E6%8A%80%E6%9C%AF%E6%8C%91%E6%88%98/</url>
     <content><![CDATA[<p>2026年3月19日，对广东水文项目来说是一个充满挑战的工作日。在这一天的日常开发和维护中，我们接连遇到了三个不同层面的技术问题：数据采集层的数据缺失、业务层的数据表归属判断、以及数据展示层的时区和数据质量问题。本文将详细记录这三个问题的排查过程、根因分析以及修复方案，希望能为从事类似水文信息化项目的开发者提供一些参考和借鉴。</p>
@@ -3411,119 +3646,6 @@
       </tags>
   </entry>
   <entry>
-    <title>测站沿革接口开发与调试记录</title>
-    <url>/2026/03/12/%E6%B5%8B%E7%AB%99%E6%B2%BF%E9%9D%A9%E6%8E%A5%E5%8F%A3%E5%BC%80%E5%8F%91%E8%B0%83%E8%AF%95%E8%AE%B0%E5%BD%95/</url>
-    <content><![CDATA[<p>开发一个查询测站沿革信息列表的第三方API接口，调用水利系统基础数据API获取测站历史变更信息。开发完成后调试时遇到两个常见但容易忽略的问题：参数名错误和响应结构解析错误。</p>
-<span id="more"></span>
-
-<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在广东水文项目中，需要开发一个查询测站沿革信息列表的接口，调用第三方水利系统基础数据API获取测站的历史变更记录，包括站名变更、地址变更、所属行政区划调整等信息。这对于数据治理和历史追溯非常重要。</p>
-<h2 id="问题背景"><a href="#问题背景" class="headerlink" title="问题背景"></a>问题背景</h2><p>项目需要对接水利系统的第三方API，获取测站的历史变更记录。</p>
-<h3 id="第三方API信息"><a href="#第三方API信息" class="headerlink" title="第三方API信息"></a>第三方API信息</h3><table>
-<thead>
-<tr>
-<th>项目</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>请求路径</td>
-<td><code>/stsc/openapi/listGrouped</code></td>
-</tr>
-<tr>
-<td>请求方式</td>
-<td>GET</td>
-</tr>
-<tr>
-<td>必填参数</td>
-<td><code>stcd</code>（测站编码）</td>
-</tr>
-</tbody></table>
-<h2 id="接口开发"><a href="#接口开发" class="headerlink" title="接口开发"></a>接口开发</h2><h3 id="实现方案"><a href="#实现方案" class="headerlink" title="实现方案"></a>实现方案</h3><p>参考现有”大断面”接口的实现模式，采用 Controller-Biz-DTO 三层架构：</p>
-<ol>
-<li><strong>DTO</strong>: <code>StationEvolutionDTO</code> - 测站沿革信息数据对象</li>
-<li><strong>Biz</strong>: <code>StationArchiveBiz.getStationEvolutions()</code> - 业务逻辑层</li>
-<li><strong>Controller</strong>: <code>StationArchiveController.stationEvolution</code> - 接口层</li>
-</ol>
-<h3 id="创建-修改的文件"><a href="#创建-修改的文件" class="headerlink" title="创建&#x2F;修改的文件"></a>创建&#x2F;修改的文件</h3><table>
-<thead>
-<tr>
-<th>类型</th>
-<th>文件路径</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>新增</td>
-<td><code>cnsci-admin/.../dto/station/StationEvolutionDTO.java</code></td>
-</tr>
-<tr>
-<td>修改</td>
-<td><code>cnsci-admin/.../biz/station/StationArchiveBiz.java</code></td>
-</tr>
-<tr>
-<td>修改</td>
-<td><code>cnsci-admin/.../station/StationArchiveController.java</code></td>
-</tr>
-</tbody></table>
-<h3 id="接口调用示例"><a href="#接口调用示例" class="headerlink" title="接口调用示例"></a>接口调用示例</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">GET /stationArchive/stationEvolution?stcd=80505000</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="调试阶段：两个坑与修复"><a href="#调试阶段：两个坑与修复" class="headerlink" title="调试阶段：两个坑与修复"></a>调试阶段：两个坑与修复</h2><p>接口开发完成后，调用测试发现：直接请求第三方接口有数据返回，但通过我们开发的接口返回空数据。</p>
-<h3 id="坑一：参数名错误"><a href="#坑一：参数名错误" class="headerlink" title="坑一：参数名错误"></a>坑一：参数名错误</h3><table>
-<thead>
-<tr>
-<th>层级</th>
-<th>参数名</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>Controller 接收</td>
-<td><code>stcd</code></td>
-</tr>
-<tr>
-<td>Biz 层传给第三方</td>
-<td><code>iid</code> ❌</td>
-</tr>
-<tr>
-<td>第三方接口需要</td>
-<td><code>stcd</code></td>
-</tr>
-</tbody></table>
-<p><strong>修复</strong>：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 错误写法</span></span><br><span class="line">params.put(<span class="string">&quot;iid&quot;</span>, iid);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 正确写法</span></span><br><span class="line">params.put(<span class="string">&quot;stcd&quot;</span>, iid);</span><br></pre></td></tr></table></figure>
-
-<h3 id="坑二：响应结构解析错误"><a href="#坑二：响应结构解析错误" class="headerlink" title="坑二：响应结构解析错误"></a>坑二：响应结构解析错误</h3><p>第三方返回：</p>
-<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;total&quot;</span><span class="punctuation">:</span> <span class="number">104</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;rows&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span>...<span class="punctuation">]</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
-
-<p>代码原期望：</p>
-<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;data&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;rows&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span>...<span class="punctuation">]</span></span><br><span class="line">  <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
-
-<p><strong>修复</strong>：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 错误写法</span></span><br><span class="line"><span class="type">JSONObject</span> <span class="variable">data</span> <span class="operator">=</span> response.getJSONObject(<span class="string">&quot;data&quot;</span>);</span><br><span class="line"><span class="type">JSONArray</span> <span class="variable">rows</span> <span class="operator">=</span> data.getJSONArray(<span class="string">&quot;rows&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 正确写法</span></span><br><span class="line"><span class="type">JSONArray</span> <span class="variable">rows</span> <span class="operator">=</span> response.getJSONArray(<span class="string">&quot;rows&quot;</span>);</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="Git-操作技巧"><a href="#Git-操作技巧" class="headerlink" title="Git 操作技巧"></a>Git 操作技巧</h2><p>在修复 Bug 时，使用 <code>git reset --soft</code> 可以撤销提交但保留修改在暂存区：</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">git reset --soft d16095b~1</span><br><span class="line">git add cnsci-admin/.../StationArchiveBiz.java</span><br><span class="line">git commit -m <span class="string">&quot;fix: 修复测站沿革接口参数和响应解析问题&quot;</span></span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="经验总结"><a href="#经验总结" class="headerlink" title="经验总结"></a>经验总结</h2><ul>
-<li><strong>调试技巧</strong>：遇到第三方接口返回空数据时，添加日志打印原始响应，快速定位响应结构问题</li>
-<li><strong>接口对接</strong>：调用第三方API时，务必确认参数名和响应结构，不能想当然</li>
-<li><strong>Git 使用</strong>：<code>git reset --soft</code> 是调整提交历史的利器</li>
-</ul>
-<hr>
-<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>接口开发看似简单，但在对接第三方API时，参数名和响应结构这两个”小细节”往往是导致问题的根本原因。调试过程中养成打印日志的习惯，能够快速定位问题所在。</p>
-]]></content>
-      <categories>
-        <category>踩坑记录</category>
-      </categories>
-      <tags>
-        <tag>Java</tag>
-        <tag>Bug修复</tag>
-        <tag>API</tag>
-        <tag>调试经验</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>智谱 GLM Coding 抢购机器人实战</title>
     <url>/2026/03/14/%E6%99%BA%E8%B0%B1GLM-Coding%E6%8A%A2%E8%B4%AD%E6%9C%BA%E5%99%A8%E4%BA%BA%E5%AE%9E%E6%88%98/</url>
     <content><![CDATA[<p>在 AI 大模型火热的当下，智谱 AI 的 GLM Coding 套餐因为性价比高经常被抢空。本文分享我开发的 ZipuRobot 抢购机器人，从 0 到 1 实现自动监控库存、自动抢购的完整过程。</p>
@@ -3656,140 +3778,116 @@
       </tags>
   </entry>
   <entry>
-    <title>视频平台图片鉴权接口开发踩坑记录</title>
-    <url>/2026/03/06/%E8%A7%86%E9%A2%91%E5%B9%B3%E5%8F%B0%E5%9B%BE%E7%89%87%E9%89%B4%E6%9D%83%E6%8E%A5%E5%8F%A3%E5%BC%80%E5%8F%91%E8%B8%A9%E5%9D%91%E8%AE%B0%E5%BD%95/</url>
-    <content><![CDATA[<p>在水文监测后台管理系统中，视频设备接口需要返回缩略图鉴权信息，看似简单的需求却踩了几个坑：双重鉴权体系混淆、API 响应类型转换失败、缓存时间设计不当……本文记录完整的开发过程与问题解决。</p>
+    <title>测站沿革接口开发与调试记录</title>
+    <url>/2026/03/12/%E6%B5%8B%E7%AB%99%E6%B2%BF%E9%9D%A9%E6%8E%A5%E5%8F%A3%E5%BC%80%E5%8F%91%E8%B0%83%E8%AF%95%E8%AE%B0%E5%BD%95/</url>
+    <content><![CDATA[<p>开发一个查询测站沿革信息列表的第三方API接口，调用水利系统基础数据API获取测站历史变更信息。开发完成后调试时遇到两个常见但容易忽略的问题：参数名错误和响应结构解析错误。</p>
 <span id="more"></span>
 
-<h2 id="问题背景"><a href="#问题背景" class="headerlink" title="问题背景"></a>问题背景</h2><p>项目需要为 <code>api/station/material/videoDevices</code> 接口增加 <code>thumbnailAuth</code> 字段，用于返回访问缩略图图片所需的鉴权信息。</p>
-<p>根据广东省水利视频共享接口文档：</p>
-<ul>
-<li>图片鉴权接口：<code>/lisa/access/sign</code>（POST）</li>
-<li>鉴权有效期：10 分钟</li>
-<li>返回字段：<code>x-apig-nonce</code>、<code>x-apig-timestamp</code>、<code>x-apig-appid</code>、<code>x-apig-sign</code>、<code>x-datax-code</code></li>
-</ul>
-<p>看起来是个简单的需求，但实际开发中踩了不少坑。</p>
-<h2 id="双重鉴权体系"><a href="#双重鉴权体系" class="headerlink" title="双重鉴权体系"></a>双重鉴权体系</h2><p>视频平台包含<strong>两套并行的鉴权逻辑</strong>，这是理解整个问题的关键：</p>
-<table>
+<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在广东水文项目中，需要开发一个查询测站沿革信息列表的接口，调用第三方水利系统基础数据API获取测站的历史变更记录，包括站名变更、地址变更、所属行政区划调整等信息。这对于数据治理和历史追溯非常重要。</p>
+<h2 id="问题背景"><a href="#问题背景" class="headerlink" title="问题背景"></a>问题背景</h2><p>项目需要对接水利系统的第三方API，获取测站的历史变更记录。</p>
+<h3 id="第三方API信息"><a href="#第三方API信息" class="headerlink" title="第三方API信息"></a>第三方API信息</h3><table>
 <thead>
 <tr>
-<th>鉴权类型</th>
-<th>用途</th>
-<th>接口</th>
-<th>有效期</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>Token 鉴权</td>
-<td>调用视频列表、播放、云台控制等接口</td>
-<td><code>/resourceSharing/oauth/token</code></td>
-<td>25 分钟</td>
-</tr>
-<tr>
-<td>Sign 鉴权</td>
-<td>访问缩略图、告警图片等资源</td>
-<td><code>/lisa/access/sign</code></td>
-<td>10 分钟</td>
-</tr>
-</tbody></table>
-<p><strong>关键点</strong>：Sign 鉴权接口本身也需要 Token 鉴权才能调用！这个细节在文档中没有明确说明，导致后续踩坑。</p>
-<h2 id="踩坑过程"><a href="#踩坑过程" class="headerlink" title="踩坑过程"></a>踩坑过程</h2><h3 id="坑一：请求缺少-Token"><a href="#坑一：请求缺少-Token" class="headerlink" title="坑一：请求缺少 Token"></a>坑一：请求缺少 Token</h3><p><strong>现象</strong>：</p>
-<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span><span class="attr">&quot;data&quot;</span><span class="punctuation">:</span><span class="string">&quot;请求缺少token&quot;</span><span class="punctuation">,</span><span class="attr">&quot;desc&quot;</span><span class="punctuation">:</span><span class="string">&quot;无权限&quot;</span><span class="punctuation">,</span><span class="attr">&quot;status&quot;</span><span class="punctuation">:</span><span class="number">401</span><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
-
-<p><strong>原因</strong>：最初误认为图片鉴权接口不需要 Token，专门写了一个 <code>sendPostWithoutToken()</code> 方法来调用。</p>
-<p><strong>解决</strong>：Sign 鉴权接口本身也需要 Token，改用 <code>sendPost()</code> 方法，先获取 Token 再请求：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 错误写法</span></span><br><span class="line"><span class="type">String</span> <span class="variable">response</span> <span class="operator">=</span> VideoApiClient.sendPostWithoutToken(videoApiProperties, <span class="string">&quot;/lisa/access/sign&quot;</span>, requestBody);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 正确写法</span></span><br><span class="line"><span class="type">String</span> <span class="variable">token</span> <span class="operator">=</span> getToken();</span><br><span class="line"><span class="type">String</span> <span class="variable">response</span> <span class="operator">=</span> VideoApiClient.sendPost(videoApiProperties, token, <span class="string">&quot;/lisa/access/sign&quot;</span>, requestBody);</span><br></pre></td></tr></table></figure>
-
-<h3 id="坑二：ClassCastException-类型转换失败"><a href="#坑二：ClassCastException-类型转换失败" class="headerlink" title="坑二：ClassCastException 类型转换失败"></a>坑二：ClassCastException 类型转换失败</h3><p><strong>现象</strong>：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">java.lang.ClassCastException: java.lang.String cannot be cast to java.util.Map</span><br></pre></td></tr></table></figure>
-
-<p><strong>原因</strong>：API 返回的 <code>data</code> 字段在不同情况下类型不同：</p>
-<ul>
-<li>正常时是 Map（包含鉴权信息）</li>
-<li>错误时是 String（错误信息）</li>
-</ul>
-<p><strong>解决</strong>：添加 <code>instanceof</code> 类型检查：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">if</span> (dataObj <span class="keyword">instanceof</span> Map) &#123;</span><br><span class="line">    Map&lt;String, String&gt; authData = (Map&lt;String, String&gt;) dataObj;</span><br><span class="line">    <span class="comment">// 正常处理</span></span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    log.warn(<span class="string">&quot;data字段类型不是Map，实际类型: &#123;&#125;, 值: &#123;&#125;&quot;</span>, dataObj.getClass().getSimpleName(), dataObj);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="坑三：thumbnailAuth-始终为-null"><a href="#坑三：thumbnailAuth-始终为-null" class="headerlink" title="坑三：thumbnailAuth 始终为 null"></a>坑三：thumbnailAuth 始终为 null</h3><p><strong>现象</strong>：接口返回正常，但 <code>thumbnailAuth</code> 字段始终为 <code>null</code>。</p>
-<p><strong>原因</strong>：原逻辑存在设计缺陷——只有当 <code>thumbnail</code> 不为空时才去获取鉴权信息。但有些设备没有缩略图，却仍然需要鉴权信息来访问告警图片。</p>
-<p><strong>解决</strong>：将获取鉴权信息<strong>移到循环外部</strong>，预先获取一次，统一设置给所有设备：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 1.5 预先获取图片鉴权信息（对所有设备通用，只需获取一次）</span></span><br><span class="line">Map&lt;String, String&gt; imageAuth = getImageAccessSign();</span><br><span class="line"></span><br><span class="line"><span class="comment">// 2. 为每个设备获取详细信息</span></span><br><span class="line"><span class="keyword">for</span> (String cameraId : cameraIds) &#123;</span><br><span class="line">    <span class="comment">// ... 获取播放地址、缩略图等 ...</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 统一设置 thumbnailAuth（无论缩略图是否为空）</span></span><br><span class="line">    <span class="keyword">if</span> (imageAuth != <span class="literal">null</span> &amp;&amp; !imageAuth.isEmpty()) &#123;</span><br><span class="line">        deviceInfo.setThumbnailAuth(imageAuth);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="坑四：账户权限不足"><a href="#坑四：账户权限不足" class="headerlink" title="坑四：账户权限不足"></a>坑四：账户权限不足</h3><p><strong>现象</strong>：</p>
-<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span><span class="attr">&quot;data&quot;</span><span class="punctuation">:</span><span class="string">&quot;&quot;</span><span class="punctuation">,</span><span class="attr">&quot;desc&quot;</span><span class="punctuation">:</span><span class="string">&quot;共享用户无权限访问该接口&quot;</span><span class="punctuation">,</span><span class="attr">&quot;status&quot;</span><span class="punctuation">:</span><span class="number">401</span><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
-
-<p><strong>原因</strong>：这不是代码问题，是<strong>视频平台账户权限问题</strong>。当前的共享用户账户没有 <code>/lisa/access/sign</code> 接口的访问权限。</p>
-<p><strong>解决</strong>：需要联系视频平台提供方开通接口权限。</p>
-<h2 id="核心代码实现"><a href="#核心代码实现" class="headerlink" title="核心代码实现"></a>核心代码实现</h2><h3 id="获取图片鉴权信息（带缓存）"><a href="#获取图片鉴权信息（带缓存）" class="headerlink" title="获取图片鉴权信息（带缓存）"></a>获取图片鉴权信息（带缓存）</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 获取图片访问鉴权信息（带缓存）</span></span><br><span class="line"><span class="comment"> * 根据文档，鉴权信息10分钟有效</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> Map&lt;String, String&gt; <span class="title function_">getImageAccessSign</span><span class="params">()</span> <span class="keyword">throws</span> ServiceException &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// 1. 优先从Redis缓存获取</span></span><br><span class="line">        <span class="keyword">if</span> (redisCache != <span class="literal">null</span>) &#123;</span><br><span class="line">            Map&lt;String, String&gt; cachedAuth = redisCache.getCacheObject(IMAGE_AUTH_CACHE_KEY);</span><br><span class="line">            <span class="keyword">if</span> (cachedAuth != <span class="literal">null</span> &amp;&amp; !cachedAuth.isEmpty()) &#123;</span><br><span class="line">                <span class="keyword">return</span> cachedAuth;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 2. 缓存未命中，调用API获取</span></span><br><span class="line">        <span class="type">String</span> <span class="variable">appId</span> <span class="operator">=</span> videoApiProperties.getImageAppId();</span><br><span class="line">        <span class="keyword">if</span> (StringUtils.isEmpty(appId)) &#123;</span><br><span class="line">            log.warn(<span class="string">&quot;图片访问鉴权的appId未配置&quot;</span>);</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 3. 调用 /lisa/access/sign 接口（需要Token鉴权）</span></span><br><span class="line">        <span class="type">String</span> <span class="variable">token</span> <span class="operator">=</span> getToken();</span><br><span class="line">        Map&lt;String, String&gt; requestBody = <span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;&gt;();</span><br><span class="line">        requestBody.put(<span class="string">&quot;x-apig-appid&quot;</span>, appId);</span><br><span class="line"></span><br><span class="line">        <span class="type">String</span> <span class="variable">response</span> <span class="operator">=</span> VideoApiClient.sendPost(videoApiProperties, token, <span class="string">&quot;/lisa/access/sign&quot;</span>, requestBody);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 4. 解析响应（带类型检查）</span></span><br><span class="line">        Map&lt;String, Object&gt; responseMap = objectMapper.readValue(response, Map.class);</span><br><span class="line">        <span class="keyword">if</span> (responseMap != <span class="literal">null</span> &amp;&amp; responseMap.get(<span class="string">&quot;data&quot;</span>) <span class="keyword">instanceof</span> Map) &#123;</span><br><span class="line">            Map&lt;String, String&gt; authData = (Map&lt;String, String&gt;) responseMap.get(<span class="string">&quot;data&quot;</span>);</span><br><span class="line"></span><br><span class="line">            <span class="comment">// 5. 存入缓存（9分钟，留1分钟缓冲）</span></span><br><span class="line">            <span class="keyword">if</span> (redisCache != <span class="literal">null</span> &amp;&amp; authData != <span class="literal">null</span> &amp;&amp; !authData.isEmpty()) &#123;</span><br><span class="line">                redisCache.setCacheObject(IMAGE_AUTH_CACHE_KEY, authData, IMAGE_AUTH_EXPIRE_TIME, TimeUnit.SECONDS);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">return</span> authData;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        log.error(<span class="string">&quot;获取图片鉴权信息失败&quot;</span>, e);</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="缓存时间设计"><a href="#缓存时间设计" class="headerlink" title="缓存时间设计"></a>缓存时间设计</h2><p>当存在多层缓存时，<strong>内层缓存的过期时间应小于外层缓存</strong>：</p>
-<table>
-<thead>
-<tr>
-<th>缓存层</th>
-<th>有效期</th>
+<th>项目</th>
 <th>说明</th>
 </tr>
 </thead>
 <tbody><tr>
-<td>图片鉴权缓存</td>
-<td>9 分钟</td>
-<td>留 1 分钟缓冲</td>
+<td>请求路径</td>
+<td><code>/stsc/openapi/listGrouped</code></td>
 </tr>
 <tr>
-<td>接口整体缓存</td>
-<td>9 分钟</td>
-<td>原来是 10 分钟，已调整</td>
+<td>请求方式</td>
+<td>GET</td>
+</tr>
+<tr>
+<td>必填参数</td>
+<td><code>stcd</code>（测站编码）</td>
 </tr>
 </tbody></table>
-<p>如果不这样设计，可能会出现：外层缓存还活着，但内层的鉴权信息已经过期，导致返回无效的鉴权参数。</p>
-<h2 id="经验总结"><a href="#经验总结" class="headerlink" title="经验总结"></a>经验总结</h2><h3 id="1-第三方接口鉴权要确认清楚"><a href="#1-第三方接口鉴权要确认清楚" class="headerlink" title="1. 第三方接口鉴权要确认清楚"></a>1. 第三方接口鉴权要确认清楚</h3><p>文档可能不完整或有误，实际联调前应该：</p>
+<h2 id="接口开发"><a href="#接口开发" class="headerlink" title="接口开发"></a>接口开发</h2><h3 id="实现方案"><a href="#实现方案" class="headerlink" title="实现方案"></a>实现方案</h3><p>参考现有”大断面”接口的实现模式，采用 Controller-Biz-DTO 三层架构：</p>
 <ol>
-<li>确认接口是否需要鉴权</li>
-<li>确认鉴权方式（Token、Sign、API Key 等）</li>
-<li>确认账户是否有对应权限</li>
+<li><strong>DTO</strong>: <code>StationEvolutionDTO</code> - 测站沿革信息数据对象</li>
+<li><strong>Biz</strong>: <code>StationArchiveBiz.getStationEvolutions()</code> - 业务逻辑层</li>
+<li><strong>Controller</strong>: <code>StationArchiveController.stationEvolution</code> - 接口层</li>
 </ol>
-<h3 id="2-外部-API-响应要做类型检查"><a href="#2-外部-API-响应要做类型检查" class="headerlink" title="2. 外部 API 响应要做类型检查"></a>2. 外部 API 响应要做类型检查</h3><p>外部 API 的响应结构可能因为各种原因（错误、权限、参数）发生变化，使用 <code>instanceof</code> 进行类型检查可以避免运行时异常。</p>
-<h3 id="3-缓存时间要层层递减"><a href="#3-缓存时间要层层递减" class="headerlink" title="3. 缓存时间要层层递减"></a>3. 缓存时间要层层递减</h3><p>多层缓存场景下，内层缓存有效期必须小于外层，避免返回过期数据。</p>
-<h3 id="4-日志是调试的好帮手"><a href="#4-日志是调试的好帮手" class="headerlink" title="4. 日志是调试的好帮手"></a>4. 日志是调试的好帮手</h3><p>在排查问题时，添加原始响应日志非常关键：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">log.info(<span class="string">&quot;图片鉴权API原始响应: &#123;&#125;&quot;</span>, response);</span><br></pre></td></tr></table></figure>
-
-<p>这帮助快速定位是代码问题还是平台权限问题。</p>
-<h2 id="当前状态"><a href="#当前状态" class="headerlink" title="当前状态"></a>当前状态</h2><table>
+<h3 id="创建-修改的文件"><a href="#创建-修改的文件" class="headerlink" title="创建&#x2F;修改的文件"></a>创建&#x2F;修改的文件</h3><table>
 <thead>
 <tr>
-<th>项目</th>
-<th>状态</th>
+<th>类型</th>
+<th>文件路径</th>
 </tr>
 </thead>
 <tbody><tr>
-<td>代码实现</td>
-<td>✅ 完成</td>
+<td>新增</td>
+<td><code>cnsci-admin/.../dto/station/StationEvolutionDTO.java</code></td>
 </tr>
 <tr>
-<td>单元测试</td>
-<td>✅ 完成</td>
+<td>修改</td>
+<td><code>cnsci-admin/.../biz/station/StationArchiveBiz.java</code></td>
 </tr>
 <tr>
-<td>缓存逻辑</td>
-<td>✅ 完成</td>
-</tr>
-<tr>
-<td>平台权限</td>
-<td>❌ 待开通</td>
+<td>修改</td>
+<td><code>cnsci-admin/.../station/StationArchiveController.java</code></td>
 </tr>
 </tbody></table>
-<p><strong>下一步</strong>：联系视频平台方开通 <code>/lisa/access/sign</code> 接口权限，然后验证完整链路。</p>
+<h3 id="接口调用示例"><a href="#接口调用示例" class="headerlink" title="接口调用示例"></a>接口调用示例</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">GET /stationArchive/stationEvolution?stcd=80505000</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="调试阶段：两个坑与修复"><a href="#调试阶段：两个坑与修复" class="headerlink" title="调试阶段：两个坑与修复"></a>调试阶段：两个坑与修复</h2><p>接口开发完成后，调用测试发现：直接请求第三方接口有数据返回，但通过我们开发的接口返回空数据。</p>
+<h3 id="坑一：参数名错误"><a href="#坑一：参数名错误" class="headerlink" title="坑一：参数名错误"></a>坑一：参数名错误</h3><table>
+<thead>
+<tr>
+<th>层级</th>
+<th>参数名</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Controller 接收</td>
+<td><code>stcd</code></td>
+</tr>
+<tr>
+<td>Biz 层传给第三方</td>
+<td><code>iid</code> ❌</td>
+</tr>
+<tr>
+<td>第三方接口需要</td>
+<td><code>stcd</code></td>
+</tr>
+</tbody></table>
+<p><strong>修复</strong>：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 错误写法</span></span><br><span class="line">params.put(<span class="string">&quot;iid&quot;</span>, iid);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 正确写法</span></span><br><span class="line">params.put(<span class="string">&quot;stcd&quot;</span>, iid);</span><br></pre></td></tr></table></figure>
+
+<h3 id="坑二：响应结构解析错误"><a href="#坑二：响应结构解析错误" class="headerlink" title="坑二：响应结构解析错误"></a>坑二：响应结构解析错误</h3><p>第三方返回：</p>
+<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;total&quot;</span><span class="punctuation">:</span> <span class="number">104</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;rows&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span>...<span class="punctuation">]</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>代码原期望：</p>
+<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;data&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;rows&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span>...<span class="punctuation">]</span></span><br><span class="line">  <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>修复</strong>：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 错误写法</span></span><br><span class="line"><span class="type">JSONObject</span> <span class="variable">data</span> <span class="operator">=</span> response.getJSONObject(<span class="string">&quot;data&quot;</span>);</span><br><span class="line"><span class="type">JSONArray</span> <span class="variable">rows</span> <span class="operator">=</span> data.getJSONArray(<span class="string">&quot;rows&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 正确写法</span></span><br><span class="line"><span class="type">JSONArray</span> <span class="variable">rows</span> <span class="operator">=</span> response.getJSONArray(<span class="string">&quot;rows&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="Git-操作技巧"><a href="#Git-操作技巧" class="headerlink" title="Git 操作技巧"></a>Git 操作技巧</h2><p>在修复 Bug 时，使用 <code>git reset --soft</code> 可以撤销提交但保留修改在暂存区：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">git reset --soft d16095b~1</span><br><span class="line">git add cnsci-admin/.../StationArchiveBiz.java</span><br><span class="line">git commit -m <span class="string">&quot;fix: 修复测站沿革接口参数和响应解析问题&quot;</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="经验总结"><a href="#经验总结" class="headerlink" title="经验总结"></a>经验总结</h2><ul>
+<li><strong>调试技巧</strong>：遇到第三方接口返回空数据时，添加日志打印原始响应，快速定位响应结构问题</li>
+<li><strong>接口对接</strong>：调用第三方API时，务必确认参数名和响应结构，不能想当然</li>
+<li><strong>Git 使用</strong>：<code>git reset --soft</code> 是调整提交历史的利器</li>
+</ul>
+<hr>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>接口开发看似简单，但在对接第三方API时，参数名和响应结构这两个”小细节”往往是导致问题的根本原因。调试过程中养成打印日志的习惯，能够快速定位问题所在。</p>
 ]]></content>
       <categories>
-        <category>后端开发</category>
+        <category>踩坑记录</category>
       </categories>
       <tags>
-        <tag>Spring Boot</tag>
-        <tag>鉴权</tag>
-        <tag>视频平台</tag>
-        <tag>Redis缓存</tag>
+        <tag>Java</tag>
+        <tag>Bug修复</tag>
+        <tag>API</tag>
+        <tag>调试经验</tag>
       </tags>
   </entry>
   <entry>
@@ -4049,6 +4147,143 @@
         <tag>Bug修复</tag>
         <tag>权限管理</tag>
         <tag>物联网</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>视频平台图片鉴权接口开发踩坑记录</title>
+    <url>/2026/03/06/%E8%A7%86%E9%A2%91%E5%B9%B3%E5%8F%B0%E5%9B%BE%E7%89%87%E9%89%B4%E6%9D%83%E6%8E%A5%E5%8F%A3%E5%BC%80%E5%8F%91%E8%B8%A9%E5%9D%91%E8%AE%B0%E5%BD%95/</url>
+    <content><![CDATA[<p>在水文监测后台管理系统中，视频设备接口需要返回缩略图鉴权信息，看似简单的需求却踩了几个坑：双重鉴权体系混淆、API 响应类型转换失败、缓存时间设计不当……本文记录完整的开发过程与问题解决。</p>
+<span id="more"></span>
+
+<h2 id="问题背景"><a href="#问题背景" class="headerlink" title="问题背景"></a>问题背景</h2><p>项目需要为 <code>api/station/material/videoDevices</code> 接口增加 <code>thumbnailAuth</code> 字段，用于返回访问缩略图图片所需的鉴权信息。</p>
+<p>根据广东省水利视频共享接口文档：</p>
+<ul>
+<li>图片鉴权接口：<code>/lisa/access/sign</code>（POST）</li>
+<li>鉴权有效期：10 分钟</li>
+<li>返回字段：<code>x-apig-nonce</code>、<code>x-apig-timestamp</code>、<code>x-apig-appid</code>、<code>x-apig-sign</code>、<code>x-datax-code</code></li>
+</ul>
+<p>看起来是个简单的需求，但实际开发中踩了不少坑。</p>
+<h2 id="双重鉴权体系"><a href="#双重鉴权体系" class="headerlink" title="双重鉴权体系"></a>双重鉴权体系</h2><p>视频平台包含<strong>两套并行的鉴权逻辑</strong>，这是理解整个问题的关键：</p>
+<table>
+<thead>
+<tr>
+<th>鉴权类型</th>
+<th>用途</th>
+<th>接口</th>
+<th>有效期</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Token 鉴权</td>
+<td>调用视频列表、播放、云台控制等接口</td>
+<td><code>/resourceSharing/oauth/token</code></td>
+<td>25 分钟</td>
+</tr>
+<tr>
+<td>Sign 鉴权</td>
+<td>访问缩略图、告警图片等资源</td>
+<td><code>/lisa/access/sign</code></td>
+<td>10 分钟</td>
+</tr>
+</tbody></table>
+<p><strong>关键点</strong>：Sign 鉴权接口本身也需要 Token 鉴权才能调用！这个细节在文档中没有明确说明，导致后续踩坑。</p>
+<h2 id="踩坑过程"><a href="#踩坑过程" class="headerlink" title="踩坑过程"></a>踩坑过程</h2><h3 id="坑一：请求缺少-Token"><a href="#坑一：请求缺少-Token" class="headerlink" title="坑一：请求缺少 Token"></a>坑一：请求缺少 Token</h3><p><strong>现象</strong>：</p>
+<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span><span class="attr">&quot;data&quot;</span><span class="punctuation">:</span><span class="string">&quot;请求缺少token&quot;</span><span class="punctuation">,</span><span class="attr">&quot;desc&quot;</span><span class="punctuation">:</span><span class="string">&quot;无权限&quot;</span><span class="punctuation">,</span><span class="attr">&quot;status&quot;</span><span class="punctuation">:</span><span class="number">401</span><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>原因</strong>：最初误认为图片鉴权接口不需要 Token，专门写了一个 <code>sendPostWithoutToken()</code> 方法来调用。</p>
+<p><strong>解决</strong>：Sign 鉴权接口本身也需要 Token，改用 <code>sendPost()</code> 方法，先获取 Token 再请求：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 错误写法</span></span><br><span class="line"><span class="type">String</span> <span class="variable">response</span> <span class="operator">=</span> VideoApiClient.sendPostWithoutToken(videoApiProperties, <span class="string">&quot;/lisa/access/sign&quot;</span>, requestBody);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 正确写法</span></span><br><span class="line"><span class="type">String</span> <span class="variable">token</span> <span class="operator">=</span> getToken();</span><br><span class="line"><span class="type">String</span> <span class="variable">response</span> <span class="operator">=</span> VideoApiClient.sendPost(videoApiProperties, token, <span class="string">&quot;/lisa/access/sign&quot;</span>, requestBody);</span><br></pre></td></tr></table></figure>
+
+<h3 id="坑二：ClassCastException-类型转换失败"><a href="#坑二：ClassCastException-类型转换失败" class="headerlink" title="坑二：ClassCastException 类型转换失败"></a>坑二：ClassCastException 类型转换失败</h3><p><strong>现象</strong>：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">java.lang.ClassCastException: java.lang.String cannot be cast to java.util.Map</span><br></pre></td></tr></table></figure>
+
+<p><strong>原因</strong>：API 返回的 <code>data</code> 字段在不同情况下类型不同：</p>
+<ul>
+<li>正常时是 Map（包含鉴权信息）</li>
+<li>错误时是 String（错误信息）</li>
+</ul>
+<p><strong>解决</strong>：添加 <code>instanceof</code> 类型检查：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">if</span> (dataObj <span class="keyword">instanceof</span> Map) &#123;</span><br><span class="line">    Map&lt;String, String&gt; authData = (Map&lt;String, String&gt;) dataObj;</span><br><span class="line">    <span class="comment">// 正常处理</span></span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    log.warn(<span class="string">&quot;data字段类型不是Map，实际类型: &#123;&#125;, 值: &#123;&#125;&quot;</span>, dataObj.getClass().getSimpleName(), dataObj);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="坑三：thumbnailAuth-始终为-null"><a href="#坑三：thumbnailAuth-始终为-null" class="headerlink" title="坑三：thumbnailAuth 始终为 null"></a>坑三：thumbnailAuth 始终为 null</h3><p><strong>现象</strong>：接口返回正常，但 <code>thumbnailAuth</code> 字段始终为 <code>null</code>。</p>
+<p><strong>原因</strong>：原逻辑存在设计缺陷——只有当 <code>thumbnail</code> 不为空时才去获取鉴权信息。但有些设备没有缩略图，却仍然需要鉴权信息来访问告警图片。</p>
+<p><strong>解决</strong>：将获取鉴权信息<strong>移到循环外部</strong>，预先获取一次，统一设置给所有设备：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 1.5 预先获取图片鉴权信息（对所有设备通用，只需获取一次）</span></span><br><span class="line">Map&lt;String, String&gt; imageAuth = getImageAccessSign();</span><br><span class="line"></span><br><span class="line"><span class="comment">// 2. 为每个设备获取详细信息</span></span><br><span class="line"><span class="keyword">for</span> (String cameraId : cameraIds) &#123;</span><br><span class="line">    <span class="comment">// ... 获取播放地址、缩略图等 ...</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 统一设置 thumbnailAuth（无论缩略图是否为空）</span></span><br><span class="line">    <span class="keyword">if</span> (imageAuth != <span class="literal">null</span> &amp;&amp; !imageAuth.isEmpty()) &#123;</span><br><span class="line">        deviceInfo.setThumbnailAuth(imageAuth);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="坑四：账户权限不足"><a href="#坑四：账户权限不足" class="headerlink" title="坑四：账户权限不足"></a>坑四：账户权限不足</h3><p><strong>现象</strong>：</p>
+<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span><span class="attr">&quot;data&quot;</span><span class="punctuation">:</span><span class="string">&quot;&quot;</span><span class="punctuation">,</span><span class="attr">&quot;desc&quot;</span><span class="punctuation">:</span><span class="string">&quot;共享用户无权限访问该接口&quot;</span><span class="punctuation">,</span><span class="attr">&quot;status&quot;</span><span class="punctuation">:</span><span class="number">401</span><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>原因</strong>：这不是代码问题，是<strong>视频平台账户权限问题</strong>。当前的共享用户账户没有 <code>/lisa/access/sign</code> 接口的访问权限。</p>
+<p><strong>解决</strong>：需要联系视频平台提供方开通接口权限。</p>
+<h2 id="核心代码实现"><a href="#核心代码实现" class="headerlink" title="核心代码实现"></a>核心代码实现</h2><h3 id="获取图片鉴权信息（带缓存）"><a href="#获取图片鉴权信息（带缓存）" class="headerlink" title="获取图片鉴权信息（带缓存）"></a>获取图片鉴权信息（带缓存）</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 获取图片访问鉴权信息（带缓存）</span></span><br><span class="line"><span class="comment"> * 根据文档，鉴权信息10分钟有效</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> Map&lt;String, String&gt; <span class="title function_">getImageAccessSign</span><span class="params">()</span> <span class="keyword">throws</span> ServiceException &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// 1. 优先从Redis缓存获取</span></span><br><span class="line">        <span class="keyword">if</span> (redisCache != <span class="literal">null</span>) &#123;</span><br><span class="line">            Map&lt;String, String&gt; cachedAuth = redisCache.getCacheObject(IMAGE_AUTH_CACHE_KEY);</span><br><span class="line">            <span class="keyword">if</span> (cachedAuth != <span class="literal">null</span> &amp;&amp; !cachedAuth.isEmpty()) &#123;</span><br><span class="line">                <span class="keyword">return</span> cachedAuth;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 2. 缓存未命中，调用API获取</span></span><br><span class="line">        <span class="type">String</span> <span class="variable">appId</span> <span class="operator">=</span> videoApiProperties.getImageAppId();</span><br><span class="line">        <span class="keyword">if</span> (StringUtils.isEmpty(appId)) &#123;</span><br><span class="line">            log.warn(<span class="string">&quot;图片访问鉴权的appId未配置&quot;</span>);</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 3. 调用 /lisa/access/sign 接口（需要Token鉴权）</span></span><br><span class="line">        <span class="type">String</span> <span class="variable">token</span> <span class="operator">=</span> getToken();</span><br><span class="line">        Map&lt;String, String&gt; requestBody = <span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;&gt;();</span><br><span class="line">        requestBody.put(<span class="string">&quot;x-apig-appid&quot;</span>, appId);</span><br><span class="line"></span><br><span class="line">        <span class="type">String</span> <span class="variable">response</span> <span class="operator">=</span> VideoApiClient.sendPost(videoApiProperties, token, <span class="string">&quot;/lisa/access/sign&quot;</span>, requestBody);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 4. 解析响应（带类型检查）</span></span><br><span class="line">        Map&lt;String, Object&gt; responseMap = objectMapper.readValue(response, Map.class);</span><br><span class="line">        <span class="keyword">if</span> (responseMap != <span class="literal">null</span> &amp;&amp; responseMap.get(<span class="string">&quot;data&quot;</span>) <span class="keyword">instanceof</span> Map) &#123;</span><br><span class="line">            Map&lt;String, String&gt; authData = (Map&lt;String, String&gt;) responseMap.get(<span class="string">&quot;data&quot;</span>);</span><br><span class="line"></span><br><span class="line">            <span class="comment">// 5. 存入缓存（9分钟，留1分钟缓冲）</span></span><br><span class="line">            <span class="keyword">if</span> (redisCache != <span class="literal">null</span> &amp;&amp; authData != <span class="literal">null</span> &amp;&amp; !authData.isEmpty()) &#123;</span><br><span class="line">                redisCache.setCacheObject(IMAGE_AUTH_CACHE_KEY, authData, IMAGE_AUTH_EXPIRE_TIME, TimeUnit.SECONDS);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">return</span> authData;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        log.error(<span class="string">&quot;获取图片鉴权信息失败&quot;</span>, e);</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="缓存时间设计"><a href="#缓存时间设计" class="headerlink" title="缓存时间设计"></a>缓存时间设计</h2><p>当存在多层缓存时，<strong>内层缓存的过期时间应小于外层缓存</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>缓存层</th>
+<th>有效期</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>图片鉴权缓存</td>
+<td>9 分钟</td>
+<td>留 1 分钟缓冲</td>
+</tr>
+<tr>
+<td>接口整体缓存</td>
+<td>9 分钟</td>
+<td>原来是 10 分钟，已调整</td>
+</tr>
+</tbody></table>
+<p>如果不这样设计，可能会出现：外层缓存还活着，但内层的鉴权信息已经过期，导致返回无效的鉴权参数。</p>
+<h2 id="经验总结"><a href="#经验总结" class="headerlink" title="经验总结"></a>经验总结</h2><h3 id="1-第三方接口鉴权要确认清楚"><a href="#1-第三方接口鉴权要确认清楚" class="headerlink" title="1. 第三方接口鉴权要确认清楚"></a>1. 第三方接口鉴权要确认清楚</h3><p>文档可能不完整或有误，实际联调前应该：</p>
+<ol>
+<li>确认接口是否需要鉴权</li>
+<li>确认鉴权方式（Token、Sign、API Key 等）</li>
+<li>确认账户是否有对应权限</li>
+</ol>
+<h3 id="2-外部-API-响应要做类型检查"><a href="#2-外部-API-响应要做类型检查" class="headerlink" title="2. 外部 API 响应要做类型检查"></a>2. 外部 API 响应要做类型检查</h3><p>外部 API 的响应结构可能因为各种原因（错误、权限、参数）发生变化，使用 <code>instanceof</code> 进行类型检查可以避免运行时异常。</p>
+<h3 id="3-缓存时间要层层递减"><a href="#3-缓存时间要层层递减" class="headerlink" title="3. 缓存时间要层层递减"></a>3. 缓存时间要层层递减</h3><p>多层缓存场景下，内层缓存有效期必须小于外层，避免返回过期数据。</p>
+<h3 id="4-日志是调试的好帮手"><a href="#4-日志是调试的好帮手" class="headerlink" title="4. 日志是调试的好帮手"></a>4. 日志是调试的好帮手</h3><p>在排查问题时，添加原始响应日志非常关键：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">log.info(<span class="string">&quot;图片鉴权API原始响应: &#123;&#125;&quot;</span>, response);</span><br></pre></td></tr></table></figure>
+
+<p>这帮助快速定位是代码问题还是平台权限问题。</p>
+<h2 id="当前状态"><a href="#当前状态" class="headerlink" title="当前状态"></a>当前状态</h2><table>
+<thead>
+<tr>
+<th>项目</th>
+<th>状态</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>代码实现</td>
+<td>✅ 完成</td>
+</tr>
+<tr>
+<td>单元测试</td>
+<td>✅ 完成</td>
+</tr>
+<tr>
+<td>缓存逻辑</td>
+<td>✅ 完成</td>
+</tr>
+<tr>
+<td>平台权限</td>
+<td>❌ 待开通</td>
+</tr>
+</tbody></table>
+<p><strong>下一步</strong>：联系视频平台方开通 <code>/lisa/access/sign</code> 接口权限，然后验证完整链路。</p>
+]]></content>
+      <categories>
+        <category>后端开发</category>
+      </categories>
+      <tags>
+        <tag>Spring Boot</tag>
+        <tag>鉴权</tag>
+        <tag>视频平台</tag>
+        <tag>Redis缓存</tag>
       </tags>
   </entry>
 </search>
