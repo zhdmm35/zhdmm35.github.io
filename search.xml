@@ -282,32 +282,6 @@
       </tags>
   </entry>
   <entry>
-    <title>Hello World</title>
-    <url>/2026/02/27/hello-world/</url>
-    <content><![CDATA[<p>欢迎来到我的技术博客！这是第一篇测试文章，用于验证博客系统是否正常工作。</p>
-<span id="more"></span>
-
-<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p>
-<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p>
-<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p>
-<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
-]]></content>
-      <categories>
-        <category>其他</category>
-      </categories>
-      <tags>
-        <tag>Hexo</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>aioffice 反向代理开发：将 AI 编程工具额度转化为 OpenAI 兼容 API</title>
     <url>/2026/03/01/aioffice-%E5%8F%8D%E5%90%91%E4%BB%A3%E7%90%86%E5%BC%80%E5%8F%91%EF%BC%9A%E5%B0%86-AI-%E7%BC%96%E7%A8%8B%E5%B7%A5%E5%85%B7%E9%A2%9D%E5%BA%A6%E8%BD%AC%E5%8C%96%E4%B8%BA-OpenAI-%E5%85%BC%E5%AE%B9-API/</url>
     <content><![CDATA[<p>aioffice 是一款基于 VSCode 二次开发的 AI 编程工具，提供了 AI 对话、代码补全等功能。为了能在其他工具（如 opencode、Continue 等）中复用 aioffice 的 AI 调用额度，我开发了一个反向代理服务，将 aioffice 的后端 API 转化为标准的 OpenAI 兼容格式。</p>
@@ -460,6 +434,32 @@
         <tag>Node.js</tag>
         <tag>OpenAI</tag>
         <tag>SQLite</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Hello World</title>
+    <url>/2026/02/27/hello-world/</url>
+    <content><![CDATA[<p>欢迎来到我的技术博客！这是第一篇测试文章，用于验证博客系统是否正常工作。</p>
+<span id="more"></span>
+
+<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p>
+<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p>
+<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p>
+<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
+]]></content>
+      <categories>
+        <category>其他</category>
+      </categories>
+      <tags>
+        <tag>Hexo</tag>
       </tags>
   </entry>
   <entry>
@@ -739,6 +739,243 @@
       </tags>
   </entry>
   <entry>
+    <title>AI 编程智能体配置实战：如何为每个角色选择最合适的模型</title>
+    <url>/2026/03/30/AI%E7%BC%96%E7%A8%8B%E6%99%BA%E8%83%BD%E4%BD%93%E9%85%8D%E7%BD%AE%E5%AE%9E%E6%88%98/</url>
+    <content><![CDATA[<p>用 AI 编程工具写代码不难，但让多个 AI 智能体像一支真正的工程团队一样协作——这需要精心配置。本文分享我如何基于 OhMyOpenCode（omo）为 Claude Code 的每个智能体角色选择最合适的国产模型，以及背后的选型逻辑。</p>
+<span id="more"></span>
+
+<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>我日常使用 Claude Code（通过 Anthropic 代理接入国产大模型）进行开发，配合 OhMyOpenCode 插件来管理智能体（Agent）的模型分配。这套配置已经稳定运行了几个月，覆盖了从代码探索、架构咨询到前端实现、文档写作的全流程。</p>
+<p>核心思路很简单：<strong>不同任务需要不同的”思维方式”，而不同模型有不同的擅长领域。把对的模型放在对的角色上，整个系统的效率和质量会有质的飞跃。</strong></p>
+<p><img src="/images/posts/AI%E7%BC%96%E7%A8%8B%E6%99%BA%E8%83%BD%E4%BD%93%E9%85%8D%E7%BD%AE%E5%AE%9E%E6%88%98/fig1.png" alt="智能体协作架构图"><br><em>图1：智能体协作架构总览</em></p>
+<h2 id="我的模型阵容"><a href="#我的模型阵容" class="headerlink" title="我的模型阵容"></a>我的模型阵容</h2><p>先交代一下我用的模型全家桶，全部通过 Anthropic 兼容协议接入：</p>
+<table>
+<thead>
+<tr>
+<th>模型</th>
+<th>厂商</th>
+<th>核心特点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>GLM-5.1</strong></td>
+<td>智谱 AI</td>
+<td>综合能力强，逻辑推理稳健，中文理解出色</td>
+</tr>
+<tr>
+<td><strong>GLM-5-turbo</strong></td>
+<td>智谱 AI</td>
+<td>GLM-5.1 的快速版本，响应极快</td>
+</tr>
+<tr>
+<td><strong>Qwen3.5-plus</strong></td>
+<td>阿里巴巴</td>
+<td>代码生成质量高，实现细节把控好</td>
+</tr>
+<tr>
+<td><strong>MiniMax-M2.7</strong></td>
+<td>MiniMax</td>
+<td>性价比极高，响应速度快，适合轻量任务</td>
+</tr>
+<tr>
+<td><strong>Kimi-k2.5</strong></td>
+<td>Moonshot</td>
+<td>长上下文理解优秀，创意表达和视觉理解强</td>
+</tr>
+<tr>
+<td><strong>GPT-5.4</strong></td>
+<td>OpenAI</td>
+<td>推理天花板，复杂问题处理能力最强（通过国际通道）</td>
+</tr>
+</tbody></table>
+<h2 id="智能体配置详解"><a href="#智能体配置详解" class="headerlink" title="智能体配置详解"></a>智能体配置详解</h2><h3 id="1-Sisyphus（主编排者）→-GLM-5-1"><a href="#1-Sisyphus（主编排者）→-GLM-5-1" class="headerlink" title="1. Sisyphus（主编排者）→ GLM-5.1"></a>1. Sisyphus（主编排者）→ GLM-5.1</h3><p>Sisyphus 是整个系统的”大脑”，负责接收用户请求、拆解任务、分配给子智能体、汇总结果。它需要：</p>
+<ul>
+<li><strong>全局视野</strong>：理解整个任务的上下文和依赖关系</li>
+<li><strong>判断力</strong>：决定哪些任务可以并行、哪些需要串行</li>
+<li><strong>中文沟通</strong>：与用户用中文交互，需要优秀的中文理解</li>
+</ul>
+<p><strong>为什么选 GLM-5.1</strong>：智谱的 GLM-5.1 在中文理解和复杂推理上表现稳定，作为主编排者需要的是”不犯大错”而不是”偶尔惊艳”。GLM-5.1 的稳健性让它在编排场景下值得信赖。</p>
+<h3 id="2-Prometheus（实现执行者）→-Qwen3-5-plus"><a href="#2-Prometheus（实现执行者）→-Qwen3-5-plus" class="headerlink" title="2. Prometheus（实现执行者）→ Qwen3.5-plus"></a>2. Prometheus（实现执行者）→ Qwen3.5-plus</h3><p>Prometheus 负责将方案转化为代码。它需要：</p>
+<ul>
+<li><strong>代码质量</strong>：生成的代码要能直接用，不是伪代码</li>
+<li><strong>细节把控</strong>：变量命名、边界处理、异常处理都要到位</li>
+<li><strong>框架理解</strong>：熟悉 Spring Boot、MyBatis、React 等主流框架</li>
+</ul>
+<p><strong>为什么选 Qwen3.5-plus</strong>：阿里的 Qwen 系列在代码生成上一直是国产模型的第一梯队。Qwen3.5-plus 在代码补全、重构、Bug 修复等场景下表现出色，尤其是 Java 和 TypeScript 生态的理解深度。</p>
+<h3 id="3-Oracle（架构顾问）→-GLM-5-1"><a href="#3-Oracle（架构顾问）→-GLM-5-1" class="headerlink" title="3. Oracle（架构顾问）→ GLM-5.1"></a>3. Oracle（架构顾问）→ GLM-5.1</h3><p>Oracle 是只读的高质量顾问，在遇到架构决策、复杂 Bug、安全问题时才被咨询。它需要：</p>
+<ul>
+<li><strong>深度推理</strong>：分析复杂系统间的 tradeoff</li>
+<li><strong>表达清晰</strong>：把复杂问题解释得通俗易懂</li>
+<li><strong>不输出代码</strong>：只给建议，不动手</li>
+</ul>
+<p><strong>为什么选 GLM-5.1</strong>：Oracle 的核心能力是”想清楚”而不是”写得快”。GLM-5.1 的推理链路清晰，回答结构化程度高，适合做顾问角色。与 Sisyphus 使用同一模型也保证了思维一致性。</p>
+<h3 id="4-Hephaestus（高质量实现）→-GPT-5-4"><a href="#4-Hephaestus（高质量实现）→-GPT-5-4" class="headerlink" title="4. Hephaestus（高质量实现）→ GPT-5.4"></a>4. Hephaestus（高质量实现）→ GPT-5.4</h3><p>Hephaestus 是”精工细作”的实现者，配置为 high variant，只在需要高质量输出时才启用。它需要：</p>
+<ul>
+<li><strong>顶级代码质量</strong>：架构清晰、设计模式正确、测试完备</li>
+<li><strong>复杂问题解决</strong>：处理多系统交互、性能优化等高难度任务</li>
+</ul>
+<p><strong>为什么选 GPT-5.4</strong>：在推理天花板这个维度上，GPT-5.4 仍然是目前最强的。对于 Hephaestus 这种”压箱底”的角色，用最强的模型确保关键时刻不掉链子。虽然成本更高，但只在必要时调用。</p>
+<p><img src="/images/posts/AI%E7%BC%96%E7%A8%8B%E6%99%BA%E8%83%BD%E4%BD%93%E9%85%8D%E7%BD%AE%E5%AE%9E%E6%88%98/fig2.png" alt="模型能力象限图"><br><em>图2：各模型在推理深度、代码质量、响应速度、性价比四个维度的定位</em></p>
+<h3 id="5-Explore（代码探索）→-MiniMax-M2-7"><a href="#5-Explore（代码探索）→-MiniMax-M2-7" class="headerlink" title="5. Explore（代码探索）→ MiniMax-M2.7"></a>5. Explore（代码探索）→ MiniMax-M2.7</h3><p>Explore 负责在代码库中搜索模式、理解代码结构。它的工作模式是”大量并发搜索 + 快速总结”。它需要：</p>
+<ul>
+<li><strong>快速响应</strong>：经常被并行调用 2-5 个实例</li>
+<li><strong>足够准确</strong>：不需要完美，但不能遗漏关键信息</li>
+<li><strong>低成本</strong>：调用频率最高</li>
+</ul>
+<p><strong>为什么选 MiniMax-M2.7</strong>：Explore 是整个系统里调用频率最高的智能体，可能一个任务就要并行启动 3-5 个。MiniMax-M2.7 的响应速度和性价比让它成为这种”量大队”角色的最佳选择。</p>
+<h3 id="6-Librarian（外部参考搜索）→-MiniMax-M2-7"><a href="#6-Librarian（外部参考搜索）→-MiniMax-M2-7" class="headerlink" title="6. Librarian（外部参考搜索）→ MiniMax-M2.7"></a>6. Librarian（外部参考搜索）→ MiniMax-M2.7</h3><p>Librarian 负责搜索外部文档、查找开源实现示例、检索 API 文档。与 Explore 类似：</p>
+<ul>
+<li><strong>高并发</strong>：经常与 Explore 同时启动</li>
+<li><strong>搜索导向</strong>：核心能力是”找到”而不是”深度分析”</li>
+</ul>
+<p><strong>为什么选 MiniMax-M2.7</strong>：与 Explore 同理，Librarian 也是高频调用的搜索型智能体，性价比和速度优先。</p>
+<h3 id="7-Metis（预规划分析）→-GLM-5-turbo"><a href="#7-Metis（预规划分析）→-GLM-5-turbo" class="headerlink" title="7. Metis（预规划分析）→ GLM-5-turbo"></a>7. Metis（预规划分析）→ GLM-5-turbo</h3><p>Metis 在复杂任务开始前分析需求，识别隐藏意图和模糊点。它需要：</p>
+<ul>
+<li><strong>快速响应</strong>：任务是”想清楚再动手”，不能等太久</li>
+<li><strong>分析能力</strong>：识别需求中的矛盾、遗漏和风险</li>
+<li><strong>足够准确</strong>：预规划不需要 100% 完美，够用就行</li>
+</ul>
+<p><strong>为什么选 GLM-5-turbo</strong>：Metis 的工作是”快速扫描”而不是”深度分析”。GLM-5-turbo 的快速响应特性让预规划不会成为瓶颈，同时保留了足够的分析能力。</p>
+<h3 id="8-Momus（计划审查）→-GPT-5-4"><a href="#8-Momus（计划审查）→-GPT-5-4" class="headerlink" title="8. Momus（计划审查）→ GPT-5.4"></a>8. Momus（计划审查）→ GPT-5.4</h3><p>Momus 是”挑剔的审查官”，负责评审工作计划的质量、完整性和可执行性。它需要：</p>
+<ul>
+<li><strong>高标准</strong>：能发现计划中的模糊点、遗漏和风险</li>
+<li><strong>逻辑严密</strong>：审查需要滴水不漏</li>
+<li><strong>不怕得罪人</strong>：直说问题，不糊弄</li>
+</ul>
+<p><strong>为什么选 GPT-5.4</strong>：审查需要的是”吹毛求疵”的能力，GPT-5.4 在发现逻辑漏洞和隐含假设方面表现最强。用最强的模型做审查，确保每个计划在执行前都经得起推敲。</p>
+<h3 id="9-Multimodal-Looker（视觉理解）→-Kimi-k2-5"><a href="#9-Multimodal-Looker（视觉理解）→-Kimi-k2-5" class="headerlink" title="9. Multimodal Looker（视觉理解）→ Kimi-k2.5"></a>9. Multimodal Looker（视觉理解）→ Kimi-k2.5</h3><p>负责分析图片、截图、UI 设计稿等视觉内容。它需要：</p>
+<ul>
+<li><strong>视觉理解</strong>：准确识别图片中的文字、布局、组件</li>
+<li><strong>设计感知</strong>：理解 UI 设计意图</li>
+<li><strong>中文 OCR</strong>：识别中文截图中的代码和文字</li>
+</ul>
+<p><strong>为什么选 Kimi-k2.5</strong>：Kimi 在多模态理解上，尤其是中文场景下的视觉理解表现突出。对中文截图、设计稿的识别准确率高。</p>
+<h2 id="任务类别配置"><a href="#任务类别配置" class="headerlink" title="任务类别配置"></a>任务类别配置</h2><p>除了固定角色的智能体，OhMyOpenCode 还支持按任务类别分配模型。我按”任务复杂度 × 任务领域”来分配：</p>
+<table>
+<thead>
+<tr>
+<th>类别</th>
+<th>模型</th>
+<th>选型理由</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>deep</strong>（深度实现）</td>
+<td>GLM-5.1</td>
+<td>需要综合推理能力，稳健可靠</td>
+</tr>
+<tr>
+<td><strong>ultrabrain</strong>（超脑）</td>
+<td>GLM-5.1</td>
+<td>逻辑推理密集型任务</td>
+</tr>
+<tr>
+<td><strong>quick</strong>（快速任务）</td>
+<td>MiniMax-M2.7</td>
+<td>单文件修改，速度优先</td>
+</tr>
+<tr>
+<td><strong>unspecified-low</strong></td>
+<td>MiniMax-M2.7</td>
+<td>低复杂度通用</td>
+</tr>
+<tr>
+<td><strong>unspecified-high</strong></td>
+<td>GLM-5.1</td>
+<td>高复杂度通用</td>
+</tr>
+<tr>
+<td><strong>visual-engineering</strong>（前端）</td>
+<td>Kimi-k2.5</td>
+<td>视觉理解 + 创意设计</td>
+</tr>
+<tr>
+<td><strong>artistry</strong>（创意方案）</td>
+<td>Kimi-k2.5</td>
+<td>非常规问题需要创意思维</td>
+</tr>
+<tr>
+<td><strong>writing</strong>（文档写作）</td>
+<td>Kimi-k2.5</td>
+<td>长文输出，表达流畅</td>
+</tr>
+</tbody></table>
+<p><img src="/images/posts/AI%E7%BC%96%E7%A8%8B%E6%99%BA%E8%83%BD%E4%BD%93%E9%85%8D%E7%BD%AE%E5%AE%9E%E6%88%98/fig3.png" alt="任务分配决策流程图"><br><em>图3：任务类别到模型的分配决策流程</em></p>
+<p><strong>分配逻辑总结</strong>：</p>
+<ul>
+<li><strong>GLM-5.1</strong>：逻辑推理、架构决策、深度实现 → “稳重派”</li>
+<li><strong>MiniMax-M2.7</strong>：高频搜索、快速任务、低复杂度 → “效率派”</li>
+<li><strong>Kimi-k2.5</strong>：前端视觉、创意写作、多模态 → “创意派”</li>
+<li><strong>Qwen3.5-plus</strong>：代码生成、Bug 修复、重构 → “实干派”</li>
+<li><strong>GPT-5.4</strong>：计划审查、高质量实现 → “天花板”</li>
+</ul>
+<h2 id="完整配置文件"><a href="#完整配置文件" class="headerlink" title="完整配置文件"></a>完整配置文件</h2><p>以下是 <code>oh-my-opencode.json</code> 的完整配置：</p>
+<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;agents&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;sisyphus&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;zhipuai-coding-plan/glm-5.1&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;prometheus&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;alibaba-coding-plan-cn/qwen3.5-plus&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;atlas&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;minimax-cn-coding-plan/MiniMax-M2.7&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;explore&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;minimax-cn-coding-plan/MiniMax-M2.7&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;hephaestus&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;openai/gpt-5.4&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;variant&quot;</span><span class="punctuation">:</span> <span class="string">&quot;high&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;librarian&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;minimax-cn-coding-plan/MiniMax-M2.7&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;metis&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;zhipuai-coding-plan/glm-5-turbo&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;momus&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;openai/gpt-5.4&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;multimodal-looker&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;alibaba-coding-plan-cn/kimi-k2.5&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;oracle&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;zhipuai-coding-plan/glm-5.1&quot;</span> <span class="punctuation">&#125;</span></span><br><span class="line">  <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;categories&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;artistry&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;alibaba-coding-plan-cn/kimi-k2.5&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;deep&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;zhipuai-coding-plan/glm-5.1&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;quick&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;minimax-cn-coding-plan/MiniMax-M2.7&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;ultrabrain&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;zhipuai-coding-plan/glm-5.1&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;unspecified-high&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;zhipuai-coding-plan/glm-5.1&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;unspecified-low&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;minimax-cn-coding-plan/MiniMax-M2.7&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;visual-engineering&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;alibaba-coding-plan-cn/kimi-k2.5&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;writing&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;alibaba-coding-plan-cn/kimi-k2.5&quot;</span> <span class="punctuation">&#125;</span></span><br><span class="line">  <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="附加配置：插件与-MCP"><a href="#附加配置：插件与-MCP" class="headerlink" title="附加配置：插件与 MCP"></a>附加配置：插件与 MCP</h2><p>除了模型分配，我还配置了一些插件来增强能力：</p>
+<table>
+<thead>
+<tr>
+<th>插件</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Superpowers</strong></td>
+<td>提供 TDD、调试、计划编写等工程化工作流</td>
+</tr>
+<tr>
+<td><strong>Claude HUD</strong></td>
+<td>终端状态栏，实时显示智能体活动</td>
+</tr>
+<tr>
+<td><strong>JDTLS-LSP</strong></td>
+<td>Java 语言服务器，精准的代码智能</td>
+</tr>
+<tr>
+<td><strong>Skill Creator</strong></td>
+<td>自定义技能创建器</td>
+</tr>
+<tr>
+<td><strong>Minimax Skills</strong></td>
+<td>MiniMax 图片生成、Web 搜索等</td>
+</tr>
+<tr>
+<td><strong>Ralph Loop</strong></td>
+<td>自动化循环执行</td>
+</tr>
+</tbody></table>
+<p><strong>MCP 服务</strong>：配置了 MySQL MCP 服务器，让智能体可以直接查询数据库，在处理数据相关的开发任务时非常方便。</p>
+<p><strong>自定义 Agent</strong>：我还创建了一个 <code>java-bug-pathfinder</code> 自定义智能体，专门用于 Java Bug 的调用链追踪和根因分析，配置为只读权限，确保安全。</p>
+<h2 id="选型总结与建议"><a href="#选型总结与建议" class="headerlink" title="选型总结与建议"></a>选型总结与建议</h2><p>经过几个月的使用，我总结出以下选型原则：</p>
+<ol>
+<li><p><strong>编排类角色选稳不选猛</strong>：主编排者需要的是可靠性和全局视野，不需要偶尔的天才表现。GLM-5.1 的稳健特质完美匹配。</p>
+</li>
+<li><p><strong>高频角色选快不选强</strong>：Explore、Librarian 这种可能并行启动 5 个实例的角色，响应速度和成本比”聪明程度”更重要。MiniMax-M2.7 是这个场景的最优解。</p>
+</li>
+<li><p><strong>审查角色选强不选快</strong>：Momus 做 Plan Review，宁可多等几秒也要找出问题。GPT-5.4 的审查质量值得这点等待。</p>
+</li>
+<li><p><strong>创意角色选长不选短</strong>：前端设计、文档写作需要长上下文和创意表达。Kimi-k2.5 的长文本和视觉理解能力让它在这个领域领先。</p>
+</li>
+<li><p><strong>实现角色选专不选全</strong>：代码生成需要的是对框架和语言的深度理解。Qwen3.5-plus 在代码领域的专精让它在 Prometheus 角色上表现突出。</p>
+</li>
+<li><p><strong>按预算分层</strong>：不是每个任务都需要最贵的模型。把高成本模型留给 Hephaestus 和 Momus 这种”关键时刻才上场”的角色，日常任务用性价比模型。</p>
+</li>
+</ol>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>AI 编程工具的配置不是”选一个最强模型就完事”。就像组建一个工程团队，你需要了解每个”成员”的特长，把合适的人放在合适的位置。希望这篇分享能帮助你更好地配置自己的 AI 编程智能体团队。</p>
+<p>如果你也在用 Claude Code + OhMyOpenCode，欢迎交流你的配置方案。</p>
+]]></content>
+      <categories>
+        <category>AI经验</category>
+      </categories>
+      <tags>
+        <tag>AI编程</tag>
+        <tag>智能体</tag>
+        <tag>OhMyOpenCode</tag>
+        <tag>ClaudeCode</tag>
+        <tag>模型选型</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Mail.tm API 集成踩坑：从 DuckMail 迁移的排查实录</title>
     <url>/2026/03/04/Mail-tm-API%E9%9B%86%E6%88%90%E8%B8%A9%E5%9D%91/</url>
     <content><![CDATA[<p>在一次工具迁移过程中，我遇到了一个经典的 API 兼容性问题：原工具使用 DuckMail（需付费 Token），我将其改为免费的 Mail.tm API 后，验证码邮件始终收不到。本文记录了完整的排查过程，以及如何通过”诊断增强”而非”绕过”的思路解决问题。</p>
@@ -855,32 +1092,32 @@
 </thead>
 <tbody><tr>
 <td>1</td>
-<td><a href="mailto:&#x6d;&#116;&#x66;&#x36;&#99;&#x6d;&#x66;&#99;&#x40;&#x64;&#x6f;&#108;&#108;&#105;&#99;&#x6f;&#110;&#x73;&#x2e;&#x63;&#x6f;&#109;">&#x6d;&#116;&#x66;&#x36;&#99;&#x6d;&#x66;&#99;&#x40;&#x64;&#x6f;&#108;&#108;&#105;&#99;&#x6f;&#110;&#x73;&#x2e;&#x63;&#x6f;&#109;</a></td>
+<td><a href="mailto:&#x6d;&#116;&#102;&#54;&#x63;&#x6d;&#102;&#x63;&#64;&#x64;&#111;&#x6c;&#108;&#x69;&#x63;&#111;&#110;&#115;&#x2e;&#x63;&#111;&#109;">&#x6d;&#116;&#102;&#54;&#x63;&#x6d;&#102;&#x63;&#64;&#x64;&#111;&#x6c;&#108;&#x69;&#x63;&#111;&#110;&#115;&#x2e;&#x63;&#111;&#109;</a></td>
 <td>✅</td>
 </tr>
 <tr>
 <td>2</td>
-<td><a href="mailto:&#x77;&#122;&#119;&#118;&#111;&#x75;&#x6a;&#109;&#102;&#54;&#x6f;&#105;&#55;&#x40;&#100;&#x6f;&#x6c;&#108;&#105;&#99;&#x6f;&#x6e;&#115;&#x2e;&#x63;&#x6f;&#x6d;">&#x77;&#122;&#119;&#118;&#111;&#x75;&#x6a;&#109;&#102;&#54;&#x6f;&#105;&#55;&#x40;&#100;&#x6f;&#x6c;&#108;&#105;&#99;&#x6f;&#x6e;&#115;&#x2e;&#x63;&#x6f;&#x6d;</a></td>
+<td><a href="mailto:&#x77;&#x7a;&#119;&#118;&#x6f;&#x75;&#x6a;&#x6d;&#x66;&#x36;&#111;&#105;&#x37;&#x40;&#x64;&#111;&#x6c;&#x6c;&#x69;&#99;&#111;&#x6e;&#x73;&#x2e;&#x63;&#x6f;&#x6d;">&#x77;&#x7a;&#119;&#118;&#x6f;&#x75;&#x6a;&#x6d;&#x66;&#x36;&#111;&#105;&#x37;&#x40;&#x64;&#111;&#x6c;&#x6c;&#x69;&#99;&#111;&#x6e;&#x73;&#x2e;&#x63;&#x6f;&#x6d;</a></td>
 <td>✅</td>
 </tr>
 <tr>
 <td>3</td>
-<td><a href="mailto:&#x68;&#x30;&#98;&#103;&#x75;&#x72;&#x32;&#120;&#64;&#x64;&#111;&#108;&#108;&#105;&#x63;&#111;&#x6e;&#115;&#x2e;&#99;&#111;&#109;">&#x68;&#x30;&#98;&#103;&#x75;&#x72;&#x32;&#120;&#64;&#x64;&#111;&#108;&#108;&#105;&#x63;&#111;&#x6e;&#115;&#x2e;&#99;&#111;&#109;</a></td>
+<td><a href="mailto:&#x68;&#48;&#x62;&#103;&#117;&#x72;&#x32;&#x78;&#64;&#x64;&#111;&#x6c;&#108;&#105;&#x63;&#x6f;&#110;&#115;&#x2e;&#99;&#x6f;&#109;">&#x68;&#48;&#x62;&#103;&#117;&#x72;&#x32;&#x78;&#64;&#x64;&#111;&#x6c;&#108;&#105;&#x63;&#x6f;&#110;&#115;&#x2e;&#99;&#x6f;&#109;</a></td>
 <td>✅</td>
 </tr>
 <tr>
 <td>4</td>
-<td><a href="mailto:&#54;&#x70;&#114;&#x6b;&#102;&#x37;&#x6e;&#54;&#49;&#64;&#100;&#x6f;&#x6c;&#x6c;&#105;&#99;&#111;&#110;&#115;&#x2e;&#99;&#x6f;&#109;">&#54;&#x70;&#114;&#x6b;&#102;&#x37;&#x6e;&#54;&#49;&#64;&#100;&#x6f;&#x6c;&#x6c;&#105;&#99;&#111;&#110;&#115;&#x2e;&#99;&#x6f;&#109;</a></td>
+<td><a href="mailto:&#x36;&#x70;&#x72;&#x6b;&#102;&#55;&#110;&#x36;&#49;&#64;&#100;&#x6f;&#x6c;&#108;&#x69;&#99;&#x6f;&#110;&#115;&#46;&#x63;&#111;&#x6d;">&#x36;&#x70;&#x72;&#x6b;&#102;&#55;&#110;&#x36;&#49;&#64;&#100;&#x6f;&#x6c;&#108;&#x69;&#99;&#x6f;&#110;&#115;&#46;&#x63;&#111;&#x6d;</a></td>
 <td>✅</td>
 </tr>
 <tr>
 <td>5</td>
-<td><a href="mailto:&#x77;&#110;&#x61;&#x31;&#56;&#x68;&#x6c;&#111;&#x38;&#x6d;&#103;&#64;&#100;&#111;&#108;&#108;&#x69;&#x63;&#111;&#x6e;&#x73;&#x2e;&#99;&#111;&#x6d;">&#x77;&#110;&#x61;&#x31;&#56;&#x68;&#x6c;&#111;&#x38;&#x6d;&#103;&#64;&#100;&#111;&#108;&#108;&#x69;&#x63;&#111;&#x6e;&#x73;&#x2e;&#99;&#111;&#x6d;</a></td>
+<td><a href="mailto:&#119;&#110;&#97;&#x31;&#x38;&#x68;&#x6c;&#x6f;&#56;&#109;&#103;&#x40;&#x64;&#x6f;&#108;&#x6c;&#x69;&#x63;&#111;&#110;&#115;&#46;&#x63;&#111;&#109;">&#119;&#110;&#97;&#x31;&#x38;&#x68;&#x6c;&#x6f;&#56;&#109;&#103;&#x40;&#x64;&#x6f;&#108;&#x6c;&#x69;&#x63;&#111;&#110;&#115;&#46;&#x63;&#111;&#109;</a></td>
 <td>✅</td>
 </tr>
 <tr>
 <td>6</td>
-<td><a href="mailto:&#x67;&#108;&#97;&#x79;&#51;&#107;&#x68;&#x35;&#113;&#106;&#x40;&#x64;&#111;&#x6c;&#108;&#x69;&#99;&#111;&#110;&#x73;&#x2e;&#x63;&#x6f;&#x6d;">&#x67;&#108;&#97;&#x79;&#51;&#107;&#x68;&#x35;&#113;&#106;&#x40;&#x64;&#111;&#x6c;&#108;&#x69;&#99;&#111;&#110;&#x73;&#x2e;&#x63;&#x6f;&#x6d;</a></td>
+<td><a href="mailto:&#x67;&#108;&#x61;&#x79;&#x33;&#107;&#x68;&#53;&#x71;&#x6a;&#x40;&#x64;&#x6f;&#108;&#108;&#x69;&#x63;&#111;&#x6e;&#x73;&#46;&#x63;&#111;&#109;">&#x67;&#108;&#x61;&#x79;&#x33;&#107;&#x68;&#53;&#x71;&#x6a;&#x40;&#x64;&#x6f;&#108;&#108;&#x69;&#x63;&#111;&#x6e;&#x73;&#46;&#x63;&#111;&#109;</a></td>
 <td>✅</td>
 </tr>
 </tbody></table>
@@ -1796,6 +2033,185 @@
       </tags>
   </entry>
   <entry>
+    <title>个人月卡取消接口缺失：从 Bug 定位到 TDD 修复全记录</title>
+    <url>/2026/03/30/%E4%B8%AA%E4%BA%BA%E6%9C%88%E5%8D%A1%E5%8F%96%E6%B6%88%E6%8E%A5%E5%8F%A3%E7%BC%BA%E5%A4%B1%E4%BB%8EBug%E5%AE%9A%E4%BD%8D%E5%88%B0TDD%E4%BF%AE%E5%A4%8D%E5%85%A8%E8%AE%B0%E5%BD%95/</url>
+    <content><![CDATA[<p>在南沙物联网项目的月卡系统中，用户取消个人月卡申请后，列表里竟然找不到”已取消”记录，车位和 VIP 资源也一直被占用。排查后发现，个人月卡模块压根没有 cancel 接口——而企业月卡模块是有的。本文记录了从问题定位、根因分析到 TDD 修复的完整过程。</p>
+<span id="more"></span>
+
+<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>这是一个典型的”功能遗漏”类 Bug：两个相似模块（个人月卡 vs 企业月卡）中，一个有取消功能，另一个却没有。用户在前端点击取消时，请求发不到后端，导致数据处于不一致状态。这类 Bug 的排查思路和修复策略值得记录，也希望能帮到遇到类似问题的开发者。</p>
+<h2 id="问题背景"><a href="#问题背景" class="headerlink" title="问题背景"></a>问题背景</h2><h3 id="业务场景"><a href="#业务场景" class="headerlink" title="业务场景"></a>业务场景</h3><p>在月卡申请流程中，用户需要经过两个页面：</p>
+<ol>
+<li><strong>添加月卡页面</strong>：填写表单，点击”立即申请”</li>
+<li><strong>用户协议页面</strong>：查看协议，选择”同意”或”取消”</li>
+</ol>
+<p>问题出在第 2 步——用户点击”取消”后，返回月卡列表，却看不到”已取消”状态的记录。</p>
+<h3 id="用户操作流程"><a href="#用户操作流程" class="headerlink" title="用户操作流程"></a>用户操作流程</h3><p><img src="/images/posts/%E4%B8%AA%E4%BA%BA%E6%9C%88%E5%8D%A1%E5%8F%96%E6%B6%88%E6%8E%A5%E5%8F%A3%E7%BC%BA%E5%A4%B1%E4%BB%8EBug%E5%AE%9A%E4%BD%8D%E5%88%B0TDD%E4%BF%AE%E5%A4%8D%E5%85%A8%E8%AE%B0%E5%BD%95/fig1.png" alt="用户操作流程与问题发生点"><br><em>图 1：用户操作流程与问题发生点示意</em></p>
+<p>具体步骤：</p>
+<ol>
+<li>用户进入”添加月卡”页面，填写表单信息</li>
+<li>点击”立即申请”，前端调用 <code>POST /v1/monthpersonal/apply</code></li>
+<li>后端成功创建月卡记录（state&#x3D;”1” 申请中），同时创建订单、关联车辆、更新车位状态为占用、消耗 VIP</li>
+<li>前端跳转到”用户协议”页面</li>
+<li>用户点击”取消”并确认——<strong>没有任何后端接口被调用</strong></li>
+<li>返回列表页——数据库中 state&#x3D;”1” 的记录未被更新为 state&#x3D;”10”（已取消）</li>
+<li>列表中看不到”已取消”记录，且车位、VIP 资源未被释放</li>
+</ol>
+<h2 id="排查过程"><a href="#排查过程" class="headerlink" title="排查过程"></a>排查过程</h2><h3 id="第一步：搜索-cancel-相关端点"><a href="#第一步：搜索-cancel-相关端点" class="headerlink" title="第一步：搜索 cancel 相关端点"></a>第一步：搜索 cancel 相关端点</h3><p>通过搜索 Controller 层的 cancel 关键词，发现了关键线索：</p>
+<table>
+<thead>
+<tr>
+<th>文件</th>
+<th>行号</th>
+<th>关键信息</th>
+<th>场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>UserMonthCompanyController.java</code></td>
+<td>255-259</td>
+<td><code>POST /v1/user-monthcompany/cancel</code></td>
+<td>企业月卡有取消</td>
+</tr>
+<tr>
+<td><code>MonthPersonalController.java</code></td>
+<td>全文</td>
+<td>无 cancel 端点</td>
+<td>个人月卡缺失</td>
+</tr>
+</tbody></table>
+<h3 id="第二步：对比-Biz-层方法"><a href="#第二步：对比-Biz-层方法" class="headerlink" title="第二步：对比 Biz 层方法"></a>第二步：对比 Biz 层方法</h3><p>企业月卡 <code>MouthCompanyBiz</code> 有 <code>cancel()</code> 方法（第 686-704 行），会校验状态后更新 state 为 CANCEL(“10”)。个人月卡 <code>MouthPersonalBiz</code> 完全没有这个方法。</p>
+<h3 id="第三步：确认定时任务补偿机制"><a href="#第三步：确认定时任务补偿机制" class="headerlink" title="第三步：确认定时任务补偿机制"></a>第三步：确认定时任务补偿机制</h3><p>项目中存在 <code>MonthlyCardOperationTimeoutTask</code> 定时任务，每半小时检测申请中超 30 分钟的记录并自动取消。但这个任务<strong>只更新状态</strong>，不回滚车位&#x2F;VIP 等副作用。</p>
+<h2 id="根因分析"><a href="#根因分析" class="headerlink" title="根因分析"></a>根因分析</h2><p><img src="/images/posts/%E4%B8%AA%E4%BA%BA%E6%9C%88%E5%8D%A1%E5%8F%96%E6%B6%88%E6%8E%A5%E5%8F%A3%E7%BC%BA%E5%A4%B1%E4%BB%8EBug%E5%AE%9A%E4%BD%8D%E5%88%B0TDD%E4%BF%AE%E5%A4%8D%E5%85%A8%E8%AE%B0%E5%BD%95/fig2.png" alt="根因分析：三层 Bug 的关系"><br><em>图 2：三层 Bug 的关系与影响范围</em></p>
+<p>问题可以拆解为三个相互关联的 Bug：</p>
+<h3 id="Bug-1：缺少-cancel-端点"><a href="#Bug-1：缺少-cancel-端点" class="headerlink" title="Bug 1：缺少 cancel 端点"></a>Bug 1：缺少 cancel 端点</h3><p><code>MonthPersonalController</code> 没有 cancel 端点，<code>MouthPersonalBiz</code> 也没有 <code>cancel()</code> 方法。对比企业月卡，后者在第 255 行有 <code>POST /cancel</code>，第 686 行有 <code>cancel()</code> 方法。</p>
+<h3 id="Bug-2：apply-方法副作用不可逆"><a href="#Bug-2：apply-方法副作用不可逆" class="headerlink" title="Bug 2：apply() 方法副作用不可逆"></a>Bug 2：apply() 方法副作用不可逆</h3><p><code>MouthPersonalBiz.apply()</code> 在用户点击”立即申请”时立即执行了以下操作：</p>
+<ul>
+<li>创建月卡记录（state&#x3D;”1”）</li>
+<li>创建订单（orderStatus&#x3D;”1”）</li>
+<li>保存车辆关联</li>
+<li>更新车位状态为占用（usingState&#x3D;”4”）</li>
+<li>消耗 VIP（state&#x3D;”5”）</li>
+</ul>
+<p>这些操作在用户取消时无法回滚，因为没有对应的清理接口。</p>
+<h3 id="Bug-3：定时任务不回滚副作用"><a href="#Bug-3：定时任务不回滚副作用" class="headerlink" title="Bug 3：定时任务不回滚副作用"></a>Bug 3：定时任务不回滚副作用</h3><p><code>MonthlyCardOperationTimeoutTask</code> 只将 state 更新为”10”，但不释放车位、不回滚 VIP、不取消订单。这意味着即使超时自动取消，资源仍然被锁定。</p>
+<h3 id="个人月卡状态流转"><a href="#个人月卡状态流转" class="headerlink" title="个人月卡状态流转"></a>个人月卡状态流转</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">申请(1) ──→ 待支付(4) ──→ 已生效(2) ──→ 临期(3) ──→ 已过期(13)</span><br><span class="line">  │                         │</span><br><span class="line">  ├──→ 已取消(10)           ├──→ 续期中(5)</span><br><span class="line">                            │</span><br><span class="line">                            ├──→ 变更中(6) ──→ 变更批准(15) / 变更拒绝(11)</span><br><span class="line">                            │</span><br><span class="line">                            └──→ 退款申请中(8) ──→ 退款待转账(12) ──→ 已退款(9) / 退款拒绝(16)</span><br></pre></td></tr></table></figure>
+
+<p><code>cancel()</code> 方法允许从”申请中(1)”和”待支付(4)”两个状态取消，目标状态为”已取消(10)”。</p>
+<h2 id="修复方案"><a href="#修复方案" class="headerlink" title="修复方案"></a>修复方案</h2><h3 id="个人月卡-vs-企业月卡-cancel-对比"><a href="#个人月卡-vs-企业月卡-cancel-对比" class="headerlink" title="个人月卡 vs 企业月卡 cancel() 对比"></a>个人月卡 vs 企业月卡 cancel() 对比</h3><p><img src="/images/posts/%E4%B8%AA%E4%BA%BA%E6%9C%88%E5%8D%A1%E5%8F%96%E6%B6%88%E6%8E%A5%E5%8F%A3%E7%BC%BA%E5%A4%B1%E4%BB%8EBug%E5%AE%9A%E4%BD%8D%E5%88%B0TDD%E4%BF%AE%E5%A4%8D%E5%85%A8%E8%AE%B0%E5%BD%95/fig3.png" alt="个人月卡与企业月卡 cancel 实现对比"><br><em>图 3：个人月卡与企业月卡 cancel 实现对比</em></p>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>个人月卡 cancel()</th>
+<th>企业月卡 cancel()</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>状态校验</td>
+<td>“1” 申请中 + “4” 待支付</td>
+<td>仅 “1” 申请中</td>
+</tr>
+<tr>
+<td>车位释放</td>
+<td>有（恢复 usingState、清空 monthCar&#x2F;parkingCar）</td>
+<td>无（有 TODO 注释）</td>
+</tr>
+<tr>
+<td>VIP 回滚</td>
+<td>有（恢复 state&#x3D;”1”）</td>
+<td>无</td>
+</tr>
+<tr>
+<td>订单取消</td>
+<td>有（orderStatus&#x3D;”5”）</td>
+<td>无</td>
+</tr>
+<tr>
+<td>事务保护</td>
+<td>@Transactional</td>
+<td>无</td>
+</tr>
+<tr>
+<td>日志写入</td>
+<td>有</td>
+<td>有</td>
+</tr>
+</tbody></table>
+<h3 id="Step-1：MouthPersonalBiz-新增-cancel-方法"><a href="#Step-1：MouthPersonalBiz-新增-cancel-方法" class="headerlink" title="Step 1：MouthPersonalBiz 新增 cancel() 方法"></a>Step 1：MouthPersonalBiz 新增 cancel() 方法</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 取消申请</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> id 月卡ID</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span> 操作结果</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Transactional(rollbackFor = Exception.class)</span></span><br><span class="line"><span class="keyword">public</span> R <span class="title function_">cancel</span><span class="params">(Long id)</span> &#123;</span><br><span class="line">    <span class="type">MonthPersonalEntity</span> <span class="variable">monthPersonal</span> <span class="operator">=</span> monthPersonalService.getById(id);</span><br><span class="line">    <span class="keyword">if</span> (ObjUtil.isNull(monthPersonal)) &#123;</span><br><span class="line">        <span class="keyword">return</span> R.fail(<span class="string">&quot;月卡不存在&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 只有申请中(1)和待支付(4)状态可以取消</span></span><br><span class="line">    <span class="keyword">if</span> (!MonthPersonalStateEnum.APPLY.getCode().equals(monthPersonal.getState())</span><br><span class="line">        &amp;&amp; !MonthPersonalStateEnum.WAITING_PAY.getCode().equals(monthPersonal.getState())) &#123;</span><br><span class="line">        <span class="keyword">return</span> R.fail(<span class="string">&quot;非法操作&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    monthPersonal.setState(MonthPersonalStateEnum.CANCEL.getCode());</span><br><span class="line">    <span class="type">boolean</span> <span class="variable">flag</span> <span class="operator">=</span> monthPersonalService.updateById(monthPersonal);</span><br><span class="line">    <span class="keyword">if</span> (flag) &#123;</span><br><span class="line">        <span class="comment">// 释放车位</span></span><br><span class="line">        <span class="keyword">if</span> (monthPersonal.getParkingSpotId() != <span class="literal">null</span>) &#123;</span><br><span class="line">            <span class="type">ParkSlotEntity</span> <span class="variable">slotEntity</span> <span class="operator">=</span> parkSlotService.getById(monthPersonal.getParkingSpotId());</span><br><span class="line">            <span class="keyword">if</span> (slotEntity != <span class="literal">null</span>) &#123;</span><br><span class="line">                slotEntity.setUsingState(<span class="string">&quot;1&quot;</span>); <span class="comment">// 空闲</span></span><br><span class="line">                slotEntity.setMonthCar(<span class="literal">null</span>);</span><br><span class="line">                slotEntity.setParkingCar(<span class="literal">null</span>);</span><br><span class="line">                parkSlotService.updateById(slotEntity);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 回滚VIP</span></span><br><span class="line">        <span class="keyword">if</span> (monthPersonal.getVipId() != <span class="literal">null</span>) &#123;</span><br><span class="line">            <span class="type">MonthVipEntity</span> <span class="variable">monthVip</span> <span class="operator">=</span> monthVipService.getById(monthPersonal.getVipId());</span><br><span class="line">            <span class="keyword">if</span> (monthVip != <span class="literal">null</span>) &#123;</span><br><span class="line">                monthVip.setState(<span class="string">&quot;1&quot;</span>); <span class="comment">// 恢复有效</span></span><br><span class="line">                monthVipService.updateById(monthVip);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 取消订单</span></span><br><span class="line">        <span class="keyword">if</span> (monthPersonal.getOrderNo() != <span class="literal">null</span>) &#123;</span><br><span class="line">            <span class="type">OrderInfoEntity</span> <span class="variable">orderInfo</span> <span class="operator">=</span> orderInfoService.getById(monthPersonal.getOrderNo());</span><br><span class="line">            <span class="keyword">if</span> (orderInfo != <span class="literal">null</span>) &#123;</span><br><span class="line">                orderInfo.setOrderStatus(<span class="string">&quot;5&quot;</span>); <span class="comment">// 已取消</span></span><br><span class="line">                orderInfoService.updateById(orderInfo);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 写入日志</span></span><br><span class="line">        <span class="type">LogInfoEntity</span> <span class="variable">infoEntity</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">LogInfoEntity</span>();</span><br><span class="line">        infoEntity.setName(LogBusinessType.PERSONMONTHCARD.getCode());</span><br><span class="line">        infoEntity.setKeyId(monthPersonal.getId() + <span class="string">&quot;&quot;</span>);</span><br><span class="line">        infoEntity.setOperateAction(<span class="string">&quot;取消&quot;</span>);</span><br><span class="line">        infoEntity.setRemark(<span class="string">&quot;用户取消月卡申请&quot;</span>);</span><br><span class="line">        logInfoService.save(infoEntity);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> R.status(flag);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>关键设计决策</strong>：cancel() 方法中的多个 DB 操作需要原子性保护。如果先更新了月卡状态，但释放车位时失败，就会出现脏数据。因此添加了 <code>@Transactional(rollbackFor = Exception.class)</code>，确保任一步骤失败时全部回滚。项目中已有此模式（<code>ZombieCarDetectionServiceImpl</code>、<code>SecurityRulesConfigureController</code> 等）。</p>
+<h3 id="Step-2：MonthPersonalController-新增-cancel-端点"><a href="#Step-2：MonthPersonalController-新增-cancel-端点" class="headerlink" title="Step 2：MonthPersonalController 新增 cancel 端点"></a>Step 2：MonthPersonalController 新增 cancel 端点</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 取消申请</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@PostMapping(&quot;/cancel&quot;)</span></span><br><span class="line"><span class="meta">@ApiOperationSupport(order = 16)</span></span><br><span class="line"><span class="meta">@ApiOperation(value = &quot;取消申请&quot;)</span></span><br><span class="line"><span class="keyword">public</span> R <span class="title function_">cancel</span><span class="params">(<span class="meta">@RequestParam</span> Long id)</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> mouthPersonalBiz.cancel(id);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>端点路径：<code>POST /v1/monthpersonal/cancel?id=&#123;id&#125;</code></p>
+<h3 id="Step-3：TDD-测试验证"><a href="#Step-3：TDD-测试验证" class="headerlink" title="Step 3：TDD 测试验证"></a>Step 3：TDD 测试验证</h3><p>新增 11 个测试用例，覆盖以下场景：</p>
+<table>
+<thead>
+<tr>
+<th>测试场景</th>
+<th>预期结果</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>申请中(state&#x3D;1)取消</td>
+<td>state 变为 10，成功</td>
+</tr>
+<tr>
+<td>待支付(state&#x3D;4)取消</td>
+<td>state 变为 10，成功</td>
+</tr>
+<tr>
+<td>已生效(state&#x3D;2)取消</td>
+<td>返回”非法操作”</td>
+</tr>
+<tr>
+<td>取消后车位状态</td>
+<td>usingState 恢复为 1</td>
+</tr>
+<tr>
+<td>取消后 VIP 状态</td>
+<td>state 恢复为 1</td>
+</tr>
+<tr>
+<td>取消后订单状态</td>
+<td>orderStatus 变为 5</td>
+</tr>
+<tr>
+<td>取消后列表展示</td>
+<td>列表出现”已取消”记录</td>
+</tr>
+<tr>
+<td>不存在的 ID</td>
+<td>返回”月卡不存在”</td>
+</tr>
+<tr>
+<td>事务回滚测试</td>
+<td>中间失败时全部回滚</td>
+</tr>
+</tbody></table>
+<p>全部 11 个测试用例通过。</p>
+<h3 id="修改汇总"><a href="#修改汇总" class="headerlink" title="修改汇总"></a>修改汇总</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">MouthPersonalBiz.java              +50 行  (新增 cancel() 方法，含 @Transactional)</span><br><span class="line">MonthPersonalController.java       +8  行  (新增 POST /cancel 端点)</span><br><span class="line">MonthPersonalCancelTest.java       NEW     (新增 11 个测试用例)</span><br></pre></td></tr></table></figure>
+
+<h2 id="经验总结"><a href="#经验总结" class="headerlink" title="经验总结"></a>经验总结</h2><ul>
+<li><strong>相似模块要对齐功能</strong>：新增模块时，务必对照已有模块检查功能完整性。企业月卡有 cancel，个人月卡也应该有</li>
+<li><strong>副作用必须可逆</strong>：<code>apply()</code> 方法在申请阶段就执行了车位占用、VIP 消耗等操作，这些副作用必须有对应的回滚路径</li>
+<li><strong>事务保护不可少</strong>：涉及多个 DB 写入的操作必须加 <code>@Transactional</code>，防止部分成功导致数据不一致</li>
+<li><strong>定时任务应复用业务逻辑</strong>：<code>MonthlyCardOperationTimeoutTask</code> 只更新状态不释放资源，后续应重构为复用 <code>cancel()</code> 方法</li>
+<li><strong>TDD 修复更可靠</strong>：先写测试用例复现问题，再编写修复代码，确保新旧测试全部通过</li>
+</ul>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>这个 Bug 的本质是一个功能遗漏——个人月卡模块在开发时遗漏了取消接口。修复过程遵循了 TDD 流程，从测试用例到业务代码再到事务保护，每一步都有对应的验证。后续还计划将定时任务的补偿逻辑统一复用 <code>cancel()</code> 方法，彻底解决资源泄漏问题。</p>
+]]></content>
+      <categories>
+        <category>后端开发</category>
+      </categories>
+      <tags>
+        <tag>Spring Boot</tag>
+        <tag>Bug修复</tag>
+        <tag>月卡系统</tag>
+        <tag>TDD</tag>
+        <tag>事务管理</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>南沙项目物联网 - 月卡管理模块 Bug 排查记录</title>
     <url>/2026/03/28/%E5%8D%97%E6%B2%99%E9%A1%B9%E7%9B%AE%E7%89%A9%E8%81%94%E7%BD%91%E6%9C%88%E5%8D%A1%E7%AE%A1%E7%90%86Bug%E6%8E%92%E6%9F%A5%E8%AE%B0%E5%BD%95/</url>
     <content><![CDATA[<p>南沙项目物联网的月卡管理模块在日常使用中陆续发现了三个 Bug，涵盖前端接口调用错误、后端空指针异常、以及业务逻辑校验缺陷三类典型问题。本文记录这三个 Bug 的完整排查过程、根因分析及修复方案，供后续开发参考。</p>
@@ -2019,185 +2435,6 @@
         <tag>费用管理</tag>
         <tag>个人月卡</tag>
         <tag>月卡变更</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>个人月卡取消接口缺失：从 Bug 定位到 TDD 修复全记录</title>
-    <url>/2026/03/30/%E4%B8%AA%E4%BA%BA%E6%9C%88%E5%8D%A1%E5%8F%96%E6%B6%88%E6%8E%A5%E5%8F%A3%E7%BC%BA%E5%A4%B1%E4%BB%8EBug%E5%AE%9A%E4%BD%8D%E5%88%B0TDD%E4%BF%AE%E5%A4%8D%E5%85%A8%E8%AE%B0%E5%BD%95/</url>
-    <content><![CDATA[<p>在南沙物联网项目的月卡系统中，用户取消个人月卡申请后，列表里竟然找不到”已取消”记录，车位和 VIP 资源也一直被占用。排查后发现，个人月卡模块压根没有 cancel 接口——而企业月卡模块是有的。本文记录了从问题定位、根因分析到 TDD 修复的完整过程。</p>
-<span id="more"></span>
-
-<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>这是一个典型的”功能遗漏”类 Bug：两个相似模块（个人月卡 vs 企业月卡）中，一个有取消功能，另一个却没有。用户在前端点击取消时，请求发不到后端，导致数据处于不一致状态。这类 Bug 的排查思路和修复策略值得记录，也希望能帮到遇到类似问题的开发者。</p>
-<h2 id="问题背景"><a href="#问题背景" class="headerlink" title="问题背景"></a>问题背景</h2><h3 id="业务场景"><a href="#业务场景" class="headerlink" title="业务场景"></a>业务场景</h3><p>在月卡申请流程中，用户需要经过两个页面：</p>
-<ol>
-<li><strong>添加月卡页面</strong>：填写表单，点击”立即申请”</li>
-<li><strong>用户协议页面</strong>：查看协议，选择”同意”或”取消”</li>
-</ol>
-<p>问题出在第 2 步——用户点击”取消”后，返回月卡列表，却看不到”已取消”状态的记录。</p>
-<h3 id="用户操作流程"><a href="#用户操作流程" class="headerlink" title="用户操作流程"></a>用户操作流程</h3><p><img src="/images/posts/%E4%B8%AA%E4%BA%BA%E6%9C%88%E5%8D%A1%E5%8F%96%E6%B6%88%E6%8E%A5%E5%8F%A3%E7%BC%BA%E5%A4%B1%E4%BB%8EBug%E5%AE%9A%E4%BD%8D%E5%88%B0TDD%E4%BF%AE%E5%A4%8D%E5%85%A8%E8%AE%B0%E5%BD%95/fig1.png" alt="用户操作流程与问题发生点"><br><em>图 1：用户操作流程与问题发生点示意</em></p>
-<p>具体步骤：</p>
-<ol>
-<li>用户进入”添加月卡”页面，填写表单信息</li>
-<li>点击”立即申请”，前端调用 <code>POST /v1/monthpersonal/apply</code></li>
-<li>后端成功创建月卡记录（state&#x3D;”1” 申请中），同时创建订单、关联车辆、更新车位状态为占用、消耗 VIP</li>
-<li>前端跳转到”用户协议”页面</li>
-<li>用户点击”取消”并确认——<strong>没有任何后端接口被调用</strong></li>
-<li>返回列表页——数据库中 state&#x3D;”1” 的记录未被更新为 state&#x3D;”10”（已取消）</li>
-<li>列表中看不到”已取消”记录，且车位、VIP 资源未被释放</li>
-</ol>
-<h2 id="排查过程"><a href="#排查过程" class="headerlink" title="排查过程"></a>排查过程</h2><h3 id="第一步：搜索-cancel-相关端点"><a href="#第一步：搜索-cancel-相关端点" class="headerlink" title="第一步：搜索 cancel 相关端点"></a>第一步：搜索 cancel 相关端点</h3><p>通过搜索 Controller 层的 cancel 关键词，发现了关键线索：</p>
-<table>
-<thead>
-<tr>
-<th>文件</th>
-<th>行号</th>
-<th>关键信息</th>
-<th>场景</th>
-</tr>
-</thead>
-<tbody><tr>
-<td><code>UserMonthCompanyController.java</code></td>
-<td>255-259</td>
-<td><code>POST /v1/user-monthcompany/cancel</code></td>
-<td>企业月卡有取消</td>
-</tr>
-<tr>
-<td><code>MonthPersonalController.java</code></td>
-<td>全文</td>
-<td>无 cancel 端点</td>
-<td>个人月卡缺失</td>
-</tr>
-</tbody></table>
-<h3 id="第二步：对比-Biz-层方法"><a href="#第二步：对比-Biz-层方法" class="headerlink" title="第二步：对比 Biz 层方法"></a>第二步：对比 Biz 层方法</h3><p>企业月卡 <code>MouthCompanyBiz</code> 有 <code>cancel()</code> 方法（第 686-704 行），会校验状态后更新 state 为 CANCEL(“10”)。个人月卡 <code>MouthPersonalBiz</code> 完全没有这个方法。</p>
-<h3 id="第三步：确认定时任务补偿机制"><a href="#第三步：确认定时任务补偿机制" class="headerlink" title="第三步：确认定时任务补偿机制"></a>第三步：确认定时任务补偿机制</h3><p>项目中存在 <code>MonthlyCardOperationTimeoutTask</code> 定时任务，每半小时检测申请中超 30 分钟的记录并自动取消。但这个任务<strong>只更新状态</strong>，不回滚车位&#x2F;VIP 等副作用。</p>
-<h2 id="根因分析"><a href="#根因分析" class="headerlink" title="根因分析"></a>根因分析</h2><p><img src="/images/posts/%E4%B8%AA%E4%BA%BA%E6%9C%88%E5%8D%A1%E5%8F%96%E6%B6%88%E6%8E%A5%E5%8F%A3%E7%BC%BA%E5%A4%B1%E4%BB%8EBug%E5%AE%9A%E4%BD%8D%E5%88%B0TDD%E4%BF%AE%E5%A4%8D%E5%85%A8%E8%AE%B0%E5%BD%95/fig2.png" alt="根因分析：三层 Bug 的关系"><br><em>图 2：三层 Bug 的关系与影响范围</em></p>
-<p>问题可以拆解为三个相互关联的 Bug：</p>
-<h3 id="Bug-1：缺少-cancel-端点"><a href="#Bug-1：缺少-cancel-端点" class="headerlink" title="Bug 1：缺少 cancel 端点"></a>Bug 1：缺少 cancel 端点</h3><p><code>MonthPersonalController</code> 没有 cancel 端点，<code>MouthPersonalBiz</code> 也没有 <code>cancel()</code> 方法。对比企业月卡，后者在第 255 行有 <code>POST /cancel</code>，第 686 行有 <code>cancel()</code> 方法。</p>
-<h3 id="Bug-2：apply-方法副作用不可逆"><a href="#Bug-2：apply-方法副作用不可逆" class="headerlink" title="Bug 2：apply() 方法副作用不可逆"></a>Bug 2：apply() 方法副作用不可逆</h3><p><code>MouthPersonalBiz.apply()</code> 在用户点击”立即申请”时立即执行了以下操作：</p>
-<ul>
-<li>创建月卡记录（state&#x3D;”1”）</li>
-<li>创建订单（orderStatus&#x3D;”1”）</li>
-<li>保存车辆关联</li>
-<li>更新车位状态为占用（usingState&#x3D;”4”）</li>
-<li>消耗 VIP（state&#x3D;”5”）</li>
-</ul>
-<p>这些操作在用户取消时无法回滚，因为没有对应的清理接口。</p>
-<h3 id="Bug-3：定时任务不回滚副作用"><a href="#Bug-3：定时任务不回滚副作用" class="headerlink" title="Bug 3：定时任务不回滚副作用"></a>Bug 3：定时任务不回滚副作用</h3><p><code>MonthlyCardOperationTimeoutTask</code> 只将 state 更新为”10”，但不释放车位、不回滚 VIP、不取消订单。这意味着即使超时自动取消，资源仍然被锁定。</p>
-<h3 id="个人月卡状态流转"><a href="#个人月卡状态流转" class="headerlink" title="个人月卡状态流转"></a>个人月卡状态流转</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">申请(1) ──→ 待支付(4) ──→ 已生效(2) ──→ 临期(3) ──→ 已过期(13)</span><br><span class="line">  │                         │</span><br><span class="line">  ├──→ 已取消(10)           ├──→ 续期中(5)</span><br><span class="line">                            │</span><br><span class="line">                            ├──→ 变更中(6) ──→ 变更批准(15) / 变更拒绝(11)</span><br><span class="line">                            │</span><br><span class="line">                            └──→ 退款申请中(8) ──→ 退款待转账(12) ──→ 已退款(9) / 退款拒绝(16)</span><br></pre></td></tr></table></figure>
-
-<p><code>cancel()</code> 方法允许从”申请中(1)”和”待支付(4)”两个状态取消，目标状态为”已取消(10)”。</p>
-<h2 id="修复方案"><a href="#修复方案" class="headerlink" title="修复方案"></a>修复方案</h2><h3 id="个人月卡-vs-企业月卡-cancel-对比"><a href="#个人月卡-vs-企业月卡-cancel-对比" class="headerlink" title="个人月卡 vs 企业月卡 cancel() 对比"></a>个人月卡 vs 企业月卡 cancel() 对比</h3><p><img src="/images/posts/%E4%B8%AA%E4%BA%BA%E6%9C%88%E5%8D%A1%E5%8F%96%E6%B6%88%E6%8E%A5%E5%8F%A3%E7%BC%BA%E5%A4%B1%E4%BB%8EBug%E5%AE%9A%E4%BD%8D%E5%88%B0TDD%E4%BF%AE%E5%A4%8D%E5%85%A8%E8%AE%B0%E5%BD%95/fig3.png" alt="个人月卡与企业月卡 cancel 实现对比"><br><em>图 3：个人月卡与企业月卡 cancel 实现对比</em></p>
-<table>
-<thead>
-<tr>
-<th>维度</th>
-<th>个人月卡 cancel()</th>
-<th>企业月卡 cancel()</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>状态校验</td>
-<td>“1” 申请中 + “4” 待支付</td>
-<td>仅 “1” 申请中</td>
-</tr>
-<tr>
-<td>车位释放</td>
-<td>有（恢复 usingState、清空 monthCar&#x2F;parkingCar）</td>
-<td>无（有 TODO 注释）</td>
-</tr>
-<tr>
-<td>VIP 回滚</td>
-<td>有（恢复 state&#x3D;”1”）</td>
-<td>无</td>
-</tr>
-<tr>
-<td>订单取消</td>
-<td>有（orderStatus&#x3D;”5”）</td>
-<td>无</td>
-</tr>
-<tr>
-<td>事务保护</td>
-<td>@Transactional</td>
-<td>无</td>
-</tr>
-<tr>
-<td>日志写入</td>
-<td>有</td>
-<td>有</td>
-</tr>
-</tbody></table>
-<h3 id="Step-1：MouthPersonalBiz-新增-cancel-方法"><a href="#Step-1：MouthPersonalBiz-新增-cancel-方法" class="headerlink" title="Step 1：MouthPersonalBiz 新增 cancel() 方法"></a>Step 1：MouthPersonalBiz 新增 cancel() 方法</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 取消申请</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> id 月卡ID</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span> 操作结果</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Transactional(rollbackFor = Exception.class)</span></span><br><span class="line"><span class="keyword">public</span> R <span class="title function_">cancel</span><span class="params">(Long id)</span> &#123;</span><br><span class="line">    <span class="type">MonthPersonalEntity</span> <span class="variable">monthPersonal</span> <span class="operator">=</span> monthPersonalService.getById(id);</span><br><span class="line">    <span class="keyword">if</span> (ObjUtil.isNull(monthPersonal)) &#123;</span><br><span class="line">        <span class="keyword">return</span> R.fail(<span class="string">&quot;月卡不存在&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 只有申请中(1)和待支付(4)状态可以取消</span></span><br><span class="line">    <span class="keyword">if</span> (!MonthPersonalStateEnum.APPLY.getCode().equals(monthPersonal.getState())</span><br><span class="line">        &amp;&amp; !MonthPersonalStateEnum.WAITING_PAY.getCode().equals(monthPersonal.getState())) &#123;</span><br><span class="line">        <span class="keyword">return</span> R.fail(<span class="string">&quot;非法操作&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    monthPersonal.setState(MonthPersonalStateEnum.CANCEL.getCode());</span><br><span class="line">    <span class="type">boolean</span> <span class="variable">flag</span> <span class="operator">=</span> monthPersonalService.updateById(monthPersonal);</span><br><span class="line">    <span class="keyword">if</span> (flag) &#123;</span><br><span class="line">        <span class="comment">// 释放车位</span></span><br><span class="line">        <span class="keyword">if</span> (monthPersonal.getParkingSpotId() != <span class="literal">null</span>) &#123;</span><br><span class="line">            <span class="type">ParkSlotEntity</span> <span class="variable">slotEntity</span> <span class="operator">=</span> parkSlotService.getById(monthPersonal.getParkingSpotId());</span><br><span class="line">            <span class="keyword">if</span> (slotEntity != <span class="literal">null</span>) &#123;</span><br><span class="line">                slotEntity.setUsingState(<span class="string">&quot;1&quot;</span>); <span class="comment">// 空闲</span></span><br><span class="line">                slotEntity.setMonthCar(<span class="literal">null</span>);</span><br><span class="line">                slotEntity.setParkingCar(<span class="literal">null</span>);</span><br><span class="line">                parkSlotService.updateById(slotEntity);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 回滚VIP</span></span><br><span class="line">        <span class="keyword">if</span> (monthPersonal.getVipId() != <span class="literal">null</span>) &#123;</span><br><span class="line">            <span class="type">MonthVipEntity</span> <span class="variable">monthVip</span> <span class="operator">=</span> monthVipService.getById(monthPersonal.getVipId());</span><br><span class="line">            <span class="keyword">if</span> (monthVip != <span class="literal">null</span>) &#123;</span><br><span class="line">                monthVip.setState(<span class="string">&quot;1&quot;</span>); <span class="comment">// 恢复有效</span></span><br><span class="line">                monthVipService.updateById(monthVip);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 取消订单</span></span><br><span class="line">        <span class="keyword">if</span> (monthPersonal.getOrderNo() != <span class="literal">null</span>) &#123;</span><br><span class="line">            <span class="type">OrderInfoEntity</span> <span class="variable">orderInfo</span> <span class="operator">=</span> orderInfoService.getById(monthPersonal.getOrderNo());</span><br><span class="line">            <span class="keyword">if</span> (orderInfo != <span class="literal">null</span>) &#123;</span><br><span class="line">                orderInfo.setOrderStatus(<span class="string">&quot;5&quot;</span>); <span class="comment">// 已取消</span></span><br><span class="line">                orderInfoService.updateById(orderInfo);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 写入日志</span></span><br><span class="line">        <span class="type">LogInfoEntity</span> <span class="variable">infoEntity</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">LogInfoEntity</span>();</span><br><span class="line">        infoEntity.setName(LogBusinessType.PERSONMONTHCARD.getCode());</span><br><span class="line">        infoEntity.setKeyId(monthPersonal.getId() + <span class="string">&quot;&quot;</span>);</span><br><span class="line">        infoEntity.setOperateAction(<span class="string">&quot;取消&quot;</span>);</span><br><span class="line">        infoEntity.setRemark(<span class="string">&quot;用户取消月卡申请&quot;</span>);</span><br><span class="line">        logInfoService.save(infoEntity);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> R.status(flag);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p><strong>关键设计决策</strong>：cancel() 方法中的多个 DB 操作需要原子性保护。如果先更新了月卡状态，但释放车位时失败，就会出现脏数据。因此添加了 <code>@Transactional(rollbackFor = Exception.class)</code>，确保任一步骤失败时全部回滚。项目中已有此模式（<code>ZombieCarDetectionServiceImpl</code>、<code>SecurityRulesConfigureController</code> 等）。</p>
-<h3 id="Step-2：MonthPersonalController-新增-cancel-端点"><a href="#Step-2：MonthPersonalController-新增-cancel-端点" class="headerlink" title="Step 2：MonthPersonalController 新增 cancel 端点"></a>Step 2：MonthPersonalController 新增 cancel 端点</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 取消申请</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@PostMapping(&quot;/cancel&quot;)</span></span><br><span class="line"><span class="meta">@ApiOperationSupport(order = 16)</span></span><br><span class="line"><span class="meta">@ApiOperation(value = &quot;取消申请&quot;)</span></span><br><span class="line"><span class="keyword">public</span> R <span class="title function_">cancel</span><span class="params">(<span class="meta">@RequestParam</span> Long id)</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> mouthPersonalBiz.cancel(id);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>端点路径：<code>POST /v1/monthpersonal/cancel?id=&#123;id&#125;</code></p>
-<h3 id="Step-3：TDD-测试验证"><a href="#Step-3：TDD-测试验证" class="headerlink" title="Step 3：TDD 测试验证"></a>Step 3：TDD 测试验证</h3><p>新增 11 个测试用例，覆盖以下场景：</p>
-<table>
-<thead>
-<tr>
-<th>测试场景</th>
-<th>预期结果</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>申请中(state&#x3D;1)取消</td>
-<td>state 变为 10，成功</td>
-</tr>
-<tr>
-<td>待支付(state&#x3D;4)取消</td>
-<td>state 变为 10，成功</td>
-</tr>
-<tr>
-<td>已生效(state&#x3D;2)取消</td>
-<td>返回”非法操作”</td>
-</tr>
-<tr>
-<td>取消后车位状态</td>
-<td>usingState 恢复为 1</td>
-</tr>
-<tr>
-<td>取消后 VIP 状态</td>
-<td>state 恢复为 1</td>
-</tr>
-<tr>
-<td>取消后订单状态</td>
-<td>orderStatus 变为 5</td>
-</tr>
-<tr>
-<td>取消后列表展示</td>
-<td>列表出现”已取消”记录</td>
-</tr>
-<tr>
-<td>不存在的 ID</td>
-<td>返回”月卡不存在”</td>
-</tr>
-<tr>
-<td>事务回滚测试</td>
-<td>中间失败时全部回滚</td>
-</tr>
-</tbody></table>
-<p>全部 11 个测试用例通过。</p>
-<h3 id="修改汇总"><a href="#修改汇总" class="headerlink" title="修改汇总"></a>修改汇总</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">MouthPersonalBiz.java              +50 行  (新增 cancel() 方法，含 @Transactional)</span><br><span class="line">MonthPersonalController.java       +8  行  (新增 POST /cancel 端点)</span><br><span class="line">MonthPersonalCancelTest.java       NEW     (新增 11 个测试用例)</span><br></pre></td></tr></table></figure>
-
-<h2 id="经验总结"><a href="#经验总结" class="headerlink" title="经验总结"></a>经验总结</h2><ul>
-<li><strong>相似模块要对齐功能</strong>：新增模块时，务必对照已有模块检查功能完整性。企业月卡有 cancel，个人月卡也应该有</li>
-<li><strong>副作用必须可逆</strong>：<code>apply()</code> 方法在申请阶段就执行了车位占用、VIP 消耗等操作，这些副作用必须有对应的回滚路径</li>
-<li><strong>事务保护不可少</strong>：涉及多个 DB 写入的操作必须加 <code>@Transactional</code>，防止部分成功导致数据不一致</li>
-<li><strong>定时任务应复用业务逻辑</strong>：<code>MonthlyCardOperationTimeoutTask</code> 只更新状态不释放资源，后续应重构为复用 <code>cancel()</code> 方法</li>
-<li><strong>TDD 修复更可靠</strong>：先写测试用例复现问题，再编写修复代码，确保新旧测试全部通过</li>
-</ul>
-<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>这个 Bug 的本质是一个功能遗漏——个人月卡模块在开发时遗漏了取消接口。修复过程遵循了 TDD 流程，从测试用例到业务代码再到事务保护，每一步都有对应的验证。后续还计划将定时任务的补偿逻辑统一复用 <code>cancel()</code> 方法，彻底解决资源泄漏问题。</p>
-]]></content>
-      <categories>
-        <category>后端开发</category>
-      </categories>
-      <tags>
-        <tag>Spring Boot</tag>
-        <tag>Bug修复</tag>
-        <tag>月卡系统</tag>
-        <tag>TDD</tag>
-        <tag>事务管理</tag>
       </tags>
   </entry>
   <entry>
@@ -3157,271 +3394,6 @@
       </tags>
   </entry>
   <entry>
-    <title>广东水文项目问题排查实录：2026年3月19日技术挑战</title>
-    <url>/2026/03/19/%E5%B9%BF%E4%B8%9C%E6%B0%B4%E6%96%87%E9%A1%B9%E7%9B%AE%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5%E5%AE%9E%E5%BD%952026%E5%B9%B43%E6%9C%8819%E6%97%A5%E6%8A%80%E6%9C%AF%E6%8C%91%E6%88%98/</url>
-    <content><![CDATA[<p>2026年3月19日，对广东水文项目来说是一个充满挑战的工作日。在这一天的日常开发和维护中，我们接连遇到了三个不同层面的技术问题：数据采集层的数据缺失、业务层的数据表归属判断、以及数据展示层的时区和数据质量问题。本文将详细记录这三个问题的排查过程、根因分析以及修复方案，希望能为从事类似水文信息化项目的开发者提供一些参考和借鉴。</p>
-<span id="more"></span>
-
-<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>广东水文项目是一个综合性较强的水利信息化系统，涵盖了水位监测、雨量监测、河道水情、水库水情等多种水文数据的采集、存储、查询和展示功能。系统采用典型的微服务架构，后端基于 Spring Boot 框架构建，数据存储使用 MySQL 数据库，业务数据按照不同的测站类型和数据特征分表存储。</p>
-<p>项目中有几个核心的数据实体需要理解：</p>
-<ul>
-<li><strong>测站（Station）</strong>：水文监测的基本单元，每个测站有一个唯一的测站编码（STCD），并且有一个测站类型（STTP）来标识其功能类型，如 ZZ 表示闸站、ZQ 表示河道站、RR 表示水库站、WD 表示水位站、YD 表示雨量站等。</li>
-<li><strong>实时数据（Realtime Data）</strong>：最新的监测数据，通常以 5 分钟为采集间隔，包含水位、流量等关键指标。</li>
-<li><strong>历史数据（Historical Data）</strong>：历史极值和历史记录，用于一站一档等分析展示功能。</li>
-</ul>
-<p>在3月19日这一天，我们主要处理了与”一站一档”和”雨情实时信息”这两个业务模块相关的问题，下面逐一展开说明。</p>
-<h2 id="问题一：茜坑测站雨情实时数据缺失"><a href="#问题一：茜坑测站雨情实时数据缺失" class="headerlink" title="问题一：茜坑测站雨情实时数据缺失"></a>问题一：茜坑测站雨情实时数据缺失</h2><h3 id="问题现象"><a href="#问题现象" class="headerlink" title="问题现象"></a>问题现象</h3><p>3月19日上午，收到用户反馈：茜坑测站（测站编码 81103420）在”雨情实时信息”页面无法查询到数据。然而奇怪的是，同一个测站在”一站一档”模块中能够正常搜索并显示数据。</p>
-<p>用户描述的现象是：</p>
-<ul>
-<li>进入”雨情实时信息”页面</li>
-<li>搜索茜坑测站或直接输入测站编码 81103420</li>
-<li>系统提示”没有数据”</li>
-</ul>
-<p>但是在”一站一档”模块中，该测站能够正常显示其基本信息和历史数据。</p>
-<h3 id="排查过程"><a href="#排查过程" class="headerlink" title="排查过程"></a>排查过程</h3><p>我首先检查了该测站的基础信息。通过查询 <code>st_stbprp_b</code> 测站基础表，确认茜坑测站存在且状态正常：</p>
-<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> STCD, STNM, STTP, USFL</span><br><span class="line"><span class="keyword">FROM</span> st_stbprp_b</span><br><span class="line"><span class="keyword">WHERE</span> STCD <span class="operator">=</span> <span class="string">&#x27;81103420&#x27;</span></span><br></pre></td></tr></table></figure>
-
-<p>返回结果显示该测站类型为 YD（雨量站），使用标志为 1（启用）。</p>
-<p>接下来，我分别查询了该测站在不同雨量数据表中的记录数量：</p>
-<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="comment">-- 查询5分钟实时雨量表</span></span><br><span class="line"><span class="keyword">SELECT</span> STCD, <span class="built_in">COUNT</span>(<span class="operator">*</span>) <span class="keyword">as</span> cnt</span><br><span class="line"><span class="keyword">FROM</span> ST_PPTN_R_MIN</span><br><span class="line"><span class="keyword">WHERE</span> STCD <span class="operator">=</span> <span class="string">&#x27;81103420&#x27;</span></span><br><span class="line"><span class="keyword">AND</span> TM <span class="keyword">BETWEEN</span> <span class="string">&#x27;2026-03-16 11:41:00&#x27;</span> <span class="keyword">AND</span> <span class="string">&#x27;2026-03-19 11:41:00&#x27;</span></span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span> STCD</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 查询小时雨量表</span></span><br><span class="line"><span class="keyword">SELECT</span> STCD, <span class="built_in">COUNT</span>(<span class="operator">*</span>) <span class="keyword">as</span> cnt</span><br><span class="line"><span class="keyword">FROM</span> ST_PPTN_R</span><br><span class="line"><span class="keyword">WHERE</span> STCD <span class="operator">=</span> <span class="string">&#x27;81103420&#x27;</span></span><br><span class="line"><span class="keyword">AND</span> TM <span class="keyword">BETWEEN</span> <span class="string">&#x27;2026-03-16 11:41:00&#x27;</span> <span class="keyword">AND</span> <span class="string">&#x27;2026-03-19 11:41:00&#x27;</span></span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span> STCD</span><br></pre></td></tr></table></figure>
-
-<p>查询结果如下：</p>
-<table>
-<thead>
-<tr>
-<th>数据表</th>
-<th>数据类型</th>
-<th>记录数</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>ST_PPTN_R_MIN</td>
-<td>5分钟实时雨量</td>
-<td><strong>0条</strong></td>
-</tr>
-<tr>
-<td>ST_PPTN_R</td>
-<td>小时雨量</td>
-<td><strong>860条</strong></td>
-</tr>
-</tbody></table>
-<h3 id="根因分析"><a href="#根因分析" class="headerlink" title="根因分析"></a>根因分析</h3><p>经过排查，问题的根因已经非常清晰：</p>
-<p><strong>茜坑测站（81103420）只有小时雨量数据（ST_PPTN_R），没有 5 分钟实时数据（ST_PPTN_R_MIN）。</strong></p>
-<p>从技术角度来看，这是数据采集层面的问题，而不是代码 Bug。测站硬件或上报配置决定了它只上报小时级别的雨量数据，而不是 5 分钟级别的实时数据。</p>
-<p>系统架构设计中，雨情实时信息模块默认查询的是 5 分钟实时数据表（ST_PPTN_R_MIN），而茜坑测站在该表中没有任何数据，因此返回空结果。这解释了为什么”雨情实时信息”页面无法显示数据。</p>
-<p>而”一站一档”模块能够正常显示，是因为它查询的是小时雨量表（ST_PPTN_R），该表中存在茜坑测站的 860 条数据。</p>
-<h3 id="问题定性"><a href="#问题定性" class="headerlink" title="问题定性"></a>问题定性</h3><p>经过分析，我们认为这是一个<strong>数据可用性问题</strong>，而非代码缺陷。系统按照设计正常运作，只是茜坑测站本身不具备 5 分钟实时雨量数据的采集条件。</p>
-<h3 id="可能的解决方案"><a href="#可能的解决方案" class="headerlink" title="可能的解决方案"></a>可能的解决方案</h3><p>针对这类问题，有几种潜在的解决方案可供考虑：</p>
-<p><strong>方案一：前端降级处理</strong></p>
-<p>当实时数据为空时，前端自动降级显示小时数据。这需要在 UI 层面增加逻辑判断，当检测到 5 分钟数据为空时，自动切换到小时数据视图，并给用户一个提示说明当前显示的是小时数据而非实时数据。</p>
-<p><strong>方案二：后端数据聚合</strong></p>
-<p>在后端处理层面，当查询 5 分钟数据为空时，自动从小时数据表中聚合数据返回。例如，可以将最近一小时的小时数据求和，作为实时数据的近似值返回。这种方案的优点是对前端透明，缺点是数据语义不够精确。</p>
-<p><strong>方案三：业务确认与配置调整</strong></p>
-<p>与水文部门确认茜坑测站的实际数据采集配置。如果该测站确实只需要上报小时数据，那么应该在系统配置中将其标记为”小时数据站”，前端据此显示不同的数据视图。</p>
-<p>最终，我们与水文部门进行了沟通，确认茜坑测站由于硬件限制确实只支持小时数据采集，暂时采用方案一的前端降级处理作为短期解决方案，长期来看需要与设备部门协调升级采集设备。</p>
-<h2 id="问题二：江口水闸实时水情查询失败"><a href="#问题二：江口水闸实时水情查询失败" class="headerlink" title="问题二：江口水闸实时水情查询失败"></a>问题二：江口水闸实时水情查询失败</h2><h3 id="问题现象-1"><a href="#问题现象-1" class="headerlink" title="问题现象"></a>问题现象</h3><p>下午时段，接到另一个问题反馈：江口水闸（测站编码 81210300）在实时水情查询中无法找到数据。同样的，该测站在”一站一档”模块中能够正常显示。</p>
-<p>具体表现：</p>
-<ul>
-<li>在”实时水情”模块搜索江口水闸</li>
-<li>系统提示没有数据</li>
-<li>但在”一站一档”中能够看到该测站的基本信息和部分数据</li>
-</ul>
-<h3 id="系统排查"><a href="#系统排查" class="headerlink" title="系统排查"></a>系统排查</h3><p>首先检查测站基础信息和数据分布情况。通过 SQL 查询发现：</p>
-<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="comment">-- 检查测站基础信息</span></span><br><span class="line"><span class="keyword">SELECT</span> STCD, STNM, STTP, USFL</span><br><span class="line"><span class="keyword">FROM</span> st_stbprp_b</span><br><span class="line"><span class="keyword">WHERE</span> STCD <span class="operator">=</span> <span class="string">&#x27;81210300&#x27;</span></span><br></pre></td></tr></table></figure>
-
-<p>江口水闸的基础信息正常，测站类型为 ZZ（闸站），状态启用。</p>
-<p>然后分别查询该测站在不同实时数据表中的情况：</p>
-<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="comment">-- 检查河道实时表</span></span><br><span class="line"><span class="keyword">SELECT</span> <span class="built_in">COUNT</span>(<span class="operator">*</span>) <span class="keyword">FROM</span> st_river_r_min</span><br><span class="line"><span class="keyword">WHERE</span> STCD <span class="operator">=</span> <span class="string">&#x27;81210300&#x27;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">-- 检查水库实时表</span></span><br><span class="line"><span class="keyword">SELECT</span> <span class="built_in">COUNT</span>(<span class="operator">*</span>) <span class="keyword">FROM</span> st_rsvr_r_min</span><br><span class="line"><span class="keyword">WHERE</span> STCD <span class="operator">=</span> <span class="string">&#x27;81210300&#x27;</span></span><br></pre></td></tr></table></figure>
-
-<p>查询结果：</p>
-<table>
-<thead>
-<tr>
-<th>数据表</th>
-<th>数据类型</th>
-<th>记录数</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>st_river_r_min</td>
-<td>河道实时数据</td>
-<td><strong>0条</strong></td>
-</tr>
-<tr>
-<td>st_rsvr_r_min</td>
-<td>水库实时数据</td>
-<td><strong>92条</strong></td>
-</tr>
-</tbody></table>
-<p>这个结果非常有意思：江口水闸是一个 ZZ 类型（闸站）的测站，但其数据存储在水灾实时表中，而不是河道实时表中。</p>
-<h3 id="根因分析-1"><a href="#根因分析-1" class="headerlink" title="根因分析"></a>根因分析</h3><p>经过深入分析，我们发现了问题的根本原因：</p>
-<p><strong>代码按测站类型区分查询数据表，但江口水闸的数据实际存储在与类型不匹配的表中。</strong></p>
-<p>系统的实时水情查询逻辑是：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 代码中的查询逻辑（修复前）</span></span><br><span class="line"><span class="keyword">if</span> (<span class="string">&quot;RR&quot;</span>.equals(base.getSttp())) &#123;</span><br><span class="line">    <span class="comment">// 水库类型 -&gt; 查询 st_rsvr_r_min</span></span><br><span class="line">    reservoirStations.add(stcd);</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (<span class="string">&quot;ZQ&quot;</span>.equals(base.getSttp())) &#123;</span><br><span class="line">    <span class="comment">// 河道类型 -&gt; 查询 st_river_r_min</span></span><br><span class="line">    riverStations.add(stcd);</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (<span class="string">&quot;ZZ&quot;</span>.equals(base.getSttp())) &#123;</span><br><span class="line">    <span class="comment">// 闸站类型 -&gt; 查询 st_river_r_min</span></span><br><span class="line">    riverStations.add(stcd);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>江口水闸的测站类型是 ZZ，按照代码逻辑会查询河道实时表（st_river_r_min），但实际上该测站的数据存储在水库存实时表中（st_rsvr_r_min），所以查询结果为空。</p>
-<p>这是一种数据录入或数据迁移过程中产生的不一致问题：测站的类型属性与其实际数据存储位置不匹配。</p>
-<h3 id="修复方案"><a href="#修复方案" class="headerlink" title="修复方案"></a>修复方案</h3><p>为了解决这个问题，我们在 <code>WaterRealtimeSummaryServiceImpl</code> 中增加了 fallback 机制：当 ZZ 类型测站在河道表中没有数据时，自动尝试查询水库存实时表。</p>
-<p><strong>修改文件</strong>：WaterRealtimeSummaryServiceImpl（第 104-157 行附近）</p>
-<p><strong>核心修改思路</strong>：</p>
-<ol>
-<li>新增 <code>zzStations</code> 列表记录所有 ZZ 类型测站</li>
-<li>ZZ 类型优先查询河道表</li>
-<li>新增 fallback 逻辑：如果河道表没有数据，则 fallback 查询水库存表</li>
-</ol>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 2. 分离河道站和水库站</span></span><br><span class="line">List&lt;String&gt; riverStations = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">List&lt;String&gt; reservoirStations = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">List&lt;String&gt; zzStations = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;(); <span class="comment">// 记录ZZ类型测站，用于fallback</span></span><br><span class="line"><span class="keyword">for</span> (String stcd : batch) &#123;</span><br><span class="line">    <span class="type">StationBaseInfoDTO</span> <span class="variable">base</span> <span class="operator">=</span> baseMap.get(stcd);</span><br><span class="line">    <span class="keyword">if</span> (base != <span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (<span class="string">&quot;RR&quot;</span>.equals(base.getSttp())) &#123;</span><br><span class="line">            reservoirStations.add(stcd);</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (<span class="string">&quot;ZQ&quot;</span>.equals(base.getSttp())) &#123;</span><br><span class="line">            riverStations.add(stcd);</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (<span class="string">&quot;ZZ&quot;</span>.equals(base.getSttp())) &#123;</span><br><span class="line">            riverStations.add(stcd);  <span class="comment">// ZZ优先查河道表</span></span><br><span class="line">            zzStations.add(stcd);     <span class="comment">// 同时记录，用于fallback</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 3. 查询河道站实时数据（ST_RIVER_R_MIN）</span></span><br><span class="line"><span class="keyword">final</span> Map&lt;String, StRiverRMin&gt; riverDataMap;</span><br><span class="line"><span class="keyword">if</span> (!riverStations.isEmpty()) &#123;</span><br><span class="line">    riverDataMap = stRiverRMinMapper.selectByTimeAndStcds(targetTime, riverStations)</span><br><span class="line">            .stream().collect(Collectors.toMap(StRiverRMin::getSTCD, v -&gt; v, (a, b) -&gt; a));</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    riverDataMap = <span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;&gt;();</span><br><span class="line">&#125;</span><br><span class="line">riverRealtimeMap = riverDataMap;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 4. 查询水库站实时数据（ST_RSVR_R_MIN）</span></span><br><span class="line"><span class="keyword">final</span> Map&lt;String, StRsvrRMin&gt; reservoirDataMap;</span><br><span class="line"><span class="keyword">if</span> (!reservoirStations.isEmpty()) &#123;</span><br><span class="line">    reservoirDataMap = stRsvrRMinMapper.selectByTimeAndStcds(targetTime, reservoirStations)</span><br><span class="line">            .stream().collect(Collectors.toMap(StRsvrRMin::getSTCD, v -&gt; v, (a, b) -&gt; a));</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    reservoirDataMap = <span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;&gt;();</span><br><span class="line">&#125;</span><br><span class="line">reservoirRealtimeMap = reservoirDataMap;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 4.1 ZZ类型fallback - 如果河道表没数据，尝试查水库表</span></span><br><span class="line"><span class="comment">// 解决部分ZZ类型测站（如闸站）数据实际在水库表的问题</span></span><br><span class="line"><span class="keyword">if</span> (!zzStations.isEmpty()) &#123;</span><br><span class="line">    List&lt;String&gt; zzStationsWithoutData = zzStations.stream()</span><br><span class="line">            .filter(stcd -&gt; !riverDataMap.containsKey(stcd))</span><br><span class="line">            .collect(Collectors.toList());</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!zzStationsWithoutData.isEmpty()) &#123;</span><br><span class="line">        Map&lt;String, StRsvrRMin&gt; zzFallbackData = stRsvrRMinMapper</span><br><span class="line">                .selectByTimeAndStcds(targetTime, zzStationsWithoutData)</span><br><span class="line">                .stream()</span><br><span class="line">                .collect(Collectors.toMap(StRsvrRMin::getSTCD, v -&gt; v, (a, b) -&gt; a));</span><br><span class="line"></span><br><span class="line">        reservoirRealtimeMap.putAll(zzFallbackData);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="修复验证"><a href="#修复验证" class="headerlink" title="修复验证"></a>修复验证</h3><p>修复后，我们通过手动指定时间同步接口进行了验证：</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">POST /api/water/summary/sync?stcds=81210300&amp;targetTime=2026-03-19 15:00:00</span><br></pre></td></tr></table></figure>
-
-<p>验证结果成功返回数据：</p>
-<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;stnm&quot;</span><span class="punctuation">:</span> <span class="string">&quot;江口水闸&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;stcd&quot;</span><span class="punctuation">:</span> <span class="string">&quot;81210300&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;z&quot;</span><span class="punctuation">:</span> <span class="number">92.170</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;tm&quot;</span><span class="punctuation">:</span> <span class="string">&quot;2026-03-19 15:00:00&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;sttp&quot;</span><span class="punctuation">:</span> <span class="string">&quot;ZZ&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
-
-<h3 id="待修复问题：同步时间匹配"><a href="#待修复问题：同步时间匹配" class="headerlink" title="待修复问题：同步时间匹配"></a>待修复问题：同步时间匹配</h3><p>虽然上述修复解决了查询问题，但我们发现了一个关联的同步问题：</p>
-<p><strong>现状</strong>：同步任务使用精确时间匹配（TM &#x3D; targetTime），例如查询 15:55 的数据。</p>
-<p><strong>问题</strong>：江口水闸数据的时间戳是 15:00、14:15 等非整 5 分钟时刻，这导致自动同步时使用精确匹配无法找到数据。</p>
-<p><strong>根本原因分析</strong>：</p>
-<ol>
-<li>同步任务计算出”上一个 5 分钟”的时间点（如 15:55）</li>
-<li>SQL 查询使用 <code>TM = #&#123;tm&#125;</code> 精确匹配</li>
-<li>但江口水闸上报的数据时间戳是 15:00、14:15 等非整 5 分钟时刻</li>
-<li>精确匹配查不到数据，所以汇总表始终没有这条数据</li>
-</ol>
-<p><strong>初步建议的解决方案</strong>：</p>
-<p>方案一是修改 SQL 为范围查询，查询 targetTime 之前的最近一条数据：</p>
-<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="comment">&lt;!-- 查询最近的数据 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">select</span> <span class="attr">id</span>=<span class="string">&quot;selectLatestByTimeAndStcds&quot;</span> <span class="attr">resultMap</span>=<span class="string">&quot;StRsvrRMinResult&quot;</span>&gt;</span></span><br><span class="line">    SELECT STCD, TM, RZ, INQ, OTQ, W, RWPTN</span><br><span class="line">    FROM st_rsvr_r_min</span><br><span class="line">    WHERE TM &lt;= #&#123;tm&#125;</span><br><span class="line">      AND STCD IN</span><br><span class="line">      <span class="tag">&lt;<span class="name">foreach</span> <span class="attr">collection</span>=<span class="string">&quot;stcds&quot;</span> <span class="attr">item</span>=<span class="string">&quot;stcd&quot;</span> <span class="attr">open</span>=<span class="string">&quot;(&quot;</span> <span class="attr">separator</span>=<span class="string">&quot;,&quot;</span> <span class="attr">close</span>=<span class="string">&quot;)&quot;</span>&gt;</span></span><br><span class="line">          #&#123;stcd&#125;</span><br><span class="line">      <span class="tag">&lt;/<span class="name">foreach</span>&gt;</span></span><br><span class="line">      AND RZ IS NOT NULL</span><br><span class="line">    ORDER BY TM DESC</span><br><span class="line"><span class="tag">&lt;/<span class="name">select</span>&gt;</span></span><br></pre></td></tr></table></figure>
-
-<p>方案二是在 Service 层处理，多次尝试向前查找直到找到数据或超过阈值。</p>
-<p>这个问题需要进一步评估影响范围后再实施修复。</p>
-<h2 id="问题三：一站一档今日极值数据异常"><a href="#问题三：一站一档今日极值数据异常" class="headerlink" title="问题三：一站一档今日极值数据异常"></a>问题三：一站一档今日极值数据异常</h2><h3 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h3><p>下午晚些时候，收到关于”一站一档”模块的数据异常反馈，涉及两个不同的字段问题：</p>
-<p><strong>问题 1</strong>：今日最低流量返回错误值 2.180，但实际数据库中存在更低的值 2.260</p>
-<p><strong>问题 2</strong>：历史最低水位返回 -9999（这是一个无效值占位符），实际应为 0.040</p>
-<p>这两个问题发生在测站 81500150（水位站，类型 WD）上。</p>
-<h3 id="问题排查与分析"><a href="#问题排查与分析" class="headerlink" title="问题排查与分析"></a>问题排查与分析</h3><h4 id="问题-1：今日最低流量错误"><a href="#问题-1：今日最低流量错误" class="headerlink" title="问题 1：今日最低流量错误"></a>问题 1：今日最低流量错误</h4><p>首先检查今日最低流量的计算逻辑。通过对比数据库中的实际数据，我们发现：</p>
-<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="comment">-- 查询该测站今天（北京时间）的所有流量数据</span></span><br><span class="line"><span class="keyword">SELECT</span> STCD, TM, Q <span class="keyword">FROM</span> st_river_r</span><br><span class="line"><span class="keyword">WHERE</span> STCD <span class="operator">=</span> <span class="string">&#x27;81500150&#x27;</span></span><br><span class="line"><span class="keyword">AND</span> TM <span class="operator">&gt;=</span> <span class="string">&#x27;2026-03-19 00:00:00&#x27;</span></span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> Q <span class="keyword">ASC</span></span><br><span class="line">LIMIT <span class="number">10</span></span><br></pre></td></tr></table></figure>
-
-<p>实际查询结果显示最小的流量值确实是 2.260，但系统返回的今日最低流量却是 2.180。</p>
-<p>经过仔细排查，我们发现问题的根因是<strong>时区不一致</strong>：</p>
-<ol>
-<li>数据库 <code>ST_RIVER_R</code> 表中存储的时间是 <strong>UTC 时间</strong></li>
-<li>代码使用 <code>Calendar.getInstance()</code> 构建今日时间范围：<code>2026-03-19 00:00:00 ~ 23:59:59</code></li>
-<li>MySQL 查询时把这个字符串当作 UTC 时间处理</li>
-<li>导致实际查询范围变成了 <code>2026-03-19 08:00 ~ 2026-03-20 07:59</code>（北京时间）</li>
-<li>漏掉了北京时间 00:00~07:59 的数据，而真正的最低值 2.260 恰好在这个时间段内（UTC 19:00 &#x3D; 北京时间 03:00）</li>
-</ol>
-<h4 id="问题-2：历史最低水位返回-9999"><a href="#问题-2：历史最低水位返回-9999" class="headerlink" title="问题 2：历史最低水位返回 -9999"></a>问题 2：历史最低水位返回 -9999</h4><p>历史最低水位的计算使用了 <code>ST_RVEVS_R</code> 表，通过 SQL 查询发现：</p>
-<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="comment">-- 原 SQL</span></span><br><span class="line"><span class="keyword">SELECT</span> STCD, LTZ, LTT <span class="keyword">FROM</span> st_rvevs_r</span><br><span class="line"><span class="keyword">WHERE</span> STCD <span class="operator">=</span> #&#123;stcd&#125;</span><br><span class="line"><span class="keyword">AND</span> LTZ <span class="keyword">IS</span> <span class="keyword">NOT NULL</span></span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> LTZ <span class="keyword">ASC</span></span><br><span class="line">LIMIT <span class="number">1</span></span><br></pre></td></tr></table></figure>
-
-<p>问题在于 <code>ST_RVEVS_R</code> 表中存在 <code>-9999</code> 这种无效值占位符，原始 SQL 只过滤了 <code>NULL</code>，没有过滤负数，导致 -9999 被当作有效值返回。</p>
-<h3 id="修复方案-1"><a href="#修复方案-1" class="headerlink" title="修复方案"></a>修复方案</h3><h4 id="1-SQL-修改"><a href="#1-SQL-修改" class="headerlink" title="1. SQL 修改"></a>1. SQL 修改</h4><p>修改 <code>StRvevsRMapper.xml</code> 中的 <code>selectHistoricalMinLevel</code> SQL，添加 <code>AND LTZ &gt; 0</code> 过滤条件：</p>
-<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="comment">-- 修改前</span></span><br><span class="line"><span class="keyword">WHERE</span> STCD <span class="operator">=</span> #&#123;stcd&#125;</span><br><span class="line"><span class="keyword">AND</span> LTZ <span class="keyword">IS</span> <span class="keyword">NOT NULL</span></span><br><span class="line"></span><br><span class="line"><span class="comment">-- 修改后</span></span><br><span class="line"><span class="keyword">WHERE</span> STCD <span class="operator">=</span> #&#123;stcd&#125;</span><br><span class="line"><span class="keyword">AND</span> LTZ <span class="keyword">IS</span> <span class="keyword">NOT NULL</span></span><br><span class="line"><span class="keyword">AND</span> LTZ <span class="operator">&gt;</span> <span class="number">0</span></span><br></pre></td></tr></table></figure>
-
-<h4 id="2-Java-修改：时区转换逻辑"><a href="#2-Java-修改：时区转换逻辑" class="headerlink" title="2. Java 修改：时区转换逻辑"></a>2. Java 修改：时区转换逻辑</h4><p>修改 <code>StationArchiveBiz.java</code> 中的 <code>fillTodayExtremes()</code> 方法，使用 <code>java.time</code> 正确处理时区转换：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 北京时区</span></span><br><span class="line"><span class="type">ZoneId</span> <span class="variable">beijingZone</span> <span class="operator">=</span> ZoneId.of(<span class="string">&quot;Asia/Shanghai&quot;</span>);</span><br><span class="line"><span class="type">ZoneId</span> <span class="variable">utcZone</span> <span class="operator">=</span> ZoneId.of(<span class="string">&quot;UTC&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取北京时间的今天开始和结束</span></span><br><span class="line"><span class="type">ZonedDateTime</span> <span class="variable">beijingStart</span> <span class="operator">=</span> ZonedDateTime.now(beijingZone).toLocalDate().atStartOfDay(beijingZone);</span><br><span class="line"><span class="type">ZonedDateTime</span> <span class="variable">beijingEnd</span> <span class="operator">=</span> beijingStart.plusDays(<span class="number">1</span>).minusSeconds(<span class="number">1</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 转换为 UTC 时间用于数据库查询</span></span><br><span class="line"><span class="type">ZonedDateTime</span> <span class="variable">utcStart</span> <span class="operator">=</span> beijingStart.withZoneSameInstant(utcZone);</span><br><span class="line"><span class="type">ZonedDateTime</span> <span class="variable">utcEnd</span> <span class="operator">=</span> beijingEnd.withZoneSameInstant(utcZone);</span><br></pre></td></tr></table></figure>
-
-<p>同样的时区转换逻辑也需要应用到水库站的今日极值计算方法 <code>fillTodayReservoirExtremes()</code> 中。</p>
-<h3 id="修复验证-1"><a href="#修复验证-1" class="headerlink" title="修复验证"></a>修复验证</h3><p>修复后，两个问题都得到了正确的结果：</p>
-<table>
-<thead>
-<tr>
-<th>字段</th>
-<th>修复前</th>
-<th>修复后</th>
-<th>状态</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>historicalMinLevel</td>
-<td>-9999.0</td>
-<td>0.04</td>
-<td>正常</td>
-</tr>
-<tr>
-<td>historicalMinLevelTime</td>
-<td>2013-02-21</td>
-<td>2015-01-08</td>
-<td>正常</td>
-</tr>
-<tr>
-<td>todayMinFlow</td>
-<td>2.180</td>
-<td>2.260</td>
-<td>正常</td>
-</tr>
-<tr>
-<td>todayMinFlowTime</td>
-<td>16:00（错误）</td>
-<td>03:00（正确）</td>
-<td>正常</td>
-</tr>
-</tbody></table>
-<p>正确的 UTC 查询范围应该是：</p>
-<ul>
-<li>北京时间 2026-03-19 &#x3D; UTC <code>2026-03-18 16:00:00</code> ~ <code>2026-03-19 15:59:59</code></li>
-<li>该范围内最小流量为 <strong>2.260</strong>（UTC 19:00 &#x3D; 北京时间 03:00）</li>
-</ul>
-<h3 id="影响范围评估"><a href="#影响范围评估" class="headerlink" title="影响范围评估"></a>影响范围评估</h3><p>此次修复的影响范围仅限于以下接口的今日极值计算：</p>
-<ul>
-<li><code>/basic/station/archive/monitoring/&#123;stcd&#125;?sttp=WD&amp;subType=realtime</code>（河道站）</li>
-<li><code>/basic/station/archive/reservoir/&#123;stcd&#125;</code>（水库站）</li>
-</ul>
-<p>不受影响的部分包括：</p>
-<ul>
-<li>用户传入的 startTime&#x2F;endTime 参数（用户自行处理时区）</li>
-<li>历史极值（除 historicalMinLevel 外）</li>
-<li>其他业务接口</li>
-</ul>
-<h2 id="经验总结与技术思考"><a href="#经验总结与技术思考" class="headerlink" title="经验总结与技术思考"></a>经验总结与技术思考</h2><p>通过这一天的问题排查和修复工作，我们总结出以下几点经验教训，希望能对类似项目的开发者提供一些参考。</p>
-<h3 id="1-时区问题是分布式系统中常见的数据陷阱"><a href="#1-时区问题是分布式系统中常见的数据陷阱" class="headerlink" title="1. 时区问题是分布式系统中常见的数据陷阱"></a>1. 时区问题是分布式系统中常见的数据陷阱</h3><p>在广东水文项目中，数据库服务器、应用服务器可能处于不同的时区配置下，而水文数据采集又涉及多个地区的数据汇总，时区问题很容易被忽视。</p>
-<p>本次修复的时区问题是一个非常典型的案例：数据库存储 UTC 时间，代码使用本地时间构建查询条件，两者的不一致导致了数据查询范围的偏差，最终造成了极值计算错误。</p>
-<p><strong>建议</strong>：在系统设计阶段就应该明确规定时间的存储格式和查询方式，推荐做法是：</p>
-<ul>
-<li>统一使用 UTC 时间存储</li>
-<li>在数据访问层统一进行时区转换</li>
-<li>在配置文件中显式声明时区设置</li>
-<li>在接口文档中明确标注时间格式</li>
-</ul>
-<h3 id="2-无效值占位符需要在数据入口处统一处理"><a href="#2-无效值占位符需要在数据入口处统一处理" class="headerlink" title="2. 无效值占位符需要在数据入口处统一处理"></a>2. 无效值占位符需要在数据入口处统一处理</h3><p>水文数据中常见使用 -9999、-99、NULL 等作为无效值占位符。这种设计在数据采集和存储层面是合理的，但在数据展示和分析层面必须进行过滤。</p>
-<p>本次修复中，历史最低水位查询就是因为没有过滤 -9999 这个无效值，导致返回了明显错误的结果。</p>
-<p><strong>建议</strong>：建立统一的数据清洗和过滤规范，在以下位置进行处理：</p>
-<ul>
-<li>数据入库前的校验层</li>
-<li>数据查询的 Mapper 层</li>
-<li>数据展示的 Service 层</li>
-</ul>
-<h3 id="3-测站类型与数据存储位置可能存在不一致"><a href="#3-测站类型与数据存储位置可能存在不一致" class="headerlink" title="3. 测站类型与数据存储位置可能存在不一致"></a>3. 测站类型与数据存储位置可能存在不一致</h3><p>项目中经常会出现这样的情况：测站的类型属性（STTP）与实际数据存储位置不匹配。这可能是由于数据迁移、系统升级或人工录入错误导致的。</p>
-<p>江口水闸的问题就是一个典型案例：测站类型为 ZZ（闸站），但数据存储在水库存实时表中而非河道实时表中。这种不一致性会导致按照类型判断数据表的代码逻辑失效。</p>
-<p><strong>建议</strong>：</p>
-<ul>
-<li>在数据入口处增加校验，当测站类型与数据表不匹配时给出警告</li>
-<li>在查询逻辑中增加 fallback 机制，提高系统的容错能力</li>
-<li>定期进行数据一致性检查，发现并修复类型与数据不匹配的问题</li>
-</ul>
-<h3 id="4-数据可用性问题需要业务层面配合解决"><a href="#4-数据可用性问题需要业务层面配合解决" class="headerlink" title="4. 数据可用性问题需要业务层面配合解决"></a>4. 数据可用性问题需要业务层面配合解决</h3><p>茜坑测站的问题本质上不是代码问题，而是数据采集层面的问题。测站硬件只支持小时数据采集，无法提供 5 分钟实时数据。对于这类问题，技术手段只能做到优雅降级或数据聚合，无法从根本上解决数据缺失的问题。</p>
-<p><strong>建议</strong>：建立测站能力档案，在系统中记录每个测站的数据采集能力和数据提供情况，让用户清楚地了解每个测站的数据范围和限制。</p>
-<h3 id="5-代码审查和单元测试的重要性"><a href="#5-代码审查和单元测试的重要性" class="headerlink" title="5. 代码审查和单元测试的重要性"></a>5. 代码审查和单元测试的重要性</h3><p>这三个问题有一个共同点：它们都是由于代码逻辑在边界情况下处理不当导致的。如果有完善的单元测试覆盖这些边界场景，这些问题应该在开发阶段就被发现和修复。</p>
-<p><strong>建议</strong>：</p>
-<ul>
-<li>加强对边界条件和异常情况的测试覆盖</li>
-<li>定期进行代码审查，特别是涉及数据表切换、时区处理、数值边界等逻辑的代码</li>
-<li>建立持续集成环境，在代码提交时自动运行相关测试</li>
-</ul>
-<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>2026年3月19日的这次问题排查经历，让我们深刻认识到水文信息化系统的复杂性和挑战性。从数据采集层的硬件限制，到数据存储层的数据表设计，再到数据展示层的时区和数据质量问题，每一个环节都可能成为问题的来源。</p>
-<p>作为后端开发工程师，我们不仅要关注代码的功能实现，更要关注数据在各个环节的正确流转；不仅要处理正常的业务逻辑，更要考虑各种异常和边界情况；不仅要修复当前的问题，更要思考如何建立长效机制避免类似问题的再次发生。</p>
-<p>水文信息化关乎国计民生，数据的准确性和系统的稳定性至关重要。希望本文的分享能为从事相关项目的开发者提供一些帮助，也欢迎大家交流探讨，共同进步。</p>
-]]></content>
-      <categories>
-        <category>技术踩坑记录</category>
-        <category>后端开发</category>
-      </categories>
-      <tags>
-        <tag>Bug修复</tag>
-        <tag>水文项目</tag>
-        <tag>时区问题</tag>
-        <tag>数据表设计</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>广东水文项目接口改造实战：字段扩展与性能优化</title>
     <url>/2026/03/20/%E5%B9%BF%E4%B8%9C%E6%B0%B4%E6%96%87%E9%A1%B9%E7%9B%AE%E6%8E%A5%E5%8F%A3%E6%94%B9%E9%80%A0%E5%AE%9E%E6%88%98/</url>
     <content><![CDATA[<p>本文记录了广东水文项目中两个典型接口改造的技术实现过程，详细描述了从需求分析、方案设计到最终落地的完整技术路径。第一个改造是<strong>测站关联列表接口</strong>添加水位流量字段，涉及多数据源切换、大表查询优化等挑战；第二个改造是<strong>设备分类接口</strong>扩展测站基础信息字段，展示了跨数据源关联查询的典型应用场景。通过这两个案例，分享我在实际项目中积累的数据库设计优化经验。</p>
@@ -3957,6 +3929,384 @@
       </tags>
   </entry>
   <entry>
+    <title>广东水文项目问题排查实录：2026年3月19日技术挑战</title>
+    <url>/2026/03/19/%E5%B9%BF%E4%B8%9C%E6%B0%B4%E6%96%87%E9%A1%B9%E7%9B%AE%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5%E5%AE%9E%E5%BD%952026%E5%B9%B43%E6%9C%8819%E6%97%A5%E6%8A%80%E6%9C%AF%E6%8C%91%E6%88%98/</url>
+    <content><![CDATA[<p>2026年3月19日，对广东水文项目来说是一个充满挑战的工作日。在这一天的日常开发和维护中，我们接连遇到了三个不同层面的技术问题：数据采集层的数据缺失、业务层的数据表归属判断、以及数据展示层的时区和数据质量问题。本文将详细记录这三个问题的排查过程、根因分析以及修复方案，希望能为从事类似水文信息化项目的开发者提供一些参考和借鉴。</p>
+<span id="more"></span>
+
+<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>广东水文项目是一个综合性较强的水利信息化系统，涵盖了水位监测、雨量监测、河道水情、水库水情等多种水文数据的采集、存储、查询和展示功能。系统采用典型的微服务架构，后端基于 Spring Boot 框架构建，数据存储使用 MySQL 数据库，业务数据按照不同的测站类型和数据特征分表存储。</p>
+<p>项目中有几个核心的数据实体需要理解：</p>
+<ul>
+<li><strong>测站（Station）</strong>：水文监测的基本单元，每个测站有一个唯一的测站编码（STCD），并且有一个测站类型（STTP）来标识其功能类型，如 ZZ 表示闸站、ZQ 表示河道站、RR 表示水库站、WD 表示水位站、YD 表示雨量站等。</li>
+<li><strong>实时数据（Realtime Data）</strong>：最新的监测数据，通常以 5 分钟为采集间隔，包含水位、流量等关键指标。</li>
+<li><strong>历史数据（Historical Data）</strong>：历史极值和历史记录，用于一站一档等分析展示功能。</li>
+</ul>
+<p>在3月19日这一天，我们主要处理了与”一站一档”和”雨情实时信息”这两个业务模块相关的问题，下面逐一展开说明。</p>
+<h2 id="问题一：茜坑测站雨情实时数据缺失"><a href="#问题一：茜坑测站雨情实时数据缺失" class="headerlink" title="问题一：茜坑测站雨情实时数据缺失"></a>问题一：茜坑测站雨情实时数据缺失</h2><h3 id="问题现象"><a href="#问题现象" class="headerlink" title="问题现象"></a>问题现象</h3><p>3月19日上午，收到用户反馈：茜坑测站（测站编码 81103420）在”雨情实时信息”页面无法查询到数据。然而奇怪的是，同一个测站在”一站一档”模块中能够正常搜索并显示数据。</p>
+<p>用户描述的现象是：</p>
+<ul>
+<li>进入”雨情实时信息”页面</li>
+<li>搜索茜坑测站或直接输入测站编码 81103420</li>
+<li>系统提示”没有数据”</li>
+</ul>
+<p>但是在”一站一档”模块中，该测站能够正常显示其基本信息和历史数据。</p>
+<h3 id="排查过程"><a href="#排查过程" class="headerlink" title="排查过程"></a>排查过程</h3><p>我首先检查了该测站的基础信息。通过查询 <code>st_stbprp_b</code> 测站基础表，确认茜坑测站存在且状态正常：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> STCD, STNM, STTP, USFL</span><br><span class="line"><span class="keyword">FROM</span> st_stbprp_b</span><br><span class="line"><span class="keyword">WHERE</span> STCD <span class="operator">=</span> <span class="string">&#x27;81103420&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p>返回结果显示该测站类型为 YD（雨量站），使用标志为 1（启用）。</p>
+<p>接下来，我分别查询了该测站在不同雨量数据表中的记录数量：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="comment">-- 查询5分钟实时雨量表</span></span><br><span class="line"><span class="keyword">SELECT</span> STCD, <span class="built_in">COUNT</span>(<span class="operator">*</span>) <span class="keyword">as</span> cnt</span><br><span class="line"><span class="keyword">FROM</span> ST_PPTN_R_MIN</span><br><span class="line"><span class="keyword">WHERE</span> STCD <span class="operator">=</span> <span class="string">&#x27;81103420&#x27;</span></span><br><span class="line"><span class="keyword">AND</span> TM <span class="keyword">BETWEEN</span> <span class="string">&#x27;2026-03-16 11:41:00&#x27;</span> <span class="keyword">AND</span> <span class="string">&#x27;2026-03-19 11:41:00&#x27;</span></span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span> STCD</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 查询小时雨量表</span></span><br><span class="line"><span class="keyword">SELECT</span> STCD, <span class="built_in">COUNT</span>(<span class="operator">*</span>) <span class="keyword">as</span> cnt</span><br><span class="line"><span class="keyword">FROM</span> ST_PPTN_R</span><br><span class="line"><span class="keyword">WHERE</span> STCD <span class="operator">=</span> <span class="string">&#x27;81103420&#x27;</span></span><br><span class="line"><span class="keyword">AND</span> TM <span class="keyword">BETWEEN</span> <span class="string">&#x27;2026-03-16 11:41:00&#x27;</span> <span class="keyword">AND</span> <span class="string">&#x27;2026-03-19 11:41:00&#x27;</span></span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span> STCD</span><br></pre></td></tr></table></figure>
+
+<p>查询结果如下：</p>
+<table>
+<thead>
+<tr>
+<th>数据表</th>
+<th>数据类型</th>
+<th>记录数</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ST_PPTN_R_MIN</td>
+<td>5分钟实时雨量</td>
+<td><strong>0条</strong></td>
+</tr>
+<tr>
+<td>ST_PPTN_R</td>
+<td>小时雨量</td>
+<td><strong>860条</strong></td>
+</tr>
+</tbody></table>
+<h3 id="根因分析"><a href="#根因分析" class="headerlink" title="根因分析"></a>根因分析</h3><p>经过排查，问题的根因已经非常清晰：</p>
+<p><strong>茜坑测站（81103420）只有小时雨量数据（ST_PPTN_R），没有 5 分钟实时数据（ST_PPTN_R_MIN）。</strong></p>
+<p>从技术角度来看，这是数据采集层面的问题，而不是代码 Bug。测站硬件或上报配置决定了它只上报小时级别的雨量数据，而不是 5 分钟级别的实时数据。</p>
+<p>系统架构设计中，雨情实时信息模块默认查询的是 5 分钟实时数据表（ST_PPTN_R_MIN），而茜坑测站在该表中没有任何数据，因此返回空结果。这解释了为什么”雨情实时信息”页面无法显示数据。</p>
+<p>而”一站一档”模块能够正常显示，是因为它查询的是小时雨量表（ST_PPTN_R），该表中存在茜坑测站的 860 条数据。</p>
+<h3 id="问题定性"><a href="#问题定性" class="headerlink" title="问题定性"></a>问题定性</h3><p>经过分析，我们认为这是一个<strong>数据可用性问题</strong>，而非代码缺陷。系统按照设计正常运作，只是茜坑测站本身不具备 5 分钟实时雨量数据的采集条件。</p>
+<h3 id="可能的解决方案"><a href="#可能的解决方案" class="headerlink" title="可能的解决方案"></a>可能的解决方案</h3><p>针对这类问题，有几种潜在的解决方案可供考虑：</p>
+<p><strong>方案一：前端降级处理</strong></p>
+<p>当实时数据为空时，前端自动降级显示小时数据。这需要在 UI 层面增加逻辑判断，当检测到 5 分钟数据为空时，自动切换到小时数据视图，并给用户一个提示说明当前显示的是小时数据而非实时数据。</p>
+<p><strong>方案二：后端数据聚合</strong></p>
+<p>在后端处理层面，当查询 5 分钟数据为空时，自动从小时数据表中聚合数据返回。例如，可以将最近一小时的小时数据求和，作为实时数据的近似值返回。这种方案的优点是对前端透明，缺点是数据语义不够精确。</p>
+<p><strong>方案三：业务确认与配置调整</strong></p>
+<p>与水文部门确认茜坑测站的实际数据采集配置。如果该测站确实只需要上报小时数据，那么应该在系统配置中将其标记为”小时数据站”，前端据此显示不同的数据视图。</p>
+<p>最终，我们与水文部门进行了沟通，确认茜坑测站由于硬件限制确实只支持小时数据采集，暂时采用方案一的前端降级处理作为短期解决方案，长期来看需要与设备部门协调升级采集设备。</p>
+<h2 id="问题二：江口水闸实时水情查询失败"><a href="#问题二：江口水闸实时水情查询失败" class="headerlink" title="问题二：江口水闸实时水情查询失败"></a>问题二：江口水闸实时水情查询失败</h2><h3 id="问题现象-1"><a href="#问题现象-1" class="headerlink" title="问题现象"></a>问题现象</h3><p>下午时段，接到另一个问题反馈：江口水闸（测站编码 81210300）在实时水情查询中无法找到数据。同样的，该测站在”一站一档”模块中能够正常显示。</p>
+<p>具体表现：</p>
+<ul>
+<li>在”实时水情”模块搜索江口水闸</li>
+<li>系统提示没有数据</li>
+<li>但在”一站一档”中能够看到该测站的基本信息和部分数据</li>
+</ul>
+<h3 id="系统排查"><a href="#系统排查" class="headerlink" title="系统排查"></a>系统排查</h3><p>首先检查测站基础信息和数据分布情况。通过 SQL 查询发现：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="comment">-- 检查测站基础信息</span></span><br><span class="line"><span class="keyword">SELECT</span> STCD, STNM, STTP, USFL</span><br><span class="line"><span class="keyword">FROM</span> st_stbprp_b</span><br><span class="line"><span class="keyword">WHERE</span> STCD <span class="operator">=</span> <span class="string">&#x27;81210300&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p>江口水闸的基础信息正常，测站类型为 ZZ（闸站），状态启用。</p>
+<p>然后分别查询该测站在不同实时数据表中的情况：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="comment">-- 检查河道实时表</span></span><br><span class="line"><span class="keyword">SELECT</span> <span class="built_in">COUNT</span>(<span class="operator">*</span>) <span class="keyword">FROM</span> st_river_r_min</span><br><span class="line"><span class="keyword">WHERE</span> STCD <span class="operator">=</span> <span class="string">&#x27;81210300&#x27;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">-- 检查水库实时表</span></span><br><span class="line"><span class="keyword">SELECT</span> <span class="built_in">COUNT</span>(<span class="operator">*</span>) <span class="keyword">FROM</span> st_rsvr_r_min</span><br><span class="line"><span class="keyword">WHERE</span> STCD <span class="operator">=</span> <span class="string">&#x27;81210300&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p>查询结果：</p>
+<table>
+<thead>
+<tr>
+<th>数据表</th>
+<th>数据类型</th>
+<th>记录数</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>st_river_r_min</td>
+<td>河道实时数据</td>
+<td><strong>0条</strong></td>
+</tr>
+<tr>
+<td>st_rsvr_r_min</td>
+<td>水库实时数据</td>
+<td><strong>92条</strong></td>
+</tr>
+</tbody></table>
+<p>这个结果非常有意思：江口水闸是一个 ZZ 类型（闸站）的测站，但其数据存储在水灾实时表中，而不是河道实时表中。</p>
+<h3 id="根因分析-1"><a href="#根因分析-1" class="headerlink" title="根因分析"></a>根因分析</h3><p>经过深入分析，我们发现了问题的根本原因：</p>
+<p><strong>代码按测站类型区分查询数据表，但江口水闸的数据实际存储在与类型不匹配的表中。</strong></p>
+<p>系统的实时水情查询逻辑是：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 代码中的查询逻辑（修复前）</span></span><br><span class="line"><span class="keyword">if</span> (<span class="string">&quot;RR&quot;</span>.equals(base.getSttp())) &#123;</span><br><span class="line">    <span class="comment">// 水库类型 -&gt; 查询 st_rsvr_r_min</span></span><br><span class="line">    reservoirStations.add(stcd);</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (<span class="string">&quot;ZQ&quot;</span>.equals(base.getSttp())) &#123;</span><br><span class="line">    <span class="comment">// 河道类型 -&gt; 查询 st_river_r_min</span></span><br><span class="line">    riverStations.add(stcd);</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (<span class="string">&quot;ZZ&quot;</span>.equals(base.getSttp())) &#123;</span><br><span class="line">    <span class="comment">// 闸站类型 -&gt; 查询 st_river_r_min</span></span><br><span class="line">    riverStations.add(stcd);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>江口水闸的测站类型是 ZZ，按照代码逻辑会查询河道实时表（st_river_r_min），但实际上该测站的数据存储在水库存实时表中（st_rsvr_r_min），所以查询结果为空。</p>
+<p>这是一种数据录入或数据迁移过程中产生的不一致问题：测站的类型属性与其实际数据存储位置不匹配。</p>
+<h3 id="修复方案"><a href="#修复方案" class="headerlink" title="修复方案"></a>修复方案</h3><p>为了解决这个问题，我们在 <code>WaterRealtimeSummaryServiceImpl</code> 中增加了 fallback 机制：当 ZZ 类型测站在河道表中没有数据时，自动尝试查询水库存实时表。</p>
+<p><strong>修改文件</strong>：WaterRealtimeSummaryServiceImpl（第 104-157 行附近）</p>
+<p><strong>核心修改思路</strong>：</p>
+<ol>
+<li>新增 <code>zzStations</code> 列表记录所有 ZZ 类型测站</li>
+<li>ZZ 类型优先查询河道表</li>
+<li>新增 fallback 逻辑：如果河道表没有数据，则 fallback 查询水库存表</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 2. 分离河道站和水库站</span></span><br><span class="line">List&lt;String&gt; riverStations = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">List&lt;String&gt; reservoirStations = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">List&lt;String&gt; zzStations = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;(); <span class="comment">// 记录ZZ类型测站，用于fallback</span></span><br><span class="line"><span class="keyword">for</span> (String stcd : batch) &#123;</span><br><span class="line">    <span class="type">StationBaseInfoDTO</span> <span class="variable">base</span> <span class="operator">=</span> baseMap.get(stcd);</span><br><span class="line">    <span class="keyword">if</span> (base != <span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (<span class="string">&quot;RR&quot;</span>.equals(base.getSttp())) &#123;</span><br><span class="line">            reservoirStations.add(stcd);</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (<span class="string">&quot;ZQ&quot;</span>.equals(base.getSttp())) &#123;</span><br><span class="line">            riverStations.add(stcd);</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (<span class="string">&quot;ZZ&quot;</span>.equals(base.getSttp())) &#123;</span><br><span class="line">            riverStations.add(stcd);  <span class="comment">// ZZ优先查河道表</span></span><br><span class="line">            zzStations.add(stcd);     <span class="comment">// 同时记录，用于fallback</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 3. 查询河道站实时数据（ST_RIVER_R_MIN）</span></span><br><span class="line"><span class="keyword">final</span> Map&lt;String, StRiverRMin&gt; riverDataMap;</span><br><span class="line"><span class="keyword">if</span> (!riverStations.isEmpty()) &#123;</span><br><span class="line">    riverDataMap = stRiverRMinMapper.selectByTimeAndStcds(targetTime, riverStations)</span><br><span class="line">            .stream().collect(Collectors.toMap(StRiverRMin::getSTCD, v -&gt; v, (a, b) -&gt; a));</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    riverDataMap = <span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;&gt;();</span><br><span class="line">&#125;</span><br><span class="line">riverRealtimeMap = riverDataMap;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 4. 查询水库站实时数据（ST_RSVR_R_MIN）</span></span><br><span class="line"><span class="keyword">final</span> Map&lt;String, StRsvrRMin&gt; reservoirDataMap;</span><br><span class="line"><span class="keyword">if</span> (!reservoirStations.isEmpty()) &#123;</span><br><span class="line">    reservoirDataMap = stRsvrRMinMapper.selectByTimeAndStcds(targetTime, reservoirStations)</span><br><span class="line">            .stream().collect(Collectors.toMap(StRsvrRMin::getSTCD, v -&gt; v, (a, b) -&gt; a));</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    reservoirDataMap = <span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;&gt;();</span><br><span class="line">&#125;</span><br><span class="line">reservoirRealtimeMap = reservoirDataMap;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 4.1 ZZ类型fallback - 如果河道表没数据，尝试查水库表</span></span><br><span class="line"><span class="comment">// 解决部分ZZ类型测站（如闸站）数据实际在水库表的问题</span></span><br><span class="line"><span class="keyword">if</span> (!zzStations.isEmpty()) &#123;</span><br><span class="line">    List&lt;String&gt; zzStationsWithoutData = zzStations.stream()</span><br><span class="line">            .filter(stcd -&gt; !riverDataMap.containsKey(stcd))</span><br><span class="line">            .collect(Collectors.toList());</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!zzStationsWithoutData.isEmpty()) &#123;</span><br><span class="line">        Map&lt;String, StRsvrRMin&gt; zzFallbackData = stRsvrRMinMapper</span><br><span class="line">                .selectByTimeAndStcds(targetTime, zzStationsWithoutData)</span><br><span class="line">                .stream()</span><br><span class="line">                .collect(Collectors.toMap(StRsvrRMin::getSTCD, v -&gt; v, (a, b) -&gt; a));</span><br><span class="line"></span><br><span class="line">        reservoirRealtimeMap.putAll(zzFallbackData);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="修复验证"><a href="#修复验证" class="headerlink" title="修复验证"></a>修复验证</h3><p>修复后，我们通过手动指定时间同步接口进行了验证：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">POST /api/water/summary/sync?stcds=81210300&amp;targetTime=2026-03-19 15:00:00</span><br></pre></td></tr></table></figure>
+
+<p>验证结果成功返回数据：</p>
+<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;stnm&quot;</span><span class="punctuation">:</span> <span class="string">&quot;江口水闸&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;stcd&quot;</span><span class="punctuation">:</span> <span class="string">&quot;81210300&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;z&quot;</span><span class="punctuation">:</span> <span class="number">92.170</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;tm&quot;</span><span class="punctuation">:</span> <span class="string">&quot;2026-03-19 15:00:00&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;sttp&quot;</span><span class="punctuation">:</span> <span class="string">&quot;ZZ&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="待修复问题：同步时间匹配"><a href="#待修复问题：同步时间匹配" class="headerlink" title="待修复问题：同步时间匹配"></a>待修复问题：同步时间匹配</h3><p>虽然上述修复解决了查询问题，但我们发现了一个关联的同步问题：</p>
+<p><strong>现状</strong>：同步任务使用精确时间匹配（TM &#x3D; targetTime），例如查询 15:55 的数据。</p>
+<p><strong>问题</strong>：江口水闸数据的时间戳是 15:00、14:15 等非整 5 分钟时刻，这导致自动同步时使用精确匹配无法找到数据。</p>
+<p><strong>根本原因分析</strong>：</p>
+<ol>
+<li>同步任务计算出”上一个 5 分钟”的时间点（如 15:55）</li>
+<li>SQL 查询使用 <code>TM = #&#123;tm&#125;</code> 精确匹配</li>
+<li>但江口水闸上报的数据时间戳是 15:00、14:15 等非整 5 分钟时刻</li>
+<li>精确匹配查不到数据，所以汇总表始终没有这条数据</li>
+</ol>
+<p><strong>初步建议的解决方案</strong>：</p>
+<p>方案一是修改 SQL 为范围查询，查询 targetTime 之前的最近一条数据：</p>
+<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="comment">&lt;!-- 查询最近的数据 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">select</span> <span class="attr">id</span>=<span class="string">&quot;selectLatestByTimeAndStcds&quot;</span> <span class="attr">resultMap</span>=<span class="string">&quot;StRsvrRMinResult&quot;</span>&gt;</span></span><br><span class="line">    SELECT STCD, TM, RZ, INQ, OTQ, W, RWPTN</span><br><span class="line">    FROM st_rsvr_r_min</span><br><span class="line">    WHERE TM &lt;= #&#123;tm&#125;</span><br><span class="line">      AND STCD IN</span><br><span class="line">      <span class="tag">&lt;<span class="name">foreach</span> <span class="attr">collection</span>=<span class="string">&quot;stcds&quot;</span> <span class="attr">item</span>=<span class="string">&quot;stcd&quot;</span> <span class="attr">open</span>=<span class="string">&quot;(&quot;</span> <span class="attr">separator</span>=<span class="string">&quot;,&quot;</span> <span class="attr">close</span>=<span class="string">&quot;)&quot;</span>&gt;</span></span><br><span class="line">          #&#123;stcd&#125;</span><br><span class="line">      <span class="tag">&lt;/<span class="name">foreach</span>&gt;</span></span><br><span class="line">      AND RZ IS NOT NULL</span><br><span class="line">    ORDER BY TM DESC</span><br><span class="line"><span class="tag">&lt;/<span class="name">select</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>方案二是在 Service 层处理，多次尝试向前查找直到找到数据或超过阈值。</p>
+<p>这个问题需要进一步评估影响范围后再实施修复。</p>
+<h2 id="问题三：一站一档今日极值数据异常"><a href="#问题三：一站一档今日极值数据异常" class="headerlink" title="问题三：一站一档今日极值数据异常"></a>问题三：一站一档今日极值数据异常</h2><h3 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h3><p>下午晚些时候，收到关于”一站一档”模块的数据异常反馈，涉及两个不同的字段问题：</p>
+<p><strong>问题 1</strong>：今日最低流量返回错误值 2.180，但实际数据库中存在更低的值 2.260</p>
+<p><strong>问题 2</strong>：历史最低水位返回 -9999（这是一个无效值占位符），实际应为 0.040</p>
+<p>这两个问题发生在测站 81500150（水位站，类型 WD）上。</p>
+<h3 id="问题排查与分析"><a href="#问题排查与分析" class="headerlink" title="问题排查与分析"></a>问题排查与分析</h3><h4 id="问题-1：今日最低流量错误"><a href="#问题-1：今日最低流量错误" class="headerlink" title="问题 1：今日最低流量错误"></a>问题 1：今日最低流量错误</h4><p>首先检查今日最低流量的计算逻辑。通过对比数据库中的实际数据，我们发现：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="comment">-- 查询该测站今天（北京时间）的所有流量数据</span></span><br><span class="line"><span class="keyword">SELECT</span> STCD, TM, Q <span class="keyword">FROM</span> st_river_r</span><br><span class="line"><span class="keyword">WHERE</span> STCD <span class="operator">=</span> <span class="string">&#x27;81500150&#x27;</span></span><br><span class="line"><span class="keyword">AND</span> TM <span class="operator">&gt;=</span> <span class="string">&#x27;2026-03-19 00:00:00&#x27;</span></span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> Q <span class="keyword">ASC</span></span><br><span class="line">LIMIT <span class="number">10</span></span><br></pre></td></tr></table></figure>
+
+<p>实际查询结果显示最小的流量值确实是 2.260，但系统返回的今日最低流量却是 2.180。</p>
+<p>经过仔细排查，我们发现问题的根因是<strong>时区不一致</strong>：</p>
+<ol>
+<li>数据库 <code>ST_RIVER_R</code> 表中存储的时间是 <strong>UTC 时间</strong></li>
+<li>代码使用 <code>Calendar.getInstance()</code> 构建今日时间范围：<code>2026-03-19 00:00:00 ~ 23:59:59</code></li>
+<li>MySQL 查询时把这个字符串当作 UTC 时间处理</li>
+<li>导致实际查询范围变成了 <code>2026-03-19 08:00 ~ 2026-03-20 07:59</code>（北京时间）</li>
+<li>漏掉了北京时间 00:00~07:59 的数据，而真正的最低值 2.260 恰好在这个时间段内（UTC 19:00 &#x3D; 北京时间 03:00）</li>
+</ol>
+<h4 id="问题-2：历史最低水位返回-9999"><a href="#问题-2：历史最低水位返回-9999" class="headerlink" title="问题 2：历史最低水位返回 -9999"></a>问题 2：历史最低水位返回 -9999</h4><p>历史最低水位的计算使用了 <code>ST_RVEVS_R</code> 表，通过 SQL 查询发现：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="comment">-- 原 SQL</span></span><br><span class="line"><span class="keyword">SELECT</span> STCD, LTZ, LTT <span class="keyword">FROM</span> st_rvevs_r</span><br><span class="line"><span class="keyword">WHERE</span> STCD <span class="operator">=</span> #&#123;stcd&#125;</span><br><span class="line"><span class="keyword">AND</span> LTZ <span class="keyword">IS</span> <span class="keyword">NOT NULL</span></span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> LTZ <span class="keyword">ASC</span></span><br><span class="line">LIMIT <span class="number">1</span></span><br></pre></td></tr></table></figure>
+
+<p>问题在于 <code>ST_RVEVS_R</code> 表中存在 <code>-9999</code> 这种无效值占位符，原始 SQL 只过滤了 <code>NULL</code>，没有过滤负数，导致 -9999 被当作有效值返回。</p>
+<h3 id="修复方案-1"><a href="#修复方案-1" class="headerlink" title="修复方案"></a>修复方案</h3><h4 id="1-SQL-修改"><a href="#1-SQL-修改" class="headerlink" title="1. SQL 修改"></a>1. SQL 修改</h4><p>修改 <code>StRvevsRMapper.xml</code> 中的 <code>selectHistoricalMinLevel</code> SQL，添加 <code>AND LTZ &gt; 0</code> 过滤条件：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="comment">-- 修改前</span></span><br><span class="line"><span class="keyword">WHERE</span> STCD <span class="operator">=</span> #&#123;stcd&#125;</span><br><span class="line"><span class="keyword">AND</span> LTZ <span class="keyword">IS</span> <span class="keyword">NOT NULL</span></span><br><span class="line"></span><br><span class="line"><span class="comment">-- 修改后</span></span><br><span class="line"><span class="keyword">WHERE</span> STCD <span class="operator">=</span> #&#123;stcd&#125;</span><br><span class="line"><span class="keyword">AND</span> LTZ <span class="keyword">IS</span> <span class="keyword">NOT NULL</span></span><br><span class="line"><span class="keyword">AND</span> LTZ <span class="operator">&gt;</span> <span class="number">0</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="2-Java-修改：时区转换逻辑"><a href="#2-Java-修改：时区转换逻辑" class="headerlink" title="2. Java 修改：时区转换逻辑"></a>2. Java 修改：时区转换逻辑</h4><p>修改 <code>StationArchiveBiz.java</code> 中的 <code>fillTodayExtremes()</code> 方法，使用 <code>java.time</code> 正确处理时区转换：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 北京时区</span></span><br><span class="line"><span class="type">ZoneId</span> <span class="variable">beijingZone</span> <span class="operator">=</span> ZoneId.of(<span class="string">&quot;Asia/Shanghai&quot;</span>);</span><br><span class="line"><span class="type">ZoneId</span> <span class="variable">utcZone</span> <span class="operator">=</span> ZoneId.of(<span class="string">&quot;UTC&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取北京时间的今天开始和结束</span></span><br><span class="line"><span class="type">ZonedDateTime</span> <span class="variable">beijingStart</span> <span class="operator">=</span> ZonedDateTime.now(beijingZone).toLocalDate().atStartOfDay(beijingZone);</span><br><span class="line"><span class="type">ZonedDateTime</span> <span class="variable">beijingEnd</span> <span class="operator">=</span> beijingStart.plusDays(<span class="number">1</span>).minusSeconds(<span class="number">1</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 转换为 UTC 时间用于数据库查询</span></span><br><span class="line"><span class="type">ZonedDateTime</span> <span class="variable">utcStart</span> <span class="operator">=</span> beijingStart.withZoneSameInstant(utcZone);</span><br><span class="line"><span class="type">ZonedDateTime</span> <span class="variable">utcEnd</span> <span class="operator">=</span> beijingEnd.withZoneSameInstant(utcZone);</span><br></pre></td></tr></table></figure>
+
+<p>同样的时区转换逻辑也需要应用到水库站的今日极值计算方法 <code>fillTodayReservoirExtremes()</code> 中。</p>
+<h3 id="修复验证-1"><a href="#修复验证-1" class="headerlink" title="修复验证"></a>修复验证</h3><p>修复后，两个问题都得到了正确的结果：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>修复前</th>
+<th>修复后</th>
+<th>状态</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>historicalMinLevel</td>
+<td>-9999.0</td>
+<td>0.04</td>
+<td>正常</td>
+</tr>
+<tr>
+<td>historicalMinLevelTime</td>
+<td>2013-02-21</td>
+<td>2015-01-08</td>
+<td>正常</td>
+</tr>
+<tr>
+<td>todayMinFlow</td>
+<td>2.180</td>
+<td>2.260</td>
+<td>正常</td>
+</tr>
+<tr>
+<td>todayMinFlowTime</td>
+<td>16:00（错误）</td>
+<td>03:00（正确）</td>
+<td>正常</td>
+</tr>
+</tbody></table>
+<p>正确的 UTC 查询范围应该是：</p>
+<ul>
+<li>北京时间 2026-03-19 &#x3D; UTC <code>2026-03-18 16:00:00</code> ~ <code>2026-03-19 15:59:59</code></li>
+<li>该范围内最小流量为 <strong>2.260</strong>（UTC 19:00 &#x3D; 北京时间 03:00）</li>
+</ul>
+<h3 id="影响范围评估"><a href="#影响范围评估" class="headerlink" title="影响范围评估"></a>影响范围评估</h3><p>此次修复的影响范围仅限于以下接口的今日极值计算：</p>
+<ul>
+<li><code>/basic/station/archive/monitoring/&#123;stcd&#125;?sttp=WD&amp;subType=realtime</code>（河道站）</li>
+<li><code>/basic/station/archive/reservoir/&#123;stcd&#125;</code>（水库站）</li>
+</ul>
+<p>不受影响的部分包括：</p>
+<ul>
+<li>用户传入的 startTime&#x2F;endTime 参数（用户自行处理时区）</li>
+<li>历史极值（除 historicalMinLevel 外）</li>
+<li>其他业务接口</li>
+</ul>
+<h2 id="经验总结与技术思考"><a href="#经验总结与技术思考" class="headerlink" title="经验总结与技术思考"></a>经验总结与技术思考</h2><p>通过这一天的问题排查和修复工作，我们总结出以下几点经验教训，希望能对类似项目的开发者提供一些参考。</p>
+<h3 id="1-时区问题是分布式系统中常见的数据陷阱"><a href="#1-时区问题是分布式系统中常见的数据陷阱" class="headerlink" title="1. 时区问题是分布式系统中常见的数据陷阱"></a>1. 时区问题是分布式系统中常见的数据陷阱</h3><p>在广东水文项目中，数据库服务器、应用服务器可能处于不同的时区配置下，而水文数据采集又涉及多个地区的数据汇总，时区问题很容易被忽视。</p>
+<p>本次修复的时区问题是一个非常典型的案例：数据库存储 UTC 时间，代码使用本地时间构建查询条件，两者的不一致导致了数据查询范围的偏差，最终造成了极值计算错误。</p>
+<p><strong>建议</strong>：在系统设计阶段就应该明确规定时间的存储格式和查询方式，推荐做法是：</p>
+<ul>
+<li>统一使用 UTC 时间存储</li>
+<li>在数据访问层统一进行时区转换</li>
+<li>在配置文件中显式声明时区设置</li>
+<li>在接口文档中明确标注时间格式</li>
+</ul>
+<h3 id="2-无效值占位符需要在数据入口处统一处理"><a href="#2-无效值占位符需要在数据入口处统一处理" class="headerlink" title="2. 无效值占位符需要在数据入口处统一处理"></a>2. 无效值占位符需要在数据入口处统一处理</h3><p>水文数据中常见使用 -9999、-99、NULL 等作为无效值占位符。这种设计在数据采集和存储层面是合理的，但在数据展示和分析层面必须进行过滤。</p>
+<p>本次修复中，历史最低水位查询就是因为没有过滤 -9999 这个无效值，导致返回了明显错误的结果。</p>
+<p><strong>建议</strong>：建立统一的数据清洗和过滤规范，在以下位置进行处理：</p>
+<ul>
+<li>数据入库前的校验层</li>
+<li>数据查询的 Mapper 层</li>
+<li>数据展示的 Service 层</li>
+</ul>
+<h3 id="3-测站类型与数据存储位置可能存在不一致"><a href="#3-测站类型与数据存储位置可能存在不一致" class="headerlink" title="3. 测站类型与数据存储位置可能存在不一致"></a>3. 测站类型与数据存储位置可能存在不一致</h3><p>项目中经常会出现这样的情况：测站的类型属性（STTP）与实际数据存储位置不匹配。这可能是由于数据迁移、系统升级或人工录入错误导致的。</p>
+<p>江口水闸的问题就是一个典型案例：测站类型为 ZZ（闸站），但数据存储在水库存实时表中而非河道实时表中。这种不一致性会导致按照类型判断数据表的代码逻辑失效。</p>
+<p><strong>建议</strong>：</p>
+<ul>
+<li>在数据入口处增加校验，当测站类型与数据表不匹配时给出警告</li>
+<li>在查询逻辑中增加 fallback 机制，提高系统的容错能力</li>
+<li>定期进行数据一致性检查，发现并修复类型与数据不匹配的问题</li>
+</ul>
+<h3 id="4-数据可用性问题需要业务层面配合解决"><a href="#4-数据可用性问题需要业务层面配合解决" class="headerlink" title="4. 数据可用性问题需要业务层面配合解决"></a>4. 数据可用性问题需要业务层面配合解决</h3><p>茜坑测站的问题本质上不是代码问题，而是数据采集层面的问题。测站硬件只支持小时数据采集，无法提供 5 分钟实时数据。对于这类问题，技术手段只能做到优雅降级或数据聚合，无法从根本上解决数据缺失的问题。</p>
+<p><strong>建议</strong>：建立测站能力档案，在系统中记录每个测站的数据采集能力和数据提供情况，让用户清楚地了解每个测站的数据范围和限制。</p>
+<h3 id="5-代码审查和单元测试的重要性"><a href="#5-代码审查和单元测试的重要性" class="headerlink" title="5. 代码审查和单元测试的重要性"></a>5. 代码审查和单元测试的重要性</h3><p>这三个问题有一个共同点：它们都是由于代码逻辑在边界情况下处理不当导致的。如果有完善的单元测试覆盖这些边界场景，这些问题应该在开发阶段就被发现和修复。</p>
+<p><strong>建议</strong>：</p>
+<ul>
+<li>加强对边界条件和异常情况的测试覆盖</li>
+<li>定期进行代码审查，特别是涉及数据表切换、时区处理、数值边界等逻辑的代码</li>
+<li>建立持续集成环境，在代码提交时自动运行相关测试</li>
+</ul>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>2026年3月19日的这次问题排查经历，让我们深刻认识到水文信息化系统的复杂性和挑战性。从数据采集层的硬件限制，到数据存储层的数据表设计，再到数据展示层的时区和数据质量问题，每一个环节都可能成为问题的来源。</p>
+<p>作为后端开发工程师，我们不仅要关注代码的功能实现，更要关注数据在各个环节的正确流转；不仅要处理正常的业务逻辑，更要考虑各种异常和边界情况；不仅要修复当前的问题，更要思考如何建立长效机制避免类似问题的再次发生。</p>
+<p>水文信息化关乎国计民生，数据的准确性和系统的稳定性至关重要。希望本文的分享能为从事相关项目的开发者提供一些帮助，也欢迎大家交流探讨，共同进步。</p>
+]]></content>
+      <categories>
+        <category>技术踩坑记录</category>
+        <category>后端开发</category>
+      </categories>
+      <tags>
+        <tag>Bug修复</tag>
+        <tag>水文项目</tag>
+        <tag>时区问题</tag>
+        <tag>数据表设计</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>测站沿革接口开发与调试记录</title>
+    <url>/2026/03/12/%E6%B5%8B%E7%AB%99%E6%B2%BF%E9%9D%A9%E6%8E%A5%E5%8F%A3%E5%BC%80%E5%8F%91%E8%B0%83%E8%AF%95%E8%AE%B0%E5%BD%95/</url>
+    <content><![CDATA[<p>开发一个查询测站沿革信息列表的第三方API接口，调用水利系统基础数据API获取测站历史变更信息。开发完成后调试时遇到两个常见但容易忽略的问题：参数名错误和响应结构解析错误。</p>
+<span id="more"></span>
+
+<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在广东水文项目中，需要开发一个查询测站沿革信息列表的接口，调用第三方水利系统基础数据API获取测站的历史变更记录，包括站名变更、地址变更、所属行政区划调整等信息。这对于数据治理和历史追溯非常重要。</p>
+<h2 id="问题背景"><a href="#问题背景" class="headerlink" title="问题背景"></a>问题背景</h2><p>项目需要对接水利系统的第三方API，获取测站的历史变更记录。</p>
+<h3 id="第三方API信息"><a href="#第三方API信息" class="headerlink" title="第三方API信息"></a>第三方API信息</h3><table>
+<thead>
+<tr>
+<th>项目</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>请求路径</td>
+<td><code>/stsc/openapi/listGrouped</code></td>
+</tr>
+<tr>
+<td>请求方式</td>
+<td>GET</td>
+</tr>
+<tr>
+<td>必填参数</td>
+<td><code>stcd</code>（测站编码）</td>
+</tr>
+</tbody></table>
+<h2 id="接口开发"><a href="#接口开发" class="headerlink" title="接口开发"></a>接口开发</h2><h3 id="实现方案"><a href="#实现方案" class="headerlink" title="实现方案"></a>实现方案</h3><p>参考现有”大断面”接口的实现模式，采用 Controller-Biz-DTO 三层架构：</p>
+<ol>
+<li><strong>DTO</strong>: <code>StationEvolutionDTO</code> - 测站沿革信息数据对象</li>
+<li><strong>Biz</strong>: <code>StationArchiveBiz.getStationEvolutions()</code> - 业务逻辑层</li>
+<li><strong>Controller</strong>: <code>StationArchiveController.stationEvolution</code> - 接口层</li>
+</ol>
+<h3 id="创建-修改的文件"><a href="#创建-修改的文件" class="headerlink" title="创建&#x2F;修改的文件"></a>创建&#x2F;修改的文件</h3><table>
+<thead>
+<tr>
+<th>类型</th>
+<th>文件路径</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>新增</td>
+<td><code>cnsci-admin/.../dto/station/StationEvolutionDTO.java</code></td>
+</tr>
+<tr>
+<td>修改</td>
+<td><code>cnsci-admin/.../biz/station/StationArchiveBiz.java</code></td>
+</tr>
+<tr>
+<td>修改</td>
+<td><code>cnsci-admin/.../station/StationArchiveController.java</code></td>
+</tr>
+</tbody></table>
+<h3 id="接口调用示例"><a href="#接口调用示例" class="headerlink" title="接口调用示例"></a>接口调用示例</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">GET /stationArchive/stationEvolution?stcd=80505000</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="调试阶段：两个坑与修复"><a href="#调试阶段：两个坑与修复" class="headerlink" title="调试阶段：两个坑与修复"></a>调试阶段：两个坑与修复</h2><p>接口开发完成后，调用测试发现：直接请求第三方接口有数据返回，但通过我们开发的接口返回空数据。</p>
+<h3 id="坑一：参数名错误"><a href="#坑一：参数名错误" class="headerlink" title="坑一：参数名错误"></a>坑一：参数名错误</h3><table>
+<thead>
+<tr>
+<th>层级</th>
+<th>参数名</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Controller 接收</td>
+<td><code>stcd</code></td>
+</tr>
+<tr>
+<td>Biz 层传给第三方</td>
+<td><code>iid</code> ❌</td>
+</tr>
+<tr>
+<td>第三方接口需要</td>
+<td><code>stcd</code></td>
+</tr>
+</tbody></table>
+<p><strong>修复</strong>：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 错误写法</span></span><br><span class="line">params.put(<span class="string">&quot;iid&quot;</span>, iid);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 正确写法</span></span><br><span class="line">params.put(<span class="string">&quot;stcd&quot;</span>, iid);</span><br></pre></td></tr></table></figure>
+
+<h3 id="坑二：响应结构解析错误"><a href="#坑二：响应结构解析错误" class="headerlink" title="坑二：响应结构解析错误"></a>坑二：响应结构解析错误</h3><p>第三方返回：</p>
+<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;total&quot;</span><span class="punctuation">:</span> <span class="number">104</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;rows&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span>...<span class="punctuation">]</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>代码原期望：</p>
+<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;data&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;rows&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span>...<span class="punctuation">]</span></span><br><span class="line">  <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>修复</strong>：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 错误写法</span></span><br><span class="line"><span class="type">JSONObject</span> <span class="variable">data</span> <span class="operator">=</span> response.getJSONObject(<span class="string">&quot;data&quot;</span>);</span><br><span class="line"><span class="type">JSONArray</span> <span class="variable">rows</span> <span class="operator">=</span> data.getJSONArray(<span class="string">&quot;rows&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 正确写法</span></span><br><span class="line"><span class="type">JSONArray</span> <span class="variable">rows</span> <span class="operator">=</span> response.getJSONArray(<span class="string">&quot;rows&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="Git-操作技巧"><a href="#Git-操作技巧" class="headerlink" title="Git 操作技巧"></a>Git 操作技巧</h2><p>在修复 Bug 时，使用 <code>git reset --soft</code> 可以撤销提交但保留修改在暂存区：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">git reset --soft d16095b~1</span><br><span class="line">git add cnsci-admin/.../StationArchiveBiz.java</span><br><span class="line">git commit -m <span class="string">&quot;fix: 修复测站沿革接口参数和响应解析问题&quot;</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="经验总结"><a href="#经验总结" class="headerlink" title="经验总结"></a>经验总结</h2><ul>
+<li><strong>调试技巧</strong>：遇到第三方接口返回空数据时，添加日志打印原始响应，快速定位响应结构问题</li>
+<li><strong>接口对接</strong>：调用第三方API时，务必确认参数名和响应结构，不能想当然</li>
+<li><strong>Git 使用</strong>：<code>git reset --soft</code> 是调整提交历史的利器</li>
+</ul>
+<hr>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>接口开发看似简单，但在对接第三方API时，参数名和响应结构这两个”小细节”往往是导致问题的根本原因。调试过程中养成打印日志的习惯，能够快速定位问题所在。</p>
+]]></content>
+      <categories>
+        <category>踩坑记录</category>
+      </categories>
+      <tags>
+        <tag>Bug修复</tag>
+        <tag>Java</tag>
+        <tag>API</tag>
+        <tag>调试经验</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>视频平台图片鉴权接口开发踩坑记录</title>
     <url>/2026/03/06/%E8%A7%86%E9%A2%91%E5%B9%B3%E5%8F%B0%E5%9B%BE%E7%89%87%E9%89%B4%E6%9D%83%E6%8E%A5%E5%8F%A3%E5%BC%80%E5%8F%91%E8%B8%A9%E5%9D%91%E8%AE%B0%E5%BD%95/</url>
     <content><![CDATA[<p>在水文监测后台管理系统中，视频设备接口需要返回缩略图鉴权信息，看似简单的需求却踩了几个坑：双重鉴权体系混淆、API 响应类型转换失败、缓存时间设计不当……本文记录完整的开发过程与问题解决。</p>
@@ -4091,119 +4441,6 @@
         <tag>鉴权</tag>
         <tag>视频平台</tag>
         <tag>Redis缓存</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>测站沿革接口开发与调试记录</title>
-    <url>/2026/03/12/%E6%B5%8B%E7%AB%99%E6%B2%BF%E9%9D%A9%E6%8E%A5%E5%8F%A3%E5%BC%80%E5%8F%91%E8%B0%83%E8%AF%95%E8%AE%B0%E5%BD%95/</url>
-    <content><![CDATA[<p>开发一个查询测站沿革信息列表的第三方API接口，调用水利系统基础数据API获取测站历史变更信息。开发完成后调试时遇到两个常见但容易忽略的问题：参数名错误和响应结构解析错误。</p>
-<span id="more"></span>
-
-<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在广东水文项目中，需要开发一个查询测站沿革信息列表的接口，调用第三方水利系统基础数据API获取测站的历史变更记录，包括站名变更、地址变更、所属行政区划调整等信息。这对于数据治理和历史追溯非常重要。</p>
-<h2 id="问题背景"><a href="#问题背景" class="headerlink" title="问题背景"></a>问题背景</h2><p>项目需要对接水利系统的第三方API，获取测站的历史变更记录。</p>
-<h3 id="第三方API信息"><a href="#第三方API信息" class="headerlink" title="第三方API信息"></a>第三方API信息</h3><table>
-<thead>
-<tr>
-<th>项目</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>请求路径</td>
-<td><code>/stsc/openapi/listGrouped</code></td>
-</tr>
-<tr>
-<td>请求方式</td>
-<td>GET</td>
-</tr>
-<tr>
-<td>必填参数</td>
-<td><code>stcd</code>（测站编码）</td>
-</tr>
-</tbody></table>
-<h2 id="接口开发"><a href="#接口开发" class="headerlink" title="接口开发"></a>接口开发</h2><h3 id="实现方案"><a href="#实现方案" class="headerlink" title="实现方案"></a>实现方案</h3><p>参考现有”大断面”接口的实现模式，采用 Controller-Biz-DTO 三层架构：</p>
-<ol>
-<li><strong>DTO</strong>: <code>StationEvolutionDTO</code> - 测站沿革信息数据对象</li>
-<li><strong>Biz</strong>: <code>StationArchiveBiz.getStationEvolutions()</code> - 业务逻辑层</li>
-<li><strong>Controller</strong>: <code>StationArchiveController.stationEvolution</code> - 接口层</li>
-</ol>
-<h3 id="创建-修改的文件"><a href="#创建-修改的文件" class="headerlink" title="创建&#x2F;修改的文件"></a>创建&#x2F;修改的文件</h3><table>
-<thead>
-<tr>
-<th>类型</th>
-<th>文件路径</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>新增</td>
-<td><code>cnsci-admin/.../dto/station/StationEvolutionDTO.java</code></td>
-</tr>
-<tr>
-<td>修改</td>
-<td><code>cnsci-admin/.../biz/station/StationArchiveBiz.java</code></td>
-</tr>
-<tr>
-<td>修改</td>
-<td><code>cnsci-admin/.../station/StationArchiveController.java</code></td>
-</tr>
-</tbody></table>
-<h3 id="接口调用示例"><a href="#接口调用示例" class="headerlink" title="接口调用示例"></a>接口调用示例</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">GET /stationArchive/stationEvolution?stcd=80505000</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="调试阶段：两个坑与修复"><a href="#调试阶段：两个坑与修复" class="headerlink" title="调试阶段：两个坑与修复"></a>调试阶段：两个坑与修复</h2><p>接口开发完成后，调用测试发现：直接请求第三方接口有数据返回，但通过我们开发的接口返回空数据。</p>
-<h3 id="坑一：参数名错误"><a href="#坑一：参数名错误" class="headerlink" title="坑一：参数名错误"></a>坑一：参数名错误</h3><table>
-<thead>
-<tr>
-<th>层级</th>
-<th>参数名</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>Controller 接收</td>
-<td><code>stcd</code></td>
-</tr>
-<tr>
-<td>Biz 层传给第三方</td>
-<td><code>iid</code> ❌</td>
-</tr>
-<tr>
-<td>第三方接口需要</td>
-<td><code>stcd</code></td>
-</tr>
-</tbody></table>
-<p><strong>修复</strong>：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 错误写法</span></span><br><span class="line">params.put(<span class="string">&quot;iid&quot;</span>, iid);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 正确写法</span></span><br><span class="line">params.put(<span class="string">&quot;stcd&quot;</span>, iid);</span><br></pre></td></tr></table></figure>
-
-<h3 id="坑二：响应结构解析错误"><a href="#坑二：响应结构解析错误" class="headerlink" title="坑二：响应结构解析错误"></a>坑二：响应结构解析错误</h3><p>第三方返回：</p>
-<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;total&quot;</span><span class="punctuation">:</span> <span class="number">104</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;rows&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span>...<span class="punctuation">]</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
-
-<p>代码原期望：</p>
-<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;data&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;rows&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span>...<span class="punctuation">]</span></span><br><span class="line">  <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
-
-<p><strong>修复</strong>：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 错误写法</span></span><br><span class="line"><span class="type">JSONObject</span> <span class="variable">data</span> <span class="operator">=</span> response.getJSONObject(<span class="string">&quot;data&quot;</span>);</span><br><span class="line"><span class="type">JSONArray</span> <span class="variable">rows</span> <span class="operator">=</span> data.getJSONArray(<span class="string">&quot;rows&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 正确写法</span></span><br><span class="line"><span class="type">JSONArray</span> <span class="variable">rows</span> <span class="operator">=</span> response.getJSONArray(<span class="string">&quot;rows&quot;</span>);</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="Git-操作技巧"><a href="#Git-操作技巧" class="headerlink" title="Git 操作技巧"></a>Git 操作技巧</h2><p>在修复 Bug 时，使用 <code>git reset --soft</code> 可以撤销提交但保留修改在暂存区：</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">git reset --soft d16095b~1</span><br><span class="line">git add cnsci-admin/.../StationArchiveBiz.java</span><br><span class="line">git commit -m <span class="string">&quot;fix: 修复测站沿革接口参数和响应解析问题&quot;</span></span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="经验总结"><a href="#经验总结" class="headerlink" title="经验总结"></a>经验总结</h2><ul>
-<li><strong>调试技巧</strong>：遇到第三方接口返回空数据时，添加日志打印原始响应，快速定位响应结构问题</li>
-<li><strong>接口对接</strong>：调用第三方API时，务必确认参数名和响应结构，不能想当然</li>
-<li><strong>Git 使用</strong>：<code>git reset --soft</code> 是调整提交历史的利器</li>
-</ul>
-<hr>
-<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>接口开发看似简单，但在对接第三方API时，参数名和响应结构这两个”小细节”往往是导致问题的根本原因。调试过程中养成打印日志的习惯，能够快速定位问题所在。</p>
-]]></content>
-      <categories>
-        <category>踩坑记录</category>
-      </categories>
-      <tags>
-        <tag>Bug修复</tag>
-        <tag>Java</tag>
-        <tag>API</tag>
-        <tag>调试经验</tag>
       </tags>
   </entry>
   <entry>

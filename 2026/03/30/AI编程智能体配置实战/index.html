@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="用 AI 编程工具写代码不难，但让多个 AI 智能体像一支真正的工程团队一样协作——这需要精心配置。本文分享我如何基于 OhMyOpenCode（omo）为 Claude Code 的每个智能体角色选择最合适的国产模型，以及背后的选型逻辑。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="AI 编程智能体配置实战：如何为每个角色选择最合适的模型">
+<meta property="og:url" content="https://zhlifeiy.codes/2026/03/30/AI%E7%BC%96%E7%A8%8B%E6%99%BA%E8%83%BD%E4%BD%93%E9%85%8D%E7%BD%AE%E5%AE%9E%E6%88%98/index.html">
+<meta property="og:site_name" content="我的技术博客">
+<meta property="og:description" content="用 AI 编程工具写代码不难，但让多个 AI 智能体像一支真正的工程团队一样协作——这需要精心配置。本文分享我如何基于 OhMyOpenCode（omo）为 Claude Code 的每个智能体角色选择最合适的国产模型，以及背后的选型逻辑。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/ai-agent-config.png">
+<meta property="article:published_time" content="2026-03-30T10:30:00.000Z">
+<meta property="article:modified_time" content="2026-03-30T14:29:17.670Z">
+<meta property="article:author" content="zhlifeiy35">
+<meta property="article:tag" content="AI编程">
+<meta property="article:tag" content="智能体">
+<meta property="article:tag" content="OhMyOpenCode">
+<meta property="article:tag" content="ClaudeCode">
+<meta property="article:tag" content="模型选型">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/ai-agent-config.png">
+
+
+<link rel="canonical" href="https://zhlifeiy.codes/2026/03/30/AI%E7%BC%96%E7%A8%8B%E6%99%BA%E8%83%BD%E4%BD%93%E9%85%8D%E7%BD%AE%E5%AE%9E%E6%88%98/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://zhlifeiy.codes/2026/03/30/AI%E7%BC%96%E7%A8%8B%E6%99%BA%E8%83%BD%E4%BD%93%E9%85%8D%E7%BD%AE%E5%AE%9E%E6%88%98/","path":"2026/03/30/AI编程智能体配置实战/","title":"AI 编程智能体配置实战：如何为每个角色选择最合适的模型"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>AI 编程智能体配置实战：如何为每个角色选择最合适的模型 | 我的技术博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">我的技术博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">记录学习与成长</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-guestbook"><a href="/guestbook/" rel="section"><i class="fa fa-comment-dots fa-fw"></i>留言板</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%88%91%E7%9A%84%E6%A8%A1%E5%9E%8B%E9%98%B5%E5%AE%B9"><span class="nav-number">2.</span> <span class="nav-text">我的模型阵容</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%99%BA%E8%83%BD%E4%BD%93%E9%85%8D%E7%BD%AE%E8%AF%A6%E8%A7%A3"><span class="nav-number">3.</span> <span class="nav-text">智能体配置详解</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-Sisyphus%EF%BC%88%E4%B8%BB%E7%BC%96%E6%8E%92%E8%80%85%EF%BC%89%E2%86%92-GLM-5-1"><span class="nav-number">3.1.</span> <span class="nav-text">1. Sisyphus（主编排者）→ GLM-5.1</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-Prometheus%EF%BC%88%E5%AE%9E%E7%8E%B0%E6%89%A7%E8%A1%8C%E8%80%85%EF%BC%89%E2%86%92-Qwen3-5-plus"><span class="nav-number">3.2.</span> <span class="nav-text">2. Prometheus（实现执行者）→ Qwen3.5-plus</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-Oracle%EF%BC%88%E6%9E%B6%E6%9E%84%E9%A1%BE%E9%97%AE%EF%BC%89%E2%86%92-GLM-5-1"><span class="nav-number">3.3.</span> <span class="nav-text">3. Oracle（架构顾问）→ GLM-5.1</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-Hephaestus%EF%BC%88%E9%AB%98%E8%B4%A8%E9%87%8F%E5%AE%9E%E7%8E%B0%EF%BC%89%E2%86%92-GPT-5-4"><span class="nav-number">3.4.</span> <span class="nav-text">4. Hephaestus（高质量实现）→ GPT-5.4</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-Explore%EF%BC%88%E4%BB%A3%E7%A0%81%E6%8E%A2%E7%B4%A2%EF%BC%89%E2%86%92-MiniMax-M2-7"><span class="nav-number">3.5.</span> <span class="nav-text">5. Explore（代码探索）→ MiniMax-M2.7</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-Librarian%EF%BC%88%E5%A4%96%E9%83%A8%E5%8F%82%E8%80%83%E6%90%9C%E7%B4%A2%EF%BC%89%E2%86%92-MiniMax-M2-7"><span class="nav-number">3.6.</span> <span class="nav-text">6. Librarian（外部参考搜索）→ MiniMax-M2.7</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#7-Metis%EF%BC%88%E9%A2%84%E8%A7%84%E5%88%92%E5%88%86%E6%9E%90%EF%BC%89%E2%86%92-GLM-5-turbo"><span class="nav-number">3.7.</span> <span class="nav-text">7. Metis（预规划分析）→ GLM-5-turbo</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#8-Momus%EF%BC%88%E8%AE%A1%E5%88%92%E5%AE%A1%E6%9F%A5%EF%BC%89%E2%86%92-GPT-5-4"><span class="nav-number">3.8.</span> <span class="nav-text">8. Momus（计划审查）→ GPT-5.4</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#9-Multimodal-Looker%EF%BC%88%E8%A7%86%E8%A7%89%E7%90%86%E8%A7%A3%EF%BC%89%E2%86%92-Kimi-k2-5"><span class="nav-number">3.9.</span> <span class="nav-text">9. Multimodal Looker（视觉理解）→ Kimi-k2.5</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A1%E7%B1%BB%E5%88%AB%E9%85%8D%E7%BD%AE"><span class="nav-number">4.</span> <span class="nav-text">任务类别配置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%8C%E6%95%B4%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6"><span class="nav-number">5.</span> <span class="nav-text">完整配置文件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%99%84%E5%8A%A0%E9%85%8D%E7%BD%AE%EF%BC%9A%E6%8F%92%E4%BB%B6%E4%B8%8E-MCP"><span class="nav-number">6.</span> <span class="nav-text">附加配置：插件与 MCP</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%89%E5%9E%8B%E6%80%BB%E7%BB%93%E4%B8%8E%E5%BB%BA%E8%AE%AE"><span class="nav-number">7.</span> <span class="nav-text">选型总结与建议</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%93%E8%AF%AD"><span class="nav-number">8.</span> <span class="nav-text">结语</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zhlifeiy35</p>
+  <div class="site-description" itemprop="description">分享编程技术、AI经验、学习笔记</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">23</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">76</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zhdmm35" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zhdmm35" rel="noopener me" target="_blank"><i class="fa fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/ai-agent-config.png" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/03/30/AI%E7%BC%96%E7%A8%8B%E6%99%BA%E8%83%BD%E4%BD%93%E9%85%8D%E7%BD%AE%E5%AE%9E%E6%88%98/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="我的技术博客">
+      <meta itemprop="description" content="分享编程技术、AI经验、学习笔记">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="AI 编程智能体配置实战：如何为每个角色选择最合适的模型 | 我的技术博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          AI 编程智能体配置实战：如何为每个角色选择最合适的模型
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2026-03-30 18:30:00 / 修改时间：22:29:17" itemprop="dateCreated datePublished" datetime="2026-03-30T18:30:00+08:00">2026-03-30</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/AI%E7%BB%8F%E9%AA%8C/" itemprop="url" rel="index"><span itemprop="name">AI经验</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>用 AI 编程工具写代码不难，但让多个 AI 智能体像一支真正的工程团队一样协作——这需要精心配置。本文分享我如何基于 OhMyOpenCode（omo）为 Claude Code 的每个智能体角色选择最合适的国产模型，以及背后的选型逻辑。</p>
+<span id="more"></span>
+
+<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>我日常使用 Claude Code（通过 Anthropic 代理接入国产大模型）进行开发，配合 OhMyOpenCode 插件来管理智能体（Agent）的模型分配。这套配置已经稳定运行了几个月，覆盖了从代码探索、架构咨询到前端实现、文档写作的全流程。</p>
+<p>核心思路很简单：<strong>不同任务需要不同的”思维方式”，而不同模型有不同的擅长领域。把对的模型放在对的角色上，整个系统的效率和质量会有质的飞跃。</strong></p>
+<p><img src="/images/posts/AI%E7%BC%96%E7%A8%8B%E6%99%BA%E8%83%BD%E4%BD%93%E9%85%8D%E7%BD%AE%E5%AE%9E%E6%88%98/fig1.png" alt="智能体协作架构图"><br><em>图1：智能体协作架构总览</em></p>
+<h2 id="我的模型阵容"><a href="#我的模型阵容" class="headerlink" title="我的模型阵容"></a>我的模型阵容</h2><p>先交代一下我用的模型全家桶，全部通过 Anthropic 兼容协议接入：</p>
+<table>
+<thead>
+<tr>
+<th>模型</th>
+<th>厂商</th>
+<th>核心特点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>GLM-5.1</strong></td>
+<td>智谱 AI</td>
+<td>综合能力强，逻辑推理稳健，中文理解出色</td>
+</tr>
+<tr>
+<td><strong>GLM-5-turbo</strong></td>
+<td>智谱 AI</td>
+<td>GLM-5.1 的快速版本，响应极快</td>
+</tr>
+<tr>
+<td><strong>Qwen3.5-plus</strong></td>
+<td>阿里巴巴</td>
+<td>代码生成质量高，实现细节把控好</td>
+</tr>
+<tr>
+<td><strong>MiniMax-M2.7</strong></td>
+<td>MiniMax</td>
+<td>性价比极高，响应速度快，适合轻量任务</td>
+</tr>
+<tr>
+<td><strong>Kimi-k2.5</strong></td>
+<td>Moonshot</td>
+<td>长上下文理解优秀，创意表达和视觉理解强</td>
+</tr>
+<tr>
+<td><strong>GPT-5.4</strong></td>
+<td>OpenAI</td>
+<td>推理天花板，复杂问题处理能力最强（通过国际通道）</td>
+</tr>
+</tbody></table>
+<h2 id="智能体配置详解"><a href="#智能体配置详解" class="headerlink" title="智能体配置详解"></a>智能体配置详解</h2><h3 id="1-Sisyphus（主编排者）→-GLM-5-1"><a href="#1-Sisyphus（主编排者）→-GLM-5-1" class="headerlink" title="1. Sisyphus（主编排者）→ GLM-5.1"></a>1. Sisyphus（主编排者）→ GLM-5.1</h3><p>Sisyphus 是整个系统的”大脑”，负责接收用户请求、拆解任务、分配给子智能体、汇总结果。它需要：</p>
+<ul>
+<li><strong>全局视野</strong>：理解整个任务的上下文和依赖关系</li>
+<li><strong>判断力</strong>：决定哪些任务可以并行、哪些需要串行</li>
+<li><strong>中文沟通</strong>：与用户用中文交互，需要优秀的中文理解</li>
+</ul>
+<p><strong>为什么选 GLM-5.1</strong>：智谱的 GLM-5.1 在中文理解和复杂推理上表现稳定，作为主编排者需要的是”不犯大错”而不是”偶尔惊艳”。GLM-5.1 的稳健性让它在编排场景下值得信赖。</p>
+<h3 id="2-Prometheus（实现执行者）→-Qwen3-5-plus"><a href="#2-Prometheus（实现执行者）→-Qwen3-5-plus" class="headerlink" title="2. Prometheus（实现执行者）→ Qwen3.5-plus"></a>2. Prometheus（实现执行者）→ Qwen3.5-plus</h3><p>Prometheus 负责将方案转化为代码。它需要：</p>
+<ul>
+<li><strong>代码质量</strong>：生成的代码要能直接用，不是伪代码</li>
+<li><strong>细节把控</strong>：变量命名、边界处理、异常处理都要到位</li>
+<li><strong>框架理解</strong>：熟悉 Spring Boot、MyBatis、React 等主流框架</li>
+</ul>
+<p><strong>为什么选 Qwen3.5-plus</strong>：阿里的 Qwen 系列在代码生成上一直是国产模型的第一梯队。Qwen3.5-plus 在代码补全、重构、Bug 修复等场景下表现出色，尤其是 Java 和 TypeScript 生态的理解深度。</p>
+<h3 id="3-Oracle（架构顾问）→-GLM-5-1"><a href="#3-Oracle（架构顾问）→-GLM-5-1" class="headerlink" title="3. Oracle（架构顾问）→ GLM-5.1"></a>3. Oracle（架构顾问）→ GLM-5.1</h3><p>Oracle 是只读的高质量顾问，在遇到架构决策、复杂 Bug、安全问题时才被咨询。它需要：</p>
+<ul>
+<li><strong>深度推理</strong>：分析复杂系统间的 tradeoff</li>
+<li><strong>表达清晰</strong>：把复杂问题解释得通俗易懂</li>
+<li><strong>不输出代码</strong>：只给建议，不动手</li>
+</ul>
+<p><strong>为什么选 GLM-5.1</strong>：Oracle 的核心能力是”想清楚”而不是”写得快”。GLM-5.1 的推理链路清晰，回答结构化程度高，适合做顾问角色。与 Sisyphus 使用同一模型也保证了思维一致性。</p>
+<h3 id="4-Hephaestus（高质量实现）→-GPT-5-4"><a href="#4-Hephaestus（高质量实现）→-GPT-5-4" class="headerlink" title="4. Hephaestus（高质量实现）→ GPT-5.4"></a>4. Hephaestus（高质量实现）→ GPT-5.4</h3><p>Hephaestus 是”精工细作”的实现者，配置为 high variant，只在需要高质量输出时才启用。它需要：</p>
+<ul>
+<li><strong>顶级代码质量</strong>：架构清晰、设计模式正确、测试完备</li>
+<li><strong>复杂问题解决</strong>：处理多系统交互、性能优化等高难度任务</li>
+</ul>
+<p><strong>为什么选 GPT-5.4</strong>：在推理天花板这个维度上，GPT-5.4 仍然是目前最强的。对于 Hephaestus 这种”压箱底”的角色，用最强的模型确保关键时刻不掉链子。虽然成本更高，但只在必要时调用。</p>
+<p><img src="/images/posts/AI%E7%BC%96%E7%A8%8B%E6%99%BA%E8%83%BD%E4%BD%93%E9%85%8D%E7%BD%AE%E5%AE%9E%E6%88%98/fig2.png" alt="模型能力象限图"><br><em>图2：各模型在推理深度、代码质量、响应速度、性价比四个维度的定位</em></p>
+<h3 id="5-Explore（代码探索）→-MiniMax-M2-7"><a href="#5-Explore（代码探索）→-MiniMax-M2-7" class="headerlink" title="5. Explore（代码探索）→ MiniMax-M2.7"></a>5. Explore（代码探索）→ MiniMax-M2.7</h3><p>Explore 负责在代码库中搜索模式、理解代码结构。它的工作模式是”大量并发搜索 + 快速总结”。它需要：</p>
+<ul>
+<li><strong>快速响应</strong>：经常被并行调用 2-5 个实例</li>
+<li><strong>足够准确</strong>：不需要完美，但不能遗漏关键信息</li>
+<li><strong>低成本</strong>：调用频率最高</li>
+</ul>
+<p><strong>为什么选 MiniMax-M2.7</strong>：Explore 是整个系统里调用频率最高的智能体，可能一个任务就要并行启动 3-5 个。MiniMax-M2.7 的响应速度和性价比让它成为这种”量大队”角色的最佳选择。</p>
+<h3 id="6-Librarian（外部参考搜索）→-MiniMax-M2-7"><a href="#6-Librarian（外部参考搜索）→-MiniMax-M2-7" class="headerlink" title="6. Librarian（外部参考搜索）→ MiniMax-M2.7"></a>6. Librarian（外部参考搜索）→ MiniMax-M2.7</h3><p>Librarian 负责搜索外部文档、查找开源实现示例、检索 API 文档。与 Explore 类似：</p>
+<ul>
+<li><strong>高并发</strong>：经常与 Explore 同时启动</li>
+<li><strong>搜索导向</strong>：核心能力是”找到”而不是”深度分析”</li>
+</ul>
+<p><strong>为什么选 MiniMax-M2.7</strong>：与 Explore 同理，Librarian 也是高频调用的搜索型智能体，性价比和速度优先。</p>
+<h3 id="7-Metis（预规划分析）→-GLM-5-turbo"><a href="#7-Metis（预规划分析）→-GLM-5-turbo" class="headerlink" title="7. Metis（预规划分析）→ GLM-5-turbo"></a>7. Metis（预规划分析）→ GLM-5-turbo</h3><p>Metis 在复杂任务开始前分析需求，识别隐藏意图和模糊点。它需要：</p>
+<ul>
+<li><strong>快速响应</strong>：任务是”想清楚再动手”，不能等太久</li>
+<li><strong>分析能力</strong>：识别需求中的矛盾、遗漏和风险</li>
+<li><strong>足够准确</strong>：预规划不需要 100% 完美，够用就行</li>
+</ul>
+<p><strong>为什么选 GLM-5-turbo</strong>：Metis 的工作是”快速扫描”而不是”深度分析”。GLM-5-turbo 的快速响应特性让预规划不会成为瓶颈，同时保留了足够的分析能力。</p>
+<h3 id="8-Momus（计划审查）→-GPT-5-4"><a href="#8-Momus（计划审查）→-GPT-5-4" class="headerlink" title="8. Momus（计划审查）→ GPT-5.4"></a>8. Momus（计划审查）→ GPT-5.4</h3><p>Momus 是”挑剔的审查官”，负责评审工作计划的质量、完整性和可执行性。它需要：</p>
+<ul>
+<li><strong>高标准</strong>：能发现计划中的模糊点、遗漏和风险</li>
+<li><strong>逻辑严密</strong>：审查需要滴水不漏</li>
+<li><strong>不怕得罪人</strong>：直说问题，不糊弄</li>
+</ul>
+<p><strong>为什么选 GPT-5.4</strong>：审查需要的是”吹毛求疵”的能力，GPT-5.4 在发现逻辑漏洞和隐含假设方面表现最强。用最强的模型做审查，确保每个计划在执行前都经得起推敲。</p>
+<h3 id="9-Multimodal-Looker（视觉理解）→-Kimi-k2-5"><a href="#9-Multimodal-Looker（视觉理解）→-Kimi-k2-5" class="headerlink" title="9. Multimodal Looker（视觉理解）→ Kimi-k2.5"></a>9. Multimodal Looker（视觉理解）→ Kimi-k2.5</h3><p>负责分析图片、截图、UI 设计稿等视觉内容。它需要：</p>
+<ul>
+<li><strong>视觉理解</strong>：准确识别图片中的文字、布局、组件</li>
+<li><strong>设计感知</strong>：理解 UI 设计意图</li>
+<li><strong>中文 OCR</strong>：识别中文截图中的代码和文字</li>
+</ul>
+<p><strong>为什么选 Kimi-k2.5</strong>：Kimi 在多模态理解上，尤其是中文场景下的视觉理解表现突出。对中文截图、设计稿的识别准确率高。</p>
+<h2 id="任务类别配置"><a href="#任务类别配置" class="headerlink" title="任务类别配置"></a>任务类别配置</h2><p>除了固定角色的智能体，OhMyOpenCode 还支持按任务类别分配模型。我按”任务复杂度 × 任务领域”来分配：</p>
+<table>
+<thead>
+<tr>
+<th>类别</th>
+<th>模型</th>
+<th>选型理由</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>deep</strong>（深度实现）</td>
+<td>GLM-5.1</td>
+<td>需要综合推理能力，稳健可靠</td>
+</tr>
+<tr>
+<td><strong>ultrabrain</strong>（超脑）</td>
+<td>GLM-5.1</td>
+<td>逻辑推理密集型任务</td>
+</tr>
+<tr>
+<td><strong>quick</strong>（快速任务）</td>
+<td>MiniMax-M2.7</td>
+<td>单文件修改，速度优先</td>
+</tr>
+<tr>
+<td><strong>unspecified-low</strong></td>
+<td>MiniMax-M2.7</td>
+<td>低复杂度通用</td>
+</tr>
+<tr>
+<td><strong>unspecified-high</strong></td>
+<td>GLM-5.1</td>
+<td>高复杂度通用</td>
+</tr>
+<tr>
+<td><strong>visual-engineering</strong>（前端）</td>
+<td>Kimi-k2.5</td>
+<td>视觉理解 + 创意设计</td>
+</tr>
+<tr>
+<td><strong>artistry</strong>（创意方案）</td>
+<td>Kimi-k2.5</td>
+<td>非常规问题需要创意思维</td>
+</tr>
+<tr>
+<td><strong>writing</strong>（文档写作）</td>
+<td>Kimi-k2.5</td>
+<td>长文输出，表达流畅</td>
+</tr>
+</tbody></table>
+<p><img src="/images/posts/AI%E7%BC%96%E7%A8%8B%E6%99%BA%E8%83%BD%E4%BD%93%E9%85%8D%E7%BD%AE%E5%AE%9E%E6%88%98/fig3.png" alt="任务分配决策流程图"><br><em>图3：任务类别到模型的分配决策流程</em></p>
+<p><strong>分配逻辑总结</strong>：</p>
+<ul>
+<li><strong>GLM-5.1</strong>：逻辑推理、架构决策、深度实现 → “稳重派”</li>
+<li><strong>MiniMax-M2.7</strong>：高频搜索、快速任务、低复杂度 → “效率派”</li>
+<li><strong>Kimi-k2.5</strong>：前端视觉、创意写作、多模态 → “创意派”</li>
+<li><strong>Qwen3.5-plus</strong>：代码生成、Bug 修复、重构 → “实干派”</li>
+<li><strong>GPT-5.4</strong>：计划审查、高质量实现 → “天花板”</li>
+</ul>
+<h2 id="完整配置文件"><a href="#完整配置文件" class="headerlink" title="完整配置文件"></a>完整配置文件</h2><p>以下是 <code>oh-my-opencode.json</code> 的完整配置：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;agents&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;sisyphus&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;zhipuai-coding-plan/glm-5.1&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;prometheus&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;alibaba-coding-plan-cn/qwen3.5-plus&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;atlas&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;minimax-cn-coding-plan/MiniMax-M2.7&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;explore&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;minimax-cn-coding-plan/MiniMax-M2.7&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;hephaestus&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;openai/gpt-5.4&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;variant&quot;</span><span class="punctuation">:</span> <span class="string">&quot;high&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;librarian&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;minimax-cn-coding-plan/MiniMax-M2.7&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;metis&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;zhipuai-coding-plan/glm-5-turbo&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;momus&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;openai/gpt-5.4&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;multimodal-looker&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;alibaba-coding-plan-cn/kimi-k2.5&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;oracle&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;zhipuai-coding-plan/glm-5.1&quot;</span> <span class="punctuation">&#125;</span></span><br><span class="line">  <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;categories&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;artistry&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;alibaba-coding-plan-cn/kimi-k2.5&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;deep&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;zhipuai-coding-plan/glm-5.1&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;quick&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;minimax-cn-coding-plan/MiniMax-M2.7&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;ultrabrain&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;zhipuai-coding-plan/glm-5.1&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;unspecified-high&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;zhipuai-coding-plan/glm-5.1&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;unspecified-low&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;minimax-cn-coding-plan/MiniMax-M2.7&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;visual-engineering&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;alibaba-coding-plan-cn/kimi-k2.5&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;writing&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;alibaba-coding-plan-cn/kimi-k2.5&quot;</span> <span class="punctuation">&#125;</span></span><br><span class="line">  <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="附加配置：插件与-MCP"><a href="#附加配置：插件与-MCP" class="headerlink" title="附加配置：插件与 MCP"></a>附加配置：插件与 MCP</h2><p>除了模型分配，我还配置了一些插件来增强能力：</p>
+<table>
+<thead>
+<tr>
+<th>插件</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Superpowers</strong></td>
+<td>提供 TDD、调试、计划编写等工程化工作流</td>
+</tr>
+<tr>
+<td><strong>Claude HUD</strong></td>
+<td>终端状态栏，实时显示智能体活动</td>
+</tr>
+<tr>
+<td><strong>JDTLS-LSP</strong></td>
+<td>Java 语言服务器，精准的代码智能</td>
+</tr>
+<tr>
+<td><strong>Skill Creator</strong></td>
+<td>自定义技能创建器</td>
+</tr>
+<tr>
+<td><strong>Minimax Skills</strong></td>
+<td>MiniMax 图片生成、Web 搜索等</td>
+</tr>
+<tr>
+<td><strong>Ralph Loop</strong></td>
+<td>自动化循环执行</td>
+</tr>
+</tbody></table>
+<p><strong>MCP 服务</strong>：配置了 MySQL MCP 服务器，让智能体可以直接查询数据库，在处理数据相关的开发任务时非常方便。</p>
+<p><strong>自定义 Agent</strong>：我还创建了一个 <code>java-bug-pathfinder</code> 自定义智能体，专门用于 Java Bug 的调用链追踪和根因分析，配置为只读权限，确保安全。</p>
+<h2 id="选型总结与建议"><a href="#选型总结与建议" class="headerlink" title="选型总结与建议"></a>选型总结与建议</h2><p>经过几个月的使用，我总结出以下选型原则：</p>
+<ol>
+<li><p><strong>编排类角色选稳不选猛</strong>：主编排者需要的是可靠性和全局视野，不需要偶尔的天才表现。GLM-5.1 的稳健特质完美匹配。</p>
+</li>
+<li><p><strong>高频角色选快不选强</strong>：Explore、Librarian 这种可能并行启动 5 个实例的角色，响应速度和成本比”聪明程度”更重要。MiniMax-M2.7 是这个场景的最优解。</p>
+</li>
+<li><p><strong>审查角色选强不选快</strong>：Momus 做 Plan Review，宁可多等几秒也要找出问题。GPT-5.4 的审查质量值得这点等待。</p>
+</li>
+<li><p><strong>创意角色选长不选短</strong>：前端设计、文档写作需要长上下文和创意表达。Kimi-k2.5 的长文本和视觉理解能力让它在这个领域领先。</p>
+</li>
+<li><p><strong>实现角色选专不选全</strong>：代码生成需要的是对框架和语言的深度理解。Qwen3.5-plus 在代码领域的专精让它在 Prometheus 角色上表现突出。</p>
+</li>
+<li><p><strong>按预算分层</strong>：不是每个任务都需要最贵的模型。把高成本模型留给 Hephaestus 和 Momus 这种”关键时刻才上场”的角色，日常任务用性价比模型。</p>
+</li>
+</ol>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>AI 编程工具的配置不是”选一个最强模型就完事”。就像组建一个工程团队，你需要了解每个”成员”的特长，把合适的人放在合适的位置。希望这篇分享能帮助你更好地配置自己的 AI 编程智能体团队。</p>
+<p>如果你也在用 Claude Code + OhMyOpenCode，欢迎交流你的配置方案。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/AI%E7%BC%96%E7%A8%8B/" rel="tag"># AI编程</a>
+              <a href="/tags/%E6%99%BA%E8%83%BD%E4%BD%93/" rel="tag"># 智能体</a>
+              <a href="/tags/OhMyOpenCode/" rel="tag"># OhMyOpenCode</a>
+              <a href="/tags/ClaudeCode/" rel="tag"># ClaudeCode</a>
+              <a href="/tags/%E6%A8%A1%E5%9E%8B%E9%80%89%E5%9E%8B/" rel="tag"># 模型选型</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/03/30/%E4%B8%AA%E4%BA%BA%E6%9C%88%E5%8D%A1%E5%8F%96%E6%B6%88%E6%8E%A5%E5%8F%A3%E7%BC%BA%E5%A4%B1%E4%BB%8EBug%E5%AE%9A%E4%BD%8D%E5%88%B0TDD%E4%BF%AE%E5%A4%8D%E5%85%A8%E8%AE%B0%E5%BD%95/" rel="prev" title="个人月卡取消接口缺失：从 Bug 定位到 TDD 修复全记录">
+                  <i class="fa fa-angle-left"></i> 个人月卡取消接口缺失：从 Bug 定位到 TDD 修复全记录
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  
+  <div class="comments giscus-container">
+  </div>
+  
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">zhlifeiy35</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/zhdmm35" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"zhdmm35/zhdmm35.github.io","repo_id":"R_kgDOON4bhg","category":"Announcements","category_id":"DIC_kwDOON4bhs4C3dEc","mapping":"pathname","strict":0,"reactions_enabled":1,"emit_metadata":0,"theme":"preferred_color_scheme","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+
+<script>
+document.addEventListener('page:loaded', () => {
+  if (!CONFIG.page.comments) return;
+
+  NexT.utils.loadComments('.giscus-container')
+    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
+      attributes: {
+        async                   : true,
+        crossOrigin             : 'anonymous',
+        'data-repo'             : CONFIG.giscus.repo,
+        'data-repo-id'          : CONFIG.giscus.repo_id,
+        'data-category'         : CONFIG.giscus.category,
+        'data-category-id'      : CONFIG.giscus.category_id,
+        'data-mapping'          : CONFIG.giscus.mapping,
+        'data-strict'           : CONFIG.giscus.strict,
+        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
+        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
+        'data-theme'            : CONFIG.giscus.theme,
+        'data-lang'             : CONFIG.giscus.lang,
+        'data-input-position'   : CONFIG.giscus.input_position,
+        'data-loading'          : CONFIG.giscus.loading
+      },
+      parentNode: document.querySelector('.giscus-container')
+    }));
+});
+</script>
+
+</body>
+</html>
