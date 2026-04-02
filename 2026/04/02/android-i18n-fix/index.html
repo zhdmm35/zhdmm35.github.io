@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="Android App 语言切换功能已实现（BaseApplication + attachBaseContext 管道正常），但界面文本硬编码为英文，导致切换语言后 UI 仍显示英文。本文记录 presentation layer 的修复过程。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Android 语言切换：硬编码 UI 文本修复实录">
+<meta property="og:url" content="https://zhlifeiy.codes/2026/04/02/android-i18n-fix/index.html">
+<meta property="og:site_name" content="我的技术博客">
+<meta property="og:description" content="Android App 语言切换功能已实现（BaseApplication + attachBaseContext 管道正常），但界面文本硬编码为英文，导致切换语言后 UI 仍显示英文。本文记录 presentation layer 的修复过程。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/android-i18n-fix.png">
+<meta property="article:published_time" content="2026-04-02T12:30:00.000Z">
+<meta property="article:modified_time" content="2026-04-02T08:51:45.697Z">
+<meta property="article:author" content="zhlifeiy35">
+<meta property="article:tag" content="踩坑记录">
+<meta property="article:tag" content="Android">
+<meta property="article:tag" content="i18n">
+<meta property="article:tag" content="国际化">
+<meta property="article:tag" content="Kotlin">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/android-i18n-fix.png">
+
+
+<link rel="canonical" href="https://zhlifeiy.codes/2026/04/02/android-i18n-fix/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://zhlifeiy.codes/2026/04/02/android-i18n-fix/","path":"2026/04/02/android-i18n-fix/","title":"Android 语言切换：硬编码 UI 文本修复实录"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Android 语言切换：硬编码 UI 文本修复实录 | 我的技术博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">我的技术博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">记录学习与成长</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-guestbook"><a href="/guestbook/" rel="section"><i class="fa fa-comment-dots fa-fw"></i>留言板</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E8%83%8C%E6%99%AF"><span class="nav-number">1.</span> <span class="nav-text">问题背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8A%80%E6%9C%AF%E5%88%86%E6%9E%90"><span class="nav-number">2.</span> <span class="nav-text">技术分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Android-i18n-%E6%9E%B6%E6%9E%84"><span class="nav-number">2.1.</span> <span class="nav-text">Android i18n 架构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A1%AC%E7%BC%96%E7%A0%81%E6%96%87%E6%9C%AC%E7%9A%84%E4%B8%A4%E5%A4%A7%E6%9D%A5%E6%BA%90"><span class="nav-number">2.2.</span> <span class="nav-text">硬编码文本的两大来源</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%AE%E5%A4%8D%E6%96%B9%E6%A1%88"><span class="nav-number">3.</span> <span class="nav-text">修复方案</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Step-1%EF%BC%9A%E6%B7%BB%E5%8A%A0%E5%AD%97%E7%AC%A6%E4%B8%B2%E8%B5%84%E6%BA%90"><span class="nav-number">3.1.</span> <span class="nav-text">Step 1：添加字符串资源</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Step-2%EF%BC%9A%E6%9B%BF%E6%8D%A2%E5%B8%83%E5%B1%80%E6%96%87%E4%BB%B6%E7%A1%AC%E7%BC%96%E7%A0%81%E6%96%87%E6%9C%AC"><span class="nav-number">3.2.</span> <span class="nav-text">Step 2：替换布局文件硬编码文本</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Step-3%EF%BC%9A%E6%9B%BF%E6%8D%A2-Kotlin-%E8%BF%90%E8%A1%8C%E6%97%B6%E7%A1%AC%E7%BC%96%E7%A0%81%E6%96%87%E6%9C%AC"><span class="nav-number">3.3.</span> <span class="nav-text">Step 3：替换 Kotlin 运行时硬编码文本</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%AA%8C%E8%AF%81%E7%BB%93%E6%9E%9C"><span class="nav-number">4.</span> <span class="nav-text">验证结果</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9E%84%E5%BB%BA%E9%AA%8C%E8%AF%81"><span class="nav-number">4.1.</span> <span class="nav-text">构建验证</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#USB-%E7%9C%9F%E6%9C%BA%E9%AA%8C%E8%AF%81"><span class="nav-number">4.2.</span> <span class="nav-text">USB 真机验证</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9%E6%96%87%E4%BB%B6%E6%B1%87%E6%80%BB"><span class="nav-number">5.</span> <span class="nav-text">修改文件汇总</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%8F%E9%AA%8C%E6%80%BB%E7%BB%93"><span class="nav-number">6.</span> <span class="nav-text">经验总结</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zhlifeiy35</p>
+  <div class="site-description" itemprop="description">分享编程技术、AI经验、学习笔记</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">25</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">11</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">85</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zhdmm35" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zhdmm35" rel="noopener me" target="_blank"><i class="fa fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/android-i18n-fix.png" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/04/02/android-i18n-fix/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="我的技术博客">
+      <meta itemprop="description" content="分享编程技术、AI经验、学习笔记">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Android 语言切换：硬编码 UI 文本修复实录 | 我的技术博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Android 语言切换：硬编码 UI 文本修复实录
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2026-04-02 20:30:00 / 修改时间：16:51:45" itemprop="dateCreated datePublished" datetime="2026-04-02T20:30:00+08:00">2026-04-02</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Android-%E5%BC%80%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">Android 开发</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>Android App 语言切换功能已实现（<code>BaseApplication</code> + <code>attachBaseContext</code> 管道正常），但界面文本硬编码为英文，导致切换语言后 UI 仍显示英文。本文记录 presentation layer 的修复过程。</p>
+<span id="more"></span>
+
+<h2 id="问题背景"><a href="#问题背景" class="headerlink" title="问题背景"></a>问题背景</h2><blockquote>
+<p>[!bug] 症状描述<br>语言切换后，底部 Tab 仍然显示 <code>HOME</code>、<code>ME</code>，”我的”页面仍然显示 <code>Settings</code>、<code>About Us</code> 等英文文本。但 <code>AppLanguage</code> 日志显示 <code>stored=zh applied=zh</code>，说明语言切换的核心管道没有问题。</p>
+</blockquote>
+<p><strong>根因</strong>：布局文件（XML）和 Kotlin 代码中存在大量硬编码英文字符串，未使用 <code>@string</code> 资源引用，导致语言切换后文本不跟随。</p>
+<p><img src="/images/posts/android-i18n-fix/fig1.png" alt="硬编码文本 vs 资源引用对比"><br><em>图 1：硬编码文本（左）与资源引用（右）对比</em></p>
+<hr>
+<h2 id="技术分析"><a href="#技术分析" class="headerlink" title="技术分析"></a>技术分析</h2><h3 id="Android-i18n-架构"><a href="#Android-i18n-架构" class="headerlink" title="Android i18n 架构"></a>Android i18n 架构</h3><p>Android 的多语言支持依赖 <code>strings.xml</code> 资源文件。正确的实现方式是：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">&lt;!-- values/strings.xml --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">string</span> <span class="attr">name</span>=<span class="string">&quot;mine_settings&quot;</span>&gt;</span>Settings<span class="tag">&lt;/<span class="name">string</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">&lt;!-- values-zh/strings.xml --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">string</span> <span class="attr">name</span>=<span class="string">&quot;mine_settings&quot;</span>&gt;</span>设置<span class="tag">&lt;/<span class="name">string</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>在布局文件中引用：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">TextView</span> <span class="attr">android:text</span>=<span class="string">&quot;@string/mine_settings&quot;</span> /&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>在 Kotlin 代码中引用：</p>
+<figure class="highlight kotlin"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">text = getString(R.string.mine_settings)</span><br></pre></td></tr></table></figure>
+
+<h3 id="硬编码文本的两大来源"><a href="#硬编码文本的两大来源" class="headerlink" title="硬编码文本的两大来源"></a>硬编码文本的两大来源</h3><table>
+<thead>
+<tr>
+<th>来源</th>
+<th>文件</th>
+<th>影响</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>布局文件</strong></td>
+<td><code>fragment_mine.xml</code>、<code>activity_main.xml</code> 等</td>
+<td>静态文本，XML 中直接写死</td>
+</tr>
+<tr>
+<td><strong>Kotlin 代码</strong></td>
+<td><code>MainActivity.kt</code>、<code>HistoryActivity.kt</code>、<code>SettingActivity.kt</code></td>
+<td>运行时动态设置的文本</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="修复方案"><a href="#修复方案" class="headerlink" title="修复方案"></a>修复方案</h2><blockquote>
+<p>[!tip] 修复策略<br>保持 <code>BaseApplication</code> + <code>attachBaseContext</code> 语言管道不变，聚焦 presentation layer：添加 32 个本地化字符串资源，替换 8 个布局文件 + 3 个 Kotlin 文件中的硬编码文本。</p>
+</blockquote>
+<p><img src="/images/posts/android-i18n-fix/fig2.png" alt="i18n 修复三步流程"><br><em>图 2：修复流程——添加资源 → 替换 XML → 替换 Kotlin 代码</em></p>
+<h3 id="Step-1：添加字符串资源"><a href="#Step-1：添加字符串资源" class="headerlink" title="Step 1：添加字符串资源"></a>Step 1：添加字符串资源</h3><p>新增 32 个字符串资源键，覆盖所有硬编码文本：</p>
+<table>
+<thead>
+<tr>
+<th>资源文件</th>
+<th>新增键数</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>values/strings.xml</code></td>
+<td>32 键（英文默认值）</td>
+</tr>
+<tr>
+<td><code>values-zh/strings.xml</code></td>
+<td>32 键（中文翻译）</td>
+</tr>
+<tr>
+<td><code>values-en/strings.xml</code></td>
+<td>32 键（英文镜像）</td>
+</tr>
+</tbody></table>
+<p><strong>核心资源键示例</strong>：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">&lt;!-- Main Tab --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">string</span> <span class="attr">name</span>=<span class="string">&quot;main_tab_home&quot;</span>&gt;</span>HOME<span class="tag">&lt;/<span class="name">string</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">string</span> <span class="attr">name</span>=<span class="string">&quot;main_tab_me&quot;</span>&gt;</span>ME<span class="tag">&lt;/<span class="name">string</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">&lt;!-- Mine Fragment --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">string</span> <span class="attr">name</span>=<span class="string">&quot;mine_reading_novels&quot;</span>&gt;</span>Novel being read<span class="tag">&lt;/<span class="name">string</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">string</span> <span class="attr">name</span>=<span class="string">&quot;mine_settings&quot;</span>&gt;</span>Settings<span class="tag">&lt;/<span class="name">string</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">&lt;!-- Settings Activity --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">string</span> <span class="attr">name</span>=<span class="string">&quot;settings_clear_cache_confirm&quot;</span>&gt;</span>Are you sure you want to clear the local cache?<span class="tag">&lt;/<span class="name">string</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="Step-2：替换布局文件硬编码文本"><a href="#Step-2：替换布局文件硬编码文本" class="headerlink" title="Step 2：替换布局文件硬编码文本"></a>Step 2：替换布局文件硬编码文本</h3><table>
+<thead>
+<tr>
+<th>文件</th>
+<th>替换数量</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>fragment_mine.xml</code></td>
+<td>10 处</td>
+</tr>
+<tr>
+<td><code>activity_main.xml</code></td>
+<td>1 处</td>
+</tr>
+<tr>
+<td><code>tab_item_badge.xml</code></td>
+<td>1 处</td>
+</tr>
+<tr>
+<td><code>fragment_msg.xml</code></td>
+<td>1 处</td>
+</tr>
+<tr>
+<td><code>activity_about.xml</code></td>
+<td>1 处</td>
+</tr>
+<tr>
+<td><code>activity_histery.xml</code></td>
+<td>2 处</td>
+</tr>
+<tr>
+<td><code>activity_contact.xml</code></td>
+<td>2 处</td>
+</tr>
+<tr>
+<td><code>activity_setting.xml</code></td>
+<td>7 处</td>
+</tr>
+</tbody></table>
+<p><strong>修改示例</strong>（<code>fragment_mine.xml</code>）：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">&lt;!-- 修改前 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">TextView</span> <span class="attr">android:text</span>=<span class="string">&quot;Settings&quot;</span> <span class="attr">...</span> /&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">&lt;!-- 修改后 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">TextView</span> <span class="attr">android:text</span>=<span class="string">&quot;@string/mine_settings&quot;</span> <span class="attr">...</span> /&gt;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="Step-3：替换-Kotlin-运行时硬编码文本"><a href="#Step-3：替换-Kotlin-运行时硬编码文本" class="headerlink" title="Step 3：替换 Kotlin 运行时硬编码文本"></a>Step 3：替换 Kotlin 运行时硬编码文本</h3><p><strong><code>MainActivity.kt</code></strong> —— Tab 标签列表：</p>
+<figure class="highlight kotlin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 修改前</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">var</span> mStringList = mutableListOf(<span class="string">&quot;HOME&quot;</span>,<span class="string">&quot;Classification&quot;</span>, <span class="string">&quot;&quot;</span>,<span class="string">&quot;Message&quot;</span>, <span class="string">&quot;ME&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment">// 修改后</span></span><br><span class="line"><span class="keyword">lateinit</span> <span class="keyword">var</span> mTabTitles: List&lt;String&gt;</span><br><span class="line"></span><br><span class="line"><span class="keyword">override</span> <span class="function"><span class="keyword">fun</span> <span class="title">initView</span><span class="params">()</span></span> &#123;</span><br><span class="line">    mTabTitles = listOf(</span><br><span class="line">        getString(R.string.main_tab_home),</span><br><span class="line">        getString(R.string.main_tab_classification),</span><br><span class="line">        <span class="string">&quot;&quot;</span>,</span><br><span class="line">        getString(R.string.main_tab_message),</span><br><span class="line">        getString(R.string.main_tab_me)</span><br><span class="line">    )</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong><code>HistoryActivity.kt</code></strong> —— Toast 和 Toolbar 文本：</p>
+<figure class="highlight kotlin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 修改前</span></span><br><span class="line">toastSuccess(<span class="string">&quot;Deleted successfully&quot;</span>)</span><br><span class="line">mDataBinding.toolbar.getRightText().text = <span class="string">&quot;Edit&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 修改后</span></span><br><span class="line">toastSuccess(getString(R.string.history_delete_success))</span><br><span class="line">mDataBinding.toolbar.getRightText().text = getString(R.string.history_edit)</span><br></pre></td></tr></table></figure>
+
+<p><strong><code>SettingActivity.kt</code></strong> —— 对话框文本：</p>
+<figure class="highlight kotlin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 修改前</span></span><br><span class="line">pop.showLogoPop(</span><br><span class="line">    <span class="string">&quot;Are you sure you want to clear the local cache?&quot;</span>,</span><br><span class="line">    <span class="string">&quot;Cancel&quot;</span>,</span><br><span class="line">    <span class="string">&quot;Confirm&quot;</span>,</span><br><span class="line">    ...</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment">// 修改后</span></span><br><span class="line">pop.showLogoPop(</span><br><span class="line">    getString(R.string.settings_clear_cache_confirm),</span><br><span class="line">    getString(R.string.common_cancel),</span><br><span class="line">    getString(R.string.common_confirm),</span><br><span class="line">    ...</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="验证结果"><a href="#验证结果" class="headerlink" title="验证结果"></a>验证结果</h2><h3 id="构建验证"><a href="#构建验证" class="headerlink" title="构建验证"></a>构建验证</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">.\gradlew.bat --no-daemon :app:compileDebugKotlin</span><br><span class="line"><span class="comment"># BUILD SUCCESSFUL</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="USB-真机验证"><a href="#USB-真机验证" class="headerlink" title="USB 真机验证"></a>USB 真机验证</h3><p><strong>日志验证</strong>（确认语言已正确应用）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">AppLanguage: SettingActivity stored=zh applied=zh</span><br><span class="line">AppLanguage: MainActivity stored=zh applied=zh</span><br></pre></td></tr></table></figure>
+
+<p><strong>UI Dump 验证</strong>（确认中文文本正确显示）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&lt;!-- 切换为中文后 --&gt;</span><br><span class="line">我的 / 阅读中的小说 / 已读完小说 / 我的 OKEX 金币 / 推荐奖励</span><br><span class="line">会员中心 / 浏览历史 / 关于我们 / 联系客服 / 设置</span><br><span class="line">首页 / 分类 / 书库 / 消息</span><br></pre></td></tr></table></figure>
+
+<p><img src="/images/posts/android-i18n-fix/fig3.png" alt="真机测试中文 UI 验证"><br><em>图 3：真机测试——中文文本正确显示</em></p>
+<hr>
+<h2 id="修改文件汇总"><a href="#修改文件汇总" class="headerlink" title="修改文件汇总"></a>修改文件汇总</h2><table>
+<thead>
+<tr>
+<th>文件</th>
+<th>改动类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>app/src/main/res/values/strings.xml</code></td>
+<td>新增</td>
+<td>32 个英文资源键</td>
+</tr>
+<tr>
+<td><code>app/src/main/res/values-zh/strings.xml</code></td>
+<td>新增</td>
+<td>32 个中文翻译</td>
+</tr>
+<tr>
+<td><code>app/src/main/res/values-en/strings.xml</code></td>
+<td>新增</td>
+<td>32 个英文镜像</td>
+</tr>
+<tr>
+<td><code>fragment_mine.xml</code></td>
+<td>修改</td>
+<td>10 处文本替换</td>
+</tr>
+<tr>
+<td><code>activity_main.xml</code></td>
+<td>修改</td>
+<td>1 处文本替换</td>
+</tr>
+<tr>
+<td><code>tab_item_badge.xml</code></td>
+<td>修改</td>
+<td>1 处文本替换</td>
+</tr>
+<tr>
+<td><code>fragment_msg.xml</code></td>
+<td>修改</td>
+<td>1 处文本替换</td>
+</tr>
+<tr>
+<td><code>activity_about.xml</code></td>
+<td>修改</td>
+<td>1 处文本替换</td>
+</tr>
+<tr>
+<td><code>activity_histery.xml</code></td>
+<td>修改</td>
+<td>2 处文本替换</td>
+</tr>
+<tr>
+<td><code>activity_contact.xml</code></td>
+<td>修改</td>
+<td>2 处文本替换</td>
+</tr>
+<tr>
+<td><code>activity_setting.xml</code></td>
+<td>修改</td>
+<td>7 处文本替换</td>
+</tr>
+<tr>
+<td><code>MainActivity.kt</code></td>
+<td>修改</td>
+<td>Tab 标签运行时本地化</td>
+</tr>
+<tr>
+<td><code>HistoryActivity.kt</code></td>
+<td>修改</td>
+<td>Toast&#x2F;Toolbar 本地化</td>
+</tr>
+<tr>
+<td><code>SettingActivity.kt</code></td>
+<td>修改</td>
+<td>对话框文本本地化</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="经验总结"><a href="#经验总结" class="headerlink" title="经验总结"></a>经验总结</h2><blockquote>
+<p>[!warning] 注意事项</p>
+<ul>
+<li><strong>XML 布局文件中的文本也要走资源引用</strong>，不能直接写死英文</li>
+<li><strong>Kotlin 代码中动态设置的文本</strong>，<code>List</code>&#x2F;<code>Array</code> 等初始化必须使用 <code>getString(R.string.xxx)</code>，而非直接硬编码</li>
+<li><strong>资源键命名规范</strong>：<code>&#123;页面&#125;_&#123;功能&#125;_&#123;描述&#125;</code>，如 <code>mine_settings</code>、<code>history_delete_success</code></li>
+</ul>
+</blockquote>
+<p><strong>相关文档</strong>：</p>
+<ul>
+<li>[[语言切换硬编码UI文本修复&#x2F;需求分析]]（Obsidian 内部链接）</li>
+<li>[[语言切换硬编码UI文本修复&#x2F;实现方案]]</li>
+</ul>
+<hr>
+<p><em>本文使用 <a target="_blank" rel="noopener" href="https://hexo.io/">Hexo</a> + <a target="_blank" rel="noopener" href="https://github.com/ppoffice/hexo-theme-icarus">icarus</a> 主题构建，配图由 MiniMax Image-01 生成。</em></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E8%B8%A9%E5%9D%91%E8%AE%B0%E5%BD%95/" rel="tag"># 踩坑记录</a>
+              <a href="/tags/Android/" rel="tag"># Android</a>
+              <a href="/tags/i18n/" rel="tag"># i18n</a>
+              <a href="/tags/%E5%9B%BD%E9%99%85%E5%8C%96/" rel="tag"># 国际化</a>
+              <a href="/tags/Kotlin/" rel="tag"># Kotlin</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/03/31/%E8%82%A1%E7%A5%A8%E4%BA%A4%E6%98%93%E6%96%B0%E6%89%8B%E5%85%A5%E9%97%A8%E6%8C%87%E5%8D%97/" rel="prev" title="股票交易新手入门：从 YouTube 十大教学视频提炼的实战指南">
+                  <i class="fa fa-angle-left"></i> 股票交易新手入门：从 YouTube 十大教学视频提炼的实战指南
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  
+  <div class="comments giscus-container">
+  </div>
+  
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">zhlifeiy35</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/zhdmm35" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"zhdmm35/zhdmm35.github.io","repo_id":"R_kgDOON4bhg","category":"Announcements","category_id":"DIC_kwDOON4bhs4C3dEc","mapping":"pathname","strict":0,"reactions_enabled":1,"emit_metadata":0,"theme":"preferred_color_scheme","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+
+<script>
+document.addEventListener('page:loaded', () => {
+  if (!CONFIG.page.comments) return;
+
+  NexT.utils.loadComments('.giscus-container')
+    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
+      attributes: {
+        async                   : true,
+        crossOrigin             : 'anonymous',
+        'data-repo'             : CONFIG.giscus.repo,
+        'data-repo-id'          : CONFIG.giscus.repo_id,
+        'data-category'         : CONFIG.giscus.category,
+        'data-category-id'      : CONFIG.giscus.category_id,
+        'data-mapping'          : CONFIG.giscus.mapping,
+        'data-strict'           : CONFIG.giscus.strict,
+        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
+        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
+        'data-theme'            : CONFIG.giscus.theme,
+        'data-lang'             : CONFIG.giscus.lang,
+        'data-input-position'   : CONFIG.giscus.input_position,
+        'data-loading'          : CONFIG.giscus.loading
+      },
+      parentNode: document.querySelector('.giscus-container')
+    }));
+});
+</script>
+
+</body>
+</html>
