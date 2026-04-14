@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="在项目迭代过程中，”上帝类”是几乎所有后端开发者都会遇到的经典反模式。本文记录了一次图书管理系统中 LendRecordService 的完整重构过程：如何将一个 400+ 行、混合校验&#x2F;查询&#x2F;写操作&#x2F;编排的上帝类，拆分为遵循 CQRS 思想的三层架构，最终降至 ~150 行的薄编排层。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Spring Boot 借阅流程重构实战：从400行上帝类到三层架构">
+<meta property="og:url" content="https://zhlifeiy.codes/2026/04/14/Spring-Boot%E5%80%9F%E9%98%85%E6%B5%81%E7%A8%8B%E9%87%8D%E6%9E%84/index.html">
+<meta property="og:site_name" content="我的技术博客">
+<meta property="og:description" content="在项目迭代过程中，”上帝类”是几乎所有后端开发者都会遇到的经典反模式。本文记录了一次图书管理系统中 LendRecordService 的完整重构过程：如何将一个 400+ 行、混合校验&#x2F;查询&#x2F;写操作&#x2F;编排的上帝类，拆分为遵循 CQRS 思想的三层架构，最终降至 ~150 行的薄编排层。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/lending-refactor-cover_001.jpg">
+<meta property="article:published_time" content="2026-04-14T12:00:00.000Z">
+<meta property="article:modified_time" content="2026-04-14T12:39:00.546Z">
+<meta property="article:author" content="zhlifeiy35">
+<meta property="article:tag" content="Spring Boot">
+<meta property="article:tag" content="重构">
+<meta property="article:tag" content="CQRS">
+<meta property="article:tag" content="Java">
+<meta property="article:tag" content="代码质量">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/lending-refactor-cover_001.jpg">
+
+
+<link rel="canonical" href="https://zhlifeiy.codes/2026/04/14/Spring-Boot%E5%80%9F%E9%98%85%E6%B5%81%E7%A8%8B%E9%87%8D%E6%9E%84/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://zhlifeiy.codes/2026/04/14/Spring-Boot%E5%80%9F%E9%98%85%E6%B5%81%E7%A8%8B%E9%87%8D%E6%9E%84/","path":"2026/04/14/Spring-Boot借阅流程重构/","title":"Spring Boot 借阅流程重构实战：从400行上帝类到三层架构"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Spring Boot 借阅流程重构实战：从400行上帝类到三层架构 | 我的技术博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">我的技术博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">记录学习与成长</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-guestbook"><a href="/guestbook/" rel="section"><i class="fa fa-comment-dots fa-fw"></i>留言板</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E8%83%8C%E6%99%AF%EF%BC%9A%E4%B8%80%E4%B8%AA%E2%80%9D%E4%B8%8A%E5%B8%9D%E7%B1%BB%E2%80%9D%E7%9A%84%E8%AF%9E%E7%94%9F"><span class="nav-number">2.</span> <span class="nav-text">问题背景：一个”上帝类”的诞生</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E4%B8%8A%E5%B8%9D%E7%B1%BB%EF%BC%9F"><span class="nav-number">2.1.</span> <span class="nav-text">什么是上帝类？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BA%94%E5%A4%A7%E4%BB%A3%E7%A0%81%E5%BC%82%E5%91%B3"><span class="nav-number">2.2.</span> <span class="nav-text">五大代码异味</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%87%8D%E6%9E%84%E6%96%B9%E6%A1%88%EF%BC%9A%E4%B8%89%E5%B1%82%E6%9E%B6%E6%9E%84-CQRS"><span class="nav-number">3.</span> <span class="nav-text">重构方案：三层架构 + CQRS</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%BE%E8%AE%A1%E6%80%9D%E8%B7%AF"><span class="nav-number">3.1.</span> <span class="nav-text">设计思路</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%84%E5%B1%82%E8%81%8C%E8%B4%A3%E5%88%92%E5%88%86"><span class="nav-number">3.2.</span> <span class="nav-text">各层职责划分</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E5%AE%9E%E7%8E%B0%EF%BC%9A%E9%80%90%E5%B1%82%E6%8B%86%E8%A7%A3"><span class="nav-number">4.</span> <span class="nav-text">核心实现：逐层拆解</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E5%B1%82%EF%BC%9ABorrowEligibilityService-%E2%80%94-%E8%AF%BB%E4%BE%A7%E6%A0%A1%E9%AA%8C"><span class="nav-number">4.1.</span> <span class="nav-text">第一层：BorrowEligibilityService — 读侧校验</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%AC%E4%BA%8C%E5%B1%82%EF%BC%9ALendRecordWriteService-%E2%80%94-%E5%86%99%E4%BE%A7%E6%93%8D%E4%BD%9C"><span class="nav-number">4.2.</span> <span class="nav-text">第二层：LendRecordWriteService — 写侧操作</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%AC%E4%B8%89%E5%B1%82%EF%BC%9ALendRecordService-%E2%80%94-%E8%96%84%E7%BC%96%E6%8E%92%E5%B1%82"><span class="nav-number">4.3.</span> <span class="nav-text">第三层：LendRecordService — 薄编排层</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#API-%E5%85%BC%E5%AE%B9%EF%BC%9AcheckCanBorrow-%E7%9A%84%E4%BC%98%E9%9B%85%E5%A4%84%E7%90%86"><span class="nav-number">4.4.</span> <span class="nav-text">API 兼容：checkCanBorrow 的优雅处理</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E5%AE%A1%E6%9F%A5%EF%BC%9A6-%E4%B8%AA%E9%97%AE%E9%A2%98%E7%9A%84%E5%90%AF%E7%A4%BA"><span class="nav-number">5.</span> <span class="nav-text">代码审查：6 个问题的启示</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Issue-1%EF%BC%9AAPI-%E5%90%88%E7%BA%A6%E6%96%AD%E8%A3%82%EF%BC%88%E4%B8%A5%E9%87%8D%EF%BC%89"><span class="nav-number">5.1.</span> <span class="nav-text">Issue #1：API 合约断裂（严重）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Issue-2%EF%BC%9Ainsert-%E8%BF%94%E5%9B%9E%E5%80%BC%E6%A3%80%E6%9F%A5%E4%B8%A2%E5%A4%B1%EF%BC%88%E4%B8%AD%E7%AD%89%EF%BC%89"><span class="nav-number">5.2.</span> <span class="nav-text">Issue #2：insert 返回值检查丢失（中等）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Issue-3%EF%BC%9Anull-guard-%E4%B8%A2%E5%A4%B1%EF%BC%88%E4%B8%AD%E7%AD%89%EF%BC%89"><span class="nav-number">5.3.</span> <span class="nav-text">Issue #3：null guard 丢失（中等）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Issue-4%EF%BC%9A%E6%9C%AA%E4%BD%BF%E7%94%A8%E5%8F%82%E6%95%B0%EF%BC%88%E4%BD%8E%EF%BC%89"><span class="nav-number">5.4.</span> <span class="nav-text">Issue #4：未使用参数（低）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Issue-5%EF%BC%9A%E9%87%8D%E5%A4%8D%E6%9F%A5%E8%AF%A2%EF%BC%88%E4%B8%AD%E7%AD%89%EF%BC%89"><span class="nav-number">5.5.</span> <span class="nav-text">Issue #5：重复查询（中等）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Issue-6%EF%BC%9A%E9%87%8D%E5%A4%8D%E7%A7%81%E6%9C%89%E6%96%B9%E6%B3%95%EF%BC%88%E4%BD%8E%EF%BC%89"><span class="nav-number">5.6.</span> <span class="nav-text">Issue #6：重复私有方法（低）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E5%AE%A1%E6%9F%A5%E4%BF%AE%E5%A4%8D%E6%B1%87%E6%80%BB"><span class="nav-number">5.7.</span> <span class="nav-text">代码审查修复汇总</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E6%96%BD%E8%BF%87%E7%A8%8B%EF%BC%9A%E5%9B%9B%E4%B8%AA%E9%98%B6%E6%AE%B5%EF%BC%8C%E4%B9%9D%E6%AC%A1%E6%8F%90%E4%BA%A4"><span class="nav-number">6.</span> <span class="nav-text">实施过程：四个阶段，九次提交</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E9%AA%8C%E8%AF%81"><span class="nav-number">7.</span> <span class="nav-text">测试验证</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%8F%E9%AA%8C%E6%80%BB%E7%BB%93"><span class="nav-number">8.</span> <span class="nav-text">经验总结</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%97%B6%E5%80%99%E8%AF%A5%E9%87%8D%E6%9E%84%EF%BC%9F"><span class="nav-number">8.1.</span> <span class="nav-text">什么时候该重构？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8F%90%E5%8F%96%E9%87%8D%E6%9E%84%E7%9A%84%E6%A0%B8%E5%BF%83%E6%AD%A5%E9%AA%A4"><span class="nav-number">8.2.</span> <span class="nav-text">提取重构的核心步骤</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8F%90%E5%8F%96%E9%87%8D%E6%9E%84%E6%9C%80%E5%B8%B8%E8%A7%81%E7%9A%84%E5%9D%91"><span class="nav-number">8.3.</span> <span class="nav-text">提取重构最常见的坑</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CQRS-%E5%9C%A8%E6%97%A5%E5%B8%B8%E5%BC%80%E5%8F%91%E4%B8%AD%E7%9A%84%E5%BA%94%E7%94%A8"><span class="nav-number">8.4.</span> <span class="nav-text">CQRS 在日常开发中的应用</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%93%E8%AF%AD"><span class="nav-number">9.</span> <span class="nav-text">结语</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zhlifeiy35</p>
+  <div class="site-description" itemprop="description">分享编程技术、AI经验、学习笔记</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">28</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">96</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zhdmm35" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zhdmm35" rel="noopener me" target="_blank"><i class="fa fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/lending-refactor-cover_001.jpg" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/04/14/Spring-Boot%E5%80%9F%E9%98%85%E6%B5%81%E7%A8%8B%E9%87%8D%E6%9E%84/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="我的技术博客">
+      <meta itemprop="description" content="分享编程技术、AI经验、学习笔记">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Spring Boot 借阅流程重构实战：从400行上帝类到三层架构 | 我的技术博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Spring Boot 借阅流程重构实战：从400行上帝类到三层架构
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2026-04-14 20:00:00 / 修改时间：20:39:00" itemprop="dateCreated datePublished" datetime="2026-04-14T20:00:00+08:00">2026-04-14</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">后端开发</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>在项目迭代过程中，”上帝类”是几乎所有后端开发者都会遇到的经典反模式。本文记录了一次图书管理系统中 <code>LendRecordService</code> 的完整重构过程：如何将一个 400+ 行、混合校验&#x2F;查询&#x2F;写操作&#x2F;编排的上帝类，拆分为遵循 CQRS 思想的三层架构，最终降至 ~150 行的薄编排层。</p>
+<span id="more"></span>
+
+<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>图书管理系统的借阅流程是整个系统的核心业务之一，涉及借阅、归还、续借三大操作。随着功能不断叠加，负责这部分逻辑的 <code>LendRecordService</code> 逐渐膨胀到了 400+ 行，承担了校验、查询、写操作、编排等多重职责。每次新增需求，开发者都不得不在这个庞大的类中小心翼翼地修改，生怕牵一发而动全身。</p>
+<p>本文将完整分享这次重构的思考过程、实施方案、代码细节以及代码审查中发现的问题，希望能为遇到类似场景的开发者提供参考。</p>
+<h2 id="问题背景：一个”上帝类”的诞生"><a href="#问题背景：一个”上帝类”的诞生" class="headerlink" title="问题背景：一个”上帝类”的诞生"></a>问题背景：一个”上帝类”的诞生</h2><h3 id="什么是上帝类？"><a href="#什么是上帝类？" class="headerlink" title="什么是上帝类？"></a>什么是上帝类？</h3><p><strong>上帝类（God Class）</strong> 是面向对象设计中的经典反模式：一个类承担了过多的职责，知道得太多，做得也太多。它就像团队里那个什么都管的同事——虽然短期内看起来效率很高，但随着业务增长，维护成本会呈指数级上升。</p>
+<p>在图书管理系统中，<code>LendRecordService</code> 就是这样一个典型的上帝类：</p>
+<table>
+<thead>
+<tr>
+<th>职责</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>借阅资格校验</td>
+<td>检查图书状态、预约队列、用户限额、重复借阅</td>
+</tr>
+<tr>
+<td>写操作</td>
+<td>插入 lend_record、更新 book 状态、创建 bookwithuser、履行预约</td>
+</tr>
+<tr>
+<td>上下文加载</td>
+<td>归还&#x2F;续借时加载 LendRecord + BookWithUser + Book + User + LendRule</td>
+</tr>
+<tr>
+<td>自愈机制</td>
+<td>LendRecord 缺失时补建记录</td>
+</tr>
+<tr>
+<td>结果构建</td>
+<td>组装返回给前端的 Map</td>
+</tr>
+</tbody></table>
+<h3 id="五大代码异味"><a href="#五大代码异味" class="headerlink" title="五大代码异味"></a>五大代码异味</h3><p>经过仔细分析，我们识别出了 5 个关键的 Code Smells：</p>
+<p><strong>GOD-01：上帝类（严重程度：高）</strong></p>
+<p>单一服务类 400+ 行，混合了校验、查询、写操作、编排等多重职责。这直接导致可维护性和可测试性大幅下降。任何一个小改动都需要理解整个类的逻辑。</p>
+<p><strong>DUP-01：校验逻辑重复（严重程度：高）</strong></p>
+<p><code>borrowBook()</code> 和 <code>checkCanBorrow()</code> 中存在借阅资格校验逻辑的重复，而且两处逻辑<strong>不一致</strong>。<code>borrowBook()</code> 中的校验包含 5 个步骤，而 <code>checkCanBorrow()</code> 中的校验只有 4 个步骤，预约队列和限额的校验逻辑存在差异。这种不一致可能导致 <code>checkCanBorrow()</code> 返回”可借阅”，但 <code>borrowBook()</code> 执行时被另一处校验拦截。</p>
+<p><strong>DUP-02：上下文加载冗长重复（严重程度：中）</strong></p>
+<p>归还和续借流程中，需要加载 LendRecord + BookWithUser + Book + User + LendRule 五个对象。这段上下文加载代码在 <code>returnBook()</code> 和 <code>renewBook()</code> 中几乎完全相同，冗长且重复。</p>
+<p><strong>TEST-01：写操作难以测试（严重程度：高）</strong></p>
+<p>写操作（插入 lend_record、更新 book 状态等）直接嵌入在 <code>borrowBook()</code> 方法中，无法在不触发完整业务流程的情况下单独测试。这意味着要测试”借阅记录插入是否正确”，就不得不走完整个借阅流程，构造大量前置条件。</p>
+<p><strong>HEAL-01：自愈逻辑缺乏封装（严重程度：中）</strong></p>
+<p>当 LendRecord 缺失但 BookWithUser 存在时，系统有一套自愈逻辑来补建记录。但这段逻辑散落在业务方法中，缺乏独立封装，难以理解和维护。</p>
+<p><img src="/images/posts/Spring-Boot%E5%80%9F%E9%98%85%E6%B5%81%E7%A8%8B%E9%87%8D%E6%9E%84/fig1_001.jpg" alt="重构前的架构问题分析"><br><em>图1：重构前的架构问题分析</em></p>
+<h2 id="重构方案：三层架构-CQRS"><a href="#重构方案：三层架构-CQRS" class="headerlink" title="重构方案：三层架构 + CQRS"></a>重构方案：三层架构 + CQRS</h2><h3 id="设计思路"><a href="#设计思路" class="headerlink" title="设计思路"></a>设计思路</h3><p>经过分析，我们决定采用<strong>命令查询职责分离（CQRS）</strong>的思想，将 <code>LendRecordService</code> 拆分为三层：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">Before:</span><br><span class="line">  Controller → LendRecordService (400+ lines, mixed validation + write + orchestration)</span><br><span class="line"></span><br><span class="line">After:</span><br><span class="line">  Controller → LendRecordService (thin orchestration, ~150 lines)</span><br><span class="line">                   ├── BorrowEligibilityService (read-side validation)</span><br><span class="line">                   │       └── BorrowEligibilityResult (immutable context)</span><br><span class="line">                   ├── LendRecordWriteService (write-side operations)</span><br><span class="line">                   └── loadCurrentBorrowContext() + buildReturnResult()</span><br><span class="line">                           └── CurrentBorrowContext (immutable context)</span><br></pre></td></tr></table></figure>
+
+<h3 id="各层职责划分"><a href="#各层职责划分" class="headerlink" title="各层职责划分"></a>各层职责划分</h3><table>
+<thead>
+<tr>
+<th>层级</th>
+<th>类名</th>
+<th>职责</th>
+<th>事务控制</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>读侧校验</td>
+<td><code>BorrowEligibilityService</code></td>
+<td>借阅前的资格检查</td>
+<td><code>@Transactional(readOnly = true)</code></td>
+</tr>
+<tr>
+<td>写侧操作</td>
+<td><code>LendRecordWriteService</code></td>
+<td>借阅&#x2F;归还&#x2F;续借的数据库写操作</td>
+<td>无独立事务（由调用方控制）</td>
+</tr>
+<tr>
+<td>编排层</td>
+<td><code>LendRecordService</code></td>
+<td>协调校验和写操作，构建返回结果</td>
+<td><code>@Transactional(rollbackFor = Exception.class)</code></td>
+</tr>
+</tbody></table>
+<p>这里有几个关键的设计决策：</p>
+<p><strong>为什么 <code>BorrowEligibilityService</code> 用只读事务？</strong> 校验操作只涉及查询，标注 <code>readOnly = true</code> 可以让数据库进行优化（如不加写锁），同时也从语义上明确了这个方法的职责边界——它只做检查，不做修改。</p>
+<p><strong>为什么 <code>LendRecordWriteService</code> 不加事务注解？</strong> 事务应该由编排层统一控制。如果写操作服务自带事务，校验和写操作就不在同一个事务中执行，可能导致校验通过后、执行写操作前被其他请求修改数据，产生并发问题。</p>
+<p><strong>为什么引入不可变上下文对象？</strong> <code>BorrowEligibilityResult</code> 和 <code>CurrentBorrowContext</code> 都是只有构造函数和 getter、没有 setter 的不可变对象。这确保了校验通过后的数据不会被意外修改，同时也作为方法间的”数据契约”，明确传递了每一层需要什么数据。</p>
+<p><img src="/images/posts/Spring-Boot%E5%80%9F%E9%98%85%E6%B5%81%E7%A8%8B%E9%87%8D%E6%9E%84/fig2_001.jpg" alt="三层架构设计"><br><em>图2：重构后的三层架构设计</em></p>
+<h2 id="核心实现：逐层拆解"><a href="#核心实现：逐层拆解" class="headerlink" title="核心实现：逐层拆解"></a>核心实现：逐层拆解</h2><h3 id="第一层：BorrowEligibilityService-—-读侧校验"><a href="#第一层：BorrowEligibilityService-—-读侧校验" class="headerlink" title="第一层：BorrowEligibilityService — 读侧校验"></a>第一层：BorrowEligibilityService — 读侧校验</h3><p>这是重构的核心。我们将散落在 <code>borrowBook()</code> 和 <code>checkCanBorrow()</code> 中的重复校验逻辑统一到一个 <code>evaluate()</code> 方法中。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Service</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">BorrowEligibilityService</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> BookMapper bookMapper;</span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> UserMapper userMapper;</span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> LendRuleMapper lendRuleMapper;</span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> LendRecordMapper lendRecordMapper;</span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> ReservationMapper reservationMapper;</span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> BookWithUserMapper bookWithUserMapper;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 评估借阅资格 — 统一校验入口</span></span><br><span class="line"><span class="comment">     * 成功返回 BorrowEligibilityResult（不可变），失败抛出 ServiceException</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@Transactional(readOnly = true)</span></span><br><span class="line">    <span class="keyword">public</span> BorrowEligibilityResult <span class="title function_">evaluate</span><span class="params">(Long readerId, String isbn)</span> &#123;</span><br><span class="line">        <span class="type">Book</span> <span class="variable">book</span> <span class="operator">=</span> loadBookOrThrow(isbn);</span><br><span class="line">        <span class="type">User</span> <span class="variable">user</span> <span class="operator">=</span> loadUserOrThrow(readerId);</span><br><span class="line">        validateBookStatus(book);</span><br><span class="line">        validateReservationQueue(isbn, readerId);</span><br><span class="line">        <span class="type">LendRule</span> <span class="variable">rule</span> <span class="operator">=</span> loadRuleOrThrow(user);</span><br><span class="line">        <span class="type">long</span> <span class="variable">count</span> <span class="operator">=</span> countCurrentBorrowed(readerId);</span><br><span class="line">        ensureUnderLimit(count, rule);</span><br><span class="line">        ensureNotDuplicateBorrow(readerId, isbn);</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">BorrowEligibilityResult</span>(book, user, rule, count, isbn, readerId);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>evaluate()</code> 方法的校验流程清晰明了，依次执行 8 个步骤：</p>
+<ol>
+<li><strong>loadBookOrThrow()</strong> — 检查图书是否存在</li>
+<li><strong>loadUserOrThrow()</strong> — 检查用户是否存在</li>
+<li><strong>validateBookStatus()</strong> — 检查图书状态是否可借</li>
+<li><strong>validateReservationQueue()</strong> — 检查预约队列，当前读者是否排在队首</li>
+<li><strong>loadRuleOrThrow()</strong> — 加载借阅规则</li>
+<li><strong>countCurrentBorrowed()</strong> — 查询当前借阅数</li>
+<li><strong>ensureUnderLimit()</strong> — 检查是否超过借阅限额</li>
+<li><strong>ensureNotDuplicateBorrow()</strong> — 检查是否重复借阅</li>
+</ol>
+<p>每个步骤都是一个独立的 private 方法，方法名即文档，读起来就像自然语言描述。任何一步失败，都会抛出 <code>ServiceException</code>，调用方可以统一 try&#x2F;catch 处理。</p>
+<p>返回的 <code>BorrowEligibilityResult</code> 是一个不可变对象，封装了校验通过后的所有上下文数据：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">BorrowEligibilityResult</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> Book book;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> User user;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> LendRule rule;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="type">long</span> currentBorrowedCount;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> String isbn;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> Long readerId;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 构造函数 + getter，无 setter（不可变）</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="第二层：LendRecordWriteService-—-写侧操作"><a href="#第二层：LendRecordWriteService-—-写侧操作" class="headerlink" title="第二层：LendRecordWriteService — 写侧操作"></a>第二层：LendRecordWriteService — 写侧操作</h3><p>写操作服务封装了三种核心写操作，每个方法只负责纯写操作，不包含校验逻辑：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Service</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">LendRecordWriteService</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 执行借阅写操作：</span></span><br><span class="line"><span class="comment">     * 1. 插入 lend_record</span></span><br><span class="line"><span class="comment">     * 2. 更新 book 状态为&quot;已借出&quot;</span></span><br><span class="line"><span class="comment">     * 3. 创建 bookwithuser 关联</span></span><br><span class="line"><span class="comment">     * 4. 履行预约（如果当前读者有预约）</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> LendRecord <span class="title function_">createBorrow</span><span class="params">(BorrowEligibilityResult eligibility,</span></span><br><span class="line"><span class="params">                                    LendRecord input, Date now)</span> &#123;</span><br><span class="line">        <span class="comment">// 构建 LendRecord</span></span><br><span class="line">        <span class="type">LendRecord</span> <span class="variable">record</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">LendRecord</span>();</span><br><span class="line">        record.setIsbn(eligibility.getIsbn());</span><br><span class="line">        record.setReaderId(eligibility.getReaderId());</span><br><span class="line">        record.setBookName(input.getBookName());</span><br><span class="line">        record.setReaderName(input.getReaderName());</span><br><span class="line">        record.setLendDate(now);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 计算应还日期 = 当前时间 + 借阅规则天数</span></span><br><span class="line">        <span class="type">LocalDateTime</span> <span class="variable">deadline</span> <span class="operator">=</span> DateUtils.toLocalDateTime(now)</span><br><span class="line">            .plusDays(eligibility.getRule().getDays());</span><br><span class="line">        record.setDeadtime(Date.from(deadline</span><br><span class="line">            .atZone(ZoneId.systemDefault()).toInstant()));</span><br><span class="line">        record.setStatus(<span class="string">&quot;0&quot;</span>); <span class="comment">// 未归还</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">// 插入 lend_record（带返回值检查）</span></span><br><span class="line">        <span class="type">int</span> <span class="variable">inserted</span> <span class="operator">=</span> lendRecordMapper.insert(record);</span><br><span class="line">        <span class="keyword">if</span> (inserted &lt;= <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ServiceException</span>(<span class="string">&quot;借阅记录创建失败&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 更新 book 状态</span></span><br><span class="line">        <span class="type">Book</span> <span class="variable">book</span> <span class="operator">=</span> eligibility.getBook();</span><br><span class="line">        book.setStatus(<span class="string">&quot;2&quot;</span>); <span class="comment">// 已借出</span></span><br><span class="line">        bookMapper.updateById(book);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 创建 bookwithuser 关联</span></span><br><span class="line">        <span class="type">BookWithUser</span> <span class="variable">bwu</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">BookWithUser</span>();</span><br><span class="line">        bwu.setIsbn(eligibility.getIsbn());</span><br><span class="line">        bwu.setReaderId(eligibility.getReaderId());</span><br><span class="line">        bwu.setBookName(record.getBookName());</span><br><span class="line">        bwu.setReaderName(record.getReaderName());</span><br><span class="line">        bwu.setLendDate(now);</span><br><span class="line">        bwu.setDeadtime(record.getDeadtime());</span><br><span class="line">        bwu.setProlong(<span class="number">0</span>);</span><br><span class="line">        bookWithUserMapper.insert(bwu);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 履行预约（如有）</span></span><br><span class="line">        fulfillReservationIfExists(</span><br><span class="line">            eligibility.getIsbn(), eligibility.getReaderId());</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> record;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 执行归还写操作</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">completeReturn</span><span class="params">(CurrentBorrowContext context, Date now)</span> &#123;</span><br><span class="line">        <span class="comment">// 更新 lend_record</span></span><br><span class="line">        <span class="type">LendRecord</span> <span class="variable">record</span> <span class="operator">=</span> context.getLendRecord();</span><br><span class="line">        record.setStatus(<span class="string">&quot;1&quot;</span>); <span class="comment">// 已归还</span></span><br><span class="line">        record.setReturnDate(now);</span><br><span class="line">        lendRecordMapper.updateById(record);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 更新 book 状态（null guard 保护自愈场景）</span></span><br><span class="line">        <span class="type">Book</span> <span class="variable">book</span> <span class="operator">=</span> context.getBook();</span><br><span class="line">        <span class="keyword">if</span> (book != <span class="literal">null</span>) &#123;</span><br><span class="line">            book.setStatus(<span class="string">&quot;1&quot;</span>); <span class="comment">// 可借</span></span><br><span class="line">            bookMapper.updateById(book);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 删除 bookwithuser 关联</span></span><br><span class="line">        <span class="type">BookWithUser</span> <span class="variable">bwu</span> <span class="operator">=</span> context.getBookWithUser();</span><br><span class="line">        <span class="keyword">if</span> (bwu != <span class="literal">null</span>) &#123;</span><br><span class="line">            bookWithUserMapper.deleteById(bwu.getId());</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 执行续借写操作</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">renewBorrow</span><span class="params">(CurrentBorrowContext context,</span></span><br><span class="line"><span class="params">                           LocalDateTime newDeadline)</span> &#123;</span><br><span class="line">        <span class="comment">// 更新 bookwithuser 的应还日期和续借次数</span></span><br><span class="line">        <span class="type">BookWithUser</span> <span class="variable">bwu</span> <span class="operator">=</span> context.getBookWithUser();</span><br><span class="line">        bwu.setDeadtime(Date.from(newDeadline</span><br><span class="line">            .atZone(ZoneId.systemDefault()).toInstant()));</span><br><span class="line">        bwu.setProlong(bwu.getProlong() + <span class="number">1</span>);</span><br><span class="line">        bookWithUserMapper.updateById(bwu);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 同步更新 lend_record</span></span><br><span class="line">        <span class="type">LendRecord</span> <span class="variable">record</span> <span class="operator">=</span> context.getLendRecord();</span><br><span class="line">        record.setDeadtime(bwu.getDeadtime());</span><br><span class="line">        lendRecordMapper.updateById(record);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>设计亮点在于：<strong>输入参数即上下文</strong>。每个方法接收不可变的上下文对象（<code>BorrowEligibilityResult</code> 或 <code>CurrentBorrowContext</code>），所有必要数据都已预加载，方法内部不需要额外的数据库查询。这使得方法完全独立、可预测，也非常容易测试。</p>
+<h3 id="第三层：LendRecordService-—-薄编排层"><a href="#第三层：LendRecordService-—-薄编排层" class="headerlink" title="第三层：LendRecordService — 薄编排层"></a>第三层：LendRecordService — 薄编排层</h3><p>重构后的 <code>LendRecordService</code> 从 400+ 行瘦身为 ~150 行的薄编排层，不再包含任何业务逻辑：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Service</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">LendRecordService</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> BorrowEligibilityService borrowEligibilityService;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> LendRecordWriteService lendRecordWriteService;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 借阅图书 — 编排层</span></span><br><span class="line"><span class="comment">     * 1. 校验借阅资格</span></span><br><span class="line"><span class="comment">     * 2. 执行借阅写操作</span></span><br><span class="line"><span class="comment">     * 3. 构建返回结果</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@Transactional(rollbackFor = Exception.class)</span></span><br><span class="line">    <span class="keyword">public</span> Map&lt;String, Object&gt; <span class="title function_">borrowBook</span><span class="params">(LendRecord lendRecord)</span> &#123;</span><br><span class="line">        <span class="comment">// 入参校验</span></span><br><span class="line">        <span class="keyword">if</span> (lendRecord == <span class="literal">null</span> || lendRecord.getReaderId() == <span class="literal">null</span></span><br><span class="line">            || lendRecord.getIsbn() == <span class="literal">null</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> Result.error(<span class="string">&quot;参数不完整&quot;</span>).toMap();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 1. 校验借阅资格（读侧）</span></span><br><span class="line">        BorrowEligibilityResult eligibility;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            eligibility = borrowEligibilityService.evaluate(</span><br><span class="line">                lendRecord.getReaderId(), lendRecord.getIsbn());</span><br><span class="line">        &#125; <span class="keyword">catch</span> (ServiceException e) &#123;</span><br><span class="line">            <span class="keyword">return</span> Result.error(e.getMessage()).toMap();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 2. 执行借阅写操作（写侧）</span></span><br><span class="line">        <span class="type">Date</span> <span class="variable">now</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Date</span>();</span><br><span class="line">        <span class="type">LendRecord</span> <span class="variable">created</span> <span class="operator">=</span> lendRecordWriteService.createBorrow(</span><br><span class="line">            eligibility, lendRecord, now);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 3. 构建返回结果</span></span><br><span class="line">        Map&lt;String, Object&gt; result = <span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;&gt;();</span><br><span class="line">        result.put(<span class="string">&quot;code&quot;</span>, <span class="string">&quot;0&quot;</span>);</span><br><span class="line">        result.put(<span class="string">&quot;msg&quot;</span>, <span class="string">&quot;借阅成功&quot;</span>);</span><br><span class="line">        result.put(<span class="string">&quot;data&quot;</span>, created);</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>对比重构前后的 <code>borrowBook()</code> 方法：</p>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>Before</th>
+<th>After</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>方法行数</td>
+<td>~80 行（校验 + 写 + 构建结果）</td>
+<td>~20 行（编排 + 构建结果）</td>
+</tr>
+<tr>
+<td>校验逻辑</td>
+<td>内联重复</td>
+<td>统一委托给 <code>BorrowEligibilityService</code></td>
+</tr>
+<tr>
+<td>写操作</td>
+<td>内联</td>
+<td>封装在 <code>LendRecordWriteService</code></td>
+</tr>
+<tr>
+<td>可测试性</td>
+<td>只能集成测试</td>
+<td>每层可独立 mock 测试</td>
+</tr>
+</tbody></table>
+<h3 id="API-兼容：checkCanBorrow-的优雅处理"><a href="#API-兼容：checkCanBorrow-的优雅处理" class="headerlink" title="API 兼容：checkCanBorrow 的优雅处理"></a>API 兼容：checkCanBorrow 的优雅处理</h3><p>重构中一个值得注意的细节是 <code>checkCanBorrow()</code> 方法的处理。原始方法返回 <code>&#123;canBorrow: false, reason: &quot;...&quot;&#125;</code> 格式的 Map，而 <code>evaluate()</code> 失败时抛异常。为了保持前端 API 兼容，我们在编排层做了一个简单的适配：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> Map&lt;String, Object&gt; <span class="title function_">checkCanBorrow</span><span class="params">(Long readerId, String isbn)</span> &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        borrowEligibilityService.evaluate(readerId, isbn);</span><br><span class="line">        Map&lt;String, Object&gt; result = <span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;&gt;();</span><br><span class="line">        result.put(<span class="string">&quot;canBorrow&quot;</span>, <span class="literal">true</span>);</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (ServiceException e) &#123;</span><br><span class="line">        Map&lt;String, Object&gt; result = <span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;&gt;();</span><br><span class="line">        result.put(<span class="string">&quot;canBorrow&quot;</span>, <span class="literal">false</span>);</span><br><span class="line">        result.put(<span class="string">&quot;reason&quot;</span>, e.getMessage());</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>通过 try&#x2F;catch 将异常转换为原始格式，实现了<strong>内部实现的统一</strong>与<strong>外部接口的兼容</strong>。</p>
+<p><img src="/images/posts/Spring-Boot%E5%80%9F%E9%98%85%E6%B5%81%E7%A8%8B%E9%87%8D%E6%9E%84/fig3_001.jpg" alt="校验流程对比"><br><em>图3：重构前后校验逻辑对比</em></p>
+<h2 id="代码审查：6-个问题的启示"><a href="#代码审查：6-个问题的启示" class="headerlink" title="代码审查：6 个问题的启示"></a>代码审查：6 个问题的启示</h2><p>重构完成后，我们进行了代码审查，发现了 6 个问题。这些问题极具代表性，几乎是所有提取重构都会遇到的坑：</p>
+<h3 id="Issue-1：API-合约断裂（严重）"><a href="#Issue-1：API-合约断裂（严重）" class="headerlink" title="Issue #1：API 合约断裂（严重）"></a>Issue #1：API 合约断裂（严重）</h3><p><strong>问题</strong>：<code>checkCanBorrow()</code> 原本返回 <code>&#123;canBorrow: false, reason: &quot;...&quot;&#125;</code>，重构后 <code>evaluate()</code> 失败时抛异常，前端会收到 500 错误而非预期的 JSON。</p>
+<p><strong>修复</strong>：添加 try&#x2F;catch 将异常转换为原始 Map 格式。</p>
+<p><strong>启示</strong>：重构内部实现时，必须确保公共 API 的返回格式不变。这是提取重构中最容易忽视的问题——我们关注了代码结构，却忘了关注契约。</p>
+<h3 id="Issue-2：insert-返回值检查丢失（中等）"><a href="#Issue-2：insert-返回值检查丢失（中等）" class="headerlink" title="Issue #2：insert 返回值检查丢失（中等）"></a>Issue #2：insert 返回值检查丢失（中等）</h3><p><strong>问题</strong>：原始代码在 <code>lendRecordMapper.insert()</code> 后检查 <code>inserted &lt;= 0</code>，提取时遗漏了这个检查。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Before（遗漏）</span></span><br><span class="line">lendRecordMapper.insert(record);</span><br><span class="line"></span><br><span class="line"><span class="comment">// After（修复）</span></span><br><span class="line"><span class="type">int</span> <span class="variable">inserted</span> <span class="operator">=</span> lendRecordMapper.insert(record);</span><br><span class="line"><span class="keyword">if</span> (inserted &lt;= <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ServiceException</span>(<span class="string">&quot;借阅记录创建失败&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>启示</strong>：原方法中的返回值检查是防御性代码，搬运时容易被遗漏。</p>
+<h3 id="Issue-3：null-guard-丢失（中等）"><a href="#Issue-3：null-guard-丢失（中等）" class="headerlink" title="Issue #3：null guard 丢失（中等）"></a>Issue #3：null guard 丢失（中等）</h3><p><strong>问题</strong>：原始 <code>returnBook()</code> 中有 <code>if (book != null)</code> 保护，提取到 <code>completeReturn()</code> 时遗漏。在自愈场景中 book 可能为 null，会导致 NPE。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Before（遗漏）</span></span><br><span class="line"><span class="type">Book</span> <span class="variable">book</span> <span class="operator">=</span> context.getBook();</span><br><span class="line">book.setStatus(<span class="string">&quot;1&quot;</span>);  <span class="comment">// NPE if book is null!</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// After（修复）</span></span><br><span class="line"><span class="type">Book</span> <span class="variable">book</span> <span class="operator">=</span> context.getBook();</span><br><span class="line"><span class="keyword">if</span> (book != <span class="literal">null</span>) &#123;</span><br><span class="line">    book.setStatus(<span class="string">&quot;1&quot;</span>);</span><br><span class="line">    bookMapper.updateById(book);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>启示</strong>：原方法中的 if&#x2F;null 检查都有其存在的原因（通常是为了处理边界情况），搬运时一个都不能少。</p>
+<h3 id="Issue-4：未使用参数（低）"><a href="#Issue-4：未使用参数（低）" class="headerlink" title="Issue #4：未使用参数（低）"></a>Issue #4：未使用参数（低）</h3><p><strong>问题</strong>：<code>loadCurrentBorrowContext()</code> 接受一个 <code>boolean includeBook</code> 参数，但从未使用。</p>
+<p><strong>修复</strong>：移除未使用的参数。</p>
+<h3 id="Issue-5：重复查询（中等）"><a href="#Issue-5：重复查询（中等）" class="headerlink" title="Issue #5：重复查询（中等）"></a>Issue #5：重复查询（中等）</h3><p><strong>问题</strong>：自愈路径中先通过 <code>bookWithUserMapper</code> 查到 BookWithUser，然后又用相同条件重新查了一次。</p>
+<p><strong>修复</strong>：复用第一次查询的结果。</p>
+<h3 id="Issue-6：重复私有方法（低）"><a href="#Issue-6：重复私有方法（低）" class="headerlink" title="Issue #6：重复私有方法（低）"></a>Issue #6：重复私有方法（低）</h3><p><strong>问题</strong>：<code>BorrowEligibilityService</code> 和 <code>LendRecordWriteService</code> 各有一个完全相同的 <code>convertToLocalDateTime()</code> 方法。</p>
+<p><strong>修复</strong>：提取到共享的 <code>DateUtils</code> 工具类：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">DateUtils</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="title function_">DateUtils</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="comment">// 工具类禁止实例化</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * Date → LocalDateTime</span></span><br><span class="line"><span class="comment">     * 通过 Timestamp 桥接，避免时区丢失</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> LocalDateTime <span class="title function_">toLocalDateTime</span><span class="params">(Date date)</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (date == <span class="literal">null</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">Timestamp</span>(date.getTime()).toLocalDateTime();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>选择 <code>Timestamp</code> 桥接而非 <code>Date.toInstant()</code> 的原因是：<code>Timestamp.toLocalDateTime()</code> 直接使用系统默认时区，而 <code>Date.toInstant()</code> 使用 UTC 时区，在转换时容易忘记加 <code>ZoneId</code> 导致 8 小时偏差。</p>
+<h3 id="代码审查修复汇总"><a href="#代码审查修复汇总" class="headerlink" title="代码审查修复汇总"></a>代码审查修复汇总</h3><table>
+<thead>
+<tr>
+<th>#</th>
+<th>问题</th>
+<th>严重度</th>
+<th>修复方式</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>API 合约断裂</td>
+<td>严重</td>
+<td>try&#x2F;catch 转换异常为 Map</td>
+</tr>
+<tr>
+<td>2</td>
+<td>insert 返回值检查丢失</td>
+<td>中等</td>
+<td>恢复 <code>inserted &lt;= 0</code> 检查</td>
+</tr>
+<tr>
+<td>3</td>
+<td>null guard 丢失</td>
+<td>中等</td>
+<td>恢复 <code>if (book != null)</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>未使用参数</td>
+<td>低</td>
+<td>移除 boolean 参数</td>
+</tr>
+<tr>
+<td>5</td>
+<td>重复查询</td>
+<td>中等</td>
+<td>复用已有查询结果</td>
+</tr>
+<tr>
+<td>6</td>
+<td>重复私有方法</td>
+<td>低</td>
+<td>提取到 DateUtils</td>
+</tr>
+</tbody></table>
+<p><img src="/images/posts/Spring-Boot%E5%80%9F%E9%98%85%E6%B5%81%E7%A8%8B%E9%87%8D%E6%9E%84/fig4_001.jpg" alt="代码审查问题修复"><br><em>图4：代码审查中发现的 6 个典型问题</em></p>
+<h2 id="实施过程：四个阶段，九次提交"><a href="#实施过程：四个阶段，九次提交" class="headerlink" title="实施过程：四个阶段，九次提交"></a>实施过程：四个阶段，九次提交</h2><p>整个重构分为四个阶段，在 <code>代码瘦身</code> 分支上完成（基线 <code>3415d11</code>）：</p>
+<p><strong>Phase 1：提取校验层（Commits: 0851071 → 4a04c56）</strong></p>
+<p>创建 <code>BorrowEligibilityResult</code> 不可变对象，提取 <code>evaluate()</code> 方法，让 <code>checkCanBorrow()</code> 复用校验逻辑。这一阶段解决了 DUP-01（校验逻辑重复）的问题。</p>
+<p><strong>Phase 2：提取写操作层（Commits: 75a9acf → 69a859a）</strong></p>
+<p>将借阅写操作从 <code>borrowBook()</code> 中提取到 <code>LendRecordWriteService.createBorrow()</code>。<code>borrowBook()</code> 从 ~80 行降为 ~20 行，只剩下编排逻辑和结果构建。</p>
+<p><strong>Phase 3：归还&#x2F;续借重构（Commits: 69a859a → f109846）</strong></p>
+<p>提取 <code>completeReturn()</code> 和 <code>renewBorrow()</code> 写操作方法，创建 <code>CurrentBorrowContext</code> 统一上下文加载，解决了 DUP-02（上下文加载重复）的问题。</p>
+<p><strong>Phase 4：代码审查修复（Commits: bb568e9 → 3be9c2b）</strong></p>
+<p>修复代码审查中发现的 6 个问题，提取 <code>DateUtils</code> 工具类。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">0851071 refactor: add lending context types</span><br><span class="line">d0e4d1e refactor: extract borrow eligibility service</span><br><span class="line">4a04c56 refactor: reuse eligibility logic in checkCanBorrow</span><br><span class="line">75a9acf refactor: extract borrow write path</span><br><span class="line">493aef0 refactor: orchestrate borrow flow via helper services</span><br><span class="line">69a859a refactor: add return and renew write helpers</span><br><span class="line">f109846 refactor: add current borrow context loader</span><br><span class="line">bb568e9 fix: code review fixes for borrowing flow cleanup</span><br><span class="line">3be9c2b simplify: extract DateUtils, remove duplicate query and unnecessary comments</span><br></pre></td></tr></table></figure>
+
+<h2 id="测试验证"><a href="#测试验证" class="headerlink" title="测试验证"></a>测试验证</h2><p>重构后的测试覆盖大幅提升：</p>
+<table>
+<thead>
+<tr>
+<th>测试类</th>
+<th>用例数</th>
+<th>覆盖场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>BorrowEligibilityServiceTest</code></td>
+<td>4</td>
+<td>正常通过、图书不可借、超过限额、重复借阅</td>
+</tr>
+<tr>
+<td><code>LendRecordWriteServiceTest</code></td>
+<td>4</td>
+<td>借阅创建、归还完成、续借成功、自愈补建</td>
+</tr>
+<tr>
+<td><code>LendRecordServiceTest</code></td>
+<td>15</td>
+<td>完整编排流程：借阅&#x2F;归还&#x2F;续借 + 边界条件</td>
+</tr>
+</tbody></table>
+<p>总计新增 23 个测试用例，全量 86 个测试全部通过（<code>mvn test</code> → BUILD SUCCESS）。</p>
+<p>关键回归验证项：</p>
+<ul>
+<li>前端控制器文件未修改（无 controller drift）</li>
+<li><code>checkCanBorrow()</code> 返回格式保持 <code>&#123;canBorrow, reason&#125;</code></li>
+<li><code>borrowBook()</code>、<code>returnBook()</code>、<code>renewBook()</code> 返回格式不变</li>
+<li>数据库表结构和 SQL 未修改</li>
+</ul>
+<h2 id="经验总结"><a href="#经验总结" class="headerlink" title="经验总结"></a>经验总结</h2><h3 id="什么时候该重构？"><a href="#什么时候该重构？" class="headerlink" title="什么时候该重构？"></a>什么时候该重构？</h3><p>当一个服务类超过 300 行，或者你发现修改一个功能需要理解整个类的逻辑时，就该考虑重构了。在我们的案例中，400+ 行的 <code>LendRecordService</code> 已经是明显的信号。</p>
+<h3 id="提取重构的核心步骤"><a href="#提取重构的核心步骤" class="headerlink" title="提取重构的核心步骤"></a>提取重构的核心步骤</h3><ol>
+<li><strong>识别职责边界</strong>：分析当前类承担了哪些职责，每个职责的输入和输出是什么</li>
+<li><strong>创建上下文对象</strong>：定义不可变的数据载体，明确方法间的数据契约</li>
+<li><strong>逐层提取</strong>：先提取校验层（读侧），再提取写操作层（写侧），最后瘦身为编排层</li>
+<li><strong>保持 API 兼容</strong>：确保公共方法的返回格式不变，内部实现变更不影响调用方</li>
+<li><strong>代码审查</strong>：重点关注原方法中的防御性代码是否完整搬运</li>
+</ol>
+<h3 id="提取重构最常见的坑"><a href="#提取重构最常见的坑" class="headerlink" title="提取重构最常见的坑"></a>提取重构最常见的坑</h3><p>根据这次代码审查的经验，提取重构最容易出的问题有三个：</p>
+<p><strong>边界条件丢失</strong>：原方法中的 null 检查、返回值检查、异常处理等防御性代码，在搬运过程中容易被遗漏。代码审查时必须逐行对比原方法和提取后的方法，确认每个 if&#x2F;try&#x2F;catch 都存在。</p>
+<p><strong>API 合约断裂</strong>：重构内部实现时，公共方法的返回格式可能在不经意间发生变化。特别是异常处理策略的变更（如从返回错误 Map 改为抛异常），需要额外注意调用方的期望。</p>
+<p><strong>重复代码引入</strong>：看似提取到了新类，但如果新类之间又产生了重复代码（如我们的 <code>convertToLocalDateTime()</code>），就说明提取还不够彻底，需要进一步抽象共享工具。</p>
+<h3 id="CQRS-在日常开发中的应用"><a href="#CQRS-在日常开发中的应用" class="headerlink" title="CQRS 在日常开发中的应用"></a>CQRS 在日常开发中的应用</h3><p>CQRS 不只是微服务架构中的大杀器，在日常的单体应用重构中同样适用。核心思想很简单：<strong>把读操作和写操作分开</strong>。读操作用只读事务，写操作不带事务（由编排层统一控制），编排层只负责协调。这种分层方式让每一层都变得简单、可测试、可独立演进。</p>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>这次重构将一个 400+ 行的上帝类拆分为 ~150 行的编排层 + 两个专职服务类，新增 23 个测试用例，解决了校验逻辑不一致、写操作难以测试等核心问题。整个过程通过 4 个阶段、9 次提交完成，代码审查发现并修复了 6 个问题。重构的关键不是写出”完美的代码”，而是通过持续的小步改进，让代码库保持健康和可维护。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Spring-Boot/" rel="tag"># Spring Boot</a>
+              <a href="/tags/%E9%87%8D%E6%9E%84/" rel="tag"># 重构</a>
+              <a href="/tags/CQRS/" rel="tag"># CQRS</a>
+              <a href="/tags/Java/" rel="tag"># Java</a>
+              <a href="/tags/%E4%BB%A3%E7%A0%81%E8%B4%A8%E9%87%8F/" rel="tag"># 代码质量</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/04/08/%E7%89%A9%E8%81%94%E7%BD%91%E5%B9%B3%E5%8F%B0%E8%AE%BE%E5%A4%87%E8%A7%84%E5%88%99%E9%85%8D%E7%BD%AE%E6%8C%89%E9%92%AE%E5%BC%80%E5%8F%91%E5%AE%9E%E5%BD%95/" rel="prev" title="物联网平台设备规则配置按钮开发实录">
+                  <i class="fa fa-angle-left"></i> 物联网平台设备规则配置按钮开发实录
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  
+  <div class="comments giscus-container">
+  </div>
+  
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">zhlifeiy35</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/zhdmm35" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"zhdmm35/zhdmm35.github.io","repo_id":"R_kgDOON4bhg","category":"Announcements","category_id":"DIC_kwDOON4bhs4C3dEc","mapping":"pathname","strict":0,"reactions_enabled":1,"emit_metadata":0,"theme":"preferred_color_scheme","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+
+<script>
+document.addEventListener('page:loaded', () => {
+  if (!CONFIG.page.comments) return;
+
+  NexT.utils.loadComments('.giscus-container')
+    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
+      attributes: {
+        async                   : true,
+        crossOrigin             : 'anonymous',
+        'data-repo'             : CONFIG.giscus.repo,
+        'data-repo-id'          : CONFIG.giscus.repo_id,
+        'data-category'         : CONFIG.giscus.category,
+        'data-category-id'      : CONFIG.giscus.category_id,
+        'data-mapping'          : CONFIG.giscus.mapping,
+        'data-strict'           : CONFIG.giscus.strict,
+        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
+        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
+        'data-theme'            : CONFIG.giscus.theme,
+        'data-lang'             : CONFIG.giscus.lang,
+        'data-input-position'   : CONFIG.giscus.input_position,
+        'data-loading'          : CONFIG.giscus.loading
+      },
+      parentNode: document.querySelector('.giscus-container')
+    }));
+});
+</script>
+
+</body>
+</html>
