@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="一次图书管理系统的全面优化，涵盖安全漏洞修复、N+1 查询优化、凭证管理强化以及数据库索引调优。从踩坑到解决，完整还原优化全过程。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="从账号泄露到 N+1 优化：一次 Spring Boot + Vue 项目的大改造">
+<meta property="og:url" content="https://zhlifeiy.codes/2026/04/15/%E4%BB%8E%E8%B4%A6%E5%8F%B7%E6%B3%84%E9%9C%B2%E5%88%B0N+1%E4%BC%98%E5%8C%96/index.html">
+<meta property="og:site_name" content="我的技术博客">
+<meta property="og:description" content="一次图书管理系统的全面优化，涵盖安全漏洞修复、N+1 查询优化、凭证管理强化以及数据库索引调优。从踩坑到解决，完整还原优化全过程。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/%E4%BB%8E%E8%B4%A6%E5%8F%B7%E6%B3%84%E9%9C%B2%E5%88%B0N+1%E4%BC%98%E5%8C%96.png">
+<meta property="article:published_time" content="2026-04-15T12:30:00.000Z">
+<meta property="article:modified_time" content="2026-04-15T15:04:44.386Z">
+<meta property="article:author" content="zhlifeiy35">
+<meta property="article:tag" content="Spring Boot">
+<meta property="article:tag" content="Vue">
+<meta property="article:tag" content="安全加固">
+<meta property="article:tag" content="性能优化">
+<meta property="article:tag" content="数据库索引">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/%E4%BB%8E%E8%B4%A6%E5%8F%B7%E6%B3%84%E9%9C%B2%E5%88%B0N+1%E4%BC%98%E5%8C%96.png">
+
+
+<link rel="canonical" href="https://zhlifeiy.codes/2026/04/15/%E4%BB%8E%E8%B4%A6%E5%8F%B7%E6%B3%84%E9%9C%B2%E5%88%B0N+1%E4%BC%98%E5%8C%96/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://zhlifeiy.codes/2026/04/15/%E4%BB%8E%E8%B4%A6%E5%8F%B7%E6%B3%84%E9%9C%B2%E5%88%B0N+1%E4%BC%98%E5%8C%96/","path":"2026/04/15/从账号泄露到N+1优化/","title":"从账号泄露到 N+1 优化：一次 Spring Boot + Vue 项目的大改造"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>从账号泄露到 N+1 优化：一次 Spring Boot + Vue 项目的大改造 | 我的技术博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">我的技术博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">记录学习与成长</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-guestbook"><a href="/guestbook/" rel="section"><i class="fa fa-comment-dots fa-fw"></i>留言板</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E9%97%AE%E9%A2%98%E5%85%A8%E6%99%AF%EF%BC%9A%E8%BF%99%E6%AC%A1%E4%BC%98%E5%8C%96%E4%BA%86%E4%BB%80%E4%B9%88"><span class="nav-number">2.</span> <span class="nav-text">一、问题全景：这次优化了什么</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E5%AF%86%E7%A0%81%E6%B3%84%E9%9C%B2%E5%8D%B1%E6%9C%BA%EF%BC%9AUser-password-%E7%9A%84-JsonIgnore-%E4%BF%AE%E5%A4%8D"><span class="nav-number">3.</span> <span class="nav-text">二、密码泄露危机：User.password 的 JsonIgnore 修复</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-%E9%97%AE%E9%A2%98%E6%98%AF%E6%80%8E%E4%B9%88%E8%A2%AB%E5%8F%91%E7%8E%B0%E7%9A%84"><span class="nav-number">3.1.</span> <span class="nav-text">2.1 问题是怎么被发现的</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-%E5%AF%86%E7%A0%81%E4%BF%AE%E6%94%B9%E5%8A%9F%E8%83%BD%E7%9A%84%E8%BF%9E%E9%94%81%E9%97%AE%E9%A2%98"><span class="nav-number">3.2.</span> <span class="nav-text">2.2 密码修改功能的连锁问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-3-%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%EF%BC%9A%E6%9C%8D%E5%8A%A1%E7%AB%AF%E9%AA%8C%E8%AF%81-%E7%A7%BB%E9%99%A4%E5%AE%A2%E6%88%B7%E7%AB%AF%E9%80%BB%E8%BE%91"><span class="nav-number">3.3.</span> <span class="nav-text">2.3 解决方案：服务端验证 + 移除客户端逻辑</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-4-%E7%BB%8F%E9%AA%8C%E6%80%BB%E7%BB%93"><span class="nav-number">3.4.</span> <span class="nav-text">2.4 经验总结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81N-1-%E6%9F%A5%E8%AF%A2%E5%99%A9%E6%A2%A6%EF%BC%9ABookAudit-%E5%AE%A1%E6%A0%B8%E9%A1%B5%E9%9D%A2%E7%9A%84%E6%80%A7%E8%83%BD%E9%99%B7%E9%98%B1"><span class="nav-number">4.</span> <span class="nav-text">三、N+1 查询噩梦：BookAudit 审核页面的性能陷阱</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-%E9%97%AE%E9%A2%98%E7%8E%B0%E8%B1%A1"><span class="nav-number">4.1.</span> <span class="nav-text">3.1 问题现象</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-%E9%97%AE%E9%A2%98%E6%A0%B9%E5%9B%A0%E5%88%86%E6%9E%90"><span class="nav-number">4.2.</span> <span class="nav-text">3.2 问题根因分析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-3-%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%EF%BC%9AJOIN-%E6%9F%A5%E8%AF%A2%E4%B8%80%E6%AC%A1%E6%90%9E%E5%AE%9A"><span class="nav-number">4.3.</span> <span class="nav-text">3.3 解决方案：JOIN 查询一次搞定</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-4-%E6%80%A7%E8%83%BD%E5%AF%B9%E6%AF%94"><span class="nav-number">4.4.</span> <span class="nav-text">3.4 性能对比</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-5-%E7%BB%8F%E9%AA%8C%E6%80%BB%E7%BB%93"><span class="nav-number">4.5.</span> <span class="nav-text">3.5 经验总结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E5%87%AD%E8%AF%81%E8%A3%B8%E5%A5%94%EF%BC%9AOSS-%E5%92%8C-API-Key-%E7%9A%84%E7%A1%AC%E7%BC%96%E7%A0%81%E5%8D%B1%E6%9C%BA"><span class="nav-number">5.</span> <span class="nav-text">四、凭证裸奔：OSS 和 API Key 的硬编码危机</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#4-1-%E9%97%AE%E9%A2%98%E6%9C%89%E5%A4%9A%E4%B8%A5%E9%87%8D"><span class="nav-number">5.1.</span> <span class="nav-text">4.1 问题有多严重</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-2-%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%EF%BC%9A%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F%E6%B3%A8%E5%85%A5"><span class="nav-number">5.2.</span> <span class="nav-text">4.2 解决方案：环境变量注入</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-3-%E5%AE%89%E5%85%A8%E5%BB%BA%E8%AE%AE"><span class="nav-number">5.3.</span> <span class="nav-text">4.3 安全建议</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E6%95%B0%E6%8D%AE%E5%BA%93%E7%B4%A2%E5%BC%95%E4%BC%98%E5%8C%96%EF%BC%9A%E8%AE%A9%E6%9F%A5%E8%AF%A2%E9%A3%9E%E8%B5%B7%E6%9D%A5"><span class="nav-number">6.</span> <span class="nav-text">五、数据库索引优化：让查询飞起来</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#5-1-%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E7%B4%A2%E5%BC%95%E4%BC%98%E5%8C%96"><span class="nav-number">6.1.</span> <span class="nav-text">5.1 为什么需要索引优化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-2-%E6%96%B0%E5%A2%9E%E7%B4%A2%E5%BC%95%EF%BC%888-%E4%B8%AA%EF%BC%89"><span class="nav-number">6.2.</span> <span class="nav-text">5.2 新增索引（8 个）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-3-%E5%88%A0%E9%99%A4%E5%86%97%E4%BD%99%E7%B4%A2%E5%BC%95%EF%BC%884-%E4%B8%AA%EF%BC%89"><span class="nav-number">6.3.</span> <span class="nav-text">5.3 删除冗余索引（4 个）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-4-%E5%AE%8C%E6%95%B4-SQL-%E8%84%9A%E6%9C%AC"><span class="nav-number">6.4.</span> <span class="nav-text">5.4 完整 SQL 脚本</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-5-%E6%80%A7%E8%83%BD%E5%BD%B1%E5%93%8D%E9%A2%84%E4%BC%B0"><span class="nav-number">6.5.</span> <span class="nav-text">5.5 性能影响预估</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%AD%E3%80%81%E4%BC%98%E5%8C%96%E6%88%90%E6%9E%9C%E6%B1%87%E6%80%BB"><span class="nav-number">7.</span> <span class="nav-text">六、优化成果汇总</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%93%E8%AF%AD"><span class="nav-number">8.</span> <span class="nav-text">结语</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zhlifeiy35</p>
+  <div class="site-description" itemprop="description">分享编程技术、AI经验、学习笔记</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">29</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">14</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">99</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zhdmm35" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zhdmm35" rel="noopener me" target="_blank"><i class="fa fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/%E4%BB%8E%E8%B4%A6%E5%8F%B7%E6%B3%84%E9%9C%B2%E5%88%B0N+1%E4%BC%98%E5%8C%96.png" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/04/15/%E4%BB%8E%E8%B4%A6%E5%8F%B7%E6%B3%84%E9%9C%B2%E5%88%B0N+1%E4%BC%98%E5%8C%96/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="我的技术博客">
+      <meta itemprop="description" content="分享编程技术、AI经验、学习笔记">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="从账号泄露到 N+1 优化：一次 Spring Boot + Vue 项目的大改造 | 我的技术博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          从账号泄露到 N+1 优化：一次 Spring Boot + Vue 项目的大改造
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2026-04-15 20:30:00 / 修改时间：23:04:44" itemprop="dateCreated datePublished" datetime="2026-04-15T20:30:00+08:00">2026-04-15</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E9%A1%B9%E7%9B%AE%E5%88%86%E4%BA%AB/" itemprop="url" rel="index"><span itemprop="name">项目分享</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>一次图书管理系统的全面优化，涵盖安全漏洞修复、N+1 查询优化、凭证管理强化以及数据库索引调优。从踩坑到解决，完整还原优化全过程。</p>
+<span id="more"></span>
+
+<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>做项目最怕的不是功能做不出来，而是上线之后才发现有<strong>安全漏洞</strong>，或者用户抱怨系统”慢得像蜗牛”。最近对图书管理系统进行了一次全面”体检”，发现了不少问题：用户密码明文暴露、N+1 查询导致审核页面卡死、OSS 凭证硬编码在代码里、数据库缺少关键索引……这些问题单个看都不大，但叠加在一起，足以让一个系统从”能用”变成”难用”。</p>
+<p>本文完整记录了这次优化全过程，包括问题分析、解决思路、核心代码改动，以及数据库索引优化策略。如果你也在维护类似技术栈（Spring Boot + Vue）的项目，相信能从中学到一些实战经验。</p>
+<hr>
+<h2 id="一、问题全景：这次优化了什么"><a href="#一、问题全景：这次优化了什么" class="headerlink" title="一、问题全景：这次优化了什么"></a>一、问题全景：这次优化了什么</h2><p>在开始深入细节之前，先整体看一下这次优化的四个核心问题：</p>
+<table>
+<thead>
+<tr>
+<th>编号</th>
+<th>问题</th>
+<th>类型</th>
+<th>优先级</th>
+<th>涉及范围</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>OPT-51</td>
+<td>User.password 泄露 + 密码修改逻辑缺陷</td>
+<td>安全</td>
+<td>高</td>
+<td>User.java, UserController.java, Password.vue</td>
+</tr>
+<tr>
+<td>OPT-70</td>
+<td>BookAudit N+1 查询优化</td>
+<td>性能</td>
+<td>高</td>
+<td>Book.java, BookMapper.java, StudentBookController.java, BookAudit.vue</td>
+</tr>
+<tr>
+<td>OPT-54</td>
+<td>硬编码凭证清理 + 环境变量化</td>
+<td>安全</td>
+<td>高</td>
+<td>OssConfig.java, application.properties</td>
+</tr>
+<tr>
+<td>OPT-60&#x2F;61</td>
+<td>数据库索引优化 Round4</td>
+<td>性能</td>
+<td>中</td>
+<td>sql&#x2F; 脚本，user&#x2F;book&#x2F;teacher&#x2F;lend_rule 等表</td>
+</tr>
+</tbody></table>
+<p>四个问题分为两类：<strong>安全加固</strong>和<strong>性能提升</strong>。安全问题是底线，性能问题影响体验，两者都不能忽视。</p>
+<hr>
+<h2 id="二、密码泄露危机：User-password-的-JsonIgnore-修复"><a href="#二、密码泄露危机：User-password-的-JsonIgnore-修复" class="headerlink" title="二、密码泄露危机：User.password 的 JsonIgnore 修复"></a>二、密码泄露危机：User.password 的 JsonIgnore 修复</h2><p><img src="/images/posts/%E4%BB%8E%E8%B4%A6%E5%8F%B7%E6%B3%84%E9%9C%B2%E5%88%B0N+1%E4%BC%98%E5%8C%96/fig1.png" alt="密码泄露问题示意"><br><em>图1：密码泄露问题示意</em></p>
+<h3 id="2-1-问题是怎么被发现的"><a href="#2-1-问题是怎么被发现的" class="headerlink" title="2.1 问题是怎么被发现的"></a>2.1 问题是怎么被发现的</h3><p>在做登录功能测试时，我随手打了一个 <code>console.log(user)</code>，结果在控制台看到了这个：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;id&quot;</span><span class="punctuation">:</span> <span class="number">1</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;username&quot;</span><span class="punctuation">:</span> <span class="string">&quot;admin&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;password&quot;</span><span class="punctuation">:</span> <span class="string">&quot;123456&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;nickName&quot;</span><span class="punctuation">:</span> <span class="string">&quot;管理员&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;role&quot;</span><span class="punctuation">:</span> <span class="string">&quot;ADMIN&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>密码居然是明文！当时就意识到这是一个<strong>严重的安全漏洞</strong>。只要有人通过浏览器的 Network 面板或者抓包工具查看登录接口的返回值，就能拿到所有用户的明文密码。</p>
+<p>进一步排查发现，<code>User.java</code> 的 password 字段缺少 <code>@JsonIgnore</code> 注解。这意味着：</p>
+<ul>
+<li>登录接口返回用户信息 → 密码暴露</li>
+<li>任何将 User 对象序列化的地方 → 密码暴露</li>
+<li>如果把用户信息存入 sessionStorage 或 LocalStorage → 密码暴露</li>
+</ul>
+<h3 id="2-2-密码修改功能的连锁问题"><a href="#2-2-密码修改功能的连锁问题" class="headerlink" title="2.2 密码修改功能的连锁问题"></a>2.2 密码修改功能的连锁问题</h3><p>修复 <code>@JsonIgnore</code> 之后，新的问题接踵而至：<code>Password.vue</code> 第 97 行有一段客户端旧密码比对逻辑：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> storedUser = <span class="title class_">JSON</span>.<span class="title function_">parse</span>(<span class="variable language_">sessionStorage</span>.<span class="title function_">getItem</span>(<span class="string">&#x27;user&#x27;</span>) || <span class="string">&#x27;&#123;&#125;&#x27;</span>);</span><br><span class="line"><span class="keyword">if</span> (storedUser.<span class="property">password</span> !== <span class="variable language_">this</span>.<span class="property">form</span>.<span class="property">oldPassword</span>) &#123;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">$message</span>.<span class="title function_">error</span>(<span class="string">&#x27;原密码错误&#x27;</span>);</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>加了 <code>@JsonIgnore</code> 之后，从 sessionStorage 取出的 <code>user.password</code> 变成了 <code>undefined</code>，导致所有旧密码验证都失败。用户输入正确密码也会被系统拒绝。</p>
+<h3 id="2-3-解决方案：服务端验证-移除客户端逻辑"><a href="#2-3-解决方案：服务端验证-移除客户端逻辑" class="headerlink" title="2.3 解决方案：服务端验证 + 移除客户端逻辑"></a>2.3 解决方案：服务端验证 + 移除客户端逻辑</h3><p>正确的做法是<strong>把密码验证逻辑后移到后端</strong>，前端只负责收集用户输入：</p>
+<p><strong>第一步：<code>User.java</code> 添加 <code>@JsonIgnore</code></strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> com.fasterxml.jackson.annotation.JsonIgnore;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">User</span> &#123;</span><br><span class="line">    <span class="comment">// ... 其他字段 ...</span></span><br><span class="line"></span><br><span class="line">    <span class="meta">@JsonIgnore</span>  <span class="comment">// 新增：防止密码在 JSON 序列化时泄露</span></span><br><span class="line">    <span class="keyword">private</span> String password;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>第二步：<code>UserController.java</code> 增加旧密码验证</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@PutMapping(&quot;/password&quot;)</span></span><br><span class="line"><span class="keyword">public</span> Result&lt;?&gt; updatePassword(<span class="meta">@RequestParam</span> Integer id,</span><br><span class="line">                                <span class="meta">@RequestParam</span> String password2,</span><br><span class="line">                                <span class="meta">@RequestParam</span> String oldPassword) &#123;</span><br><span class="line">    <span class="type">User</span> <span class="variable">existing</span> <span class="operator">=</span> userMapper.selectById(id);</span><br><span class="line">    <span class="keyword">if</span> (existing == <span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> Result.error(<span class="string">&quot;-1&quot;</span>, <span class="string">&quot;用户不存在&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 服务端验证旧密码</span></span><br><span class="line">    <span class="keyword">if</span> (!existing.getPassword().equals(oldPassword)) &#123;</span><br><span class="line">        <span class="keyword">return</span> Result.error(<span class="string">&quot;-1&quot;</span>, <span class="string">&quot;原密码错误&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    LambdaUpdateWrapper&lt;User&gt; updateWrapper = Wrappers.&lt;User&gt;lambdaUpdate()</span><br><span class="line">            .eq(User::getId, id);</span><br><span class="line">    <span class="type">User</span> <span class="variable">user</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">User</span>();</span><br><span class="line">    user.setPassword(password2);</span><br><span class="line">    userMapper.update(user, updateWrapper);</span><br><span class="line">    <span class="keyword">return</span> Result.success();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>第三步：<code>Password.vue</code> 删除客户端验证</strong></p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">async</span> <span class="title function_">submitForm</span>(<span class="params"></span>) &#123;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">$refs</span>.<span class="property">form</span>.<span class="title function_">validate</span>(<span class="keyword">async</span> valid =&gt; &#123;</span><br><span class="line">        <span class="keyword">if</span> (valid) &#123;</span><br><span class="line">            <span class="keyword">const</span> res = <span class="keyword">await</span> <span class="variable language_">this</span>.$put(<span class="string">&#x27;/user/password&#x27;</span>, &#123;</span><br><span class="line">                <span class="attr">id</span>: <span class="variable language_">this</span>.<span class="property">user</span>.<span class="property">id</span>,</span><br><span class="line">                <span class="attr">oldPassword</span>: <span class="variable language_">this</span>.<span class="property">form</span>.<span class="property">oldPassword</span>,</span><br><span class="line">                <span class="attr">password2</span>: <span class="variable language_">this</span>.<span class="property">form</span>.<span class="property">password2</span></span><br><span class="line">            &#125;);</span><br><span class="line">            <span class="keyword">if</span> (res.<span class="property">code</span> === <span class="string">&#x27;0&#x27;</span>) &#123;</span><br><span class="line">                <span class="variable language_">this</span>.<span class="property">$message</span>.<span class="title function_">success</span>(<span class="string">&#x27;密码修改成功&#x27;</span>);</span><br><span class="line">                <span class="variable language_">this</span>.<span class="property">$refs</span>.<span class="property">form</span>.<span class="title function_">resetFields</span>();</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="variable language_">this</span>.<span class="property">$message</span>.<span class="title function_">error</span>(res.<span class="property">msg</span> || <span class="string">&#x27;原密码错误&#x27;</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-4-经验总结"><a href="#2-4-经验总结" class="headerlink" title="2.4 经验总结"></a>2.4 经验总结</h3><ul>
+<li><strong>永远不要在客户端存储或比对密码</strong>：密码验证必须在服务端完成，客户端只负责传输用户输入。</li>
+<li><strong><code>@JsonIgnore</code> 是敏感字段的标配</strong>：任何序列化场景（API 响应、缓存存储、日志输出）都要考虑是否包含敏感字段。</li>
+<li><strong>先找影响范围再动手</strong>：修复安全问题时，最好先梳理清楚所有依赖点，避免”修复一个 bug 引入三个新 bug”。</li>
+</ul>
+<hr>
+<h2 id="三、N-1-查询噩梦：BookAudit-审核页面的性能陷阱"><a href="#三、N-1-查询噩梦：BookAudit-审核页面的性能陷阱" class="headerlink" title="三、N+1 查询噩梦：BookAudit 审核页面的性能陷阱"></a>三、N+1 查询噩梦：BookAudit 审核页面的性能陷阱</h2><p><img src="/images/posts/%E4%BB%8E%E8%B4%A6%E5%8F%B7%E6%B3%84%E9%9C%B2%E5%88%B0N+1%E4%BC%98%E5%8C%96/fig2.png" alt="N+1查询优化对比"><br><em>图2：N+1 查询优化前后对比</em></p>
+<h3 id="3-1-问题现象"><a href="#3-1-问题现象" class="headerlink" title="3.1 问题现象"></a>3.1 问题现象</h3><p>打开图书审核页面，加载 20 本待审核的图书，需要大约 <strong>5-6 秒</strong>。这个速度对于一个内部管理系统来说实在太慢了。</p>
+<p>通过浏览器的 Network 面板分析请求，发现了问题：主请求只有 1 个，但 <code>/user/&#123;id&#125;</code> 请求有 20 个！每显示一本书，都要单独请求一次上传者的用户名。</p>
+<p>这就是经典的 <strong>N+1 查询问题</strong>：1 次主查询 + N 次关联查询。</p>
+<h3 id="3-2-问题根因分析"><a href="#3-2-问题根因分析" class="headerlink" title="3.2 问题根因分析"></a>3.2 问题根因分析</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">主请求: GET /studentBook/pendingAudit</span><br><span class="line">        → 返回 20 本书（不含 uploaderName）</span><br><span class="line"></span><br><span class="line">前端 for each book:</span><br><span class="line">  GET /user/&#123;book.uploaderId&#125;</span><br><span class="line">  → 返回用户信息（含 nickName）</span><br><span class="line"></span><br><span class="line">总请求数: 1 + 20 = 21 次</span><br></pre></td></tr></table></figure>
+
+<p>图书审核页面需要显示上传者名称，但后端接口只返回 Book 实体，不包含用户信息。前端不得不逐行调用用户接口获取上传者名称，导致请求数量暴增。</p>
+<h3 id="3-3-解决方案：JOIN-查询一次搞定"><a href="#3-3-解决方案：JOIN-查询一次搞定" class="headerlink" title="3.3 解决方案：JOIN 查询一次搞定"></a>3.3 解决方案：JOIN 查询一次搞定</h3><p><strong>思路转变</strong>：与其让前端发多次请求，不如后端直接 JOIN 一次查出来。</p>
+<p><strong>第一步：<code>Book.java</code> 添加虚拟字段</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Book</span> &#123;</span><br><span class="line">    <span class="comment">// ... 原有字段 ...</span></span><br><span class="line"></span><br><span class="line">    <span class="meta">@TableField(exist = false)</span>  <span class="comment">// 标记为非数据库字段</span></span><br><span class="line">    <span class="keyword">private</span> String uploaderName;  <span class="comment">// 上传者名称（来自 JOIN 查询）</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>第二步：<code>BookMapper.java</code> 新增 JOIN 方法</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Select(&quot;SELECT b.*, u.nick_name AS uploader_name FROM book b &quot; +</span></span><br><span class="line"><span class="meta">        &quot;LEFT JOIN user u ON b.uploader_id = u.id &quot; +</span></span><br><span class="line"><span class="meta">        &quot;WHERE (b.audit_status IS NULL OR b.audit_status = 0) &quot; +</span></span><br><span class="line"><span class="meta">        &quot;ORDER BY b.create_time DESC&quot;)</span></span><br><span class="line">IPage&lt;Book&gt; <span class="title function_">selectPendingAuditWithUploader</span><span class="params">(IPage&lt;Book&gt; page)</span>;</span><br></pre></td></tr></table></figure>
+
+<p><strong>第三步：<code>StudentBookController.java</code> 改用新方法</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@GetMapping(&quot;/pendingAudit&quot;)</span></span><br><span class="line"><span class="keyword">public</span> Result&lt;?&gt; pendingAudit(Page&lt;Book&gt; page) &#123;</span><br><span class="line">    IPage&lt;Book&gt; result = bookMapper.selectPendingAuditWithUploader(page);</span><br><span class="line">    <span class="keyword">return</span> Result.success(result);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>第四步：<code>BookAudit.vue</code> 删除 loadUploaderInfo()</strong></p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 整个 loadUploaderInfo 方法删除</span></span><br><span class="line"><span class="comment">// 表格数据直接使用 book.uploaderName</span></span><br><span class="line">&lt;el-table :data=<span class="string">&quot;tableData&quot;</span>&gt;</span><br><span class="line">    <span class="language-xml"><span class="tag">&lt;<span class="name">el-table-column</span> <span class="attr">prop</span>=<span class="string">&quot;uploaderName&quot;</span> <span class="attr">label</span>=<span class="string">&quot;上传者&quot;</span> /&gt;</span></span></span><br><span class="line">    &lt;!-- 其他列 --&gt;</span><br><span class="line">&lt;/el-table&gt;</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-4-性能对比"><a href="#3-4-性能对比" class="headerlink" title="3.4 性能对比"></a>3.4 性能对比</h3><table>
+<thead>
+<tr>
+<th>指标</th>
+<th>优化前</th>
+<th>优化后</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>请求数（审核 20 本书）</td>
+<td>21 次</td>
+<td>1 次</td>
+</tr>
+<tr>
+<td>预计耗时</td>
+<td>~500ms+</td>
+<td>~50ms</td>
+</tr>
+<tr>
+<td>RTT 开销</td>
+<td>高</td>
+<td>低</td>
+</tr>
+</tbody></table>
+<p>优化后页面加载时间从 5-6 秒降到不足 1 秒，用户体验大幅提升。</p>
+<h3 id="3-5-经验总结"><a href="#3-5-经验总结" class="headerlink" title="3.5 经验总结"></a>3.5 经验总结</h3><ul>
+<li><strong>后端思维</strong>：如果页面需要展示关联数据，优先在后端用 JOIN 一次查出来，而不是让前端发多次请求。</li>
+<li><strong>N+1 是性能大敌</strong>：在设计接口时就要考虑是否会触发 N+1 查询，提前规避。</li>
+<li><strong><code>@TableField(exist = false)</code> 的妙用</strong>：用于接收 JOIN 查询的衍生字段，不影响原有数据库结构。</li>
+</ul>
+<hr>
+<h2 id="四、凭证裸奔：OSS-和-API-Key-的硬编码危机"><a href="#四、凭证裸奔：OSS-和-API-Key-的硬编码危机" class="headerlink" title="四、凭证裸奔：OSS 和 API Key 的硬编码危机"></a>四、凭证裸奔：OSS 和 API Key 的硬编码危机</h2><p><img src="/images/posts/%E4%BB%8E%E8%B4%A6%E5%8F%B7%E6%B3%84%E9%9C%B2%E5%88%B0N+1%E4%BC%98%E5%8C%96/fig3.png" alt="凭证环境变量管理"><br><em>图3：凭证安全管理的关键——环境变量注入</em></p>
+<h3 id="4-1-问题有多严重"><a href="#4-1-问题有多严重" class="headerlink" title="4.1 问题有多严重"></a>4.1 问题有多严重</h3><p>检查代码时发现，<code>OssConfig.java</code> 里写着：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="title function_">OssConfig</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="built_in">this</span>.accessKeyId = <span class="string">&quot;LTAI4xxxxxxxxxxxxxx&quot;</span>;</span><br><span class="line">    <span class="built_in">this</span>.accessKeySecret = <span class="string">&quot;Abcdefxxxxxxxxxxxxxx&quot;</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>application.properties</code> 里也有：</p>
+<figure class="highlight properties"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">aliyun.oss.access-key-id</span>=<span class="string">LTAI4xxxxxxxxxxxxxx</span></span><br><span class="line"><span class="attr">aliyun.oss.access-key-secret</span>=<span class="string">Abcdefxxxxxxxxxxxxxx</span></span><br></pre></td></tr></table></figure>
+
+<p>这意味着：代码提交到 Git 仓库之后，这些凭证就<strong>永久暴露</strong>了。任何能访问代码库的人都能拿到云资源的访问权限。</p>
+<p>更危险的是，启动日志还会打印这些凭证：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">log.info(<span class="string">&quot;OSS配置加载，accessKeyId: &#123;&#125;&quot;</span>, accessKeyId);</span><br></pre></td></tr></table></figure>
+
+<h3 id="4-2-解决方案：环境变量注入"><a href="#4-2-解决方案：环境变量注入" class="headerlink" title="4.2 解决方案：环境变量注入"></a>4.2 解决方案：环境变量注入</h3><p><strong><code>OssConfig.java</code> 重构</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="meta">@ConfigurationProperties(prefix = &quot;aliyun.oss&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">OssConfig</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> String accessKeyId;      <span class="comment">// 从环境变量注入，不再硬编码</span></span><br><span class="line">    <span class="keyword">private</span> String accessKeySecret;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@PostConstruct</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">init</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="comment">// 只记录初始化状态，不打印敏感信息</span></span><br><span class="line">        log.info(<span class="string">&quot;OSS配置已加载&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong><code>application.properties</code> 改用占位符</strong></p>
+<figure class="highlight properties"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># OSS凭证 — 通过环境变量注入，不提交到代码库</span></span><br><span class="line"><span class="attr">aliyun.oss.access-key-id</span>=<span class="string">$&#123;OSS_ACCESS_KEY_ID:&#125;</span></span><br><span class="line"><span class="attr">aliyun.oss.access-key-secret</span>=<span class="string">$&#123;OSS_ACCESS_KEY_SECRET:&#125;</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment"># API密钥 — 通过环境变量注入</span></span><br><span class="line"><span class="attr">ai.bailian.api.key</span>=<span class="string">$&#123;AI_API_KEY:&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>生产环境配置</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 在服务器上设置环境变量</span></span><br><span class="line"><span class="built_in">export</span> OSS_ACCESS_KEY_ID=your_access_key_id</span><br><span class="line"><span class="built_in">export</span> OSS_ACCESS_KEY_SECRET=your_access_key_secret</span><br><span class="line"><span class="built_in">export</span> AI_API_KEY=your_api_key</span><br></pre></td></tr></table></figure>
+
+<h3 id="4-3-安全建议"><a href="#4-3-安全建议" class="headerlink" title="4.3 安全建议"></a>4.3 安全建议</h3><ul>
+<li><strong>生产环境使用密钥管理服务</strong>：如阿里云 KMS、AWS Secrets Manager 等。</li>
+<li><strong>本地开发使用 <code>.env</code> 文件</strong>：已在 <code>.gitignore</code> 中，避免误提交。</li>
+<li><strong>定期轮换凭证</strong>：即使泄露了，及时轮换也能降低损失。</li>
+</ul>
+<hr>
+<h2 id="五、数据库索引优化：让查询飞起来"><a href="#五、数据库索引优化：让查询飞起来" class="headerlink" title="五、数据库索引优化：让查询飞起来"></a>五、数据库索引优化：让查询飞起来</h2><p><img src="/images/posts/%E4%BB%8E%E8%B4%A6%E5%8F%B7%E6%B3%84%E9%9C%B2%E5%88%B0N+1%E4%BC%98%E5%8C%96/fig4.png" alt="数据库索引优化"><br><em>图4：索引优化让数据库查询效率大幅提升</em></p>
+<h3 id="5-1-为什么需要索引优化"><a href="#5-1-为什么需要索引优化" class="headerlink" title="5.1 为什么需要索引优化"></a>5.1 为什么需要索引优化</h3><p>项目跑了一段时间后，一些高频查询开始变慢。排查发现，部分热点查询缺少索引，导致数据库进行全表扫描。举个例子，用户登录时按用户名查询：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span> <span class="keyword">FROM</span> <span class="keyword">user</span> <span class="keyword">WHERE</span> username <span class="operator">=</span> <span class="string">&#x27;admin&#x27;</span>;</span><br></pre></td></tr></table></figure>
+
+<p>没有索引的话，MySQL 需要遍历全表才能找到匹配行。随着数据量增长，这个查询会越来越慢。</p>
+<h3 id="5-2-新增索引（8-个）"><a href="#5-2-新增索引（8-个）" class="headerlink" title="5.2 新增索引（8 个）"></a>5.2 新增索引（8 个）</h3><table>
+<thead>
+<tr>
+<th>表名</th>
+<th>索引名</th>
+<th>字段</th>
+<th>类型</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>user</td>
+<td>idx_username</td>
+<td>username</td>
+<td>UNIQUE</td>
+<td>登录&#x2F;注册热点查询</td>
+</tr>
+<tr>
+<td>book</td>
+<td>uk_isbn</td>
+<td>isbn</td>
+<td>UNIQUE</td>
+<td>业务主键查询</td>
+</tr>
+<tr>
+<td>book</td>
+<td>idx_name</td>
+<td>name</td>
+<td>INDEX</td>
+<td>图书名 LIKE 查询</td>
+</tr>
+<tr>
+<td>book</td>
+<td>idx_create_time</td>
+<td>create_time</td>
+<td>INDEX</td>
+<td>仪表盘排序</td>
+</tr>
+<tr>
+<td>teacher</td>
+<td>idx_name_status</td>
+<td>(name, status)</td>
+<td>INDEX</td>
+<td>教师查询</td>
+</tr>
+<tr>
+<td>lend_rule</td>
+<td>idx_user_type_active</td>
+<td>(user_type, is_active)</td>
+<td>INDEX</td>
+<td>借阅规则查询</td>
+</tr>
+<tr>
+<td>book_review</td>
+<td>idx_isbn_deleted_time</td>
+<td>(isbn, deleted, create_time)</td>
+<td>INDEX</td>
+<td>书评列表查询</td>
+</tr>
+<tr>
+<td>student</td>
+<td>idx_name</td>
+<td>name</td>
+<td>INDEX</td>
+<td>学生名搜索</td>
+</tr>
+</tbody></table>
+<h3 id="5-3-删除冗余索引（4-个）"><a href="#5-3-删除冗余索引（4-个）" class="headerlink" title="5.3 删除冗余索引（4 个）"></a>5.3 删除冗余索引（4 个）</h3><p>有些索引是冗余的，不仅没用，还会增加写入开销：</p>
+<table>
+<thead>
+<tr>
+<th>表名</th>
+<th>索引名</th>
+<th>删除原因</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>bookwithuser</td>
+<td>idx_reader_id</td>
+<td>uk_reader_isbn 的左前缀，冗余</td>
+</tr>
+<tr>
+<td>bookwithuser</td>
+<td>idx_bwu_reader_id</td>
+<td>索引在自增主键上，无用</td>
+</tr>
+<tr>
+<td>bookwithuser</td>
+<td>idx_bwu_isbn</td>
+<td>与 idx_isbn 重复</td>
+</tr>
+<tr>
+<td>lend_record</td>
+<td>idx_fine_amount</td>
+<td>从未被查询使用</td>
+</tr>
+</tbody></table>
+<h3 id="5-4-完整-SQL-脚本"><a href="#5-4-完整-SQL-脚本" class="headerlink" title="5.4 完整 SQL 脚本"></a>5.4 完整 SQL 脚本</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- ============================================</span></span><br><span class="line"><span class="comment">-- 数据库索引优化 Round4</span></span><br><span class="line"><span class="comment">-- 日期: 2026-04-15</span></span><br><span class="line"><span class="comment">-- ============================================</span></span><br><span class="line"></span><br><span class="line"><span class="comment">-- 新增索引</span></span><br><span class="line"><span class="keyword">ALTER TABLE</span> <span class="keyword">user</span> <span class="keyword">ADD</span> <span class="keyword">UNIQUE</span> INDEX idx_username (username);</span><br><span class="line"><span class="keyword">ALTER TABLE</span> book <span class="keyword">ADD</span> <span class="keyword">UNIQUE</span> INDEX uk_isbn (isbn);</span><br><span class="line"><span class="keyword">ALTER TABLE</span> book <span class="keyword">ADD</span> INDEX idx_name (name);</span><br><span class="line"><span class="keyword">ALTER TABLE</span> book <span class="keyword">ADD</span> INDEX idx_create_time (create_time);</span><br><span class="line"><span class="keyword">ALTER TABLE</span> teacher <span class="keyword">ADD</span> INDEX idx_name_status (name, status);</span><br><span class="line"><span class="keyword">ALTER TABLE</span> lend_rule <span class="keyword">ADD</span> INDEX idx_user_type_active (user_type, is_active);</span><br><span class="line"><span class="keyword">ALTER TABLE</span> book_review <span class="keyword">ADD</span> INDEX idx_isbn_deleted_time (isbn, deleted, create_time);</span><br><span class="line"><span class="keyword">ALTER TABLE</span> student <span class="keyword">ADD</span> INDEX idx_name (name);</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 删除冗余索引</span></span><br><span class="line"><span class="keyword">ALTER TABLE</span> bookwithuser <span class="keyword">DROP</span> INDEX idx_reader_id;</span><br><span class="line"><span class="keyword">ALTER TABLE</span> bookwithuser <span class="keyword">DROP</span> INDEX idx_bwu_reader_id;</span><br><span class="line"><span class="keyword">ALTER TABLE</span> bookwithuser <span class="keyword">DROP</span> INDEX idx_bwu_isbn;</span><br><span class="line"><span class="keyword">ALTER TABLE</span> lend_record <span class="keyword">DROP</span> INDEX idx_fine_amount;</span><br></pre></td></tr></table></figure>
+
+<h3 id="5-5-性能影响预估"><a href="#5-5-性能影响预估" class="headerlink" title="5.5 性能影响预估"></a>5.5 性能影响预估</h3><table>
+<thead>
+<tr>
+<th>场景</th>
+<th>优化前</th>
+<th>优化后</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>用户登录查询</td>
+<td>全表扫描</td>
+<td>索引查找</td>
+</tr>
+<tr>
+<td>图书 ISBN 查询</td>
+<td>全表扫描</td>
+<td>UNIQUE 查找</td>
+</tr>
+<tr>
+<td>图书名搜索</td>
+<td>全表扫描</td>
+<td>索引查找</td>
+</tr>
+<tr>
+<td>仪表盘加载</td>
+<td>filesort</td>
+<td>索引排序</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="六、优化成果汇总"><a href="#六、优化成果汇总" class="headerlink" title="六、优化成果汇总"></a>六、优化成果汇总</h2><p>经过这轮优化，系统在安全性和性能上都有了显著提升：</p>
+<table>
+<thead>
+<tr>
+<th>优化项</th>
+<th>优化前</th>
+<th>优化后</th>
+<th>提升</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>密码泄露风险</td>
+<td>暴露明文密码</td>
+<td>@JsonIgnore 保护</td>
+<td>安全加固</td>
+</tr>
+<tr>
+<td>密码修改验证</td>
+<td>客户端验证</td>
+<td>服务端验证</td>
+<td>安全加固</td>
+</tr>
+<tr>
+<td>审核页面请求数</td>
+<td>21 次</td>
+<td>1 次</td>
+<td>减少 95%</td>
+</tr>
+<tr>
+<td>凭证管理</td>
+<td>硬编码</td>
+<td>环境变量</td>
+<td>安全加固</td>
+</tr>
+<tr>
+<td>热点查询</td>
+<td>部分全表扫描</td>
+<td>索引覆盖</td>
+<td>性能提升</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>这次优化让我深刻体会到：<strong>安全和性能不是事后补丁，而是设计之初就要考虑的</strong>。代码写得太随意，上线之后就会踩坑；提前多花一点时间设计，上线之后就能少很多麻烦。</p>
+<p>如果你也在做类似的项目，建议从一开始就注意这些问题：</p>
+<ol>
+<li>敏感数据加 <code>@JsonIgnore</code>，别等泄露了再补救</li>
+<li>密码验证放后端，别依赖客户端</li>
+<li>接口设计时考虑 N+1 问题</li>
+<li>凭证用环境变量，别硬编码</li>
+<li>数据库建表时同步规划索引</li>
+</ol>
+<p>希望这篇文章对你有帮助！如果有任何问题，欢迎留言交流。</p>
+<hr>
+<p><em>相关代码已脱敏处理，请勿直接照搬，结合实际项目情况调整。</em></p>
+<p><em>配乐：《暖阳下的代码时光》— 轻柔钢琴与弦乐交织，适合编程与思考的浪漫背景音乐</em></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Spring-Boot/" rel="tag"># Spring Boot</a>
+              <a href="/tags/Vue/" rel="tag"># Vue</a>
+              <a href="/tags/%E5%AE%89%E5%85%A8%E5%8A%A0%E5%9B%BA/" rel="tag"># 安全加固</a>
+              <a href="/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/" rel="tag"># 性能优化</a>
+              <a href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93%E7%B4%A2%E5%BC%95/" rel="tag"># 数据库索引</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/04/14/Spring-Boot%E5%80%9F%E9%98%85%E6%B5%81%E7%A8%8B%E9%87%8D%E6%9E%84/" rel="prev" title="Spring Boot 借阅流程重构实战：从400行上帝类到三层架构">
+                  <i class="fa fa-angle-left"></i> Spring Boot 借阅流程重构实战：从400行上帝类到三层架构
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  
+  <div class="comments giscus-container">
+  </div>
+  
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">zhlifeiy35</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/zhdmm35" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"zhdmm35/zhdmm35.github.io","repo_id":"R_kgDOON4bhg","category":"Announcements","category_id":"DIC_kwDOON4bhs4C3dEc","mapping":"pathname","strict":0,"reactions_enabled":1,"emit_metadata":0,"theme":"preferred_color_scheme","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+
+<script>
+document.addEventListener('page:loaded', () => {
+  if (!CONFIG.page.comments) return;
+
+  NexT.utils.loadComments('.giscus-container')
+    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
+      attributes: {
+        async                   : true,
+        crossOrigin             : 'anonymous',
+        'data-repo'             : CONFIG.giscus.repo,
+        'data-repo-id'          : CONFIG.giscus.repo_id,
+        'data-category'         : CONFIG.giscus.category,
+        'data-category-id'      : CONFIG.giscus.category_id,
+        'data-mapping'          : CONFIG.giscus.mapping,
+        'data-strict'           : CONFIG.giscus.strict,
+        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
+        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
+        'data-theme'            : CONFIG.giscus.theme,
+        'data-lang'             : CONFIG.giscus.lang,
+        'data-input-position'   : CONFIG.giscus.input_position,
+        'data-loading'          : CONFIG.giscus.loading
+      },
+      parentNode: document.querySelector('.giscus-container')
+    }));
+});
+</script>
+
+</body>
+</html>
