@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="导读 今天我要给大家分享一个在广东水文项目中遇到的实际案例——水文数据均值对比查询功能的Bug修复。这个问题涉及到水文数据库的特殊存储约定、MyBatis XML映射文件的SQL编写、以及Java时间处理逻辑的综合考量。通过这个案例，我将从问题分析、根本原因定位、到最终修复方案的完整过程，希望能给有类似开发经验的朋友一些参考和启发。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="水文数据均值对比查询Bug修复全记录：从问题分析到完整修复">
+<meta property="og:url" content="https://zhlifeiy.codes/2026/05/07/%E6%B0%B4%E6%96%87%E6%95%B0%E6%8D%AE%E5%9D%87%E5%80%BC%E5%AF%B9%E6%AF%94%E6%9F%A5%E8%AF%A2Bug%E4%BF%AE%E5%A4%8D%E5%85%A8%E8%AE%B0%E5%BD%95/index.html">
+<meta property="og:site_name" content="我的技术博客">
+<meta property="og:description" content="导读 今天我要给大家分享一个在广东水文项目中遇到的实际案例——水文数据均值对比查询功能的Bug修复。这个问题涉及到水文数据库的特殊存储约定、MyBatis XML映射文件的SQL编写、以及Java时间处理逻辑的综合考量。通过这个案例，我将从问题分析、根本原因定位、到最终修复方案的完整过程，希望能给有类似开发经验的朋友一些参考和启发。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/%E6%B0%B4%E6%96%87%E6%95%B0%E6%8D%AE%E5%9D%87%E5%80%BC%E5%AF%B9%E6%AF%94%E6%9F%A5%E8%AF%A2Bug%E4%BF%AE%E5%A4%8D%E5%85%A8%E8%AE%B0%E5%BD%95.png">
+<meta property="article:published_time" content="2026-05-07T14:00:00.000Z">
+<meta property="article:modified_time" content="2026-05-07T14:02:18.784Z">
+<meta property="article:author" content="zhlifeiy35">
+<meta property="article:tag" content="MyBatis">
+<meta property="article:tag" content="Java">
+<meta property="article:tag" content="Bug修复">
+<meta property="article:tag" content="水文数据">
+<meta property="article:tag" content="ST_RVAV_R">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/%E6%B0%B4%E6%96%87%E6%95%B0%E6%8D%AE%E5%9D%87%E5%80%BC%E5%AF%B9%E6%AF%94%E6%9F%A5%E8%AF%A2Bug%E4%BF%AE%E5%A4%8D%E5%85%A8%E8%AE%B0%E5%BD%95.png">
+
+
+<link rel="canonical" href="https://zhlifeiy.codes/2026/05/07/%E6%B0%B4%E6%96%87%E6%95%B0%E6%8D%AE%E5%9D%87%E5%80%BC%E5%AF%B9%E6%AF%94%E6%9F%A5%E8%AF%A2Bug%E4%BF%AE%E5%A4%8D%E5%85%A8%E8%AE%B0%E5%BD%95/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://zhlifeiy.codes/2026/05/07/%E6%B0%B4%E6%96%87%E6%95%B0%E6%8D%AE%E5%9D%87%E5%80%BC%E5%AF%B9%E6%AF%94%E6%9F%A5%E8%AF%A2Bug%E4%BF%AE%E5%A4%8D%E5%85%A8%E8%AE%B0%E5%BD%95/","path":"2026/05/07/水文数据均值对比查询Bug修复全记录/","title":"水文数据均值对比查询Bug修复全记录：从问题分析到完整修复"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>水文数据均值对比查询Bug修复全记录：从问题分析到完整修复 | 我的技术博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">我的技术博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">记录学习与成长</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-guestbook"><a href="/guestbook/" rel="section"><i class="fa fa-comment-dots fa-fw"></i>留言板</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%BC%E8%AF%BB"><span class="nav-number">1.</span> <span class="nav-text">导读</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">2.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E8%83%8C%E6%99%AF%E4%B8%8E%E7%8E%B0%E8%B1%A1"><span class="nav-number">3.</span> <span class="nav-text">问题背景与现象</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%A8%E6%88%B7%E5%8F%8D%E9%A6%88%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">3.1.</span> <span class="nav-text">用户反馈的问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BD%B1%E5%93%8D%E8%8C%83%E5%9B%B4%E8%AF%84%E4%BC%B0"><span class="nav-number">3.2.</span> <span class="nav-text">影响范围评估</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B0%B4%E6%96%87%E6%95%B0%E6%8D%AE%E5%BA%93%E6%A0%B8%E5%BF%83%E7%9F%A5%E8%AF%86"><span class="nav-number">4.</span> <span class="nav-text">水文数据库核心知识</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#STTDRCD%E7%BC%96%E7%A0%81%E5%AE%9A%E4%B9%89"><span class="nav-number">4.1.</span> <span class="nav-text">STTDRCD编码定义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%AD%98%E5%82%A8%E6%97%B6%E9%97%B4%E7%82%B9%E8%A7%84%E5%88%99"><span class="nav-number">4.2.</span> <span class="nav-text">数据存储时间点规则</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A2%84%E8%AE%A1%E7%AE%97%E8%A1%A8%E7%BB%93%E6%9E%84"><span class="nav-number">4.3.</span> <span class="nav-text">预计算表结构</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E6%A0%B9%E5%9B%A0%E5%88%86%E6%9E%90"><span class="nav-number">5.</span> <span class="nav-text">问题根因分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%97%AE%E9%A2%981%EF%BC%9AMONTH%E6%9C%88%E4%BB%BD%E8%8C%83%E5%9B%B4%E6%9F%A5%E8%AF%A2%E9%80%BB%E8%BE%91%E9%94%99%E8%AF%AF"><span class="nav-number">5.1.</span> <span class="nav-text">问题1：MONTH月份范围查询逻辑错误</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%97%AE%E9%A2%982-5%EF%BC%9A%E6%97%B6%E9%97%B4%E5%AF%B9%E9%BD%90%E4%B8%8E%E6%98%A0%E5%B0%84%E8%A7%84%E5%88%99%E9%94%99%E8%AF%AF"><span class="nav-number">5.2.</span> <span class="nav-text">问题2-5：时间对齐与映射规则错误</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%97%AE%E9%A2%986%EF%BC%9A%E6%9F%A5%E8%AF%A2%E8%8C%83%E5%9B%B4%E6%9C%AA%E8%87%AA%E5%8A%A8%E6%89%A9%E5%B1%95"><span class="nav-number">5.3.</span> <span class="nav-text">问题6：查询范围未自动扩展</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%97%AE%E9%A2%987%EF%BC%9AMONTH%E7%B1%BB%E5%9E%8BstartTime%E6%9C%AA%E5%81%8F%E7%A7%BB"><span class="nav-number">5.4.</span> <span class="nav-text">问题7：MONTH类型startTime未偏移</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%97%AE%E9%A2%988%EF%BC%9A%E5%BE%AA%E7%8E%AF%E7%BB%88%E6%AD%A2%E6%9D%A1%E4%BB%B6%E9%94%99%E8%AF%AF"><span class="nav-number">5.5.</span> <span class="nav-text">问题8：循环终止条件错误</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%8C%E6%95%B4%E4%BF%AE%E5%A4%8D%E6%96%B9%E6%A1%88"><span class="nav-number">6.</span> <span class="nav-text">完整修复方案</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Step-1%EF%BC%9A%E4%BF%AE%E6%AD%A3STTDRCD%E5%80%BC"><span class="nav-number">6.1.</span> <span class="nav-text">Step 1：修正STTDRCD值</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Step-2%EF%BC%9A%E6%96%B0%E5%A2%9E%E6%8C%89%E6%9C%88%E4%BB%BD%E5%88%97%E8%A1%A8%E6%9F%A5%E8%AF%A2%E6%96%B9%E6%B3%95"><span class="nav-number">6.2.</span> <span class="nav-text">Step 2：新增按月份列表查询方法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Step-3%EF%BC%9A%E8%87%AA%E5%8A%A8%E8%B0%83%E6%95%B4%E6%9F%A5%E8%AF%A2%E8%8C%83%E5%9B%B4"><span class="nav-number">6.3.</span> <span class="nav-text">Step 3：自动调整查询范围</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Step-4%EF%BC%9AMONTH%E9%A2%84%E8%AE%A1%E7%AE%97%E6%9F%A5%E8%AF%A2%E6%94%B9%E4%B8%BA%E6%95%B0%E6%8D%AE%E7%82%B9%E9%81%8D%E5%8E%86"><span class="nav-number">6.4.</span> <span class="nav-text">Step 4：MONTH预计算查询改为数据点遍历</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Step-5%EF%BC%9A%E6%97%B6%E9%97%B4%E6%98%A0%E5%B0%84%E4%BF%AE%E6%AD%A3"><span class="nav-number">6.5.</span> <span class="nav-text">Step 5：时间映射修正</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Step-6%EF%BC%9A%E5%9B%9E%E9%80%80%E8%B7%AF%E5%BE%84%E5%90%8C%E6%AD%A5%E4%BF%AE%E6%AD%A3"><span class="nav-number">6.6.</span> <span class="nav-text">Step 6：回退路径同步修正</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E4%BF%AE%E6%94%B9%E6%B1%87%E6%80%BB"><span class="nav-number">7.</span> <span class="nav-text">代码修改汇总</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E9%AA%8C%E8%AF%81%E7%BB%93%E6%9E%9C"><span class="nav-number">8.</span> <span class="nav-text">测试验证结果</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E7%BB%8F%E9%AA%8C%E6%95%99%E8%AE%AD"><span class="nav-number">9.</span> <span class="nav-text">核心经验教训</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E6%B0%B4%E6%96%87%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84STTDRCD%E7%BC%96%E7%A0%81%E5%BF%85%E9%A1%BB%E4%B8%A5%E6%A0%BC%E5%AF%B9%E7%85%A7%E6%A0%87%E5%87%86%E6%96%87%E6%A1%A3"><span class="nav-number">9.1.</span> <span class="nav-text">1. 水文数据库的STTDRCD编码必须严格对照标准文档</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-%E6%B6%89%E5%8F%8A%E2%80%9D%E6%95%B0%E6%8D%AE%E7%82%B9%E4%BB%A3%E8%A1%A8%E6%97%B6%E6%AE%B5%E2%80%9D%E7%9A%84%E6%9F%A5%E8%AF%A2%EF%BC%8C%E5%BF%85%E9%A1%BB%E6%8C%89%E6%95%B0%E6%8D%AE%E7%82%B9%E4%BD%8D%E7%BD%AE%E9%81%8D%E5%8E%86"><span class="nav-number">9.2.</span> <span class="nav-text">2. 涉及”数据点代表时段”的查询，必须按数据点位置遍历</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-%E6%B0%B4%E6%96%87%E6%97%A5%E4%BB%8E08-00%E5%BC%80%E5%A7%8B%EF%BC%8C%E6%89%80%E6%9C%89%E6%97%B6%E9%97%B4%E6%9E%84%E9%80%A0%E5%BF%85%E9%A1%BB%E4%BD%BF%E7%94%A808-00"><span class="nav-number">9.3.</span> <span class="nav-text">3. 水文日从08:00开始，所有时间构造必须使用08:00</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-%E4%BF%AE%E5%A4%8D%E5%BF%85%E9%A1%BB%E8%A6%86%E7%9B%96%E5%8F%8C%E8%B7%AF%E5%BE%84"><span class="nav-number">9.4.</span> <span class="nav-text">4. 修复必须覆盖双路径</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E7%AB%AF%E5%AF%B9%E6%8E%A5%E8%A6%81%E7%82%B9"><span class="nav-number">10.</span> <span class="nav-text">前端对接要点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%93%E8%AF%AD"><span class="nav-number">11.</span> <span class="nav-text">结语</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%85%8D%E5%A5%97%E9%9F%B3%E9%A2%91"><span class="nav-number">12.</span> <span class="nav-text">配套音频</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AF%BC%E8%AF%BB%EF%BC%88%E6%88%90%E7%86%9F%E5%A5%B3%E5%A3%B0%EF%BC%89"><span class="nav-number">12.1.</span> <span class="nav-text">导读（成熟女声）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E5%A5%97BGM"><span class="nav-number">12.2.</span> <span class="nav-text">配套BGM</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zhlifeiy35</p>
+  <div class="site-description" itemprop="description">分享编程技术、AI经验、学习笔记</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">32</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">106</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zhdmm35" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zhdmm35" rel="noopener me" target="_blank"><i class="fa fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/%E6%B0%B4%E6%96%87%E6%95%B0%E6%8D%AE%E5%9D%87%E5%80%BC%E5%AF%B9%E6%AF%94%E6%9F%A5%E8%AF%A2Bug%E4%BF%AE%E5%A4%8D%E5%85%A8%E8%AE%B0%E5%BD%95.png" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/05/07/%E6%B0%B4%E6%96%87%E6%95%B0%E6%8D%AE%E5%9D%87%E5%80%BC%E5%AF%B9%E6%AF%94%E6%9F%A5%E8%AF%A2Bug%E4%BF%AE%E5%A4%8D%E5%85%A8%E8%AE%B0%E5%BD%95/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="我的技术博客">
+      <meta itemprop="description" content="分享编程技术、AI经验、学习笔记">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="水文数据均值对比查询Bug修复全记录：从问题分析到完整修复 | 我的技术博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          水文数据均值对比查询Bug修复全记录：从问题分析到完整修复
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2026-05-07 22:00:00 / 修改时间：22:02:18" itemprop="dateCreated datePublished" datetime="2026-05-07T22:00:00+08:00">2026-05-07</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">后端开发</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E6%B0%B4%E6%96%87%E9%A1%B9%E7%9B%AE/" itemprop="url" rel="index"><span itemprop="name">水文项目</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="导读"><a href="#导读" class="headerlink" title="导读"></a>导读</h2><blockquote>
+<p>今天我要给大家分享一个在广东水文项目中遇到的实际案例——水文数据均值对比查询功能的Bug修复。这个问题涉及到水文数据库的特殊存储约定、MyBatis XML映射文件的SQL编写、以及Java时间处理逻辑的综合考量。通过这个案例，我将从问题分析、根本原因定位、到最终修复方案的完整过程，希望能给有类似开发经验的朋友一些参考和启发。</p>
+</blockquote>
+<span id="more"></span>
+
+<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在水利信息化系统中，水文数据的统计分析是核心功能之一。今天在项目中遇到了均值对比查询API的异常——MONTH（月均值）和XUN（旬均值）类型的查询返回结果条数错误、时间对齐偏差、STTDRCD值错误等多个问题。这些问题单独看都不复杂，但组合在一起就需要对水文数据的存储机制有深入理解才能彻底解决。</p>
+<p>让我先介绍一下背景：广东水文项目使用的是规范的水文数据库，其中ST_RVAV_R表存储着各种统计周期的均值数据，包括日均值、旬均值、月均值等。而问题恰恰出在对这些数据存储约定的理解偏差上。</p>
+<h2 id="问题背景与现象"><a href="#问题背景与现象" class="headerlink" title="问题背景与现象"></a>问题背景与现象</h2><h3 id="用户反馈的问题"><a href="#用户反馈的问题" class="headerlink" title="用户反馈的问题"></a>用户反馈的问题</h3><p>用户在调用均值对比查询API（<code>/api/water/comparison/average</code>）时，发现以下异常：</p>
+<p><strong>问题1：MONTH类型查询条数错误</strong></p>
+<ul>
+<li>请求：2026年4月7日到5月7日的月均值数据</li>
+<li>期望返回：1条（只有4月份的月均值）</li>
+<li>实际返回：2条（4月和5月）</li>
+</ul>
+<p><strong>问题2：时间对齐错误</strong></p>
+<ul>
+<li>前端收到的数据时间点显示为00:00:00</li>
+<li>但水文数据标准存储时间应该是08:00:00</li>
+</ul>
+<p><strong>问题3：旬均值时间映射完全错误</strong></p>
+<ul>
+<li>上旬显示为1日，实际应该是11日</li>
+<li>中旬显示为11日，实际应该是21日</li>
+<li>下旬显示为21日，实际应该是下月1日</li>
+</ul>
+<p><strong>问题4：STTDRCD编码错误</strong></p>
+<ul>
+<li>旬均值查询使用了STTDRCD&#x3D;’3’（候均值，5天），而非’4’（旬均值）</li>
+<li>月均值查询使用了STTDRCD&#x3D;’4’，而非’5’</li>
+</ul>
+<h3 id="影响范围评估"><a href="#影响范围评估" class="headerlink" title="影响范围评估"></a>影响范围评估</h3><table>
+<thead>
+<tr>
+<th>功能</th>
+<th>状态</th>
+<th>影响</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>日均值对比查询</td>
+<td>可用</td>
+<td>无</td>
+</tr>
+<tr>
+<td>月均值对比查询</td>
+<td>不可用</td>
+<td>高</td>
+</tr>
+<tr>
+<td>旬均值对比查询</td>
+<td>不可用</td>
+<td>高</td>
+</tr>
+<tr>
+<td>月&#x2F;旬历史对比</td>
+<td>不可用</td>
+<td>高</td>
+</tr>
+</tbody></table>
+<h2 id="水文数据库核心知识"><a href="#水文数据库核心知识" class="headerlink" title="水文数据库核心知识"></a>水文数据库核心知识</h2><p><img src="/images/posts/%E6%B0%B4%E6%96%87%E6%95%B0%E6%8D%AE%E5%9D%87%E5%80%BC%E5%AF%B9%E6%AF%94%E6%9F%A5%E8%AF%A2Bug%E4%BF%AE%E5%A4%8D%E5%85%A8%E8%AE%B0%E5%BD%95/fig1.png" alt="ST_RVAV_R存储约定说明图"><br><em>图1：ST_RVAV_R表的数据存储时间点规则</em></p>
+<p>在开始修复之前，我们必须先理解ST_RVAV_R表的存储约定。这是水文行业数据库的标准规范：</p>
+<h3 id="STTDRCD编码定义"><a href="#STTDRCD编码定义" class="headerlink" title="STTDRCD编码定义"></a>STTDRCD编码定义</h3><table>
+<thead>
+<tr>
+<th>统计类型</th>
+<th>STTDRCD值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>日均值</td>
+<td>‘1’</td>
+<td>每天08:00作为水文日分界</td>
+</tr>
+<tr>
+<td>候均值</td>
+<td>‘3’</td>
+<td>每5天一个统计周期</td>
+</tr>
+<tr>
+<td>旬均值</td>
+<td>‘4’</td>
+<td>上中下旬各一个统计周期</td>
+</tr>
+<tr>
+<td>月均值</td>
+<td>‘5’</td>
+<td>每月一个统计周期</td>
+</tr>
+</tbody></table>
+<h3 id="数据存储时间点规则"><a href="#数据存储时间点规则" class="headerlink" title="数据存储时间点规则"></a>数据存储时间点规则</h3><p><strong>关键理解</strong>：水文数据的时间点是”代表时段”而非”自然日期”。</p>
+<table>
+<thead>
+<tr>
+<th>统计类型</th>
+<th>存储时间点</th>
+<th>示例</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>日均值</td>
+<td>当天08:00</td>
+<td>4月5日均值 → 04-05 08:00</td>
+</tr>
+<tr>
+<td>旬均值（上旬）</td>
+<td>11日08:00</td>
+<td>上旬结束于10日，11日08:00出数</td>
+</tr>
+<tr>
+<td>旬均值（中旬）</td>
+<td>21日08:00</td>
+<td>中旬结束于20日，21日08:00出数</td>
+</tr>
+<tr>
+<td>旬均值（下旬）</td>
+<td>下月1日08:00</td>
+<td>下旬结束于月末，下月1日08:00出数</td>
+</tr>
+<tr>
+<td>月均值</td>
+<td>下月1日08:00</td>
+<td>4月均值 → 05-01 08:00</td>
+</tr>
+</tbody></table>
+<h3 id="预计算表结构"><a href="#预计算表结构" class="headerlink" title="预计算表结构"></a>预计算表结构</h3><p>st_river_multi_year_avg表存储多年月均值预计算数据：</p>
+<ul>
+<li><code>period_type=&#39;MONTH&#39;</code></li>
+<li><code>month</code>列代表实际月份（如month&#x3D;4表示4月）</li>
+<li>查询时需要将month转换为ST_RVAV_R对应的时间点</li>
+</ul>
+<h2 id="问题根因分析"><a href="#问题根因分析" class="headerlink" title="问题根因分析"></a>问题根因分析</h2><h3 id="问题1：MONTH月份范围查询逻辑错误"><a href="#问题1：MONTH月份范围查询逻辑错误" class="headerlink" title="问题1：MONTH月份范围查询逻辑错误"></a>问题1：MONTH月份范围查询逻辑错误</h3><p>原代码使用简单的月份范围查询：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 原逻辑（错误）</span></span><br><span class="line">averageData = riverMultiYearAvgMapper.selectMonthAvgByMonthRange(</span><br><span class="line">    query.getStcd(),</span><br><span class="line">    startDate.getMonthValue(),  <span class="comment">// 4</span></span><br><span class="line">    endDate.getMonthValue()     <span class="comment">// 5</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<p>这种方式会返回4月和5月两条记录，但实际上5月的数据点（06-01 08:00）根本不在请求的时间范围内。</p>
+<h3 id="问题2-5：时间对齐与映射规则错误"><a href="#问题2-5：时间对齐与映射规则错误" class="headerlink" title="问题2-5：时间对齐与映射规则错误"></a>问题2-5：时间对齐与映射规则错误</h3><p>原代码存在以下问题：</p>
+<ul>
+<li>时间使用00:00:00而非水文标准的08:00:00</li>
+<li>旬均值映射：上旬→1日（应为11日），中旬→11日（应为21日），下旬→21日（应为下月1日）</li>
+<li>月均值映射：month&#x3D;4→4月1日（应为5月1日，因为月均值存储在下月1日）</li>
+</ul>
+<h3 id="问题6：查询范围未自动扩展"><a href="#问题6：查询范围未自动扩展" class="headerlink" title="问题6：查询范围未自动扩展"></a>问题6：查询范围未自动扩展</h3><p><img src="/images/posts/%E6%B0%B4%E6%96%87%E6%95%B0%E6%8D%AE%E5%9D%87%E5%80%BC%E5%AF%B9%E6%AF%94%E6%9F%A5%E8%AF%A2Bug%E4%BF%AE%E5%A4%8D%E5%85%A8%E8%AE%B0%E5%BD%95/fig4.png" alt="双路径查询架构"><br><em>图4：预计算表路径与回退路径的双路径查询架构</em></p>
+<p>用户请求4月1日到4月30日的月均值，但4月的月均值存储在5月1日08:00，超出查询范围导致数据遗漏。用户需要手动填下月日期才能正常工作。</p>
+<h3 id="问题7：MONTH类型startTime未偏移"><a href="#问题7：MONTH类型startTime未偏移" class="headerlink" title="问题7：MONTH类型startTime未偏移"></a>问题7：MONTH类型startTime未偏移</h3><p>请求startTime&#x3D;2026-01-01 08:00时，12月均值（存储在01-01 08:00）被错误包含进来，因为第一个数据点实际上代表的是上个月的数据。</p>
+<h3 id="问题8：循环终止条件错误"><a href="#问题8：循环终止条件错误" class="headerlink" title="问题8：循环终止条件错误"></a>问题8：循环终止条件错误</h3><p>历史均值的月份遍历循环使用endDate作为终止条件，但最后一个代表月的数据点在下月1日，导致遗漏最后一个月份的数据。</p>
+<h2 id="完整修复方案"><a href="#完整修复方案" class="headerlink" title="完整修复方案"></a>完整修复方案</h2><h3 id="Step-1：修正STTDRCD值"><a href="#Step-1：修正STTDRCD值" class="headerlink" title="Step 1：修正STTDRCD值"></a>Step 1：修正STTDRCD值</h3><p>文件：<code>WaterAverageDataMapper.xml</code></p>
+<p><strong>修改前</strong>：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">&lt;!-- 旬均值使用了错误的&#x27;3&#x27; --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">select</span> <span class="attr">id</span>=<span class="string">&quot;selectXunAverageData&quot;</span> <span class="attr">resultType</span>=<span class="string">&quot;map&quot;</span>&gt;</span></span><br><span class="line">    SELECT ...</span><br><span class="line">    FROM ST_RVAV_R</span><br><span class="line">    WHERE STCD = #&#123;stcd&#125;</span><br><span class="line">      AND STTDRCD = &#x27;3&#x27;  <span class="comment">&lt;!-- 错误：这是候均值 --&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">select</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">&lt;!-- 月均值使用了错误的&#x27;4&#x27; --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">select</span> <span class="attr">id</span>=<span class="string">&quot;selectMonthAverageData&quot;</span> <span class="attr">resultType</span>=<span class="string">&quot;map&quot;</span>&gt;</span></span><br><span class="line">    SELECT ...</span><br><span class="line">    FROM ST_RVAV_R</span><br><span class="line">    WHERE STCD = #&#123;stcd&#125;</span><br><span class="line">      AND STTDRCD = &#x27;4&#x27;  <span class="comment">&lt;!-- 错误：这是旬均值 --&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">select</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>修改后</strong>：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">&lt;!-- 修正为正确的&#x27;4&#x27; --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">select</span> <span class="attr">id</span>=<span class="string">&quot;selectXunAverageData&quot;</span> <span class="attr">resultType</span>=<span class="string">&quot;map&quot;</span>&gt;</span></span><br><span class="line">    SELECT ...</span><br><span class="line">    FROM ST_RVAV_R</span><br><span class="line">    WHERE STCD = #&#123;stcd&#125;</span><br><span class="line">      AND STTDRCD = &#x27;4&#x27;  <span class="comment">&lt;!-- 正确：旬均值 --&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">select</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">&lt;!-- 修正为正确的&#x27;5&#x27; --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">select</span> <span class="attr">id</span>=<span class="string">&quot;selectMonthAverageData&quot;</span> <span class="attr">resultType</span>=<span class="string">&quot;map&quot;</span>&gt;</span></span><br><span class="line">    SELECT ...</span><br><span class="line">    FROM ST_RVAV_R</span><br><span class="line">    WHERE STCD = #&#123;stcd&#125;</span><br><span class="line">      AND STTDRCD = &#x27;5&#x27;  <span class="comment">&lt;!-- 正确：月均值 --&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">select</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="Step-2：新增按月份列表查询方法"><a href="#Step-2：新增按月份列表查询方法" class="headerlink" title="Step 2：新增按月份列表查询方法"></a>Step 2：新增按月份列表查询方法</h3><p>为了解决月份范围查询的问题，我新增了<code>selectMonthAvgByMonthList</code>方法：</p>
+<p>文件：<code>RiverMultiYearAvgMapper.java</code></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 根据月份列表查询多年月平均值</span></span><br><span class="line"><span class="comment"> * </span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> stcd 测站代码</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> months 月份列表（如[4, 5, 6]代表4月、5月、6月）</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span> 多年月平均值列表</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">List&lt;Map&lt;String, Object&gt;&gt; <span class="title function_">selectMonthAvgByMonthList</span><span class="params">(</span></span><br><span class="line"><span class="params">    <span class="meta">@Param(&quot;stcd&quot;)</span> String stcd,</span></span><br><span class="line"><span class="params">    <span class="meta">@Param(&quot;months&quot;)</span> List&lt;Integer&gt; months</span></span><br><span class="line"><span class="params">)</span>;</span><br></pre></td></tr></table></figure>
+
+<p>文件：<code>RiverMultiYearAvgMapper.xml</code></p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">&lt;!-- 根据月份列表查询多年月平均值 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">select</span> <span class="attr">id</span>=<span class="string">&quot;selectMonthAvgByMonthList&quot;</span> <span class="attr">resultType</span>=<span class="string">&quot;map&quot;</span>&gt;</span></span><br><span class="line">    SELECT</span><br><span class="line">        month,</span><br><span class="line">        avg_water_level as water_level,</span><br><span class="line">        avg_flow as flow,</span><br><span class="line">        start_year,</span><br><span class="line">        end_year,</span><br><span class="line">        sample_count,</span><br><span class="line">        data_count</span><br><span class="line">    FROM st_river_multi_year_avg</span><br><span class="line">    WHERE stcd = #&#123;stcd&#125;</span><br><span class="line">      AND period_type = &#x27;MONTH&#x27;</span><br><span class="line">      AND month IN</span><br><span class="line">      <span class="tag">&lt;<span class="name">foreach</span> <span class="attr">collection</span>=<span class="string">&quot;months&quot;</span> <span class="attr">item</span>=<span class="string">&quot;month&quot;</span> <span class="attr">open</span>=<span class="string">&quot;(&quot;</span> <span class="attr">separator</span>=<span class="string">&quot;,&quot;</span> <span class="attr">close</span>=<span class="string">&quot;)&quot;</span>&gt;</span></span><br><span class="line">          #&#123;month&#125;</span><br><span class="line">      <span class="tag">&lt;/<span class="name">foreach</span>&gt;</span></span><br><span class="line">    ORDER BY month</span><br><span class="line"><span class="tag">&lt;/<span class="name">select</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="Step-3：自动调整查询范围"><a href="#Step-3：自动调整查询范围" class="headerlink" title="Step 3：自动调整查询范围"></a>Step 3：自动调整查询范围</h3><p>这是修复的核心部分——需要根据数据点的存储规则自动调整查询范围：</p>
+<p>文件：<code>WaterComparisonServiceImpl.java</code></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 旬/月均值存储在下一旬/月的第一天（如4月下旬存在5月1日08:00），</span></span><br><span class="line"><span class="comment">// 需要自动调整查询范围：startTime跳过代表上个月的数据点，endTime扩展以捕获最后一个时段</span></span><br><span class="line"><span class="type">Date</span> <span class="variable">currentDataStart</span> <span class="operator">=</span> currentStart;</span><br><span class="line"><span class="type">Date</span> <span class="variable">currentDataEnd</span> <span class="operator">=</span> currentEnd;</span><br><span class="line"><span class="keyword">if</span> (<span class="string">&quot;MONTH&quot;</span>.equalsIgnoreCase(query.getAvgPeriod())) &#123;</span><br><span class="line">    <span class="type">LocalDate</span> <span class="variable">sd</span> <span class="operator">=</span> startDateTime.toLocalDate();</span><br><span class="line">    <span class="comment">// 第一个代表startDate所在月份的数据点，位于下月1日08:00</span></span><br><span class="line">    <span class="type">LocalDate</span> <span class="variable">adjustedStart</span> <span class="operator">=</span> sd.withDayOfMonth(<span class="number">1</span>).plusMonths(<span class="number">1</span>);</span><br><span class="line">    currentDataStart = Date.from(adjustedStart.atTime(<span class="number">8</span>, <span class="number">0</span>).atZone(ZoneId.systemDefault()).toInstant());</span><br><span class="line">    </span><br><span class="line">    <span class="type">LocalDate</span> <span class="variable">extendedEnd</span> <span class="operator">=</span> endDateTime.toLocalDate().plusMonths(<span class="number">1</span>).withDayOfMonth(<span class="number">2</span>);</span><br><span class="line">    currentDataEnd = Date.from(extendedEnd.atStartOfDay(ZoneId.systemDefault()).toInstant());</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (<span class="string">&quot;XUN&quot;</span>.equalsIgnoreCase(query.getAvgPeriod())) &#123;</span><br><span class="line">    <span class="type">LocalDate</span> <span class="variable">sd</span> <span class="operator">=</span> startDateTime.toLocalDate();</span><br><span class="line">    <span class="comment">// 跳过代表上个月下旬的数据点（当月1日08:00）</span></span><br><span class="line">    <span class="keyword">if</span> (sd.getDayOfMonth() &lt;= <span class="number">1</span>) &#123;</span><br><span class="line">        <span class="type">LocalDate</span> <span class="variable">adjustedStart</span> <span class="operator">=</span> sd.withDayOfMonth(<span class="number">2</span>);</span><br><span class="line">        currentDataStart = Date.from(adjustedStart.atTime(<span class="number">0</span>, <span class="number">0</span>).atZone(ZoneId.systemDefault()).toInstant());</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="type">LocalDate</span> <span class="variable">extendedEnd</span> <span class="operator">=</span> endDateTime.toLocalDate().plusMonths(<span class="number">1</span>).withDayOfMonth(<span class="number">2</span>);</span><br><span class="line">    currentDataEnd = Date.from(extendedEnd.atStartOfDay(ZoneId.systemDefault()).toInstant());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>逻辑说明</strong>：</p>
+<ul>
+<li>MONTH的startTime必须偏移到下月1日08:00，否则会把上月的月均值错误包含进来</li>
+<li>MONTH的endTime需要扩展到下月2日，才能捕获最后一个代表月份的数据点</li>
+<li>XUN需要在月初跳过代表上月下旬的数据点</li>
+</ul>
+<h3 id="Step-4：MONTH预计算查询改为数据点遍历"><a href="#Step-4：MONTH预计算查询改为数据点遍历" class="headerlink" title="Step 4：MONTH预计算查询改为数据点遍历"></a>Step 4：MONTH预计算查询改为数据点遍历</h3><p><img src="/images/posts/%E6%B0%B4%E6%96%87%E6%95%B0%E6%8D%AE%E5%9D%87%E5%80%BC%E5%AF%B9%E6%AF%94%E6%9F%A5%E8%AF%A2Bug%E4%BF%AE%E5%A4%8D%E5%85%A8%E8%AE%B0%E5%BD%95/fig3.png" alt="月份数据点遍历逻辑流程图"><br><em>图3：数据点遍历逻辑——4月7日到5月7日只返回4月</em></p>
+<p>原逻辑直接提取月份范围，新逻辑改为按数据点遍历：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (<span class="string">&quot;MONTH&quot;</span>.equalsIgnoreCase(avgPeriod)) &#123;</span><br><span class="line">    Set&lt;Integer&gt; monthsToQuery = <span class="keyword">new</span> <span class="title class_">HashSet</span>&lt;&gt;();</span><br><span class="line">    <span class="type">LocalDate</span> <span class="variable">firstDataPoint</span> <span class="operator">=</span> startDate.withDayOfMonth(<span class="number">1</span>).plusMonths(<span class="number">1</span>);</span><br><span class="line">    <span class="type">LocalDate</span> <span class="variable">loopEnd</span> <span class="operator">=</span> endDate.withDayOfMonth(<span class="number">1</span>).plusMonths(<span class="number">1</span>);</span><br><span class="line">    <span class="type">LocalDate</span> <span class="variable">dataPoint</span> <span class="operator">=</span> firstDataPoint;</span><br><span class="line">    <span class="keyword">while</span> (!dataPoint.isAfter(loopEnd)) &#123;</span><br><span class="line">        <span class="type">int</span> <span class="variable">representMonth</span> <span class="operator">=</span> dataPoint.minusMonths(<span class="number">1</span>).getMonthValue();</span><br><span class="line">        monthsToQuery.add(representMonth);</span><br><span class="line">        dataPoint = dataPoint.plusMonths(<span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (!monthsToQuery.isEmpty()) &#123;</span><br><span class="line">        averageData = riverMultiYearAvgMapper.selectMonthAvgByMonthList(</span><br><span class="line">            query.getStcd(),</span><br><span class="line">            <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;(monthsToQuery)</span><br><span class="line">        );</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        averageData = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>关键逻辑</strong>：</p>
+<ul>
+<li>计算第一个数据点：<code>startDate.withDayOfMonth(1).plusMonths(1)</code></li>
+<li>遍历所有数据点，每个数据点代表前一个月份</li>
+<li>按代表月份列表查询预计算表</li>
+</ul>
+<p>例如请求4月7日~5月7日：</p>
+<ul>
+<li>数据点：5月1日 → 代表4月</li>
+<li>6月1日 &gt; loopEnd(6月1日&#x3D;) → 不包含</li>
+<li>结果：只有4月</li>
+</ul>
+<h3 id="Step-5：时间映射修正"><a href="#Step-5：时间映射修正" class="headerlink" title="Step 5：时间映射修正"></a>Step 5：时间映射修正</h3><p><img src="/images/posts/%E6%B0%B4%E6%96%87%E6%95%B0%E6%8D%AE%E5%9D%87%E5%80%BC%E5%AF%B9%E6%AF%94%E6%9F%A5%E8%AF%A2Bug%E4%BF%AE%E5%A4%8D%E5%85%A8%E8%AE%B0%E5%BD%95/fig2.png" alt="时间映射修正对比图"><br><em>图2：修正前与修正后的时间映射规则对比</em></p>
+<p>convertPreCalcDataToTimeSeries方法的时间映射：</p>
+<p><strong>修改前</strong>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (<span class="string">&quot;DAY&quot;</span>.equalsIgnoreCase(periodType) || <span class="string">&quot;DAY1&quot;</span>.equalsIgnoreCase(periodType)) &#123;</span><br><span class="line">    <span class="type">int</span> <span class="variable">day</span> <span class="operator">=</span> ((Number) row.get(<span class="string">&quot;day&quot;</span>)).intValue();</span><br><span class="line">    time = LocalDateTime.of(queryStartDate.getYear(), month, day, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (<span class="string">&quot;XUN&quot;</span>.equalsIgnoreCase(periodType)) &#123;</span><br><span class="line">    <span class="type">int</span> <span class="variable">xun</span> <span class="operator">=</span> ((Number) row.get(<span class="string">&quot;xun&quot;</span>)).intValue();</span><br><span class="line">    <span class="type">int</span> <span class="variable">day</span> <span class="operator">=</span> (xun == <span class="number">1</span>) ? <span class="number">1</span> : (xun == <span class="number">2</span>) ? <span class="number">11</span> : <span class="number">21</span>;</span><br><span class="line">    time = LocalDateTime.of(queryStartDate.getYear(), month, day, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">&#125; <span class="keyword">else</span> &#123; <span class="comment">// MONTH</span></span><br><span class="line">    time = LocalDateTime.of(queryStartDate.getYear(), month, <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>修改后</strong>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (<span class="string">&quot;DAY&quot;</span>.equalsIgnoreCase(periodType) || <span class="string">&quot;DAY1&quot;</span>.equalsIgnoreCase(periodType)) &#123;</span><br><span class="line">    <span class="type">int</span> <span class="variable">day</span> <span class="operator">=</span> ((Number) row.get(<span class="string">&quot;day&quot;</span>)).intValue();</span><br><span class="line">    time = LocalDateTime.of(queryStartDate.getYear(), month, day, <span class="number">8</span>, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (<span class="string">&quot;XUN&quot;</span>.equalsIgnoreCase(periodType)) &#123;</span><br><span class="line">    <span class="type">int</span> <span class="variable">xun</span> <span class="operator">=</span> ((Number) row.get(<span class="string">&quot;xun&quot;</span>)).intValue();</span><br><span class="line">    <span class="keyword">if</span> (xun == <span class="number">1</span>) &#123;</span><br><span class="line">        time = LocalDateTime.of(queryStartDate.getYear(), month, <span class="number">11</span>, <span class="number">8</span>, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (xun == <span class="number">2</span>) &#123;</span><br><span class="line">        time = LocalDateTime.of(queryStartDate.getYear(), month, <span class="number">21</span>, <span class="number">8</span>, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        time = LocalDateTime.of(queryStartDate.getYear(), month, <span class="number">1</span>, <span class="number">8</span>, <span class="number">0</span>, <span class="number">0</span>).plusMonths(<span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125; <span class="keyword">else</span> &#123; <span class="comment">// MONTH - 月均值存储在下月1日，如4月均值对应5月1日</span></span><br><span class="line">    time = LocalDateTime.of(queryStartDate.getYear(), month, <span class="number">1</span>, <span class="number">8</span>, <span class="number">0</span>, <span class="number">0</span>).plusMonths(<span class="number">1</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="Step-6：回退路径同步修正"><a href="#Step-6：回退路径同步修正" class="headerlink" title="Step 6：回退路径同步修正"></a>Step 6：回退路径同步修正</h3><p>系统有两条查询路径：预计算表路径（快）和回退路径（慢，从ST_RIVER_R实时计算）。回退路径同样存在时间映射问题，需要同步修正。</p>
+<p><strong>queryHistoricalDailyAverage</strong>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 修正前</span></span><br><span class="line"><span class="type">LocalDateTime</span> <span class="variable">avgTime</span> <span class="operator">=</span> LocalDateTime.of(startDate.getYear(), month, day, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line"><span class="comment">// 修正后</span></span><br><span class="line"><span class="type">LocalDateTime</span> <span class="variable">avgTime</span> <span class="operator">=</span> LocalDateTime.of(startDate.getYear(), month, day, <span class="number">8</span>, <span class="number">0</span>, <span class="number">0</span>);</span><br></pre></td></tr></table></figure>
+
+<p><strong>queryHistoricalXunAverage</strong>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 修正前</span></span><br><span class="line"><span class="type">int</span> <span class="variable">startDay</span> <span class="operator">=</span> (xun == <span class="number">1</span>) ? <span class="number">1</span> : (xun == <span class="number">2</span>) ? <span class="number">11</span> : <span class="number">21</span>;</span><br><span class="line"><span class="type">LocalDateTime</span> <span class="variable">avgTime</span> <span class="operator">=</span> LocalDateTime.of(startDate.getYear(), month, startDay, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 修正后</span></span><br><span class="line">LocalDateTime avgTime;</span><br><span class="line"><span class="keyword">if</span> (xun == <span class="number">1</span>) &#123;</span><br><span class="line">    avgTime = LocalDateTime.of(startDate.getYear(), month, <span class="number">11</span>, <span class="number">8</span>, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (xun == <span class="number">2</span>) &#123;</span><br><span class="line">    avgTime = LocalDateTime.of(startDate.getYear(), month, <span class="number">21</span>, <span class="number">8</span>, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    avgTime = LocalDateTime.of(startDate.getYear(), month, <span class="number">1</span>, <span class="number">8</span>, <span class="number">0</span>, <span class="number">0</span>).plusMonths(<span class="number">1</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>queryHistoricalMonthAverage</strong>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 修正前</span></span><br><span class="line"><span class="type">LocalDateTime</span> <span class="variable">avgTime</span> <span class="operator">=</span> LocalDateTime.of(startDate.getYear(), entry.getKey(), <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line"><span class="comment">// 修正后</span></span><br><span class="line"><span class="type">LocalDateTime</span> <span class="variable">avgTime</span> <span class="operator">=</span> LocalDateTime.of(startDate.getYear(), entry.getKey(), <span class="number">1</span>, <span class="number">8</span>, <span class="number">0</span>, <span class="number">0</span>).plusMonths(<span class="number">1</span>);</span><br></pre></td></tr></table></figure>
+
+<p>同时，月份集合遍历循环终止条件也需要修正：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 修正前</span></span><br><span class="line"><span class="keyword">while</span> (!dataPoint.isAfter(endDate)) &#123; ... &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 修正后</span></span><br><span class="line"><span class="type">LocalDate</span> <span class="variable">loopEnd</span> <span class="operator">=</span> endDate.withDayOfMonth(<span class="number">1</span>).plusMonths(<span class="number">1</span>);</span><br><span class="line"><span class="keyword">while</span> (!dataPoint.isAfter(loopEnd)) &#123; ... &#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="代码修改汇总"><a href="#代码修改汇总" class="headerlink" title="代码修改汇总"></a>代码修改汇总</h2><table>
+<thead>
+<tr>
+<th>文件</th>
+<th>改动</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>WaterComparisonServiceImpl.java</td>
+<td>+110&#x2F;-42</td>
+<td>查询范围调整、月份遍历、时间映射</td>
+</tr>
+<tr>
+<td>RiverMultiYearAvgMapper.java</td>
+<td>+12&#x2F;-2</td>
+<td>新增selectMonthAvgByMonthList方法</td>
+</tr>
+<tr>
+<td>RiverMultiYearAvgMapper.xml</td>
+<td>+22&#x2F;-2</td>
+<td>新增按月份列表查询SQL</td>
+</tr>
+<tr>
+<td>WaterAverageDataMapper.xml</td>
+<td>+2&#x2F;-2</td>
+<td>STTDRCD值修正</td>
+</tr>
+</tbody></table>
+<h2 id="测试验证结果"><a href="#测试验证结果" class="headerlink" title="测试验证结果"></a>测试验证结果</h2><p><img src="/images/posts/%E6%B0%B4%E6%96%87%E6%95%B0%E6%8D%AE%E5%9D%87%E5%80%BC%E5%AF%B9%E6%AF%94%E6%9F%A5%E8%AF%A2Bug%E4%BF%AE%E5%A4%8D%E5%85%A8%E8%AE%B0%E5%BD%95/fig5.png" alt="测试验证结果展示图"><br><em>图5：修复后的测试验证结果</em></p>
+<p>修复完成后，经过全面测试验证：</p>
+<ul>
+<li><input checked="" disabled="" type="checkbox"> 请求4月7日到5月7日MONTH类型，<code>comparisonSeriesMap</code>返回1条（4月）</li>
+<li><input checked="" disabled="" type="checkbox"> 旬均值时间点正确：上旬&#x3D;11日08:00，中旬&#x3D;21日08:00，下旬&#x3D;下月1日08:00</li>
+<li><input checked="" disabled="" type="checkbox"> 月均值时间点正确：4月均值&#x3D;5月1日08:00</li>
+<li><input checked="" disabled="" type="checkbox"> XUN&#x2F;MONTH查询范围自动扩展，用户无需手动填下月日期</li>
+<li><input checked="" disabled="" type="checkbox"> MONTH的startTime正确偏移，不包含上月月均值</li>
+<li><input checked="" disabled="" type="checkbox"> STTDRCD值正确：旬&#x3D;’4’，月&#x3D;’5’</li>
+</ul>
+<h2 id="核心经验教训"><a href="#核心经验教训" class="headerlink" title="核心经验教训"></a>核心经验教训</h2><h3 id="1-水文数据库的STTDRCD编码必须严格对照标准文档"><a href="#1-水文数据库的STTDRCD编码必须严格对照标准文档" class="headerlink" title="1. 水文数据库的STTDRCD编码必须严格对照标准文档"></a>1. 水文数据库的STTDRCD编码必须严格对照标准文档</h3><p>不能靠猜测或类推。旬均值是’4’，月均值是’5’，这是水文行业的标准约定。代码中原来写反了，导致查询不到正确的数据。</p>
+<h3 id="2-涉及”数据点代表时段”的查询，必须按数据点位置遍历"><a href="#2-涉及”数据点代表时段”的查询，必须按数据点位置遍历" class="headerlink" title="2. 涉及”数据点代表时段”的查询，必须按数据点位置遍历"></a>2. 涉及”数据点代表时段”的查询，必须按数据点位置遍历</h3><p>原代码将查询范围的日期直接映射为月份，而没有考虑数据点实际代表的月份。水文数据的时间点不是”自然日期”而是”代表时段”——月均值存储在下月1日08:00，旬均值中的下旬存储在下月1日08:00。</p>
+<h3 id="3-水文日从08-00开始，所有时间构造必须使用08-00"><a href="#3-水文日从08-00开始，所有时间构造必须使用08-00" class="headerlink" title="3. 水文日从08:00开始，所有时间构造必须使用08:00"></a>3. 水文日从08:00开始，所有时间构造必须使用08:00</h3><p>而非默认的00:00。这一点在所有6处涉及时间构造的代码中都需要修正。</p>
+<h3 id="4-修复必须覆盖双路径"><a href="#4-修复必须覆盖双路径" class="headerlink" title="4. 修复必须覆盖双路径"></a>4. 修复必须覆盖双路径</h3><p>系统有预计算表路径和回退路径，两条路径都存在相同的时间映射问题，需要分别修复才能确保一致性。</p>
+<h2 id="前端对接要点"><a href="#前端对接要点" class="headerlink" title="前端对接要点"></a>前端对接要点</h2><p>修复完成后，前端对接需要注意以下要点：</p>
+<ol>
+<li><p><strong>请求格式</strong>：只需提供自然日期范围，如查询1月1日到4月30日的月均值，传入<code>startTime=2026-01-01 08:00</code>，<code>endTime=2026-04-30 08:00</code></p>
+</li>
+<li><p><strong>返回时间格式</strong>：<code>yyyy-MM-dd HH:mm:ss</code>，时间为08:00</p>
+</li>
+<li><p><strong>月均值时间点</strong>：下月1日（如4月均值显示为<code>05-01 08:00</code>）</p>
+</li>
+<li><p><strong>旬均值时间点</strong>：</p>
+<ul>
+<li>上旬：11日08:00</li>
+<li>中旬：21日08:00</li>
+<li>下旬：下月1日08:00</li>
+</ul>
+</li>
+</ol>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>这次Bug修复虽然涉及的文件不多，但问题的根因却隐藏在水文数据的存储约定中。如果没有深入理解”数据点代表时段”这一核心概念，就只能治标不治本——表面修好了，时间对了，但数据仍然可能匹配不上。</p>
+<p>通过这次修复，我深刻体会到：</p>
+<ul>
+<li><strong>领域知识的重要性</strong>：水文数据的存储规则不是通用知识，需要专门学习</li>
+<li><strong>双路径验证的必要性</strong>：预计算路径和回退路径必须同步修复</li>
+<li><strong>测试验证的全面性</strong>：边界条件（如月末、月初）必须覆盖</li>
+</ul>
+<p>希望这篇博客记录对遇到类似问题的朋友有所帮助。如果有任何疑问，欢迎在评论区留言交流。</p>
+<hr>
+<h2 id="配套音频"><a href="#配套音频" class="headerlink" title="配套音频"></a>配套音频</h2><h3 id="导读（成熟女声）"><a href="#导读（成熟女声）" class="headerlink" title="导读（成熟女声）"></a>导读（成熟女声）</h3><p><audio controls src="/audio/水文数据均值对比查询Bug修复导读.mp3"></audio></p>
+<blockquote>
+<p>今天，让我们一起走进水文数据的Bug修复之旅。从ST_RVAV_R表的存储约定出发，探索数据点代表时段的奥秘，见证一位工程师如何抽丝剥茧，从问题分析到完整修复，为水文信息化系统扫清隐患。这不仅是一次技术问题的解决，更是对领域知识重要性的深刻验证。让我们开始吧。</p>
+</blockquote>
+<h3 id="配套BGM"><a href="#配套BGM" class="headerlink" title="配套BGM"></a>配套BGM</h3><p><audio controls src="/music/水文数据均值对比查询BGM.mp3"></audio></p>
+<p><em>（温暖励志的科技博客背景音乐，轻快的电子琴旋律，融入水波涟漪的意象）</em></p>
+<hr>
+<p><strong>相关Git提交</strong>：</p>
+<ul>
+<li><code>8f9d9f2</code> - 修复均值对比查询：历史均值条数、时间对齐及自动扩展查询范围</li>
+<li><code>e72e23f</code> - 修复月查询（补充startTime偏移和循环终止条件修复）</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/MyBatis/" rel="tag"># MyBatis</a>
+              <a href="/tags/Java/" rel="tag"># Java</a>
+              <a href="/tags/Bug%E4%BF%AE%E5%A4%8D/" rel="tag"># Bug修复</a>
+              <a href="/tags/%E6%B0%B4%E6%96%87%E6%95%B0%E6%8D%AE/" rel="tag"># 水文数据</a>
+              <a href="/tags/ST-RVAV-R/" rel="tag"># ST_RVAV_R</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/04/30/%E7%89%A9%E8%81%94%E7%BD%91%E9%A1%B9%E7%9B%AE%E5%B7%A5%E4%BD%9C%E6%80%BB%E7%BB%93/" rel="prev" title="物联网项目工作总结">
+                  <i class="fa fa-angle-left"></i> 物联网项目工作总结
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  
+  <div class="comments giscus-container">
+  </div>
+  
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">zhlifeiy35</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/zhdmm35" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"zhdmm35/zhdmm35.github.io","repo_id":"R_kgDOON4bhg","category":"Announcements","category_id":"DIC_kwDOON4bhs4C3dEc","mapping":"pathname","strict":0,"reactions_enabled":1,"emit_metadata":0,"theme":"preferred_color_scheme","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+
+<script>
+document.addEventListener('page:loaded', () => {
+  if (!CONFIG.page.comments) return;
+
+  NexT.utils.loadComments('.giscus-container')
+    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
+      attributes: {
+        async                   : true,
+        crossOrigin             : 'anonymous',
+        'data-repo'             : CONFIG.giscus.repo,
+        'data-repo-id'          : CONFIG.giscus.repo_id,
+        'data-category'         : CONFIG.giscus.category,
+        'data-category-id'      : CONFIG.giscus.category_id,
+        'data-mapping'          : CONFIG.giscus.mapping,
+        'data-strict'           : CONFIG.giscus.strict,
+        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
+        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
+        'data-theme'            : CONFIG.giscus.theme,
+        'data-lang'             : CONFIG.giscus.lang,
+        'data-input-position'   : CONFIG.giscus.input_position,
+        'data-loading'          : CONFIG.giscus.loading
+      },
+      parentNode: document.querySelector('.giscus-container')
+    }));
+});
+</script>
+
+</body>
+</html>
