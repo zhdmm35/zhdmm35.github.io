@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="为广东水文项目的一站一档与地下水模块新增 4 个 Excel 导出端点,覆盖墒情、咸情、地下水统计与地下水监测四种数据。整个过程没引入任何新依赖,完全复用项目已有的 @Excel 注解 + ExcelUtil.exportExcelToBytes() 模式 —— 写得越像现有代码,维护成本就越低。         🎧 文章导读                            🎵 背景音乐">
+<meta property="og:type" content="article">
+<meta property="og:title" content="复用为王:四个 Excel 导出端点的快速搭建">
+<meta property="og:url" content="https://zhlifeiy.codes/2026/05/13/%E5%A4%8D%E7%94%A8%E4%B8%BA%E7%8E%8B-%E5%9B%9B%E4%B8%AAExcel%E5%AF%BC%E5%87%BA%E7%AB%AF%E7%82%B9%E7%9A%84%E5%BF%AB%E9%80%9F%E6%90%AD%E5%BB%BA/index.html">
+<meta property="og:site_name" content="我的技术博客">
+<meta property="og:description" content="为广东水文项目的一站一档与地下水模块新增 4 个 Excel 导出端点,覆盖墒情、咸情、地下水统计与地下水监测四种数据。整个过程没引入任何新依赖,完全复用项目已有的 @Excel 注解 + ExcelUtil.exportExcelToBytes() 模式 —— 写得越像现有代码,维护成本就越低。         🎧 文章导读                            🎵 背景音乐">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/excel-export-extension.jpg">
+<meta property="article:published_time" content="2026-05-13T13:30:00.000Z">
+<meta property="article:modified_time" content="2026-05-13T14:10:16.768Z">
+<meta property="article:author" content="zhlifeiy35">
+<meta property="article:tag" content="Spring Boot">
+<meta property="article:tag" content="Java">
+<meta property="article:tag" content="Excel导出">
+<meta property="article:tag" content="接口设计">
+<meta property="article:tag" content="代码复用">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/excel-export-extension.jpg">
+
+
+<link rel="canonical" href="https://zhlifeiy.codes/2026/05/13/%E5%A4%8D%E7%94%A8%E4%B8%BA%E7%8E%8B-%E5%9B%9B%E4%B8%AAExcel%E5%AF%BC%E5%87%BA%E7%AB%AF%E7%82%B9%E7%9A%84%E5%BF%AB%E9%80%9F%E6%90%AD%E5%BB%BA/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://zhlifeiy.codes/2026/05/13/%E5%A4%8D%E7%94%A8%E4%B8%BA%E7%8E%8B-%E5%9B%9B%E4%B8%AAExcel%E5%AF%BC%E5%87%BA%E7%AB%AF%E7%82%B9%E7%9A%84%E5%BF%AB%E9%80%9F%E6%90%AD%E5%BB%BA/","path":"2026/05/13/复用为王-四个Excel导出端点的快速搭建/","title":"复用为王:四个 Excel 导出端点的快速搭建"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>复用为王:四个 Excel 导出端点的快速搭建 | 我的技术博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">我的技术博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">记录学习与成长</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-guestbook"><a href="/guestbook/" rel="section"><i class="fa fa-comment-dots fa-fw"></i>留言板</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link"><span class="nav-number">1.</span> <span class="nav-text">🎧 文章导读</span></a></li><li class="nav-item nav-level-4"><a class="nav-link"><span class="nav-number">2.</span> <span class="nav-text">🎵 背景音乐</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number"></span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9C%80%E6%B1%82%E8%83%8C%E6%99%AF"><span class="nav-number"></span> <span class="nav-text">需求背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%BE%E8%AE%A1%E6%80%9D%E8%80%83"><span class="nav-number"></span> <span class="nav-text">设计思考</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E6%96%B9%E6%A1%88"><span class="nav-number"></span> <span class="nav-text">实现方案</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AF%BC%E5%87%BA-VO-%E8%AE%BE%E8%AE%A1"><span class="nav-number"></span> <span class="nav-text">导出 VO 设计</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AB%AF%E7%82%B9%E6%A0%B8%E5%BF%83%E9%80%BB%E8%BE%91"><span class="nav-number"></span> <span class="nav-text">端点核心逻辑</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86%E4%B8%89%E5%B1%82%E7%BB%93%E6%9E%84"><span class="nav-number"></span> <span class="nav-text">错误处理三层结构</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%81%87%E5%88%B0%E7%9A%84%E5%87%A0%E4%B8%AA%E5%B0%8F%E5%9D%91"><span class="nav-number"></span> <span class="nav-text">遇到的几个小坑</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E4%B8%8E%E9%AA%8C%E8%AF%81"><span class="nav-number"></span> <span class="nav-text">测试与验证</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%8F%E9%AA%8C%E6%80%BB%E7%BB%93"><span class="nav-number"></span> <span class="nav-text">经验总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%8E%E7%BB%AD%E5%8F%AF%E4%BB%A5%E8%80%83%E8%99%91%E7%9A%84%E6%96%B9%E5%90%91"><span class="nav-number"></span> <span class="nav-text">后续可以考虑的方向</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%93%E8%AF%AD"><span class="nav-number"></span> <span class="nav-text">结语</span></a></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zhlifeiy35</p>
+  <div class="site-description" itemprop="description">分享编程技术、AI经验、学习笔记</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">35</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">115</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zhdmm35" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zhdmm35" rel="noopener me" target="_blank"><i class="fa fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/excel-export-extension.jpg" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/05/13/%E5%A4%8D%E7%94%A8%E4%B8%BA%E7%8E%8B-%E5%9B%9B%E4%B8%AAExcel%E5%AF%BC%E5%87%BA%E7%AB%AF%E7%82%B9%E7%9A%84%E5%BF%AB%E9%80%9F%E6%90%AD%E5%BB%BA/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="我的技术博客">
+      <meta itemprop="description" content="分享编程技术、AI经验、学习笔记">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="复用为王:四个 Excel 导出端点的快速搭建 | 我的技术博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          复用为王:四个 Excel 导出端点的快速搭建
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2026-05-13 21:30:00 / 修改时间：22:10:16" itemprop="dateCreated datePublished" datetime="2026-05-13T21:30:00+08:00">2026-05-13</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">后端开发</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>为广东水文项目的一站一档与地下水模块新增 4 个 Excel 导出端点,覆盖墒情、咸情、地下水统计与地下水监测四种数据。整个过程没引入任何新依赖,完全复用项目已有的 <code>@Excel</code> 注解 + <code>ExcelUtil.exportExcelToBytes()</code> 模式 —— 写得越像现有代码,维护成本就越低。</p>
+<div class="audio-player">
+  <div class="audio-section">
+    <h4>🎧 文章导读</h4>
+    <audio controls preload="metadata">
+      <source src="/audio/复用为王-四个Excel导出端点的快速搭建/narration.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+  <div class="audio-section">
+    <h4>🎵 背景音乐</h4>
+    <audio controls loop preload="metadata">
+      <source src="/audio/复用为王-四个Excel导出端点的快速搭建/bgm.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+</div>
+
+<span id="more"></span>
+
+<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>水文监测系统的前端页面早就支持站点数据的在线查询,但用户一直没法把这些数据下载下来。本次迭代要补的就是这个短板 —— 在一站一档和地下水两个模块各加几个导出接口,让墒情、咸情、地下水统计和地下水监测的数据能直接落地成 Excel 文件。</p>
+<p><img src="/images/posts/%E5%A4%8D%E7%94%A8%E4%B8%BA%E7%8E%8B-%E5%9B%9B%E4%B8%AAExcel%E5%AF%BC%E5%87%BA%E7%AB%AF%E7%82%B9%E7%9A%84%E5%BF%AB%E9%80%9F%E6%90%AD%E5%BB%BA/fig1.jpg" alt="Excel 导出功能整体架构"><br><em>图1:四个导出端点的模块归属与数据流向</em></p>
+<h2 id="需求背景"><a href="#需求背景" class="headerlink" title="需求背景"></a>需求背景</h2><p>监测页面上的数据列表只能在线浏览,有两个痛点一直没解决:</p>
+<ul>
+<li><strong>现场调查没网络</strong>,工程师到野外站点检查时,需要带一份离线 Excel</li>
+<li><strong>上级汇报要数据</strong>,把表格直接贴进 Word 或 PPT,远比”打开页面截图”高效</li>
+</ul>
+<p>需求来源是前端组提出来的,优先级中等。四个端点分别对应四种数据:</p>
+<table>
+<thead>
+<tr>
+<th>端点</th>
+<th>归属模块</th>
+<th>导出字段</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>GET /basic/station/archive/soil/&#123;stcd&#125;/export</code></td>
+<td>一站一档</td>
+<td>时间、10cm&#x2F;20cm&#x2F;40cm 含水量</td>
+</tr>
+<tr>
+<td><code>GET /basic/station/archive/salinity/&#123;stcd&#125;/export</code></td>
+<td>一站一档</td>
+<td>时间、含氯度</td>
+</tr>
+<tr>
+<td><code>GET /api/groundwater/stations/&#123;stcd&#125;/statistics/export</code></td>
+<td>地下水</td>
+<td>时间、深埋(支持 day&#x2F;month&#x2F;year)</td>
+</tr>
+<tr>
+<td><code>GET /api/groundwater/stations/&#123;stcd&#125;/waterLevel/export</code></td>
+<td>地下水</td>
+<td>时间、深埋</td>
+</tr>
+</tbody></table>
+<h2 id="设计思考"><a href="#设计思考" class="headerlink" title="设计思考"></a>设计思考</h2><p>项目里已经存在一套成熟的 Excel 导出模式:</p>
+<ol>
+<li>创建带 <code>@Excel</code> 注解的 VO 类,声明列名、宽度、排序</li>
+<li>调用业务层已有方法拿数据</li>
+<li>转换为 VO 列表,用 <code>ExcelUtil.exportExcelToBytes()</code> 生成字节流</li>
+<li>通过 <code>FileUtils.setAttachmentResponseHeader()</code> 写 HTTP 响应</li>
+</ol>
+<p>水情监测模块就是这套范式,跑得稳稳的。所以本次决策很明确 —— <strong>完全复用,不引入任何新东西</strong>。</p>
+<blockquote>
+<p>[!tip] 一致性带来的红利<br>风格统一、维护成本低,团队成员看一眼就知道在做什么。代价是如果将来需求复杂化(模板导出、大数据量流式写入),可能要换方案 —— 但当前没必要为这种未来需求买单。</p>
+</blockquote>
+<p>在 VO 的设计上做了一个取舍:**地下水统计导出和监测导出共享同一个 <code>GwStatsExportVO</code>**。语义上它们是两种不同的数据,但导出字段都是”时间 + 深埋”两列,完全一样。为了”概念纯粹”维护两个一模一样的类是 over-engineering。反过来,墒情(三层土壤含水量)和咸情(含氯度)字段差异明显,各自独立 VO 才合理。</p>
+<p>接口归属上,墒情&#x2F;咸情放在 <code>StationArchiveController</code>,地下水两个放在 <code>GroundwaterController</code>,遵循”<strong>谁的数据谁负责</strong>“原则,而不是把所有导出集中到一个 Controller。</p>
+<p><img src="/images/posts/%E5%A4%8D%E7%94%A8%E4%B8%BA%E7%8E%8B-%E5%9B%9B%E4%B8%AAExcel%E5%AF%BC%E5%87%BA%E7%AB%AF%E7%82%B9%E7%9A%84%E5%BF%AB%E9%80%9F%E6%90%AD%E5%BB%BA/fig2.jpg" alt="VO 设计与字段映射"><br><em>图2:三个导出 VO 的字段映射关系</em></p>
+<h2 id="实现方案"><a href="#实现方案" class="headerlink" title="实现方案"></a>实现方案</h2><h3 id="导出-VO-设计"><a href="#导出-VO-设计" class="headerlink" title="导出 VO 设计"></a>导出 VO 设计</h3><p>VO 只包含需要进入 Excel 的字段,通过 <code>@Excel</code> 注解描述列。以最简洁的咸情导出 VO 为例:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Data</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">SalinityExportVO</span> <span class="keyword">implements</span> <span class="title class_">Serializable</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">long</span> <span class="variable">serialVersionUID</span> <span class="operator">=</span> <span class="number">1L</span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Excel(name = &quot;时间&quot;, width = 20, sort = 1)</span></span><br><span class="line">    <span class="keyword">private</span> String time;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Excel(name = &quot;含氯度(mg/L)&quot;, width = 14, sort = 2)</span></span><br><span class="line">    <span class="keyword">private</span> BigDecimal salinity;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>两个细节值得记一下:</p>
+<ul>
+<li><strong><code>time</code> 用 String 而不是 Date</strong> —— 上游业务方法返回的就是格式化后的字符串,直接透传,避免二次格式化引入的时区问题</li>
+<li><strong><code>sort</code> 显式声明列顺序</strong> —— 不依赖字段声明顺序,无论代码怎么改,输出列顺序都稳定</li>
+</ul>
+<h3 id="端点核心逻辑"><a href="#端点核心逻辑" class="headerlink" title="端点核心逻辑"></a>端点核心逻辑</h3><p>四个端点的代码结构几乎完全一致,以咸情导出为代表:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">exportSalinity</span><span class="params">(<span class="meta">@PathVariable</span> String stcd,</span></span><br><span class="line"><span class="params">        MonitoringDataQueryDTO query, HttpServletResponse response)</span> &#123;</span><br><span class="line">    query.setPaginated(<span class="literal">false</span>);  <span class="comment">// 关闭分页,导出全部数据</span></span><br><span class="line">    <span class="type">SalinityResponseDTO</span> <span class="variable">data</span> <span class="operator">=</span> stationArchiveBiz.getSalinity(stcd, query);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (data.getDataList() == <span class="literal">null</span> || data.getDataList().isEmpty()) &#123;</span><br><span class="line">        writeErrorResponse(response, <span class="string">&quot;未查询到可导出的数据&quot;</span>,</span><br><span class="line">            HttpServletResponse.SC_NOT_FOUND);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 转换为 SalinityExportVO 列表</span></span><br><span class="line">    <span class="type">byte</span>[] excelBytes = util.exportExcelToBytes(exportList, <span class="string">&quot;咸情数据&quot;</span>);</span><br><span class="line">    writeExcelResponse(response, excelBytes, fileName);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>关键就在 <code>query.setPaginated(false)</code> 这一行</strong>。复用的业务方法本身是支持分页的,通过这个标志位告诉它”全量返回”,既复用了查询逻辑,又避免了导出被分页截断。这是最便宜的复用方式 —— 改一个参数,而不是重写一套查询。</p>
+<h3 id="错误处理三层结构"><a href="#错误处理三层结构" class="headerlink" title="错误处理三层结构"></a>错误处理三层结构</h3><table>
+<thead>
+<tr>
+<th>场景</th>
+<th>HTTP 状态</th>
+<th>处理位置</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>查询无数据</td>
+<td>404</td>
+<td>Controller 显式判断</td>
+</tr>
+<tr>
+<td>参数非法(如 <code>type</code> 不属于 day&#x2F;month&#x2F;year)</td>
+<td>400</td>
+<td>Controller 显式校验</td>
+</tr>
+<tr>
+<td>服务端异常</td>
+<td>500</td>
+<td>全局兜底</td>
+</tr>
+</tbody></table>
+<p>所有错误响应统一为 JSON 格式 <code>&#123;&quot;msg&quot;:&quot;...&quot;,&quot;code&quot;:...&#125;</code>,前端可以一套逻辑处理全部错误场景。</p>
+<h2 id="遇到的几个小坑"><a href="#遇到的几个小坑" class="headerlink" title="遇到的几个小坑"></a>遇到的几个小坑</h2><blockquote>
+<p>[!bug] writeExcelResponse 参数顺序写反<br>第一次写墒情导出时,把参数传成了 <code>(response, fileName, excelBytes)</code>,实际签名是 <code>(response, excelBytes, fileName)</code>。方法名暗示”往 response 里写 excel”,字节流应该在前。编译直接报错,所以定位很快 —— <strong>类型不同的参数,放反了至少编译会救你一命</strong>。</p>
+</blockquote>
+<blockquote>
+<p>[!warning] <code>mvn clean compile</code> 在 Windows 下偶尔卡死<br>target 目录下的 <code>banner.txt</code> 有时被进程占着文件锁,clean 删不掉就报错。解决办法:<strong>用 <code>mvn compile</code>(不 clean)</strong>,因为编译本身是增量的,class 文件能正常更新,不需要先删整个 target。</p>
+</blockquote>
+<blockquote>
+<p>[!info] 编译完必须重启应用<br>看似常识,但快速迭代时容易忘:改完代码必须重启 JVM 才能让新逻辑生效,否则会陷入”代码改了,行为没变”的困惑里反复怀疑人生。</p>
+</blockquote>
+<p><img src="/images/posts/%E5%A4%8D%E7%94%A8%E4%B8%BA%E7%8E%8B-%E5%9B%9B%E4%B8%AAExcel%E5%AF%BC%E5%87%BA%E7%AB%AF%E7%82%B9%E7%9A%84%E5%BF%AB%E9%80%9F%E6%90%AD%E5%BB%BA/fig3.jpg" alt="测试验证流程"><br><em>图3:四个端点的测试覆盖矩阵</em></p>
+<h2 id="测试与验证"><a href="#测试与验证" class="headerlink" title="测试与验证"></a>测试与验证</h2><p>用 curl 打本地接口(端口 8086),覆盖正常和异常两类场景:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 墒情导出 - 站 80100600</span></span><br><span class="line">curl -O <span class="string">&quot;http://localhost:8086/basic/station/archive/soil/80100600/export&quot;</span></span><br><span class="line"><span class="comment"># → 200, Excel 6.8KB, 三层含水量数据完整</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 咸情导出 - 站 81200250(大盛站,数据量大)</span></span><br><span class="line">curl -O <span class="string">&quot;http://localhost:8086/basic/station/archive/salinity/81200250/export&quot;</span></span><br><span class="line"><span class="comment"># → 200, Excel 44KB</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 地下水日统计 - 站 81761001</span></span><br><span class="line">curl -O <span class="string">&quot;http://localhost:8086/api/groundwater/stations/81761001/statistics/export?type=day&quot;</span></span><br><span class="line"><span class="comment"># → 200, Excel 4.2KB(月、年统计也分别测了)</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 无数据场景 - 不存在的站编码</span></span><br><span class="line">curl <span class="string">&quot;http://localhost:8086/basic/station/archive/soil/99999999/export&quot;</span></span><br><span class="line"><span class="comment"># → 404, &#123;&quot;msg&quot;:&quot;未查询到可导出的数据&quot;,&quot;code&quot;:404&#125;</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="经验总结"><a href="#经验总结" class="headerlink" title="经验总结"></a>经验总结</h2><p>复盘下来,这次开发的几个收获:</p>
+<ol>
+<li><strong>找到已有模式比创造新模式更值得</strong> —— 复用 <code>@Excel</code> + <code>ExcelUtil</code> 让 4 个端点的实现成本变得几乎线性可加,出问题的排查方式都一样</li>
+<li><strong>共享 VO 的边界要看导出字段而不是业务语义</strong> —— <code>GwStatsExportVO</code> 同时承担统计和监测两种场景,因为它们的字段完全一致;而墒情和咸情字段不同,就老老实实写两个 VO</li>
+<li><strong>复用业务方法的开关参数(如 <code>paginated</code>)是最便宜的扩展点</strong> —— 不写新方法,只切换参数,就能把分页查询变成全量导出</li>
+<li><strong>错误响应格式统一</strong>(都是 <code>&#123;msg, code&#125;</code>)能极大降低前端处理成本</li>
+</ol>
+<h2 id="后续可以考虑的方向"><a href="#后续可以考虑的方向" class="headerlink" title="后续可以考虑的方向"></a>后续可以考虑的方向</h2><ul>
+<li>数据量上升到几万条时,引入 SXSSF 流式写入,避免内存溢出</li>
+<li>前端加导出进度提示,虽然现在数据量不大,但体验更友好</li>
+<li>把通用导出逻辑抽到一个 <code>ExportSupport</code> 工具类里,减少 controller 里的样板代码</li>
+</ul>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>这次迭代的核心不是”造轮子”,而是”在正确的位置上重用已有的轮子”。四个端点的代码结构高度一致,这种一致性本身就是项目长期可维护性的一部分。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Spring-Boot/" rel="tag"># Spring Boot</a>
+              <a href="/tags/Java/" rel="tag"># Java</a>
+              <a href="/tags/Excel%E5%AF%BC%E5%87%BA/" rel="tag"># Excel导出</a>
+              <a href="/tags/%E6%8E%A5%E5%8F%A3%E8%AE%BE%E8%AE%A1/" rel="tag"># 接口设计</a>
+              <a href="/tags/%E4%BB%A3%E7%A0%81%E5%A4%8D%E7%94%A8/" rel="tag"># 代码复用</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/05/11/%E8%A7%86%E9%A2%91%E5%88%97%E8%A1%A8%E6%8E%A5%E5%8F%A3%E5%9C%A8%E7%BA%BF%E7%A6%BB%E7%BA%BF%E7%BB%9F%E8%AE%A1/" rel="prev" title="Java 后端实战：视频接口在线离线统计功能设计与实现">
+                  <i class="fa fa-angle-left"></i> Java 后端实战：视频接口在线离线统计功能设计与实现
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  
+  <div class="comments giscus-container">
+  </div>
+  
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">zhlifeiy35</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/zhdmm35" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"zhdmm35/zhdmm35.github.io","repo_id":"R_kgDOON4bhg","category":"Announcements","category_id":"DIC_kwDOON4bhs4C3dEc","mapping":"pathname","strict":0,"reactions_enabled":1,"emit_metadata":0,"theme":"preferred_color_scheme","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+
+<script>
+document.addEventListener('page:loaded', () => {
+  if (!CONFIG.page.comments) return;
+
+  NexT.utils.loadComments('.giscus-container')
+    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
+      attributes: {
+        async                   : true,
+        crossOrigin             : 'anonymous',
+        'data-repo'             : CONFIG.giscus.repo,
+        'data-repo-id'          : CONFIG.giscus.repo_id,
+        'data-category'         : CONFIG.giscus.category,
+        'data-category-id'      : CONFIG.giscus.category_id,
+        'data-mapping'          : CONFIG.giscus.mapping,
+        'data-strict'           : CONFIG.giscus.strict,
+        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
+        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
+        'data-theme'            : CONFIG.giscus.theme,
+        'data-lang'             : CONFIG.giscus.lang,
+        'data-input-position'   : CONFIG.giscus.input_position,
+        'data-loading'          : CONFIG.giscus.loading
+      },
+      parentNode: document.querySelector('.giscus-container')
+    }));
+});
+</script>
+
+</body>
+</html>
