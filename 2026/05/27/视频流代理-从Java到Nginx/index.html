@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="数据归集系统的视频流代理（FLV&#x2F;HLS）由 Java Controller 实现，每路视频流占用一个 Tomcat 线程做 8KB 缓冲区转发。并发路数多时会耗尽线程池。本文记录了将 FLV 代理迁移到 Nginx 的完整方案，以及 HLS 仍需走 Java 代理的技术原因。         🎧 文章导读                   您的浏览器不支持音频播放。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="视频流代理：从 Java 到 Nginx 的性能优化实践">
+<meta property="og:url" content="https://zhlifeiy.codes/2026/05/27/%E8%A7%86%E9%A2%91%E6%B5%81%E4%BB%A3%E7%90%86-%E4%BB%8EJava%E5%88%B0Nginx/index.html">
+<meta property="og:site_name" content="我的技术博客">
+<meta property="og:description" content="数据归集系统的视频流代理（FLV&#x2F;HLS）由 Java Controller 实现，每路视频流占用一个 Tomcat 线程做 8KB 缓冲区转发。并发路数多时会耗尽线程池。本文记录了将 FLV 代理迁移到 Nginx 的完整方案，以及 HLS 仍需走 Java 代理的技术原因。         🎧 文章导读                   您的浏览器不支持音频播放。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/video-proxy-nginx.png">
+<meta property="article:published_time" content="2026-05-27T02:00:00.000Z">
+<meta property="article:modified_time" content="2026-05-31T07:47:30.608Z">
+<meta property="article:author" content="zhlifeiy35">
+<meta property="article:tag" content="Nginx">
+<meta property="article:tag" content="FLV">
+<meta property="article:tag" content="Spring Boot">
+<meta property="article:tag" content="性能优化">
+<meta property="article:tag" content="视频流">
+<meta property="article:tag" content="HLS">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/video-proxy-nginx.png">
+
+
+<link rel="canonical" href="https://zhlifeiy.codes/2026/05/27/%E8%A7%86%E9%A2%91%E6%B5%81%E4%BB%A3%E7%90%86-%E4%BB%8EJava%E5%88%B0Nginx/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://zhlifeiy.codes/2026/05/27/%E8%A7%86%E9%A2%91%E6%B5%81%E4%BB%A3%E7%90%86-%E4%BB%8EJava%E5%88%B0Nginx/","path":"2026/05/27/视频流代理-从Java到Nginx/","title":"视频流代理：从 Java 到 Nginx 的性能优化实践"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>视频流代理：从 Java 到 Nginx 的性能优化实践 | 我的技术博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">我的技术博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">记录学习与成长</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-guestbook"><a href="/guestbook/" rel="section"><i class="fa fa-comment-dots fa-fw"></i>留言板</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link"><span class="nav-number">1.</span> <span class="nav-text">🎧 文章导读</span></a></li><li class="nav-item nav-level-4"><a class="nav-link"><span class="nav-number">2.</span> <span class="nav-text">🎵 背景音乐</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%83%8C%E6%99%AF"><span class="nav-number"></span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%B9%E6%A1%88%E8%AE%BE%E8%AE%A1"><span class="nav-number"></span> <span class="nav-text">方案设计</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88-HLS-%E4%B8%8D%E8%83%BD%E8%B5%B0-Nginx%EF%BC%9F"><span class="nav-number"></span> <span class="nav-text">为什么 HLS 不能走 Nginx？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88-FLV-%E5%8F%AF%E4%BB%A5%E8%B5%B0-Nginx%EF%BC%9F"><span class="nav-number"></span> <span class="nav-text">为什么 FLV 可以走 Nginx？</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Nginx-%E9%85%8D%E7%BD%AE"><span class="nav-number"></span> <span class="nav-text">Nginx 配置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Java-%E4%BB%A3%E7%A0%81%E6%94%B9%E5%8A%A8"><span class="nav-number"></span> <span class="nav-text">Java 代码改动</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E9%A1%B9"><span class="nav-number"></span> <span class="nav-text">配置项</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%AA%8C%E8%AF%81%E6%AD%A5%E9%AA%A4"><span class="nav-number"></span> <span class="nav-text">验证步骤</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%98%B6%E6%AE%B5%E4%B8%80%EF%BC%9ANginx-%E4%BB%A3%E7%90%86%E5%8D%95%E7%8B%AC%E9%AA%8C%E8%AF%81"><span class="nav-number"></span> <span class="nav-text">阶段一：Nginx 代理单独验证</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%98%B6%E6%AE%B5%E4%BA%8C%EF%BC%9AJava-%E9%85%8D%E7%BD%AE%E5%88%87%E6%8D%A2%E9%AA%8C%E8%AF%81"><span class="nav-number"></span> <span class="nav-text">阶段二：Java 配置切换验证</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%98%B6%E6%AE%B5%E4%B8%89%EF%BC%9A%E5%9B%9E%E9%80%80%E9%AA%8C%E8%AF%81"><span class="nav-number"></span> <span class="nav-text">阶段三：回退验证</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A3%8E%E9%99%A9%E7%82%B9"><span class="nav-number"></span> <span class="nav-text">风险点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%A7%E8%83%BD%E5%AF%B9%E6%AF%94"><span class="nav-number"></span> <span class="nav-text">性能对比</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%8F%E9%AA%8C%E6%80%BB%E7%BB%93"><span class="nav-number"></span> <span class="nav-text">经验总结</span></a></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zhlifeiy35</p>
+  <div class="site-description" itemprop="description">分享编程技术、AI经验、学习笔记</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">40</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">129</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zhdmm35" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zhdmm35" rel="noopener me" target="_blank"><i class="fa fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/video-proxy-nginx.png" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/05/27/%E8%A7%86%E9%A2%91%E6%B5%81%E4%BB%A3%E7%90%86-%E4%BB%8EJava%E5%88%B0Nginx/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="我的技术博客">
+      <meta itemprop="description" content="分享编程技术、AI经验、学习笔记">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="视频流代理：从 Java 到 Nginx 的性能优化实践 | 我的技术博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          视频流代理：从 Java 到 Nginx 的性能优化实践
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-05-27 10:00:00" itemprop="dateCreated datePublished" datetime="2026-05-27T10:00:00+08:00">2026-05-27</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-05-31 15:47:30" itemprop="dateModified" datetime="2026-05-31T15:47:30+08:00">2026-05-31</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">后端开发</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>数据归集系统的视频流代理（FLV&#x2F;HLS）由 Java Controller 实现，每路视频流占用一个 Tomcat 线程做 8KB 缓冲区转发。并发路数多时会耗尽线程池。本文记录了将 FLV 代理迁移到 Nginx 的完整方案，以及 HLS 仍需走 Java 代理的技术原因。</p>
+<div class="audio-player">
+  <div class="audio-section">
+    <h4>🎧 文章导读</h4>
+    <audio controls preload="metadata">
+      <source src="/audio/视频流代理-从Java到Nginx/narration.mp3" type="audio/mpeg">
+      您的浏览器不支持音频播放。
+    </audio>
+  </div>
+  <div class="audio-section">
+    <h4>🎵 背景音乐</h4>
+    <audio controls loop preload="metadata">
+      <source src="/audio/视频流代理-从Java到Nginx/bgm.mp3" type="audio/mpeg">
+      您的浏览器不支持音频播放。
+    </audio>
+  </div>
+</div>
+
+<span id="more"></span>
+
+<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>水文监测系统需要播放 Lisa 视频平台的实时监控视频。后端通过反向代理解决前端无法直接访问内网视频流的问题。</p>
+<p>原有实现是纯 Java 方案：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">前端 → Java(play接口) → FLV/HLS 都返回 Java 代理地址</span><br><span class="line">前端 → Java(流代理)  → Lisa上游</span><br></pre></td></tr></table></figure>
+
+<p><strong>问题</strong>：每路视频流占用一个 Tomcat 线程，做 8KB 缓冲区转发。当同时播放 20 路视频时，Tomcat 线程池压力很大。</p>
+<h2 id="方案设计"><a href="#方案设计" class="headerlink" title="方案设计"></a>方案设计</h2><p><img src="/images/posts/%E8%A7%86%E9%A2%91%E6%B5%81%E4%BB%A3%E7%90%86-%E4%BB%8EJava%E5%88%B0Nginx/fig1.png" alt="架构对比图"><br><em>图1：Java 代理模式 vs Nginx 代理模式的架构对比</em></p>
+<p>新增 Nginx 流代理，与 Java 代理并存，通过配置切换：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">【Nginx 代理模式】（新增，生产环境推荐）</span><br><span class="line">前端 → Java(play接口) → FLV 返回 Nginx 代理地址，HLS 返回 Java 代理地址</span><br><span class="line">前端 → Nginx(flv代理)  → Lisa上游    ← FLV 走 Nginx，不吃 Tomcat 线程</span><br><span class="line">前端 → Java(hls代理)   → Lisa上游    ← HLS 走 Java，需要改写 M3U8 内容</span><br><span class="line"></span><br><span class="line">【Java 代理模式】（当前，保持不变）</span><br><span class="line">前端 → Java(play接口) → FLV/HLS 都返回 Java 代理地址</span><br><span class="line">前端 → Java(流代理)  → Lisa上游</span><br></pre></td></tr></table></figure>
+
+<p><strong>关键决策</strong>：FLV 走 Nginx，HLS 走 Java。</p>
+<h3 id="为什么-HLS-不能走-Nginx？"><a href="#为什么-HLS-不能走-Nginx？" class="headerlink" title="为什么 HLS 不能走 Nginx？"></a>为什么 HLS 不能走 Nginx？</h3><p>Nginx 是纯透传代理，无法改写 M3U8 文件中的 TS 片段路径。Lisa 平台 M3U8 中的 TS 为相对路径，经 Nginx 代理后 HLS.js 解析出的 TS 地址没有 <code>url</code> 参数，请求会失败。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Lisa 原始 M3U8:</span><br><span class="line">#EXTINF:10.0,</span><br><span class="line">segment001.ts          ← 相对路径</span><br><span class="line"></span><br><span class="line">经 Nginx 代理后，HLS.js 解析出:</span><br><span class="line">http://nginx:18001/segment001.ts  ← 缺少 url 参数，404</span><br></pre></td></tr></table></figure>
+
+<p>Java 代理会改写 M3U8 内容，将 TS 地址替换为 Java 代理地址：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">改写后的 M3U8:</span><br><span class="line">#EXTINF:10.0,</span><br><span class="line">http://java:9223/video/proxy/hls/ts?url=xxx&amp;segment=001.ts  ← 完整代理地址</span><br></pre></td></tr></table></figure>
+
+<h3 id="为什么-FLV-可以走-Nginx？"><a href="#为什么-FLV-可以走-Nginx？" class="headerlink" title="为什么 FLV 可以走 Nginx？"></a>为什么 FLV 可以走 Nginx？</h3><p>FLV 是单条连续流，不需要改写内容，Nginx 透传完全没问题。而且 FLV 才是长时间占用 Tomcat 线程的大头（一个摄像头可能持续播放几小时）。</p>
+<h2 id="Nginx-配置"><a href="#Nginx-配置" class="headerlink" title="Nginx 配置"></a>Nginx 配置</h2><figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">server</span> &#123;</span><br><span class="line">    <span class="attribute">listen</span>       <span class="number">18001</span>;</span><br><span class="line">    <span class="attribute">server_name</span>  _;</span><br><span class="line"></span><br><span class="line">    <span class="section">location</span> /video-proxy/ &#123;</span><br><span class="line">        <span class="comment"># CORS 预检请求</span></span><br><span class="line">        <span class="attribute">if</span> (<span class="variable">$request_method</span> = <span class="string">&#x27;OPTIONS&#x27;</span>) &#123;</span><br><span class="line">            <span class="attribute">add_header</span> <span class="string">&#x27;Access-Control-Allow-Origin&#x27;</span> <span class="string">&#x27;*&#x27;</span> always;</span><br><span class="line">            <span class="attribute">add_header</span> <span class="string">&#x27;Access-Control-Allow-Methods&#x27;</span> <span class="string">&#x27;GET, OPTIONS&#x27;</span> always;</span><br><span class="line">            <span class="attribute">add_header</span> <span class="string">&#x27;Access-Control-Allow-Headers&#x27;</span> <span class="string">&#x27;Range, If-Range&#x27;</span> always;</span><br><span class="line">            <span class="attribute">add_header</span> <span class="string">&#x27;Access-Control-Max-Age&#x27;</span> <span class="number">3600</span> always;</span><br><span class="line">            <span class="attribute">add_header</span> <span class="string">&#x27;Content-Length&#x27;</span> <span class="number">0</span>;</span><br><span class="line">            <span class="attribute">return</span> <span class="number">204</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 动态代理：$arg_url 从查询参数获取目标地址</span></span><br><span class="line">        <span class="attribute">resolver</span> <span class="number">211.136.192.6</span> valid=<span class="number">30s</span>;</span><br><span class="line">        <span class="attribute">set</span> <span class="variable">$target</span> <span class="variable">$arg_url</span>;</span><br><span class="line">        <span class="attribute">proxy_pass</span> <span class="variable">$target</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 代理配置</span></span><br><span class="line">        <span class="attribute">proxy_http_version</span> <span class="number">1</span>.<span class="number">1</span>;</span><br><span class="line">        <span class="attribute">proxy_set_header</span> Host <span class="variable">$proxy_host</span>;</span><br><span class="line">        <span class="attribute">proxy_set_header</span> X-Real-IP <span class="variable">$remote_addr</span>;</span><br><span class="line">        <span class="attribute">proxy_set_header</span> X-Forwarded-For <span class="variable">$proxy_add_x_forwarded_for</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment"># Range 请求支持（视频拖拽）</span></span><br><span class="line">        <span class="attribute">proxy_set_header</span> Range <span class="variable">$http_range</span>;</span><br><span class="line">        <span class="attribute">proxy_set_header</span> If-Range <span class="variable">$http_if_range</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 关闭缓冲，实时转发</span></span><br><span class="line">        <span class="attribute">proxy_buffering</span> <span class="literal">off</span>;</span><br><span class="line">        <span class="attribute">proxy_read_timeout</span> <span class="number">3600s</span>;</span><br><span class="line">        <span class="attribute">proxy_send_timeout</span> <span class="number">3600s</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment"># CORS 响应头</span></span><br><span class="line">        <span class="attribute">add_header</span> <span class="string">&#x27;Access-Control-Allow-Origin&#x27;</span> <span class="string">&#x27;*&#x27;</span> always;</span><br><span class="line">        <span class="attribute">add_header</span> <span class="string">&#x27;Access-Control-Expose-Headers&#x27;</span> <span class="string">&#x27;Content-Length, Content-Range&#x27;</span> always;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>关键配置说明：</p>
+<table>
+<thead>
+<tr>
+<th>配置项</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>proxy_buffering off</code></td>
+<td>关闭缓冲，实时转发视频流</td>
+</tr>
+<tr>
+<td><code>proxy_read_timeout 3600s</code></td>
+<td>长连接超时 1 小时</td>
+</tr>
+<tr>
+<td><code>set $target $arg_url</code></td>
+<td>从查询参数动态获取代理目标</td>
+</tr>
+<tr>
+<td><code>resolver</code></td>
+<td>DNS 解析器，用于解析 <code>$target</code> 中的域名</td>
+</tr>
+</tbody></table>
+<h2 id="Java-代码改动"><a href="#Java-代码改动" class="headerlink" title="Java 代码改动"></a>Java 代码改动</h2><p>修改 <code>LisaVideoServiceImpl.java</code> 的 <code>rewriteUrls()</code> 方法，根据配置决定 FLV 的代理目标：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Value(&quot;$&#123;lisa.video.proxy-type:java&#125;&quot;)</span></span><br><span class="line"><span class="keyword">private</span> String proxyType;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Value(&quot;$&#123;lisa.video.proxy-base-url&#125;&quot;)</span></span><br><span class="line"><span class="keyword">private</span> String proxyBaseUrl;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Value(&quot;$&#123;lisa.video.nginx-base-url:&#125;&quot;)</span></span><br><span class="line"><span class="keyword">private</span> String nginxBaseUrl;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">rewriteUrls</span><span class="params">(JSONObject data)</span> <span class="keyword">throws</span> UnsupportedEncodingException &#123;</span><br><span class="line">    <span class="type">JSONObject</span> <span class="variable">urls</span> <span class="operator">=</span> data.getJSONObject(<span class="string">&quot;urls&quot;</span>);</span><br><span class="line">    <span class="keyword">if</span> (urls == <span class="literal">null</span>) <span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (String key : urls.keySet()) &#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">url</span> <span class="operator">=</span> urls.getString(key);</span><br><span class="line">        <span class="keyword">if</span> (url == <span class="literal">null</span> || !url.startsWith(upstreamHost)) <span class="keyword">continue</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (key.equals(<span class="string">&quot;flvPlayUrl&quot;</span>)) &#123;</span><br><span class="line">            <span class="comment">// FLV 根据配置选择代理</span></span><br><span class="line">            <span class="keyword">if</span> (<span class="string">&quot;nginx&quot;</span>.equals(proxyType)) &#123;</span><br><span class="line">                urls.put(key, nginxBaseUrl + <span class="string">&quot;/video-proxy/?url=&quot;</span> + URLEncoder.encode(url, <span class="string">&quot;UTF-8&quot;</span>));</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                urls.put(key, proxyBaseUrl + <span class="string">&quot;/dataCollection/video/proxy/flv?url=&quot;</span> + URLEncoder.encode(url, <span class="string">&quot;UTF-8&quot;</span>));</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (key.equals(<span class="string">&quot;hlsPlayUrl&quot;</span>)) &#123;</span><br><span class="line">            <span class="comment">// HLS 始终走 Java 代理（需要改写 M3U8 内容）</span></span><br><span class="line">            urls.put(key, proxyBaseUrl + <span class="string">&quot;/dataCollection/video/proxy/hls/m3u8?url=&quot;</span> + URLEncoder.encode(url, <span class="string">&quot;UTF-8&quot;</span>));</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="配置项"><a href="#配置项" class="headerlink" title="配置项"></a>配置项</h2><table>
+<thead>
+<tr>
+<th>配置项</th>
+<th>值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>lisa.video.proxy-type</code></td>
+<td><code>nginx</code> 或 <code>java</code></td>
+<td>决定 FLV 走 Nginx 还是 Java，默认 <code>java</code></td>
+</tr>
+<tr>
+<td><code>lisa.video.proxy-base-url</code></td>
+<td><code>http://10.144.32.219:9223</code></td>
+<td>Java 代理地址</td>
+</tr>
+<tr>
+<td><code>lisa.video.nginx-base-url</code></td>
+<td><code>http://10.144.32.219:18001</code></td>
+<td>Nginx 代理地址</td>
+</tr>
+</tbody></table>
+<p>切换方式：修改 Consul 配置 <code>lisa.video.proxy-type=nginx</code>，重启或热更新即可。</p>
+<h2 id="验证步骤"><a href="#验证步骤" class="headerlink" title="验证步骤"></a>验证步骤</h2><h3 id="阶段一：Nginx-代理单独验证"><a href="#阶段一：Nginx-代理单独验证" class="headerlink" title="阶段一：Nginx 代理单独验证"></a>阶段一：Nginx 代理单独验证</h3><ol>
+<li>部署 Nginx 配置，确认 18001 端口可访问</li>
+<li>调 play 接口拿一个上游 FLV 地址</li>
+<li>直接访问 <code>http://nginx:18001/video-proxy/?url=&lt;上游flv地址&gt;</code>，确认返回 <code>video/x-flv</code> 流</li>
+</ol>
+<h3 id="阶段二：Java-配置切换验证"><a href="#阶段二：Java-配置切换验证" class="headerlink" title="阶段二：Java 配置切换验证"></a>阶段二：Java 配置切换验证</h3><ol start="4">
+<li>Consul 配置 <code>lisa.video.proxy-type=nginx</code></li>
+<li>重启 Java 服务</li>
+<li>调用 <code>POST /dataCollection/video/play</code>，确认返回的 FLV URL 指向 Nginx，HLS URL 指向 Java</li>
+<li>用 flv.js 播放 FLV 验证</li>
+<li>用 hls.js 播放 HLS 验证</li>
+</ol>
+<h3 id="阶段三：回退验证"><a href="#阶段三：回退验证" class="headerlink" title="阶段三：回退验证"></a>阶段三：回退验证</h3><ol start="9">
+<li>Consul 改回 <code>lisa.video.proxy-type=java</code></li>
+<li>确认 FLV 和 HLS 都恢复为 Java 代理模式</li>
+</ol>
+<h2 id="风险点"><a href="#风险点" class="headerlink" title="风险点"></a>风险点</h2><table>
+<thead>
+<tr>
+<th>风险</th>
+<th>应对</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Nginx DNS 解析器配置不对</td>
+<td>根据服务器环境配置正确的 <code>resolver</code>，或直接用 IP</td>
+</tr>
+<tr>
+<td>Nginx 未部署或端口不通</td>
+<td><code>proxy-type</code> 保持 <code>java</code>，不影响现有功能</td>
+</tr>
+<tr>
+<td>Nginx 无 host 白名单（开放代理）</td>
+<td>内网环境风险低；如需加固，可在 Nginx 层加 <code>if</code> 校验</td>
+</tr>
+</tbody></table>
+<h2 id="性能对比"><a href="#性能对比" class="headerlink" title="性能对比"></a>性能对比</h2><p><img src="/images/posts/%E8%A7%86%E9%A2%91%E6%B5%81%E4%BB%A3%E7%90%86-%E4%BB%8EJava%E5%88%B0Nginx/fig2.png" alt="性能对比图表"><br><em>图2：Java 代理 vs Nginx 代理的性能指标对比</em></p>
+<table>
+<thead>
+<tr>
+<th>指标</th>
+<th>Java 代理</th>
+<th>Nginx 代理</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>每路视频占用</td>
+<td>1 个 Tomcat 线程</td>
+<td>Nginx worker 连接</td>
+</tr>
+<tr>
+<td>内存开销</td>
+<td>8KB 缓冲区 × 并发数</td>
+<td>极低</td>
+</tr>
+<tr>
+<td>最大并发路数</td>
+<td>受 Tomcat 线程池限制（默认 200）</td>
+<td>数千路</td>
+</tr>
+<tr>
+<td>CPU 开销</td>
+<td>较高（Java 内存拷贝）</td>
+<td>极低（内核态转发）</td>
+</tr>
+</tbody></table>
+<h2 id="经验总结"><a href="#经验总结" class="headerlink" title="经验总结"></a>经验总结</h2><ol>
+<li><strong>Nginx 适合纯透传场景</strong>——不需要改写内容的代理（如 FLV）交给 Nginx，需要改写内容的（如 HLS M3U8）留在 Java</li>
+<li><strong>配置切换比代码部署更灵活</strong>——通过 Consul 配置 <code>proxy-type</code> 可以随时切换代理模式，不需要重新部署</li>
+<li><strong>视频流代理要关闭缓冲</strong>——<code>proxy_buffering off</code> 是关键配置，否则 Nginx 会缓冲整个视频再返回</li>
+<li><strong>超时时间要足够长</strong>——视频流可能持续几小时，<code>proxy_read_timeout</code> 要设为 3600s 或更长</li>
+</ol>
+<hr>
+<p><em>本文涉及文件：<code>LisaVideoServiceImpl.java</code>、Nginx 配置、Consul 配置。</em></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Nginx/" rel="tag"># Nginx</a>
+              <a href="/tags/FLV/" rel="tag"># FLV</a>
+              <a href="/tags/Spring-Boot/" rel="tag"># Spring Boot</a>
+              <a href="/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/" rel="tag"># 性能优化</a>
+              <a href="/tags/%E8%A7%86%E9%A2%91%E6%B5%81/" rel="tag"># 视频流</a>
+              <a href="/tags/HLS/" rel="tag"># HLS</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/05/25/JdbcTemplate-vs-MyBatis-Plus/" rel="prev" title="JdbcTemplate vs MyBatis-Plus：复杂查询场景的选择指南">
+                  <i class="fa fa-angle-left"></i> JdbcTemplate vs MyBatis-Plus：复杂查询场景的选择指南
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2026/05/28/%E8%B7%A8%E6%95%B0%E6%8D%AE%E6%BA%90%E6%9F%A5%E8%AF%A2-VD%E8%AE%BE%E5%A4%87%E5%88%97%E8%A1%A8%E6%94%B9%E9%80%A0/" rel="next" title="跨数据源查询：VD 设备列表的改造实践">
+                  跨数据源查询：VD 设备列表的改造实践 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  
+  <div class="comments giscus-container">
+  </div>
+  
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">zhlifeiy35</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/zhdmm35" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"zhdmm35/zhdmm35.github.io","repo_id":"R_kgDOON4bhg","category":"Announcements","category_id":"DIC_kwDOON4bhs4C3dEc","mapping":"pathname","strict":0,"reactions_enabled":1,"emit_metadata":0,"theme":"preferred_color_scheme","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+
+<script>
+document.addEventListener('page:loaded', () => {
+  if (!CONFIG.page.comments) return;
+
+  NexT.utils.loadComments('.giscus-container')
+    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
+      attributes: {
+        async                   : true,
+        crossOrigin             : 'anonymous',
+        'data-repo'             : CONFIG.giscus.repo,
+        'data-repo-id'          : CONFIG.giscus.repo_id,
+        'data-category'         : CONFIG.giscus.category,
+        'data-category-id'      : CONFIG.giscus.category_id,
+        'data-mapping'          : CONFIG.giscus.mapping,
+        'data-strict'           : CONFIG.giscus.strict,
+        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
+        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
+        'data-theme'            : CONFIG.giscus.theme,
+        'data-lang'             : CONFIG.giscus.lang,
+        'data-input-position'   : CONFIG.giscus.input_position,
+        'data-loading'          : CONFIG.giscus.loading
+      },
+      parentNode: document.querySelector('.giscus-container')
+    }));
+});
+</script>
+
+</body>
+</html>

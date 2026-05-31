@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="数据归集系统的树结构选择器是前端高频调用的核心接口。原本从 Redis 读取 GZIP 压缩的全量 JSON 数据，每次请求都要解压 7MB 数据再内存过滤。本文记录了将其改造为直连数据库的完整过程，包括多数据源配置、第三方 API 对接、以及踩坑经验。         🎧 文章导读                   您的浏览器不支持音频播放。                🎵 背景音乐">
+<meta property="og:type" content="article">
+<meta property="og:title" content="树结构选择器：从 Redis 到直连数据库的架构重构">
+<meta property="og:url" content="https://zhlifeiy.codes/2026/05/21/%E6%A0%91%E7%BB%93%E6%9E%84%E9%80%89%E6%8B%A9%E5%99%A8-%E4%BB%8ERedis%E5%88%B0%E7%9B%B4%E8%BF%9E%E6%95%B0%E6%8D%AE%E5%BA%93/index.html">
+<meta property="og:site_name" content="我的技术博客">
+<meta property="og:description" content="数据归集系统的树结构选择器是前端高频调用的核心接口。原本从 Redis 读取 GZIP 压缩的全量 JSON 数据，每次请求都要解压 7MB 数据再内存过滤。本文记录了将其改造为直连数据库的完整过程，包括多数据源配置、第三方 API 对接、以及踩坑经验。         🎧 文章导读                   您的浏览器不支持音频播放。                🎵 背景音乐">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/tree-selector-refactor.png">
+<meta property="article:published_time" content="2026-05-21T02:00:00.000Z">
+<meta property="article:modified_time" content="2026-05-31T07:50:39.590Z">
+<meta property="article:author" content="zhlifeiy35">
+<meta property="article:tag" content="Spring Boot">
+<meta property="article:tag" content="多数据源">
+<meta property="article:tag" content="MyBatis-Plus">
+<meta property="article:tag" content="架构重构">
+<meta property="article:tag" content="Redis">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/tree-selector-refactor.png">
+
+
+<link rel="canonical" href="https://zhlifeiy.codes/2026/05/21/%E6%A0%91%E7%BB%93%E6%9E%84%E9%80%89%E6%8B%A9%E5%99%A8-%E4%BB%8ERedis%E5%88%B0%E7%9B%B4%E8%BF%9E%E6%95%B0%E6%8D%AE%E5%BA%93/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://zhlifeiy.codes/2026/05/21/%E6%A0%91%E7%BB%93%E6%9E%84%E9%80%89%E6%8B%A9%E5%99%A8-%E4%BB%8ERedis%E5%88%B0%E7%9B%B4%E8%BF%9E%E6%95%B0%E6%8D%AE%E5%BA%93/","path":"2026/05/21/树结构选择器-从Redis到直连数据库/","title":"树结构选择器：从 Redis 到直连数据库的架构重构"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>树结构选择器：从 Redis 到直连数据库的架构重构 | 我的技术博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">我的技术博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">记录学习与成长</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-guestbook"><a href="/guestbook/" rel="section"><i class="fa fa-comment-dots fa-fw"></i>留言板</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link"><span class="nav-number">1.</span> <span class="nav-text">🎧 文章导读</span></a></li><li class="nav-item nav-level-4"><a class="nav-link"><span class="nav-number">2.</span> <span class="nav-text">🎵 背景音乐</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number"></span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%87%8D%E6%9E%84%E5%8A%A8%E6%9C%BA%EF%BC%9A%E4%B8%89%E4%B8%AA%E6%A0%B8%E5%BF%83%E7%97%9B%E7%82%B9"><span class="nav-number"></span> <span class="nav-text">重构动机：三个核心痛点</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%97%9B%E7%82%B9%E4%B8%80%EF%BC%9A%E6%9C%AC%E5%9C%B0%E7%8E%AF%E5%A2%83-Redis-%E7%BC%BA%E6%95%B0%E6%8D%AE"><span class="nav-number"></span> <span class="nav-text">痛点一：本地环境 Redis 缺数据</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%97%9B%E7%82%B9%E4%BA%8C%EF%BC%9A%E6%AF%8F%E6%AC%A1%E8%AF%B7%E6%B1%82%E8%A7%A3%E5%8E%8B-7MB-%E5%85%A8%E9%87%8F%E6%95%B0%E6%8D%AE"><span class="nav-number"></span> <span class="nav-text">痛点二：每次请求解压 7MB 全量数据</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%97%9B%E7%82%B9%E4%B8%89%EF%BC%9A%E6%95%B0%E6%8D%AE%E6%96%B0%E9%B2%9C%E5%BA%A6%E4%BE%9D%E8%B5%96%E5%A4%96%E9%83%A8%E5%90%8C%E6%AD%A5%E4%BB%BB%E5%8A%A1"><span class="nav-number"></span> <span class="nav-text">痛点三：数据新鲜度依赖外部同步任务</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%94%B9%E9%80%A0%E6%96%B9%E6%A1%88%EF%BC%9A%E7%9B%B4%E8%BF%9E%E6%95%B0%E6%8D%AE%E6%BA%90"><span class="nav-number"></span> <span class="nav-text">改造方案：直连数据源</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E5%AE%9E%E7%8E%B0"><span class="nav-number"></span> <span class="nav-text">核心实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Step-1-%E8%A1%8C%E6%94%BF%E5%8C%BA%E6%A0%91%E2%80%94%E2%80%94%E7%AC%AC%E4%B8%89%E6%96%B9%E6%8E%A5%E5%8F%A3%E7%9B%B4%E8%BF%9E"><span class="nav-number"></span> <span class="nav-text">Step 1: 行政区树——第三方接口直连</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Step-2-%E6%B5%8B%E7%AB%99%E5%88%97%E8%A1%A8%E2%80%94%E2%80%94%E6%95%B0%E6%8D%AE%E5%BA%93%E6%9F%A5%E8%AF%A2-%E5%89%8D%E7%BC%80%E5%8C%B9%E9%85%8D"><span class="nav-number"></span> <span class="nav-text">Step 2: 测站列表——数据库查询 + 前缀匹配</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Step-3-%E8%AE%BE%E5%A4%87%E5%88%97%E8%A1%A8%E2%80%94%E2%80%94%E7%B2%BE%E7%A1%AE%E6%9F%A5%E8%AF%A2"><span class="nav-number"></span> <span class="nav-text">Step 3: 设备列表——精确查询</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Step-4-%E6%B5%81%E5%9F%9F%E6%A0%91%E2%80%94%E2%80%94%E5%B9%B3%E9%93%BA%E8%BD%AC%E6%A0%91%E5%BD%A2"><span class="nav-number"></span> <span class="nav-text">Step 4: 流域树——平铺转树形</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%9A%E6%95%B0%E6%8D%AE%E6%BA%90%E9%85%8D%E7%BD%AE"><span class="nav-number"></span> <span class="nav-text">多数据源配置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B8%A9%E5%9D%91%E8%AE%B0%E5%BD%95"><span class="nav-number"></span> <span class="nav-text">踩坑记录</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Bean-%E5%90%8D%E5%86%B2%E7%AA%81"><span class="nav-number"></span> <span class="nav-text">Bean 名冲突</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%A4%E8%AF%81%E5%A4%B4%E7%B1%BB%E5%9E%8B%E9%94%99%E8%AF%AF"><span class="nav-number"></span> <span class="nav-text">认证头类型错误</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%89%B9%E6%AE%8A%E5%AD%97%E7%AC%A6%E5%AF%86%E7%A0%81"><span class="nav-number"></span> <span class="nav-text">特殊字符密码</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8E%A5%E5%8F%A3%E5%8F%98%E6%9B%B4%E6%80%BB%E8%A7%88"><span class="nav-number"></span> <span class="nav-text">接口变更总览</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%8F%E9%AA%8C%E6%80%BB%E7%BB%93"><span class="nav-number"></span> <span class="nav-text">经验总结</span></a></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zhlifeiy35</p>
+  <div class="site-description" itemprop="description">分享编程技术、AI经验、学习笔记</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">40</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">129</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zhdmm35" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zhdmm35" rel="noopener me" target="_blank"><i class="fa fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/tree-selector-refactor.png" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/05/21/%E6%A0%91%E7%BB%93%E6%9E%84%E9%80%89%E6%8B%A9%E5%99%A8-%E4%BB%8ERedis%E5%88%B0%E7%9B%B4%E8%BF%9E%E6%95%B0%E6%8D%AE%E5%BA%93/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="我的技术博客">
+      <meta itemprop="description" content="分享编程技术、AI经验、学习笔记">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="树结构选择器：从 Redis 到直连数据库的架构重构 | 我的技术博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          树结构选择器：从 Redis 到直连数据库的架构重构
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-05-21 10:00:00" itemprop="dateCreated datePublished" datetime="2026-05-21T10:00:00+08:00">2026-05-21</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-05-31 15:50:39" itemprop="dateModified" datetime="2026-05-31T15:50:39+08:00">2026-05-31</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">后端开发</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>数据归集系统的树结构选择器是前端高频调用的核心接口。原本从 Redis 读取 GZIP 压缩的全量 JSON 数据，每次请求都要解压 7MB 数据再内存过滤。本文记录了将其改造为直连数据库的完整过程，包括多数据源配置、第三方 API 对接、以及踩坑经验。</p>
+<div class="audio-player">
+  <div class="audio-section">
+    <h4>🎧 文章导读</h4>
+    <audio controls preload="metadata">
+      <source src="/audio/树结构选择器-从Redis到直连数据库/narration.mp3" type="audio/mpeg">
+      您的浏览器不支持音频播放。
+    </audio>
+  </div>
+  <div class="audio-section">
+    <h4>🎵 背景音乐</h4>
+    <audio controls loop preload="metadata">
+      <source src="/audio/树结构选择器-从Redis到直连数据库/bgm.mp3" type="audio/mpeg">
+      您的浏览器不支持音频播放。
+    </audio>
+  </div>
+</div>
+
+<span id="more"></span>
+
+<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在水文监测数据归集系统中，树结构选择器（行政区→测站→设备三级联动）是前端页面的核心交互组件。原有实现统一走 Redis 缓存——第三方系统把数据同步到 Redis，后端从 Redis 取 GZIP+Base64 压缩的全量 JSON，解压后在内存中遍历过滤。</p>
+<p>这套方案在测试和生产环境跑得通，但在本地开发时问题暴露得非常明显。</p>
+<h2 id="重构动机：三个核心痛点"><a href="#重构动机：三个核心痛点" class="headerlink" title="重构动机：三个核心痛点"></a>重构动机：三个核心痛点</h2><h3 id="痛点一：本地环境-Redis-缺数据"><a href="#痛点一：本地环境-Redis-缺数据" class="headerlink" title="痛点一：本地环境 Redis 缺数据"></a>痛点一：本地环境 Redis 缺数据</h3><p>开发机上没有跑同步任务，Redis 里要么没 key 要么数据过期了，导致三个树接口全部返回空。每次想调试一个和选择器相关的功能，都要先想办法往 Redis 里灌数据，或者连上测试环境的 Redis。</p>
+<h3 id="痛点二：每次请求解压-7MB-全量数据"><a href="#痛点二：每次请求解压-7MB-全量数据" class="headerlink" title="痛点二：每次请求解压 7MB 全量数据"></a>痛点二：每次请求解压 7MB 全量数据</h3><p>Redis 里存的是整个表的 JSON 压缩包，哪怕前端只想查一个测站下的几台设备，后端也得把全部设备数据解出来再遍历。内存开销和 GC 压力都不小。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 改造前的核心模式：Redis → 解压 → 遍历</span></span><br><span class="line"><span class="type">String</span> <span class="variable">compressed</span> <span class="operator">=</span> redisTemplate.opsForValue().get(<span class="string">&quot;GDSW_STBPRP_B&quot;</span>);</span><br><span class="line"><span class="type">String</span> <span class="variable">json</span> <span class="operator">=</span> decompress(compressed);  <span class="comment">// GZIP + Base64 解压，7MB JSON</span></span><br><span class="line">List&lt;Station&gt; all = JSON.parseArray(json, Station.class);</span><br><span class="line"><span class="comment">// 内存遍历过滤，O(n) 全量扫描</span></span><br><span class="line"><span class="keyword">return</span> all.stream().filter(s -&gt; s.getAddvcd().startsWith(prefix)).collect(toList());</span><br></pre></td></tr></table></figure>
+
+<h3 id="痛点三：数据新鲜度依赖外部同步任务"><a href="#痛点三：数据新鲜度依赖外部同步任务" class="headerlink" title="痛点三：数据新鲜度依赖外部同步任务"></a>痛点三：数据新鲜度依赖外部同步任务</h3><p>Redis 里的数据什么时候更新、更新失败怎么办，后端完全不知道，只能被动等待。遇到数据不一致的 bug，排查链路要跨两个系统。</p>
+<h2 id="改造方案：直连数据源"><a href="#改造方案：直连数据源" class="headerlink" title="改造方案：直连数据源"></a>改造方案：直连数据源</h2><p>选择直连数据源的理由很直接：数据源本身就在那里——water 库里有完整的测站表，gdsw 库里有完整的设备表，第三方 API 能返回行政区树。既然源头可用，为什么还要绕 Redis 一圈？</p>
+<p><img src="/images/posts/%E6%A0%91%E7%BB%93%E6%9E%84%E9%80%89%E6%8B%A9%E5%99%A8-%E4%BB%8ERedis%E5%88%B0%E7%9B%B4%E8%BF%9E%E6%95%B0%E6%8D%AE%E5%BA%93/fig1.png" alt="改造前后数据流对比"><br><em>图1：改造前（Redis 全量缓存）vs 改造后（直连数据库）的数据流对比</em></p>
+<p>改造后的数据流大幅简化：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">第三方API            water数据库(ysq)       gdsw数据库</span><br><span class="line">    |                     |                      |</span><br><span class="line">    | POST + 网关签名     | @DS(&quot;water&quot;)         | 默认 master</span><br><span class="line">    v                     v                      v</span><br><span class="line">前端 &lt;── TreeSelectorServiceImpl ──(dynamic-datasource 切换)──&gt; 数据库</span><br></pre></td></tr></table></figure>
+
+<h2 id="核心实现"><a href="#核心实现" class="headerlink" title="核心实现"></a>核心实现</h2><h3 id="Step-1-行政区树——第三方接口直连"><a href="#Step-1-行政区树——第三方接口直连" class="headerlink" title="Step 1: 行政区树——第三方接口直连"></a>Step 1: 行政区树——第三方接口直连</h3><p>行政区数据来源于第三方门户系统的 API，改造后直接调用第三方接口，配合网关签名认证：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 网关签名：SHA256(timestamp + token + nonce + timestamp)</span></span><br><span class="line"><span class="keyword">private</span> Map&lt;String, String&gt; <span class="title function_">generateGatewayHeaders</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="type">String</span> <span class="variable">timestamp</span> <span class="operator">=</span> String.valueOf(System.currentTimeMillis() / <span class="number">1000</span>);</span><br><span class="line">    <span class="type">String</span> <span class="variable">nonce</span> <span class="operator">=</span> UUID.randomUUID().toString().replace(<span class="string">&quot;-&quot;</span>, <span class="string">&quot;&quot;</span>);</span><br><span class="line">    <span class="type">String</span> <span class="variable">tifSignature</span> <span class="operator">=</span> sha256(timestamp + TIF_TOKEN + nonce + timestamp);</span><br><span class="line">    <span class="type">String</span> <span class="variable">tspSignature</span> <span class="operator">=</span> sha256(timestamp + PAAS_TOKEN + nonce + timestamp).toUpperCase();</span><br><span class="line">    <span class="comment">// ...构建 headers map...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="Step-2-测站列表——数据库查询-前缀匹配"><a href="#Step-2-测站列表——数据库查询-前缀匹配" class="headerlink" title="Step 2: 测站列表——数据库查询 + 前缀匹配"></a>Step 2: 测站列表——数据库查询 + 前缀匹配</h3><p>测站表在 water 数据库的 <code>st_stbprp_b</code> 表中。核心挑战是前端传的行政区编码（12 位）和数据库存的编码（6 位）长度不一致：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 去掉尾部零，提取有效前缀</span></span><br><span class="line"><span class="type">String</span> <span class="variable">effectiveAddvcd</span> <span class="operator">=</span> addvcd.replaceAll(<span class="string">&quot;0+$&quot;</span>, <span class="string">&quot;&quot;</span>);  <span class="comment">// 440100000000 → 4401</span></span><br><span class="line">QueryWrapper&lt;StStbprpB&gt; wrapper = <span class="keyword">new</span> <span class="title class_">QueryWrapper</span>&lt;&gt;();</span><br><span class="line">wrapper.eq(<span class="string">&quot;USFL&quot;</span>, <span class="string">&quot;1&quot;</span>).likeRight(<span class="string">&quot;ADDVCD&quot;</span>, effectiveAddvcd);</span><br><span class="line"><span class="comment">// 生成 SQL: WHERE USFL = &#x27;1&#x27; AND ADDVCD LIKE &#x27;4401%&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p>新建了 <code>StStbprpB</code> Entity 和 <code>StStbprpBMapper</code>，Mapper 上用 <code>@DS(&quot;water&quot;)</code> 注解切换到 water 数据源。</p>
+<h3 id="Step-3-设备列表——精确查询"><a href="#Step-3-设备列表——精确查询" class="headerlink" title="Step 3: 设备列表——精确查询"></a>Step 3: 设备列表——精确查询</h3><p>设备表在 gdsw 主库，按测站编码精确匹配：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">QueryWrapper&lt;TreeEquipment&gt; wrapper = <span class="keyword">new</span> <span class="title class_">QueryWrapper</span>&lt;&gt;();</span><br><span class="line">wrapper.eq(<span class="string">&quot;STCD&quot;</span>, stcd);</span><br><span class="line">List&lt;TreeEquipment&gt; equipments = treeEquipmentMapper.selectList(wrapper);</span><br></pre></td></tr></table></figure>
+
+<h3 id="Step-4-流域树——平铺转树形"><a href="#Step-4-流域树——平铺转树形" class="headerlink" title="Step 4: 流域树——平铺转树形"></a>Step 4: 流域树——平铺转树形</h3><p>新增 <code>/riverBasinTree</code> 接口，从第三方 API 获取平铺流域数据，通过 <code>RiverBasinTreeUtil</code> 工具类构建树形结构：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 四阶段算法：建索引 → 挂父子 → 排序 → 计数</span></span><br><span class="line">Map&lt;String, TreeNode&gt; nodeMap = <span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;&gt;();</span><br><span class="line"><span class="comment">// 1. 以 RVCD1 为主键建立节点 Map</span></span><br><span class="line"><span class="keyword">for</span> (RiverBasin item : flatList) &#123;</span><br><span class="line">    nodeMap.put(item.getRvcd1(), toNode(item));</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 2. 通过 PARENT_CODE 挂到父节点</span></span><br><span class="line"><span class="keyword">for</span> (TreeNode node : nodeMap.values()) &#123;</span><br><span class="line">    <span class="type">TreeNode</span> <span class="variable">parent</span> <span class="operator">=</span> nodeMap.get(node.getParentCode());</span><br><span class="line">    <span class="keyword">if</span> (parent != <span class="literal">null</span>) &#123;</span><br><span class="line">        parent.getChildren().add(node);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="多数据源配置"><a href="#多数据源配置" class="headerlink" title="多数据源配置"></a>多数据源配置</h2><p><img src="/images/posts/%E6%A0%91%E7%BB%93%E6%9E%84%E9%80%89%E6%8B%A9%E5%99%A8-%E4%BB%8ERedis%E5%88%B0%E7%9B%B4%E8%BF%9E%E6%95%B0%E6%8D%AE%E5%BA%93/fig2.png" alt="多数据源架构图"><br><em>图2：多数据源配置架构，master 和 water 数据源切换</em></p>
+<p>项目使用了 <code>dynamic-datasource</code>（Baomidou 的多数据源框架），新增 water 数据源只需在配置文件中添加：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">datasource:</span></span><br><span class="line">    <span class="attr">dynamic:</span></span><br><span class="line">      <span class="attr">datasource:</span></span><br><span class="line">        <span class="attr">master:</span></span><br><span class="line">          <span class="attr">url:</span> <span class="string">jdbc:mysql://127.0.0.1:3306/gdsw</span></span><br><span class="line">          <span class="attr">username:</span> <span class="string">root</span></span><br><span class="line">          <span class="attr">password:</span> <span class="string">root</span></span><br><span class="line">        <span class="attr">water:</span></span><br><span class="line">          <span class="attr">url:</span> <span class="string">jdbc:mysql://19.25.36.199:15076/ysq</span></span><br><span class="line">          <span class="attr">username:</span> <span class="string">sa</span></span><br><span class="line">          <span class="attr">password:</span> <span class="string">&quot;&#125;&amp;S^!&quot;</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="踩坑记录"><a href="#踩坑记录" class="headerlink" title="踩坑记录"></a>踩坑记录</h2><h3 id="Bean-名冲突"><a href="#Bean-名冲突" class="headerlink" title="Bean 名冲突"></a>Bean 名冲突</h3><p>algorithm-plugin-starter 模块已有 <code>EquipmentBMapper</code>，新建同名 Mapper 导致 <code>ConflictingBeanDefinitionException</code>。解决方案：改名为 <code>TreeEquipmentMapper</code>。</p>
+<p><strong>教训</strong>：多模块项目里新建 Mapper 之前，先全局搜索是否已有同表 Mapper。</p>
+<h3 id="认证头类型错误"><a href="#认证头类型错误" class="headerlink" title="认证头类型错误"></a>认证头类型错误</h3><p>流域树接口最初复用了行政区树的 <code>generateGatewayHeaders()</code> 方法，但实际需要 <code>X-Auth-Data</code> + <code>X-Auth-Appid</code> 的 RSA 加密认证头。两种认证机制完全不同，不能混用。</p>
+<p><strong>教训</strong>：调用第三方 API 时，不能假设所有接口使用相同的认证方式。</p>
+<h3 id="特殊字符密码"><a href="#特殊字符密码" class="headerlink" title="特殊字符密码"></a>特殊字符密码</h3><p>water 数据源密码含特殊字符（<code>&#125;&amp;S^!</code>），在配置文件里需要加引号保护。</p>
+<h2 id="接口变更总览"><a href="#接口变更总览" class="headerlink" title="接口变更总览"></a>接口变更总览</h2><table>
+<thead>
+<tr>
+<th>接口</th>
+<th>路径</th>
+<th>改造前</th>
+<th>改造后</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>行政区树(缓存)</td>
+<td><code>GET /regionTree</code></td>
+<td>Redis</td>
+<td>保持不动</td>
+</tr>
+<tr>
+<td>行政区树(直连)</td>
+<td><code>GET /regionTreeFromApi</code></td>
+<td>不存在</td>
+<td>新增</td>
+</tr>
+<tr>
+<td>测站列表</td>
+<td><code>GET /stationTree?addvcd=xxx</code></td>
+<td>Redis 全量解压</td>
+<td>QueryWrapper 查 water 库</td>
+</tr>
+<tr>
+<td>设备列表</td>
+<td><code>GET /equipmentTree?stcd=xxx</code></td>
+<td>Redis 全量解压</td>
+<td>QueryWrapper 查 gdsw 库</td>
+</tr>
+<tr>
+<td>流域树</td>
+<td><code>GET /riverBasinTree</code></td>
+<td>不存在</td>
+<td>新增</td>
+</tr>
+</tbody></table>
+<h2 id="经验总结"><a href="#经验总结" class="headerlink" title="经验总结"></a>经验总结</h2><p>这次重构的核心收获是<strong>架构决策要随着系统演进重新评估</strong>。项目初期的”全量缓存到 Redis”方案确实是最快跑通的选择，但半年后回头看，数据源本身就在数据库里，中间加一层 Redis 反而增加了复杂度。</p>
+<p>关键要点：</p>
+<ul>
+<li>当发现自己在为缓存维护同步任务、处理过期问题、mock 本地数据时，就该想想是否可以”跳过中间层”</li>
+<li>多数据源项目新建 Mapper 前先全局搜索，避免 Bean 名冲突</li>
+<li>调用第三方 API 前务必确认实际认证要求，不能凭经验假设</li>
+<li>特殊字符密码在配置文件中要加引号保护</li>
+</ul>
+<hr>
+<p><em>本文涉及代码已提交到 <code>master-b_sp_20251216-delDec</code> 分支。</em></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Spring-Boot/" rel="tag"># Spring Boot</a>
+              <a href="/tags/%E5%A4%9A%E6%95%B0%E6%8D%AE%E6%BA%90/" rel="tag"># 多数据源</a>
+              <a href="/tags/MyBatis-Plus/" rel="tag"># MyBatis-Plus</a>
+              <a href="/tags/%E6%9E%B6%E6%9E%84%E9%87%8D%E6%9E%84/" rel="tag"># 架构重构</a>
+              <a href="/tags/Redis/" rel="tag"># Redis</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/05/13/%E5%A4%8D%E7%94%A8%E4%B8%BA%E7%8E%8B-%E5%9B%9B%E4%B8%AAExcel%E5%AF%BC%E5%87%BA%E7%AB%AF%E7%82%B9%E7%9A%84%E5%BF%AB%E9%80%9F%E6%90%AD%E5%BB%BA/" rel="prev" title="复用为王:四个 Excel 导出端点的快速搭建">
+                  <i class="fa fa-angle-left"></i> 复用为王:四个 Excel 导出端点的快速搭建
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2026/05/25/JdbcTemplate-vs-MyBatis-Plus/" rel="next" title="JdbcTemplate vs MyBatis-Plus：复杂查询场景的选择指南">
+                  JdbcTemplate vs MyBatis-Plus：复杂查询场景的选择指南 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  
+  <div class="comments giscus-container">
+  </div>
+  
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">zhlifeiy35</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/zhdmm35" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"zhdmm35/zhdmm35.github.io","repo_id":"R_kgDOON4bhg","category":"Announcements","category_id":"DIC_kwDOON4bhs4C3dEc","mapping":"pathname","strict":0,"reactions_enabled":1,"emit_metadata":0,"theme":"preferred_color_scheme","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+
+<script>
+document.addEventListener('page:loaded', () => {
+  if (!CONFIG.page.comments) return;
+
+  NexT.utils.loadComments('.giscus-container')
+    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
+      attributes: {
+        async                   : true,
+        crossOrigin             : 'anonymous',
+        'data-repo'             : CONFIG.giscus.repo,
+        'data-repo-id'          : CONFIG.giscus.repo_id,
+        'data-category'         : CONFIG.giscus.category,
+        'data-category-id'      : CONFIG.giscus.category_id,
+        'data-mapping'          : CONFIG.giscus.mapping,
+        'data-strict'           : CONFIG.giscus.strict,
+        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
+        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
+        'data-theme'            : CONFIG.giscus.theme,
+        'data-lang'             : CONFIG.giscus.lang,
+        'data-input-position'   : CONFIG.giscus.input_position,
+        'data-loading'          : CONFIG.giscus.loading
+      },
+      parentNode: document.querySelector('.giscus-container')
+    }));
+});
+</script>
+
+</body>
+</html>
