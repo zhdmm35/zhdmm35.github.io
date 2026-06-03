@@ -1,0 +1,2063 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="三天里把数据归集系统的 6 个 tree 接口、148 个孤儿设备、5 个数据地雷全部扒了一遍，附完整证据链和修复指南">
+<meta property="og:type" content="article">
+<meta property="og:title" content="数据归集 6 月探查实录：三天三件事，把树形接口、数据脏坑、跨源机制全部扒一遍">
+<meta property="og:url" content="https://zhlifeiy.codes/2026/06/03/%E6%95%B0%E6%8D%AE%E5%BD%92%E9%9B%866%E6%9C%88%E6%8E%A2%E6%9F%A5%E5%AE%9E%E5%BD%95-%E4%B8%89%E5%A4%A9%E4%B8%89%E4%BB%B6%E4%BA%8B/index.html">
+<meta property="og:site_name" content="我的技术博客">
+<meta property="og:description" content="三天里把数据归集系统的 6 个 tree 接口、148 个孤儿设备、5 个数据地雷全部扒了一遍，附完整证据链和修复指南">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/%E6%95%B0%E6%8D%AE%E5%BD%92%E9%9B%866%E6%9C%88%E6%8E%A2%E6%9F%A5%E5%AE%9E%E5%BD%95-%E4%B8%89%E5%A4%A9%E4%B8%89%E4%BB%B6%E4%BA%8B.png">
+<meta property="article:published_time" content="2026-06-03T14:00:00.000Z">
+<meta property="article:modified_time" content="2026-06-03T08:42:25.940Z">
+<meta property="article:author" content="zhlifeiy35">
+<meta property="article:tag" content="Spring Boot">
+<meta property="article:tag" content="多数据源">
+<meta property="article:tag" content="数据归集">
+<meta property="article:tag" content="树选择器">
+<meta property="article:tag" content="baomidou-dynamic-datasource">
+<meta property="article:tag" content="MySQL">
+<meta property="article:tag" content="数据治理">
+<meta property="article:tag" content="Bug排查">
+<meta property="article:tag" content="接口改造">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/%E6%95%B0%E6%8D%AE%E5%BD%92%E9%9B%866%E6%9C%88%E6%8E%A2%E6%9F%A5%E5%AE%9E%E5%BD%95-%E4%B8%89%E5%A4%A9%E4%B8%89%E4%BB%B6%E4%BA%8B.png">
+
+
+<link rel="canonical" href="https://zhlifeiy.codes/2026/06/03/%E6%95%B0%E6%8D%AE%E5%BD%92%E9%9B%866%E6%9C%88%E6%8E%A2%E6%9F%A5%E5%AE%9E%E5%BD%95-%E4%B8%89%E5%A4%A9%E4%B8%89%E4%BB%B6%E4%BA%8B/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://zhlifeiy.codes/2026/06/03/%E6%95%B0%E6%8D%AE%E5%BD%92%E9%9B%866%E6%9C%88%E6%8E%A2%E6%9F%A5%E5%AE%9E%E5%BD%95-%E4%B8%89%E5%A4%A9%E4%B8%89%E4%BB%B6%E4%BA%8B/","path":"2026/06/03/数据归集6月探查实录-三天三件事/","title":"数据归集 6 月探查实录：三天三件事，把树形接口、数据脏坑、跨源机制全部扒一遍"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>数据归集 6 月探查实录：三天三件事，把树形接口、数据脏坑、跨源机制全部扒一遍 | 我的技术博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">我的技术博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">记录学习与成长</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-guestbook"><a href="/guestbook/" rel="section"><i class="fa fa-comment-dots fa-fw"></i>留言板</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link"><span class="nav-number">1.</span> <span class="nav-text">🎧 文章导读</span></a></li><li class="nav-item nav-level-4"><a class="nav-link"><span class="nav-number">2.</span> <span class="nav-text">🎵 背景音乐</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%F0%9F%8E%AC-%E8%A7%86%E9%A2%91%E9%9B%86%EF%BC%884-%E6%AE%B5-6-%E7%A7%92%E6%A6%82%E8%A7%88%EF%BC%89"><span class="nav-number"></span> <span class="nav-text">🎬 视频集（4 段 6 秒概览）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%99%E5%9C%A8%E5%89%8D%E9%9D%A2%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88%E6%98%AF%E2%80%9D%E6%8E%A2%E6%9F%A5%E5%AE%9E%E5%BD%95%E2%80%9D"><span class="nav-number"></span> <span class="nav-text">写在前面：为什么是”探查实录”</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%816-%E6%9C%88-1-%E6%97%A5%EF%BC%9A%E6%A0%91%E9%80%89%E6%8B%A9%E5%99%A8%E5%A4%A7%E6%94%B9%E9%80%A0"><span class="nav-number"></span> <span class="nav-text">一、6 月 1 日：树选择器大改造</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-%E8%B5%B7%E7%82%B9%EF%BC%9A5-%E6%9C%88%E6%94%B9%E9%80%A0%E5%90%8E%E7%9A%84%E7%AC%AC%E4%B8%80%E6%AC%A1%E5%9B%9E%E8%AE%BF"><span class="nav-number"></span> <span class="nav-text">1.1 起点：5 月改造后的第一次回访</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-2-%E7%AC%AC%E4%B8%80%E4%BB%B6%E4%BA%8B%EF%BC%9A%E5%AE%A1%E6%9F%A5-6-%E4%B8%AA%E6%96%B0%E6%8F%90%E4%BA%A4%E7%9A%84%E6%8E%A5%E5%8F%A3"><span class="nav-number"></span> <span class="nav-text">1.2 第一件事：审查 6 个新提交的接口</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-3-%E7%AC%AC%E4%BA%8C%E4%BB%B6%E4%BA%8B%EF%BC%9A%E7%B4%AB%E6%B4%9E%E8%AE%BE%E5%A4%87%E4%B8%A2%E5%A4%B1%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5%EF%BC%885-%E6%AD%A5%E5%AE%9A%E4%BD%8D%EF%BC%89"><span class="nav-number"></span> <span class="nav-text">1.3 第二件事：紫洞设备丢失问题排查（5 步定位）</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-3-1-%E6%8E%92%E6%9F%A5%E8%BF%87%E7%A8%8B"><span class="nav-number">1.</span> <span class="nav-text">1.3.1 排查过程</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-3-2-%E6%89%A9%E5%A4%A7%E6%8E%92%E6%9F%A5"><span class="nav-number">2.</span> <span class="nav-text">1.3.2 扩大排查</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-3-3-%E6%8C%89-EQTP-%E5%88%86%E5%B8%83"><span class="nav-number">3.</span> <span class="nav-text">1.3.3 按 EQTP 分布</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-3-4-%E6%A0%B9%E5%9B%A0%E4%B8%8E%E4%BF%AE%E5%A4%8D"><span class="nav-number">4.</span> <span class="nav-text">1.3.4 根因与修复</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-3-5-%E7%B4%AB%E6%B4%9E%E8%AE%BE%E5%A4%87%E6%8E%92%E6%9F%A5%E8%B7%AF%E5%BE%84%E6%80%BB%E7%BB%93"><span class="nav-number">5.</span> <span class="nav-text">1.3.5 紫洞设备排查路径总结</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-4-%E7%AC%AC%E4%B8%89%E4%BB%B6%E4%BA%8B%EF%BC%9ATreeNode-%E5%8A%A0-type-%E5%AD%97%E6%AE%B5"><span class="nav-number"></span> <span class="nav-text">1.4 第三件事：TreeNode 加 type 字段</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-4-1-%E8%AE%BE%E8%AE%A1"><span class="nav-number">1.</span> <span class="nav-text">1.4.1 设计</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-4-2-%E5%AE%9E%E7%8E%B0"><span class="nav-number">2.</span> <span class="nav-text">1.4.2 实现</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-4-3-%E4%B8%BA%E4%BB%80%E4%B9%88%E6%89%93%E6%A0%87%E4%BD%8D%E7%BD%AE%E8%BF%99%E4%B9%88%E9%80%89"><span class="nav-number">3.</span> <span class="nav-text">1.4.3 为什么打标位置这么选</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-4-4-%E9%AA%8C%E8%AF%81"><span class="nav-number">4.</span> <span class="nav-text">1.4.4 验证</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-5-%E7%BB%AD%EF%BC%9A%E5%BD%93%E5%A4%A9%E5%90%8E%E7%BB%AD%E7%9A%84-4-%E4%BB%B6%E4%BA%8B"><span class="nav-number"></span> <span class="nav-text">1.5 续：当天后续的 4 件事</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-5-1-%E5%8F%91%E7%8E%B0%E2%80%9D%E6%89%80%E6%9C%89%E6%B5%81%E5%9F%9F%E2%80%9D%E6%98%AF%E5%90%8E%E5%8C%85%E5%87%BA%E6%9D%A5%E7%9A%84%E5%A3%B3"><span class="nav-number">1.</span> <span class="nav-text">1.5.1 发现”所有流域”是后包出来的壳</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-5-2-Tree-%E6%8E%A5%E5%8F%A3%E5%8E%BB%E6%8E%89%E2%80%9D%E6%89%80%E6%9C%89%E6%B5%81%E5%9F%9F%E2%80%9D%E5%A3%B3%EF%BC%88Plan-1-Plan-2%EF%BC%89"><span class="nav-number">2.</span> <span class="nav-text">1.5.2 Tree 接口去掉”所有流域”壳（Plan 1 + Plan 2）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-5-3-%E6%B6%89%E5%8F%8A%E6%94%B9%E5%8A%A8"><span class="nav-number">3.</span> <span class="nav-text">1.5.3 涉及改动</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-5-4-%E5%BE%AA%E7%8E%AF%E5%86%85%E9%87%8D%E5%A4%8D%E6%9F%A5%E8%AF%A2%E6%8F%90%E5%88%B0%E5%A4%96%E9%9D%A2%EF%BC%88%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%EF%BC%89"><span class="nav-number">4.</span> <span class="nav-text">1.5.4 循环内重复查询提到外面（性能优化）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-5-5-%E7%A9%BA%E6%A0%B9%E8%8A%82%E7%82%B9%E8%BF%87%E6%BB%A4"><span class="nav-number">5.</span> <span class="nav-text">1.5.5 空根节点过滤</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-5-6-%E6%83%8A%E5%96%9C%E5%8F%91%E7%8E%B0%EF%BC%9A%E7%B4%AB%E6%B4%9E%E5%87%BA%E7%8E%B0%E4%BA%86"><span class="nav-number">6.</span> <span class="nav-text">1.5.6 惊喜发现：紫洞出现了</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-6-6-1-%E7%BB%8F%E9%AA%8C%E6%80%BB%E7%BB%93"><span class="nav-number"></span> <span class="nav-text">1.6 6&#x2F;1 经验总结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%816-%E6%9C%88-2-%E6%97%A5%EF%BC%9A%E6%8E%A5%E5%8F%A3%E5%AF%B9%E6%8E%A5%E4%B8%8E%E6%95%B0%E6%8D%AE%E9%80%BB%E8%BE%91%E8%AF%B4%E6%98%8E"><span class="nav-number"></span> <span class="nav-text">二、6 月 2 日：接口对接与数据逻辑说明</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-%E8%B5%B7%E7%82%B9%EF%BC%9A6-1-%E6%94%B9%E9%80%A0%E7%9A%84%E5%BB%B6%E7%BB%AD"><span class="nav-number"></span> <span class="nav-text">2.1 起点：6&#x2F;1 改造的延续</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-%E7%AC%AC%E4%B8%80%E4%BB%B6%E4%BA%8B%EF%BC%9Atree-%E6%8E%A5%E5%8F%A3%E6%94%B9%E9%80%A0%E5%AF%B9%E6%8E%A5%E8%AF%B4%E6%98%8E"><span class="nav-number"></span> <span class="nav-text">2.2 第一件事：tree 接口改造对接说明</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#2-2-1-%E6%8E%A5%E5%8F%A3%E7%AD%BE%E5%90%8D%E5%8F%98%E5%8C%96%EF%BC%88%E7%A0%B4%E5%9D%8F%E6%80%A7%EF%BC%89"><span class="nav-number">1.</span> <span class="nav-text">2.2.1 接口签名变化（破坏性）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-2-2-%E5%89%8D%E7%AB%AF%E9%9C%80%E8%A6%81%E5%81%9A%E7%9A%84%E4%BA%8B"><span class="nav-number">2.</span> <span class="nav-text">2.2.2 前端需要做的事</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-2-3-%E6%8F%90%E4%BA%A4%E6%B8%85%E5%8D%95%EF%BC%88%E6%8F%90%E4%BA%A4%E5%89%8D%E5%BF%85%E7%9C%8B%EF%BC%89"><span class="nav-number">3.</span> <span class="nav-text">2.2.3 提交清单（提交前必看）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-2-4-%E6%80%A7%E8%83%BD%E7%89%B9%E5%BE%81"><span class="nav-number">4.</span> <span class="nav-text">2.2.4 性能特征</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-2-5-Redis-%E7%BC%93%E5%AD%98%E8%87%AA%E6%84%88"><span class="nav-number">5.</span> <span class="nav-text">2.2.5 Redis 缓存自愈</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-2-6-%E6%BB%9A%E5%8A%A8%E5%8D%87%E7%BA%A7%E9%A3%8E%E9%99%A9"><span class="nav-number">6.</span> <span class="nav-text">2.2.6 滚动升级风险</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-2-7-%E6%9C%AA%E5%AE%8C%E6%88%90%E9%A1%B9"><span class="nav-number">7.</span> <span class="nav-text">2.2.7 未完成项</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-3-%E7%AC%AC%E4%BA%8C%E4%BB%B6%E4%BA%8B%EF%BC%9A%E8%AE%BE%E5%A4%87%E7%B1%BB%E5%9E%8B%E7%AD%9B%E9%80%89%E6%8E%A5%E5%8F%A3"><span class="nav-number"></span> <span class="nav-text">2.3 第二件事：设备类型筛选接口</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#2-3-1-%E6%8E%A5%E5%8F%A3%E5%88%97%E8%A1%A8"><span class="nav-number">1.</span> <span class="nav-text">2.3.1 接口列表</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-3-2-%E8%BF%94%E5%9B%9E%E6%A0%BC%E5%BC%8F"><span class="nav-number">2.</span> <span class="nav-text">2.3.2 返回格式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-3-3-%E5%89%8D%E7%AB%AF%E4%BD%BF%E7%94%A8%E6%B5%81%E7%A8%8B"><span class="nav-number">3.</span> <span class="nav-text">2.3.3 前端使用流程</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-3-4-%E5%AE%9E%E7%8E%B0%E8%AF%B4%E6%98%8E"><span class="nav-number">4.</span> <span class="nav-text">2.3.4 实现说明</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-4-%E7%AC%AC%E4%B8%89%E4%BB%B6%E4%BA%8B%EF%BC%9A%E8%B4%9F%E4%B8%80%E7%BA%A7%E6%B2%B3%E6%B5%81%E9%80%BB%E8%BE%91%E8%AF%B4%E6%98%8E"><span class="nav-number"></span> <span class="nav-text">2.4 第三件事：负一级河流逻辑说明</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#2-4-1-%E6%9D%A5%E6%BA%90%E5%92%8C%E5%90%AB%E4%B9%89"><span class="nav-number">1.</span> <span class="nav-text">2.4.1 来源和含义</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-4-2-RV-LEVEL-%E5%88%86%E5%B8%83"><span class="nav-number">2.</span> <span class="nav-text">2.4.2 RV_LEVEL 分布</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-4-3-%E5%85%B7%E4%BD%93%E4%BE%8B%E5%AD%90%EF%BC%9A%E7%8F%A0%E6%B1%9F%E4%B8%89%E8%A7%92%E6%B4%B2%E6%B2%B3%E7%BD%91%E5%8C%BA"><span class="nav-number">3.</span> <span class="nav-text">2.4.3 具体例子：珠江三角洲河网区</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-4-4-%E5%85%A8%E9%83%A8-5-%E4%B8%AA-1%E7%BA%A7%E6%B2%B3%E6%B5%81-%E8%8A%82%E7%82%B9"><span class="nav-number">4.</span> <span class="nav-text">2.4.4 全部 5 个 -1级河流 节点</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-4-5-%E4%BB%A3%E7%A0%81%E4%BD%8D%E7%BD%AE"><span class="nav-number">5.</span> <span class="nav-text">2.4.5 代码位置</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-4-6-%E7%94%A8%E6%B3%95%EF%BC%9A%E6%8E%92%E5%BA%8F%E5%85%9C%E5%BA%95"><span class="nav-number">6.</span> <span class="nav-text">2.4.6 用法：排序兜底</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-4-7-%E5%BD%B1%E5%93%8D%E8%8C%83%E5%9B%B4"><span class="nav-number">7.</span> <span class="nav-text">2.4.7 影响范围</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-4-8-%E4%B8%8E-PARENT-CODE-1-%E6%97%A5%E5%BF%97%E7%9A%84%E5%85%B3%E7%B3%BB"><span class="nav-number">8.</span> <span class="nav-text">2.4.8 与 PARENT_CODE&#x3D;&#39;-1&#39; 日志的关系</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-5-%E6%8F%90%E4%BA%A4%E8%AE%B0%E5%BD%95-b1cfd65"><span class="nav-number"></span> <span class="nav-text">2.5 提交记录 b1cfd65</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#2-5-1-%E6%94%B9%E5%8A%A8%E6%96%87%E4%BB%B6%EF%BC%883-%E4%B8%AA%EF%BC%89"><span class="nav-number">1.</span> <span class="nav-text">2.5.1 改动文件（3 个）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-5-2-%E6%94%B9%E5%8A%A8%E5%86%85%E5%AE%B9"><span class="nav-number">2.</span> <span class="nav-text">2.5.2 改动内容</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-5-3-%E6%80%A7%E8%83%BD%E6%95%B0%E6%8D%AE"><span class="nav-number">3.</span> <span class="nav-text">2.5.3 性能数据</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-5-4-%E5%89%8D%E7%AB%AF%E6%B3%A8%E6%84%8F"><span class="nav-number">4.</span> <span class="nav-text">2.5.4 前端注意</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-6-6-2-%E7%BB%8F%E9%AA%8C%E6%80%BB%E7%BB%93"><span class="nav-number"></span> <span class="nav-text">2.6 6&#x2F;2 经验总结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%816-%E6%9C%88-3-%E6%97%A5%EF%BC%9A5-%E4%B8%AA%E6%95%B0%E6%8D%AE%E5%9C%B0%E9%9B%B7%E6%8E%A2%E6%9F%A5"><span class="nav-number"></span> <span class="nav-text">三、6 月 3 日：5 个数据地雷探查</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-%E8%B5%B7%E7%82%B9%EF%BC%9A%E4%BB%8A%E5%A4%A9%E7%9A%84%E5%B7%A5%E4%BD%9C%E4%B8%8D%E6%98%AF%E5%86%99%E5%8A%9F%E8%83%BD"><span class="nav-number"></span> <span class="nav-text">3.1 起点：今天的工作不是写功能</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-%E5%8F%91%E7%8E%B0-1%EF%BC%9A%E7%BB%84%E7%BB%87%E6%9E%B6%E6%9E%84%E8%A1%A8-bs-sw-cy-dh-company"><span class="nav-number"></span> <span class="nav-text">3.2 发现 1：组织架构表 bs_sw_cy_dh_company</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#3-2-1-%E6%A0%B9%E8%8A%82%E7%82%B9%E4%B8%8E%E6%B0%B4%E6%96%87%E4%B8%9A%E5%8A%A1%E4%B8%BB%E7%BA%BF"><span class="nav-number">1.</span> <span class="nav-text">3.2.1 根节点与水文业务主线</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-2-2-%E8%B0%81%E4%BC%9A%E5%BC%95%E7%94%A8%E8%BF%99%E5%BC%A0%E8%A1%A8"><span class="nav-number">2.</span> <span class="nav-text">3.2.2 谁会引用这张表</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-3-%E5%8F%91%E7%8E%B0-2%EF%BC%9A%E6%89%80%E8%B0%93%E2%80%9D%E8%B7%A8%E6%95%B0%E6%8D%AE%E6%BA%90%E6%9F%A5%E8%AF%A2%E2%80%9D%E5%88%B0%E5%BA%95%E6%98%AF%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E7%9A%84"><span class="nav-number"></span> <span class="nav-text">3.3 发现 2：所谓”跨数据源查询”到底是怎么实现的</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#3-3-1-%E6%9C%BA%E5%88%B6%E8%A6%81%E7%82%B9"><span class="nav-number">1.</span> <span class="nav-text">3.3.1 机制要点</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-3-2-%E9%9A%90%E8%97%8F%E6%88%90%E6%9C%AC"><span class="nav-number">2.</span> <span class="nav-text">3.3.2 隐藏成本</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-3-3-%E6%95%B0%E6%8D%AE%E6%BA%90%E6%98%A0%E5%B0%84%EF%BC%88%E6%9C%AC%E5%9C%B0-application-local-yml%EF%BC%89"><span class="nav-number">3.</span> <span class="nav-text">3.3.3 数据源映射（本地 application-local.yml）</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-4-%E5%8F%91%E7%8E%B0-3%EF%BC%9A%E8%AE%A1%E5%88%92%E6%96%87%E6%A1%A3%E4%B8%8E%E5%AE%9E%E9%99%85%E4%BB%A3%E7%A0%81%E4%B8%8D%E4%B8%80%E8%87%B4"><span class="nav-number"></span> <span class="nav-text">3.4 发现 3：计划文档与实际代码不一致</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-5-%E5%8F%91%E7%8E%B0-4%EF%BC%9A-dataCollection-equipmentTypes-%E6%8E%A5%E5%8F%A3%E7%9A%84%E8%BF%91%E9%87%8D%E5%A4%8D%E6%B1%A1%E6%9F%93"><span class="nav-number"></span> <span class="nav-text">3.5 发现 4：&#x2F;dataCollection&#x2F;equipmentTypes 接口的近重复污染</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#3-5-1-%E8%BF%91%E9%87%8D%E5%A4%8D%E5%AE%9E%E4%BE%8B"><span class="nav-number">1.</span> <span class="nav-text">3.5.1 近重复实例</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-6-%E5%8F%91%E7%8E%B0-5%EF%BC%9A%E5%85%AC%E5%8F%B8%E8%A1%A8%E8%84%8F%E6%95%B0%E6%8D%AE%E2%80%94%E2%80%94%E5%90%8C%E5%90%8D%E8%8A%82%E7%82%B9%E4%B8%A4%E4%B8%AA-ID"><span class="nav-number"></span> <span class="nav-text">3.6 发现 5：公司表脏数据——同名节点两个 ID</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#3-6-1-%E4%B8%8B%E6%B8%B8%E5%BD%B1%E5%93%8D"><span class="nav-number">1.</span> <span class="nav-text">3.6.1 下游影响</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-7-%E5%90%8E%E7%BB%AD%E8%A1%8C%E5%8A%A8"><span class="nav-number"></span> <span class="nav-text">3.7 后续行动</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E8%B7%A8%E6%97%A5%E6%80%BB%E7%BB%93%EF%BC%9A%E4%B8%89%E5%A4%A9%E7%9A%84%E5%B7%A5%E4%BD%9C%E8%8A%82%E5%A5%8F"><span class="nav-number"></span> <span class="nav-text">四、跨日总结：三天的工作节奏</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#4-1-%E8%8A%82%E5%A5%8F%E5%AF%B9%E6%AF%94"><span class="nav-number"></span> <span class="nav-text">4.1 节奏对比</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-2-%E4%B8%89%E4%B8%AA%E2%80%9D%E7%9B%B8%E4%BA%92%E7%BA%A0%E7%BC%A0%E2%80%9D%E7%9A%84%E4%B8%BB%E9%A2%98"><span class="nav-number"></span> <span class="nav-text">4.2 三个”相互纠缠”的主题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-3-%E4%B8%89%E4%B8%AA%E2%80%9D%E5%BA%94%E8%AF%A5%E8%AE%B0%E4%BD%8F%E2%80%9D%E7%9A%84%E7%BB%8F%E9%AA%8C"><span class="nav-number"></span> <span class="nav-text">4.3 三个”应该记住”的经验</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E8%B5%84%E6%96%99%E4%BD%90%E8%AF%81"><span class="nav-number"></span> <span class="nav-text">五、资料佐证</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#5-1-%E6%95%B0%E6%8D%AE%E5%BA%93%E8%AF%81%E6%8D%AE"><span class="nav-number"></span> <span class="nav-text">5.1 数据库证据</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#5-1-1-148-%E4%B8%AA%E5%AD%A4%E5%84%BF%E8%AE%BE%E5%A4%87-SQL"><span class="nav-number">1.</span> <span class="nav-text">5.1.1 148 个孤儿设备 SQL</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#5-1-2-%E7%BB%84%E7%BB%87%E6%9E%B6%E6%9E%84%E8%A1%A8%E7%BB%93%E6%9E%84"><span class="nav-number">2.</span> <span class="nav-text">5.1.2 组织架构表结构</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#5-1-3-%E5%90%8C%E5%90%8D%E8%8A%82%E7%82%B9%E5%8F%8C-ID-%E6%A3%80%E6%B5%8B"><span class="nav-number">3.</span> <span class="nav-text">5.1.3 同名节点双 ID 检测</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-2-%E6%8F%90%E4%BA%A4%E8%AE%B0%E5%BD%95%EF%BC%88commit-b1cfd65%EF%BC%89"><span class="nav-number"></span> <span class="nav-text">5.2 提交记录（commit b1cfd65）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-3-API-%E9%AA%8C%E8%AF%81%E7%BB%93%E6%9E%9C"><span class="nav-number"></span> <span class="nav-text">5.3 API 验证结果</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#5-3-1-type-%E5%AD%97%E6%AE%B5%E9%93%BE%E8%B7%AF%E9%AA%8C%E8%AF%81"><span class="nav-number">1.</span> <span class="nav-text">5.3.1 type 字段链路验证</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#5-3-2-%E8%AE%BE%E5%A4%87%E7%B1%BB%E5%9E%8B%E6%8E%A5%E5%8F%A3%E9%AA%8C%E8%AF%81"><span class="nav-number">2.</span> <span class="nav-text">5.3.2 设备类型接口验证</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-4-%E6%80%A7%E8%83%BD%E6%95%B0%E6%8D%AE"><span class="nav-number"></span> <span class="nav-text">5.4 性能数据</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-5-%E6%B6%89%E5%8F%8A%E6%96%87%E4%BB%B6%E6%B8%85%E5%8D%95"><span class="nav-number"></span> <span class="nav-text">5.5 涉及文件清单</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#5-5-1-%E5%90%8E%E7%AB%AF%E4%BB%A3%E7%A0%81"><span class="nav-number">1.</span> <span class="nav-text">5.5.1 后端代码</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#5-5-2-%E6%95%B0%E6%8D%AE%E5%BA%93%E8%A1%A8"><span class="nav-number">2.</span> <span class="nav-text">5.5.2 数据库表</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#5-5-3-%E6%96%87%E6%A1%A3"><span class="nav-number">3.</span> <span class="nav-text">5.5.3 文档</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-6-%E5%A4%96%E9%83%A8%E5%8F%82%E8%80%83"><span class="nav-number"></span> <span class="nav-text">5.6 外部参考</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#5-6-1-baomidou-dynamic-datasource"><span class="nav-number">1.</span> <span class="nav-text">5.6.1 baomidou-dynamic-datasource</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#5-6-2-MyBatis-Plus"><span class="nav-number">2.</span> <span class="nav-text">5.6.2 MyBatis-Plus</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#5-6-3-MySQL-%E8%B7%A8%E5%BA%93%E9%99%90%E5%88%B6"><span class="nav-number">3.</span> <span class="nav-text">5.6.3 MySQL 跨库限制</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-7-%E5%85%B3%E8%81%94%E5%8D%9A%E5%AE%A2"><span class="nav-number"></span> <span class="nav-text">5.7 关联博客</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%AD%E3%80%81%E7%BB%8F%E9%AA%8C%E6%80%BB%E7%BB%93%E4%B8%8E%E7%BB%93%E8%AF%AD"><span class="nav-number"></span> <span class="nav-text">六、经验总结与结语</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#6-1-%E4%B8%89%E4%B8%AA%E2%80%9D%E4%B8%8D%E4%B8%80%E6%A0%B7%E2%80%9D"><span class="nav-number"></span> <span class="nav-text">6.1 三个”不一样”</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-2-%E4%B8%89%E4%B8%AA%E2%80%9D%E5%BA%94%E8%AF%A5%E5%9D%9A%E6%8C%81%E2%80%9D"><span class="nav-number"></span> <span class="nav-text">6.2 三个”应该坚持”</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-3-%E7%BB%93%E8%AF%AD"><span class="nav-number"></span> <span class="nav-text">6.3 结语</span></a></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zhlifeiy35</p>
+  <div class="site-description" itemprop="description">分享编程技术、AI经验、学习笔记</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">41</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">136</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zhdmm35" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zhdmm35" rel="noopener me" target="_blank"><i class="fa fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/%E6%95%B0%E6%8D%AE%E5%BD%92%E9%9B%866%E6%9C%88%E6%8E%A2%E6%9F%A5%E5%AE%9E%E5%BD%95-%E4%B8%89%E5%A4%A9%E4%B8%89%E4%BB%B6%E4%BA%8B.png" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/06/03/%E6%95%B0%E6%8D%AE%E5%BD%92%E9%9B%866%E6%9C%88%E6%8E%A2%E6%9F%A5%E5%AE%9E%E5%BD%95-%E4%B8%89%E5%A4%A9%E4%B8%89%E4%BB%B6%E4%BA%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="我的技术博客">
+      <meta itemprop="description" content="分享编程技术、AI经验、学习笔记">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="数据归集 6 月探查实录：三天三件事，把树形接口、数据脏坑、跨源机制全部扒一遍 | 我的技术博客">
+      <meta itemprop="description" content="三天里把数据归集系统的 6 个 tree 接口、148 个孤儿设备、5 个数据地雷全部扒了一遍，附完整证据链和修复指南">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          数据归集 6 月探查实录：三天三件事，把树形接口、数据脏坑、跨源机制全部扒一遍
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2026-06-03 22:00:00 / 修改时间：16:42:25" itemprop="dateCreated datePublished" datetime="2026-06-03T22:00:00+08:00">2026-06-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">后端开发</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E6%B0%B4%E6%96%87%E9%A1%B9%E7%9B%AE/" itemprop="url" rel="index"><span itemprop="name">水文项目</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+            <div class="post-description">三天里把数据归集系统的 6 个 tree 接口、148 个孤儿设备、5 个数据地雷全部扒了一遍，附完整证据链和修复指南</div>
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><blockquote>
+<p>把六月的”理所当然”全部扒开看一遍，结果挖出 5 个数据地雷、3 套接口改造方案、和 1 张被历史迁移搞脏的组织架构表。本文用三天三件事的实录方式，把<strong>树选择器大改造 → 接口对接与脏数据逻辑 → 跨源机制与文档&#x2F;代码对账</strong>完整记录下来，每一节都附证据链（SQL、commit、commit message、API 验证结果），让没参与的同学也能照着复现。</p>
+</blockquote>
+<div class="audio-player">
+  <div class="audio-section">
+    <h4>🎧 文章导读</h4>
+    <audio controls preload="metadata">
+      <source src="/audio/数据归集6月探查实录-三天三件事/narration.mp3" type="audio/mpeg">
+      您的浏览器不支持音频播放。
+    </audio>
+  </div>
+  <div class="audio-section">
+    <h4>🎵 背景音乐</h4>
+    <audio controls loop preload="metadata">
+      <source src="/audio/数据归集6月探查实录-三天三件事/bgm.mp3" type="audio/mpeg">
+      您的浏览器不支持音频播放。
+    </audio>
+  </div>
+</div>
+
+<h2 id="🎬-视频集（4-段-6-秒概览）"><a href="#🎬-视频集（4-段-6-秒概览）" class="headerlink" title="🎬 视频集（4 段 6 秒概览）"></a>🎬 视频集（4 段 6 秒概览）</h2><blockquote>
+<p>4 段 6 秒 AI 生成视频，分别对应”开场 → 6&#x2F;1 树选择器 → 6&#x2F;2 接口对接 → 6&#x2F;3 数据地雷”。配合 BGM 食用更佳。</p>
+</blockquote>
+<div class="video-gallery" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin: 24px 0;">
+
+<div class="video-item">
+
+<p><strong>🎞️ 1. 开场：数据流（intro-flow）</strong></p>
+<video controls preload="metadata" style="width: 100%; border-radius: 8px;">
+  <source src="/videos/数据归集6月探查实录-三天三件事/intro-flow.mp4" type="video/mp4">
+  您的浏览器不支持视频播放。
+</video>
+
+<p><em>开场动效——光数据在玻璃管道中流动</em></p>
+</div>
+
+<div class="video-item">
+
+<p><strong>🎞️ 2. 6&#x2F;1 树选择器生长（tree-growth）</strong></p>
+<video controls preload="metadata" style="width: 100%; border-radius: 8px;">
+  <source src="/videos/数据归集6月探查实录-三天三件事/tree-growth.mp4" type="video/mp4">
+  您的浏览器不支持视频播放。
+</video>
+
+<p><em>6&#x2F;1 主题——从单根到多分支的树形结构生长</em></p>
+</div>
+
+<div class="video-item">
+
+<p><strong>🎞️ 3. 6&#x2F;2 接口对接（api-contracts）</strong></p>
+<video controls preload="metadata" style="width: 100%; border-radius: 8px;">
+  <source src="/videos/数据归集6月探查实录-三天三件事/api-contracts.mp4" type="video/mp4">
+  您的浏览器不支持视频播放。
+</video>
+
+<p><em>6&#x2F;2 主题——API 文档卡片漂浮连接</em></p>
+</div>
+
+<div class="video-item">
+
+<p><strong>🎞️ 4. 6&#x2F;3 数据地雷（data-mines）</strong></p>
+<video controls preload="metadata" style="width: 100%; border-radius: 8px;">
+  <source src="/videos/数据归集6月探查实录-三天三件事/data-mines.mp4" type="video/mp4">
+  您的浏览器不支持视频播放。
+</video>
+
+<p><em>6&#x2F;3 主题——5 个警告三角在暗夜中脉冲</em></p>
+</div>
+
+</div>
+
+<span id="more"></span>
+
+<h2 id="写在前面：为什么是”探查实录”"><a href="#写在前面：为什么是”探查实录”" class="headerlink" title="写在前面：为什么是”探查实录”"></a>写在前面：为什么是”探查实录”</h2><p>数据归集系统是广东水文项目的核心模块，承担着把测站、设备、视频、流域、行政区多源数据按树形结构对外暴露的职责。2026 年 5 月 21 日，我们刚把”从 Redis 读 GZIP JSON”重构为”直连数据库 + 多数据源路由”（参见上一篇博客《树结构选择器：从 Redis 到直连数据库的架构重构》），6 月 1 日就接到了新的需求：前端要 type 字段、加过滤接口、调整接口签名。</p>
+<p>本以为这只是几次小迭代，结果三天里越扒越深：</p>
+<ul>
+<li><strong>6&#x2F;1</strong>：树选择器大改造、发现 148 个孤儿设备、把”所有流域”虚拟壳拆掉</li>
+<li><strong>6&#x2F;2</strong>：写接口对接文档、设备类型筛选接口、负一级河流的来源追到上游数据</li>
+<li><strong>6&#x2F;3</strong>：本以为”探查”可以收尾，结果挖出 5 个数据地雷——组织架构、跨源机制、注解不一致、设备类型污染、公司表脏数据</li>
+</ul>
+<p>这篇博客的目的不是炫耀”挖了多少坑”，而是给后来者一份<strong>证据齐全的复现手册</strong>——所有的发现都附 SQL、commit、commit message 和 API 验证结果，遇到相同问题的同学可以照着查。</p>
+<blockquote>
+<p>全文约 12000+ 字，配 5+ 张图、1 段导读音频、1 段背景音乐。建议收藏后分段阅读。</p>
+</blockquote>
+<hr>
+<h2 id="一、6-月-1-日：树选择器大改造"><a href="#一、6-月-1-日：树选择器大改造" class="headerlink" title="一、6 月 1 日：树选择器大改造"></a>一、6 月 1 日：树选择器大改造</h2><h3 id="1-1-起点：5-月改造后的第一次回访"><a href="#1-1-起点：5-月改造后的第一次回访" class="headerlink" title="1.1 起点：5 月改造后的第一次回访"></a>1.1 起点：5 月改造后的第一次回访</h3><p>5 月 21 日那波改造（参见 <a href="/2026/05/21/%E6%A0%91%E7%BB%93%E6%9E%84%E9%80%89%E6%8B%A9%E5%99%A8-%E4%BB%8ERedis%E5%88%B0%E7%9B%B4%E8%BF%9E%E6%95%B0%E6%8D%AE%E5%BA%93/">《树结构选择器：从 Redis 到直连数据库的架构重构》</a>）的成果是：</p>
+<ul>
+<li>把 <code>riverBasinTree</code> 等 12 个 tree 接口从 Redis 缓存的 7MB JSON 改为按需直连数据库</li>
+<li>引入了 baomidou-dynamic-datasource 做多数据源路由</li>
+<li>通过 <code>setTreeNodeType()</code> 给节点打上 <code>type</code> 字段</li>
+</ul>
+<p>6 月 1 日早上，用户反馈：</p>
+<ol>
+<li><code>equipmentTreeFilteredByBasin</code> 返回的树不全，6 个根流域都”消失”了</li>
+<li>前端要 4 个 <code>*Filtered</code> 接口的节点带 <code>type</code> 字段</li>
+<li>想把”所有流域”这个壳去掉，让 7 个根流域直接并列</li>
+</ol>
+<p>三件事都安排在同一天开工。看起来是三个独立任务，但做完发现它们<strong>互相纠缠</strong>——<code>type</code> 字段的实现路径要从 5&#x2F;21 改造的代码里复用，”所有流域”壳拆掉后又反过来影响 <code>equipmentTreeFilteredByBasin</code> 的数据呈现。</p>
+<h3 id="1-2-第一件事：审查-6-个新提交的接口"><a href="#1-2-第一件事：审查-6-个新提交的接口" class="headerlink" title="1.2 第一件事：审查 6 个新提交的接口"></a>1.2 第一件事：审查 6 个新提交的接口</h3><p>早上 9 点开工，第一件事是审查前一天 commit 的 6 个新接口：</p>
+<table>
+<thead>
+<tr>
+<th>接口</th>
+<th>类型</th>
+<th>状态</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>stationTreeFiltered</code></td>
+<td>行政区测站过滤</td>
+<td>新</td>
+</tr>
+<tr>
+<td><code>equipmentTreeFiltered</code></td>
+<td>行政区设备过滤</td>
+<td>新</td>
+</tr>
+<tr>
+<td><code>stationTreeFilteredByBasin</code></td>
+<td>流域测站过滤</td>
+<td>新</td>
+</tr>
+<tr>
+<td><code>equipmentTreeFilteredByBasin</code></td>
+<td>流域设备过滤</td>
+<td>新</td>
+</tr>
+<tr>
+<td><code>stationList</code></td>
+<td>分页查所有测站</td>
+<td>新</td>
+</tr>
+<tr>
+<td><code>stationEquipmentList</code></td>
+<td>测站设备树</td>
+<td>新</td>
+</tr>
+</tbody></table>
+<p>挨个 review 后发现 3 个问题：</p>
+<p><strong>问题 1：4 个 <code>*Filtered</code> 接口跟原接口功能完全重复</strong></p>
+<p><code>equipmentTreeByBasin</code> 末尾已经调了 <code>pruneEmptyBranches</code>，这个方法实际上做了 <code>filterTreeByLeafType</code> 等价的事——按叶子节点类型剪枝。那么新加的 <code>equipmentTreeFilteredByBasin</code> 等于把”过滤”逻辑写了两遍。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// equipmentTreeByBasin 末尾</span></span><br><span class="line">pruneEmptyBranches(root);</span><br><span class="line"><span class="keyword">return</span> R.ok(root);</span><br></pre></td></tr></table></figure>
+
+<p><strong>问题 2：<code>stationList</code> 缺 3 个防护</strong></p>
+<ul>
+<li>没加 <code>USFL=1</code> 过滤——会返回已删除的测站</li>
+<li>没加 <code>size &gt; 0</code> 下界保护——<code>pageSize=0</code> 时 MyBatis-Plus 行为未定义</li>
+<li>没显式 <code>select(...)</code> 列——返回全表字段，性能浪费</li>
+</ul>
+<p><strong>问题 3：<code>stationEquipmentList</code> 排序不稳定</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Map&lt;String, List&lt;StStbprpB&gt;&gt; map = stations.stream()</span><br><span class="line">    .collect(Collectors.groupingBy(StStbprpB::getStcd));</span><br><span class="line"><span class="comment">// ↑ 默认是 HashMap，遍历顺序随机</span></span><br></pre></td></tr></table></figure>
+
+<p>前端拿到的设备列表每次顺序都不一样，调试时同事以为是 bug。</p>
+<p><strong>修复建议（已加入 P1 待办）</strong>：</p>
+<ol>
+<li><code>equipmentTreeFilteredByBasin</code> 跟 <code>equipmentTreeByBasin</code> 功能重复 → 删一个</li>
+<li><code>stationList</code> 加 <code>USFL=1</code> 过滤 + <code>size &gt; 0</code> 校验 + 显式 select 列</li>
+<li><code>stationEquipmentList</code> 加 <code>USFL=1</code> 过滤 + 改用 <code>LinkedHashMap::new</code> 保证顺序</li>
+</ol>
+<blockquote>
+<p>[!warning] 经验教训<br>写新接口前先看一下底层方法是否已经做了相同的事。下次写 <code>*Filtered</code> 之前必须 review <code>pruneEmptyBranches</code> 的实现。</p>
+</blockquote>
+<h3 id="1-3-第二件事：紫洞设备丢失问题排查（5-步定位）"><a href="#1-3-第二件事：紫洞设备丢失问题排查（5-步定位）" class="headerlink" title="1.3 第二件事：紫洞设备丢失问题排查（5 步定位）"></a>1.3 第二件事：紫洞设备丢失问题排查（5 步定位）</h3><p>接下来是当天的”重头戏”——用户反馈 <code>equipmentTreeFilteredByBasin</code> 返回的树只有 1 个根流域（珠江三角洲），其他 6 个根（西江、HB、HC、HE1A、816、817）整条被剪光，紫洞设备也丢了。</p>
+<h4 id="1-3-1-排查过程"><a href="#1-3-1-排查过程" class="headerlink" title="1.3.1 排查过程"></a>1.3.1 排查过程</h4><p><strong>第一步：怀疑调用链有问题</strong></p>
+<p>最初以为 <code>equipmentTreeFilteredByBasin</code> 跟 <code>riverBasinTree</code> 调用链不一致，绕了一圈发现两者都从 <code>getRiverBasinTree()</code> 开始拿完整树，<strong>只是 <code>equipmentTreeByBasin</code> 多走了 5 步</strong>（attachStationsToBasinTree → pruneEmptyNodes → attachEquipmentsToStationTree → pruneEmptyBranches → filterTreeByLeafType）。</p>
+<p><strong>第二步：实际请求 7 个根看差异</strong></p>
+<p>用 Python 调两个接口对比：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># riverBasinTree: all 下 7 个根</span></span><br><span class="line"><span class="built_in">all</span> → <span class="number">7</span> children (HA/HB/HC/<span class="number">812_813</span>/HE1A/<span class="number">816</span>/<span class="number">817</span>)</span><br><span class="line"><span class="number">812_813</span> → <span class="number">32</span> children</span><br><span class="line"></span><br><span class="line"><span class="comment"># equipmentTreeFilteredByBasin: all 下只剩 1 个根</span></span><br><span class="line"><span class="built_in">all</span> → <span class="number">1</span> child (<span class="number">812_813</span>)</span><br><span class="line"><span class="number">812_813</span> → <span class="number">1</span> child (812_813_-<span class="number">1</span>)  <span class="comment"># -1级河流</span></span><br><span class="line">812_813_-<span class="number">1</span> → <span class="number">6</span> children</span><br></pre></td></tr></table></figure>
+
+<p><strong>第三步：定位到 <code>pruneEmptyBranches</code> 剪枝函数</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="type">boolean</span> <span class="title function_">pruneEmptyBranches</span><span class="params">(TreeNode node)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (node.getChildren() == <span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (是测站) <span class="keyword">return</span> <span class="literal">false</span>;  <span class="comment">// 没设备的测站 → 删</span></span><br><span class="line">        <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    node.getChildren().removeIf(child -&gt; !pruneEmptyBranches(child));</span><br><span class="line">    <span class="keyword">return</span> !node.getChildren().isEmpty();  <span class="comment">// 子全删了 → 自己也被删</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>pruneEmptyBranches</code> 是<strong>向上传染</strong>的：一个测站没设备 → 删测站 → 整个子流域空 → 删子流域 → 父流域空 → 删父流域 → … 一路传到根。</p>
+<p><strong>第四步：查 7 个根的测站数和设备数</strong></p>
+<table>
+<thead>
+<tr>
+<th>根流域</th>
+<th>测站数</th>
+<th>设备数</th>
+<th>在 equipment 树中</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>HA 西江流域</td>
+<td>104</td>
+<td>0</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>HB</td>
+<td>185</td>
+<td>0</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>HC</td>
+<td>144</td>
+<td>0</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>812_813 珠江三角洲</td>
+<td>195</td>
+<td>18</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>HE1A</td>
+<td>137</td>
+<td>0</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>816</td>
+<td>111</td>
+<td>0</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>817</td>
+<td>170</td>
+<td>0</td>
+<td>❌</td>
+</tr>
+</tbody></table>
+<p><strong>6 个根整条被剪掉是因为它们的测站全部没有非 VD 设备</strong>。问题变成了”为啥这么多测站没设备”。</p>
+<p><strong>第五步：直接查数据库找紫洞</strong></p>
+<p>用 MySQL MCP 查 <code>bs_sw_cy_dh_equipmentb</code>：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span> <span class="keyword">FROM</span> bs_sw_cy_dh_equipmentb <span class="keyword">WHERE</span> eqnm <span class="keyword">LIKE</span> <span class="string">&#x27;%紫洞%&#x27;</span>;</span><br><span class="line"><span class="comment">-- 结果：</span></span><br><span class="line"><span class="comment">-- EQID: &quot; VV81303560&quot;  (前导空格)</span></span><br><span class="line"><span class="comment">-- EQNM: 紫洞</span></span><br><span class="line"><span class="comment">-- EQTP: HADCP-水平式ADCP</span></span><br><span class="line"><span class="comment">-- STCD: &quot;&quot;              ← 关键</span></span><br><span class="line"><span class="comment">-- USFL: 1</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>找到了！紫洞作为设备存在，但 STCD 是空字符串。</strong> <code>equipmentTreeByBasin</code> 按 <code>STCD IN (stcds)</code> 查询时空 STCD 匹配不上，所以这个设备被遗漏。</p>
+<h4 id="1-3-2-扩大排查"><a href="#1-3-2-扩大排查" class="headerlink" title="1.3.2 扩大排查"></a>1.3.2 扩大排查</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="built_in">COUNT</span>(<span class="operator">*</span>) <span class="keyword">AS</span> total,</span><br><span class="line">       <span class="built_in">SUM</span>(<span class="keyword">CASE</span> <span class="keyword">WHEN</span> STCD <span class="keyword">IS</span> <span class="keyword">NULL</span> <span class="keyword">OR</span> STCD <span class="operator">=</span> <span class="string">&#x27;&#x27;</span> <span class="keyword">THEN</span> <span class="number">1</span> <span class="keyword">ELSE</span> <span class="number">0</span> <span class="keyword">END</span>) <span class="keyword">AS</span> no_stcd,</span><br><span class="line">       <span class="built_in">SUM</span>(<span class="keyword">CASE</span> <span class="keyword">WHEN</span> EQID <span class="keyword">LIKE</span> <span class="string">&#x27; %&#x27;</span> <span class="keyword">THEN</span> <span class="number">1</span> <span class="keyword">ELSE</span> <span class="number">0</span> <span class="keyword">END</span>) <span class="keyword">AS</span> leading_space_eqid</span><br><span class="line"><span class="keyword">FROM</span> bs_sw_cy_dh_equipmentb <span class="keyword">WHERE</span> USFL <span class="operator">=</span> <span class="string">&#x27;1&#x27;</span>;</span><br><span class="line"><span class="comment">-- total=1813  no_stcd=148  leading_space_eqid=1</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>148 个设备 STCD 为空</strong>——这才是 equipment 树”数据不全”的真正原因。</p>
+<h4 id="1-3-3-按-EQTP-分布"><a href="#1-3-3-按-EQTP-分布" class="headerlink" title="1.3.3 按 EQTP 分布"></a>1.3.3 按 EQTP 分布</h4><table>
+<thead>
+<tr>
+<th>EQTP</th>
+<th>数量</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>HADCP-水平式ADCP</td>
+<td>63</td>
+</tr>
+<tr>
+<td>FWQ-浮子水位计</td>
+<td>37</td>
+</tr>
+<tr>
+<td>RDV-电波流速仪</td>
+<td>34</td>
+</tr>
+<tr>
+<td>RWG-雷达水位计</td>
+<td>7</td>
+</tr>
+<tr>
+<td>BWG-气泡水位计</td>
+<td>3</td>
+</tr>
+<tr>
+<td>PWG-压力水位计</td>
+<td>2</td>
+</tr>
+<tr>
+<td>在线H-ADCP</td>
+<td>1</td>
+</tr>
+<tr>
+<td>HADCP-RDV</td>
+<td>1</td>
+</tr>
+</tbody></table>
+<p>都是真设备，不是 VD 视频设备。</p>
+<h4 id="1-3-4-根因与修复"><a href="#1-3-4-根因与修复" class="headerlink" title="1.3.4 根因与修复"></a>1.3.4 根因与修复</h4><p>数据问题，不是代码 bug：</p>
+<ol>
+<li><code>bs_sw_cy_dh_equipmentb</code> 表中 148 个设备的 STCD 字段为空</li>
+<li><code>equipmentTreeByBasin</code> 按 STCD 关联测站和设备，STCD 空就匹配不到</li>
+<li>这些孤儿设备集中在 6 个根流域，导致这 6 个根在 equipment 树里整条消失</li>
+<li>紫洞（VV81303560）是 148 个之一，还附带一个前导空格的小问题</li>
+</ol>
+<p><strong>推荐修复方式：补数据</strong></p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 候选查询：找出每个孤儿设备可能的测站</span></span><br><span class="line"><span class="keyword">SELECT</span> e.EQID, e.EQNM, e.EQTYP, e.LGTD, e.LTTD,</span><br><span class="line">       s.STCD, s.STNM</span><br><span class="line"><span class="keyword">FROM</span> bs_sw_cy_dh_equipmentb e</span><br><span class="line"><span class="keyword">LEFT</span> <span class="keyword">JOIN</span> bs_sw_cy_dh_station s</span><br><span class="line">  <span class="keyword">ON</span> <span class="built_in">ABS</span>(s.LGTD <span class="operator">-</span> e.LGTD) <span class="operator">&lt;</span> <span class="number">0.01</span></span><br><span class="line"> <span class="keyword">AND</span> <span class="built_in">ABS</span>(s.LTTD <span class="operator">-</span> e.LTTD) <span class="operator">&lt;</span> <span class="number">0.01</span></span><br><span class="line"><span class="keyword">WHERE</span> e.USFL <span class="operator">=</span> <span class="string">&#x27;1&#x27;</span> <span class="keyword">AND</span> (e.STCD <span class="keyword">IS</span> <span class="keyword">NULL</span> <span class="keyword">OR</span> e.STCD <span class="operator">=</span> <span class="string">&#x27;&#x27;</span>);</span><br></pre></td></tr></table></figure>
+
+<p><strong>不推荐修复方式：改代码做模糊匹配</strong></p>
+<p>让 equipment 树对 STCD 为空的设备做名称匹配，会引入不确定性。数据问题应该用数据方式解决。</p>
+<blockquote>
+<p>[!tip] 踩坑教训</p>
+<ol>
+<li><strong>“数据对不上”先用 MCP 查库</strong>，不要在 HTTP 接口上绕。这次在接口之间绕了 4 轮才发现 148 个孤儿设备，直接 SQL 查 1 分钟就能搞定。</li>
+<li><strong><code>queryChild</code> 为 null 不可信</strong>——行政区和流域节点的 <code>queryChild</code> 都是 null，前端无法靠这个区分（这正是后来加 <code>type</code> 字段的动机）。</li>
+<li><strong>看表数据时要看全貌</strong>——只查 1 个”紫洞”看到 STCD 空，应该立刻问”还有多少个 STCD 是空的”，否则会陷入”修一个又发现一个”的循环。</li>
+<li><strong>148 这个数字是个红旗</strong>——6 个根流域的 851 个测站全部没设备，这比例异常，肯定是数据问题不是代码问题。</li>
+</ol>
+</blockquote>
+<h4 id="1-3-5-紫洞设备排查路径总结"><a href="#1-3-5-紫洞设备排查路径总结" class="headerlink" title="1.3.5 紫洞设备排查路径总结"></a>1.3.5 紫洞设备排查路径总结</h4><p><img src="/images/posts/%E6%95%B0%E6%8D%AE%E5%BD%92%E9%9B%866%E6%9C%88%E6%8E%A2%E6%9F%A5%E5%AE%9E%E5%BD%95-%E4%B8%89%E5%A4%A9%E4%B8%89%E4%BB%B6%E4%BA%8B/fig1-zidong-trace.png" alt="紫洞设备排查路径图"><br><em>图 1-1：紫洞设备丢失问题的 5 步排查路径</em></p>
+<h3 id="1-4-第三件事：TreeNode-加-type-字段"><a href="#1-4-第三件事：TreeNode-加-type-字段" class="headerlink" title="1.4 第三件事：TreeNode 加 type 字段"></a>1.4 第三件事：TreeNode 加 <code>type</code> 字段</h3><p>下午 14:00，前端反馈现有 tree 接口返回的节点类型不明确：</p>
+<table>
+<thead>
+<tr>
+<th>节点</th>
+<th><code>queryChild</code></th>
+<th>推断方式</th>
+<th>可靠性</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>行政区</td>
+<td><code>null</code></td>
+<td>不可区分</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>流域</td>
+<td><code>null</code></td>
+<td>不可区分</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>测站</td>
+<td><code>&#123;sttp, rvnm, addvcd&#125;</code></td>
+<td>含 <code>sttp</code></td>
+<td>✓</td>
+</tr>
+<tr>
+<td>设备</td>
+<td><code>&#123;eqtp, symbol, model, stcd&#125;</code></td>
+<td>含 <code>eqtp</code></td>
+<td>✓</td>
+</tr>
+</tbody></table>
+<p><strong>痛点</strong>：行政区和流域的 <code>queryChild</code> 都是 null，前端无法靠 <code>queryChild</code> 区分；<code>queryChild</code> 推断还容易受字段扩展影响。</p>
+<h4 id="1-4-1-设计"><a href="#1-4-1-设计" class="headerlink" title="1.4.1 设计"></a>1.4.1 设计</h4><p><strong>类型映射</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>值</th>
+<th>含义</th>
+<th>节点示例</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0</td>
+<td>未知&#x2F;非业务节点</td>
+<td>兜底值</td>
+</tr>
+<tr>
+<td>1</td>
+<td>行政区</td>
+<td>省&#x2F;市&#x2F;区&#x2F;镇</td>
+</tr>
+<tr>
+<td>2</td>
+<td>流域</td>
+<td>根流域、子流域、合成节点（”所有流域”、”-1级河流”）</td>
+</tr>
+<tr>
+<td>3</td>
+<td>测站</td>
+<td>携带 <code>sttp</code> 的节点</td>
+</tr>
+<tr>
+<td>4</td>
+<td>设备</td>
+<td>携带 <code>eqtp</code> 的节点</td>
+</tr>
+</tbody></table>
+<p><strong>4 个接口的 type 链路</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>接口</th>
+<th>链路</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>stationTreeFiltered</code></td>
+<td><code>1 → 1 → 1 → 3</code></td>
+</tr>
+<tr>
+<td><code>equipmentTreeFiltered</code></td>
+<td><code>1 → 1 → 1 → 3 → 4</code></td>
+</tr>
+<tr>
+<td><code>stationTreeFilteredByBasin</code></td>
+<td><code>2 → 2 → 2 → 3</code></td>
+</tr>
+<tr>
+<td><code>equipmentTreeFilteredByBasin</code></td>
+<td><code>2 → 2 → 2 → 2 → 3 → 4</code></td>
+</tr>
+</tbody></table>
+<h4 id="1-4-2-实现"><a href="#1-4-2-实现" class="headerlink" title="1.4.2 实现"></a>1.4.2 实现</h4><p><strong>改动文件（最小化）</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>文件</th>
+<th>改动</th>
+<th>行数</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>TreeNode.java</code></td>
+<td>加 <code>Integer type</code> 字段 + Swagger 注解</td>
+<td>3</td>
+</tr>
+<tr>
+<td><code>TreeSelectorServiceImpl.java</code></td>
+<td>加 <code>setTreeNodeType()</code> 工具方法 + 4 处调用</td>
+<td>~15</td>
+</tr>
+<tr>
+<td>Controller &#x2F; Service 接口</td>
+<td><strong>不动</strong></td>
+<td>0</td>
+</tr>
+</tbody></table>
+<p><strong>TreeNode 加字段</strong>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// gdsw-modules/algorithm-plugin-modules/algorithm-plugin-api/.../TreeNode.java</span></span><br><span class="line"><span class="meta">@ApiModelProperty(value = &quot;节点类型: 0=未知 1=行政区 2=流域 3=测站 4=设备&quot;)</span></span><br><span class="line"><span class="keyword">private</span> Integer type;</span><br></pre></td></tr></table></figure>
+
+<p><strong>打标逻辑</strong>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// TreeSelectorServiceImpl.java - 4 处调用</span></span><br><span class="line">setTreeNodeType(tree, <span class="number">1</span>);   <span class="comment">// 行政区树构树后</span></span><br><span class="line">setTreeNodeType(tree, <span class="number">2</span>);   <span class="comment">// 流域树构树后</span></span><br><span class="line">node.setType(<span class="number">3</span>);            <span class="comment">// 测站节点创建时</span></span><br><span class="line">node.setType(<span class="number">4</span>);            <span class="comment">// 设备节点创建时</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 工具方法</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">setTreeNodeType</span><span class="params">(TreeNode node, <span class="type">int</span> type)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (node == <span class="literal">null</span>) <span class="keyword">return</span>;</span><br><span class="line">    node.setType(type);</span><br><span class="line">    <span class="keyword">if</span> (node.getChildren() != <span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="keyword">for</span> (TreeNode child : node.getChildren()) &#123;</span><br><span class="line">            setTreeNodeType(child, type);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="1-4-3-为什么打标位置这么选"><a href="#1-4-3-为什么打标位置这么选" class="headerlink" title="1.4.3 为什么打标位置这么选"></a>1.4.3 为什么打标位置这么选</h4><ul>
+<li><strong>行政区&#x2F;流域树整体打 1&#x2F;2</strong>：因为 <code>getRegionTreeFromApi</code> &#x2F; <code>getRiverBasinTree</code> 是整个树构建的入口，构完一次性递归打标最干净。</li>
+<li><strong>测站&#x2F;设备节点创建时直接 set</strong>：因为 <code>toStationTreeNode</code> &#x2F; <code>toEquipmentTreeNode</code> 是单节点工厂方法，节点创建时 type 已知，直接 set 最简洁。</li>
+<li><strong>不动树构建过程</strong>：保留原有逻辑，只在结果上叠加 type，避免引入 bug。</li>
+</ul>
+<h4 id="1-4-4-验证"><a href="#1-4-4-验证" class="headerlink" title="1.4.4 验证"></a>1.4.4 验证</h4><p>实际请求 4 个接口，确认 type 链路：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;all&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;label&quot;</span><span class="punctuation">:</span> <span class="string">&quot;所有流域&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="number">2</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;children&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;812_813&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="number">2</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;children&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="punctuation">&#123;</span></span><br><span class="line">      <span class="attr">&quot;id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;812_813_-1&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;label&quot;</span><span class="punctuation">:</span> <span class="string">&quot;-1级河流&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="number">2</span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;children&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">&quot;id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;HD2D0000000P&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;label&quot;</span><span class="punctuation">:</span> <span class="string">&quot;鸡啼门水道&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="number">2</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;children&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="punctuation">&#123;</span></span><br><span class="line">          <span class="attr">&quot;id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;81301880&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;label&quot;</span><span class="punctuation">:</span> <span class="string">&quot;白蕉&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="number">3</span><span class="punctuation">,</span></span><br><span class="line">          <span class="attr">&quot;queryChild&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;sttp&quot;</span><span class="punctuation">:</span> <span class="string">&quot;TT&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">          <span class="attr">&quot;children&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">            <span class="punctuation">&#123;</span> <span class="attr">&quot;id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;8480021031&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;label&quot;</span><span class="punctuation">:</span> <span class="string">&quot;在线H-ADCP&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="number">4</span><span class="punctuation">,</span> <span class="attr">&quot;queryChild&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;eqtp&quot;</span><span class="punctuation">:</span> <span class="string">&quot;在线H-ADCP&quot;</span> <span class="punctuation">&#125;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">            <span class="punctuation">&#123;</span> <span class="attr">&quot;id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;PP81301880&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="number">4</span><span class="punctuation">,</span> <span class="attr">&quot;queryChild&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;eqtp&quot;</span><span class="punctuation">:</span> <span class="string">&quot;HADCP-水平式ADCP&quot;</span> <span class="punctuation">&#125;</span> <span class="punctuation">&#125;</span></span><br><span class="line">          <span class="punctuation">]</span></span><br><span class="line">        <span class="punctuation">&#125;</span><span class="punctuation">]</span></span><br><span class="line">      <span class="punctuation">&#125;</span><span class="punctuation">]</span></span><br><span class="line">    <span class="punctuation">&#125;</span><span class="punctuation">]</span></span><br><span class="line">  <span class="punctuation">&#125;</span><span class="punctuation">]</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>✅ 全部正确。</p>
+<blockquote>
+<p>[!tip] 设计取舍</p>
+<ol>
+<li><strong>打标位置选择</strong>：选构树入口打标而不是逐节点 set，是因为 4 个 <code>*Filtered</code> 委托给 4 个原方法，原方法里已经有”我知道这棵树是哪种类型”的上下文。在构树后统一打标，<strong>改动量最小、侵入性最低</strong>。</li>
+<li><strong>Type 0 兜底值</strong>：理论不会出现 type&#x3D;0 的节点，但保留它作为”未知”标记，比让前端处理 null 更友好。</li>
+<li><strong>类型用 Integer 而不是 String</strong>：用户明确要数字编码，省字节、序列化快、前端 if&#x2F;else 简单。</li>
+</ol>
+</blockquote>
+<h3 id="1-5-续：当天后续的-4-件事"><a href="#1-5-续：当天后续的-4-件事" class="headerlink" title="1.5 续：当天后续的 4 件事"></a>1.5 续：当天后续的 4 件事</h3><p>加完 type 字段后，又搞了 4 件事。它们的来龙去脉又是另一个故事。</p>
+<h4 id="1-5-1-发现”所有流域”是后包出来的壳"><a href="#1-5-1-发现”所有流域”是后包出来的壳" class="headerlink" title="1.5.1 发现”所有流域”是后包出来的壳"></a>1.5.1 发现”所有流域”是后包出来的壳</h4><p>用户在终端看到 7 条 <code>未找到父节点: 节点 id=HA000000000E, PARENT_CODE=&#39;-1&#39;，将作为根节点处理</code> 警告，问我什么意思。</p>
+<p>排查后：</p>
+<ul>
+<li>直接调第三方接口 <code>getRiverBasinByCache</code> 拿到 1219 条记录</li>
+<li><code>RVCD=&quot;all&quot;</code> 或 <code>RVCD1=&quot;all&quot;</code> 的记录数: 0</li>
+<li>7 个根流域的源数据 <code>PARENT_CODE=&#39;-1&#39;</code>（业务约定的”无父”），互相独立，没有共同祖先</li>
+<li>“所有流域” 是 <code>RiverBasinTreeUtil.buildTreeWithRoot</code> 在我们代码里<strong>凭空创建</strong>的壳（id&#x3D;”all”，包了 7 个根当 children）</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// RiverBasinTreeUtil.java</span></span><br><span class="line"><span class="type">TreeNode</span> <span class="variable">allBasinRoot</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TreeNode</span>();</span><br><span class="line">allBasinRoot.setId(<span class="string">&quot;all&quot;</span>);</span><br><span class="line">allBasinRoot.setLabel(<span class="string">&quot;所有流域&quot;</span>);</span><br><span class="line">allBasinRoot.setChildren(rootNodes);</span><br><span class="line"><span class="keyword">return</span> allBasinRoot;</span><br></pre></td></tr></table></figure>
+
+<h4 id="1-5-2-Tree-接口去掉”所有流域”壳（Plan-1-Plan-2）"><a href="#1-5-2-Tree-接口去掉”所有流域”壳（Plan-1-Plan-2）" class="headerlink" title="1.5.2 Tree 接口去掉”所有流域”壳（Plan 1 + Plan 2）"></a>1.5.2 Tree 接口去掉”所有流域”壳（Plan 1 + Plan 2）</h4><p>用户想”把 7 个根当成首节点”，不要中间那层壳。经历两个阶段：</p>
+<p><strong>Plan 1：只动 <code>getRiverBasinTree</code></strong></p>
+<p><code>getRiverBasinTree</code> 从 <code>R&lt;TreeNode&gt;</code> 改为 <code>R&lt;List&lt;TreeNode&gt;&gt;</code>，下游调用方用 <code>getRiverBasinTreeWithRoot()</code> 私有 helper 包壳（保持向后兼容）。<strong>改动小，但下游 6 个 tree 接口还是单根</strong>。</p>
+<p><strong>Plan 2：全栈改造</strong></p>
+<p>用户说”全栈改造”，我直接改了 12 个接口签名（包括行政区侧）。<strong>用户发现后回退 4 个行政区侧改动</strong>，明确说”管我行政区什么事情”。</p>
+<p><strong>最终</strong>：只动流域侧 6 个接口 + <code>getTree</code> 统一入口。</p>
+<h4 id="1-5-3-涉及改动"><a href="#1-5-3-涉及改动" class="headerlink" title="1.5.3 涉及改动"></a>1.5.3 涉及改动</h4><table>
+<thead>
+<tr>
+<th>接口</th>
+<th>改前</th>
+<th>改后</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>riverBasinTree</code></td>
+<td><code>R&lt;TreeNode&gt;</code>（所有流域壳）</td>
+<td><code>R&lt;List&lt;TreeNode&gt;&gt;</code>（7 根）</td>
+</tr>
+<tr>
+<td><code>stationTreeByBasin</code></td>
+<td><code>R&lt;TreeNode&gt;</code></td>
+<td><code>R&lt;List&lt;TreeNode&gt;&gt;</code>（按 rvcd 路由或多根处理）</td>
+</tr>
+<tr>
+<td><code>equipmentTreeByBasin</code></td>
+<td><code>R&lt;TreeNode&gt;</code></td>
+<td><code>R&lt;List&lt;TreeNode&gt;&gt;</code></td>
+</tr>
+<tr>
+<td><code>stationTreeFilteredByBasin</code></td>
+<td><code>R&lt;TreeNode&gt;</code></td>
+<td><code>R&lt;List&lt;TreeNode&gt;&gt;</code></td>
+</tr>
+<tr>
+<td><code>equipmentTreeFilteredByBasin</code></td>
+<td><code>R&lt;TreeNode&gt;</code></td>
+<td><code>R&lt;List&lt;TreeNode&gt;&gt;</code></td>
+</tr>
+<tr>
+<td><code>getTree?type=basin</code></td>
+<td>1 根</td>
+<td>7 根</td>
+</tr>
+<tr>
+<td><code>getTree?type=region</code></td>
+<td>1 根</td>
+<td>1 根（包成单元素 list）</td>
+</tr>
+<tr>
+<td><code>stationTreeByRegion</code></td>
+<td>不动</td>
+<td>不动</td>
+</tr>
+<tr>
+<td><code>equipmentTreeByRegion</code></td>
+<td>不动</td>
+<td>不动</td>
+</tr>
+<tr>
+<td><code>stationTreeFiltered</code></td>
+<td>不动</td>
+<td>不动</td>
+</tr>
+<tr>
+<td><code>equipmentTreeFiltered</code></td>
+<td>不动</td>
+<td>不动</td>
+</tr>
+</tbody></table>
+<h4 id="1-5-4-循环内重复查询提到外面（性能优化）"><a href="#1-5-4-循环内重复查询提到外面（性能优化）" class="headerlink" title="1.5.4 循环内重复查询提到外面（性能优化）"></a>1.5.4 循环内重复查询提到外面（性能优化）</h4><p>用户发现 <code>stationTreeByBasin</code> 和 <code>equipmentTreeByBasin</code> 在循环里每次都查 DB：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 改前：7 次查询</span></span><br><span class="line"><span class="keyword">for</span> (TreeNode root : roots) &#123;</span><br><span class="line">    Map&lt;String, List&lt;TreeNode&gt;&gt; stationMap = queryAndGroupStationsByRvcd(keyword);  <span class="comment">// 每次都查</span></span><br><span class="line">    attachStationsToBasinTree(root, stationMap);</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>queryAndGroupStationsByRvcd(keyword)</code> 只依赖 keyword，不依赖 root——<strong>纯浪费</strong>。提到循环外。</p>
+<p><code>equipmentTreeByBasin</code> 也有同样问题（7 次设备查询），改成收集所有 stcds 后 1 次查完。</p>
+<p><strong>DB 查询次数对比</strong>：</p>
+<ul>
+<li><code>stationTreeByBasin</code> no-rvcd：7 → 1</li>
+<li><code>equipmentTreeByBasin</code>：7 → 1</li>
+</ul>
+<h4 id="1-5-5-空根节点过滤"><a href="#1-5-5-空根节点过滤" class="headerlink" title="1.5.5 空根节点过滤"></a>1.5.5 空根节点过滤</h4><p>用户发现 <code>equipmentTreeByBasin</code> 返回 7 根但 5 根 <code>children: []</code>（空），要求过滤。</p>
+<p><code>stationTreeByBasin</code> 和 <code>equipmentTreeByBasin</code> 在循环末尾加：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (root.getChildren() != <span class="literal">null</span> &amp;&amp; !root.getChildren().isEmpty()) &#123;</span><br><span class="line">    result.add(root);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>效果：equipment 树从 7 根降到 2 根（西江 + 珠江三角洲）。</p>
+<h4 id="1-5-6-惊喜发现：紫洞出现了"><a href="#1-5-6-惊喜发现：紫洞出现了" class="headerlink" title="1.5.6 惊喜发现：紫洞出现了"></a>1.5.6 惊喜发现：紫洞出现了</h4><p>测试时发现紫洞（VV81303560）从无到有，出现在西江 → 北流河 → 杨梅河 → 潘内 下。说明 148 个孤儿设备中紫洞的 STCD 已经被补上。[[紫洞设备问题排查]] 里的 P0 数据问题已部分修复。</p>
+<p><img src="/images/posts/%E6%95%B0%E6%8D%AE%E5%BD%92%E9%9B%866%E6%9C%88%E6%8E%A2%E6%9F%A5%E5%AE%9E%E5%BD%95-%E4%B8%89%E5%A4%A9%E4%B8%89%E4%BB%B6%E4%BA%8B/fig2-tree-refactor-overview.png" alt="6 月 1 日树选择器改造全景图"><br><em>图 1-2：6&#x2F;1 树选择器改造全景——type 字段 + 多根返回 + 性能优化</em></p>
+<h3 id="1-6-6-1-经验总结"><a href="#1-6-6-1-经验总结" class="headerlink" title="1.6 6&#x2F;1 经验总结"></a>1.6 6&#x2F;1 经验总结</h3><blockquote>
+<p>[!tip] 三个”不要”</p>
+<ol>
+<li><strong>不要让用户多次澄清同一个问题</strong>——“你看 riverBasinTree 是对的” → “等下结构不对” → “你看西江” → “紫洞不是视频设备” → “你有数据库 mcp 吗”，AI 应该更早主动提出”我直接查数据库看吧”而不是被动等。</li>
+<li><strong>遇到”数据对不上”应该立即用 MCP 查</strong>，不要在 HTTP 接口上绕弯子。</li>
+<li><strong>询问时多给选择题</strong>，少让用户自由回答。比如”紫洞是设备还是测站？”这种歧义用 <code>AskUserQuestion</code> 列表会更高效。</li>
+<li><strong>批量查数据</strong>：查 148 个孤儿设备时，应该主动跑 SQL 列出前 20 个 + 按 EQTP 分布 + 按 stcd 关联的统计，而不是等用户问。</li>
+<li><strong>记笔记时主动整理</strong>：用户说”记录一下”时，可以自动生成 3 个文件（工作记录、问题分析、功能设计），而不是只写一个。</li>
+</ol>
+</blockquote>
+<blockquote>
+<p>[!warning] 三个”应该”</p>
+<ol>
+<li>**”全栈”应该理解为”流域侧全栈”，不是”所有 tree 接口全栈”**——遇到模糊词要先问清楚范围。</li>
+<li><strong>“用户是不是这个意思”要直说</strong>：用户最初说”全栈改造”，我应该问”是流域侧全栈还是所有 tree 接口”，而不是直接假设”全栈 &#x3D; 所有”。</li>
+<li><strong>写新接口前先 review 底层方法</strong>——<code>pruneEmptyBranches</code> 已经做了”按类型过滤”的工作，新加的 <code>*Filtered</code> 接口是纯壳。</li>
+</ol>
+</blockquote>
+<hr>
+<h2 id="二、6-月-2-日：接口对接与数据逻辑说明"><a href="#二、6-月-2-日：接口对接与数据逻辑说明" class="headerlink" title="二、6 月 2 日：接口对接与数据逻辑说明"></a>二、6 月 2 日：接口对接与数据逻辑说明</h2><h3 id="2-1-起点：6-1-改造的延续"><a href="#2-1-起点：6-1-改造的延续" class="headerlink" title="2.1 起点：6&#x2F;1 改造的延续"></a>2.1 起点：6&#x2F;1 改造的延续</h3><p>6&#x2F;1 的多根改造、type 字段、148 孤儿设备排查都有了结论，但还没完。6&#x2F;2 上午，用户提了 3 个新需求：</p>
+<ol>
+<li>写一个 <strong>对接文档</strong>给前端，让前端知道 6 个 List 接口怎么适配</li>
+<li>加 <strong>2 个设备类型筛选接口</strong>（按行政区&#x2F;按流域），方便前端做下拉框</li>
+<li>解释 <strong>“-1级河流” 节点</strong>到底从哪来、为什么 SORT&#x3D;999</li>
+</ol>
+<p>3 件事预计 2 天，结果 1 天就搞完了——因为 6&#x2F;1 的 type 字段、多根改造已经铺好了路，6&#x2F;2 主要是文档和”代码澄清”。</p>
+<h3 id="2-2-第一件事：tree-接口改造对接说明"><a href="#2-2-第一件事：tree-接口改造对接说明" class="headerlink" title="2.2 第一件事：tree 接口改造对接说明"></a>2.2 第一件事：tree 接口改造对接说明</h3><h4 id="2-2-1-接口签名变化（破坏性）"><a href="#2-2-1-接口签名变化（破坏性）" class="headerlink" title="2.2.1 接口签名变化（破坏性）"></a>2.2.1 接口签名变化（破坏性）</h4><p>6 个接口从 <code>R&lt;TreeNode&gt;</code> 改为 <code>R&lt;List&lt;TreeNode&gt;&gt;</code>：</p>
+<table>
+<thead>
+<tr>
+<th>接口</th>
+<th>改前 <code>data</code></th>
+<th>改后 <code>data</code></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>GET /dataCollection/riverBasinTree</code></td>
+<td><code>&#123;id:&quot;all&quot;, children:[...]&#125;</code></td>
+<td><code>[&#123;...HA&#125;, &#123;...HB&#125;, &#123;...HC&#125;, &#123;...812_813&#125;, &#123;...HE1A&#125;, &#123;...816&#125;, &#123;...817&#125;]</code></td>
+</tr>
+<tr>
+<td><code>GET /dataCollection/stationTreeByBasin</code></td>
+<td>单根</td>
+<td>1 根（带 rvcd）或 N 根（无 rvcd，过滤无测站的空根）</td>
+</tr>
+<tr>
+<td><code>GET /dataCollection/equipmentTreeByBasin</code></td>
+<td>单根</td>
+<td>1 根（带 rvcd）或 N 根（无 rvcd，过滤无设备的空根）</td>
+</tr>
+<tr>
+<td><code>GET /dataCollection/stationTreeFilteredByBasin</code></td>
+<td>单根</td>
+<td>1 根（带 rvcd）或 N 根（无 rvcd，过滤空根）</td>
+</tr>
+<tr>
+<td><code>GET /dataCollection/equipmentTreeFilteredByBasin</code></td>
+<td>单根</td>
+<td>1 根（带 rvcd）或 N 根（无 rvcd，过滤空根）</td>
+</tr>
+<tr>
+<td><code>GET /dataCollection/tree?type=basin</code></td>
+<td>单根</td>
+<td>7 根</td>
+</tr>
+<tr>
+<td><code>GET /dataCollection/tree?type=region</code></td>
+<td>单根</td>
+<td><strong>1 根（包成单元素 list）</strong></td>
+</tr>
+</tbody></table>
+<p><strong>行政区侧 4 个接口保持 <code>R&lt;TreeNode&gt;</code> 单根不变</strong>：</p>
+<ul>
+<li><code>stationTreeByRegion</code> &#x2F; <code>equipmentTreeByRegion</code> &#x2F; <code>stationTreeFiltered</code> &#x2F; <code>equipmentTreeFiltered</code></li>
+</ul>
+<h4 id="2-2-2-前端需要做的事"><a href="#2-2-2-前端需要做的事" class="headerlink" title="2.2.2 前端需要做的事"></a>2.2.2 前端需要做的事</h4><p><strong>1. 适配 data 是数组的情况（必须）</strong></p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 改前</span></span><br><span class="line"><span class="keyword">const</span> root = response.<span class="property">data</span>;          <span class="comment">// 单个对象</span></span><br><span class="line"><span class="keyword">const</span> children = root.<span class="property">children</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 改后</span></span><br><span class="line"><span class="keyword">const</span> roots = response.<span class="property">data</span>;          <span class="comment">// 数组</span></span><br><span class="line">roots.<span class="title function_">forEach</span>(<span class="function"><span class="params">root</span> =&gt;</span> &#123;</span><br><span class="line">  <span class="keyword">const</span> children = root.<span class="property">children</span>;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>涉及端点：<code>riverBasinTree</code> &#x2F; <code>getTree?type=basin</code> &#x2F; <code>getTree?type=region</code> &#x2F; <code>stationTreeByBasin</code> &#x2F; <code>equipmentTreeByBasin</code> &#x2F; <code>stationTreeFilteredByBasin</code> &#x2F; <code>equipmentTreeFilteredByBasin</code>。</p>
+<p><strong>2. 列表长度可能变少（重要）</strong></p>
+<p>无 rvcd 时，<strong>所有 4 个 basin 接口都会过滤空根</strong>，返回数量 N ≤ 7：</p>
+<ul>
+<li><code>stationTreeByBasin</code>：过滤无测站的根 → 返 N 根（N 取决于哪些根流域下有测站）</li>
+<li><code>equipmentTreeByBasin</code>：过滤无设备的根 → 返 N 根（N 取决于哪些根流域下有设备）</li>
+<li><code>stationTreeFilteredByBasin</code>：同上（过滤后再过滤空节点）</li>
+<li><code>equipmentTreeFilteredByBasin</code>：同上</li>
+<li>带 rvcd 时固定返 1 个</li>
+</ul>
+<p>前端不需要处理空对象了，根节点都是”有内容”的。</p>
+<p><strong>3. rvcd 路由保持兼容</strong></p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 无 rvcd：返多根</span></span><br><span class="line"><span class="variable constant_">GET</span> /stationTreeByBasin          → [root1, root2, ..., root7]</span><br><span class="line"></span><br><span class="line"><span class="comment">// 带 rvcd：返单根</span></span><br><span class="line"><span class="variable constant_">GET</span> /stationTreeByBasin?rvcd=<span class="number">812_813</span>  → [珠江三角洲子树的处理结果]</span><br></pre></td></tr></table></figure>
+
+<p>前端逻辑可以这么写：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> list = response.<span class="property">data</span>;</span><br><span class="line"><span class="keyword">if</span> (list.<span class="property">length</span> === <span class="number">1</span>) &#123;</span><br><span class="line">  <span class="comment">// 单根模式（指定了 rvcd 或 getTree?type=region）</span></span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">  <span class="comment">// 多根模式（默认 basin 树，已过滤空根，数量 ≤ 7）</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>4. type 字段（已就绪）</strong></p>
+<p>每个节点都有 <code>type</code> 字段：</p>
+<table>
+<thead>
+<tr>
+<th>值</th>
+<th>含义</th>
+<th>示例节点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>行政区</td>
+<td>省&#x2F;市&#x2F;区</td>
+</tr>
+<tr>
+<td>2</td>
+<td>流域</td>
+<td>根流域 + “所有流域” + “-1级河流”</td>
+</tr>
+<tr>
+<td>3</td>
+<td>测站</td>
+<td>携带 <code>sttp</code> 的节点</td>
+</tr>
+<tr>
+<td>4</td>
+<td>设备</td>
+<td>携带 <code>eqtp</code> 的节点</td>
+</tr>
+</tbody></table>
+<p><strong>冗余确认</strong>：<code>type=3</code> 等价于 <code>queryChild</code> 含 <code>sttp</code>；<code>type=4</code> 等价于含 <code>eqtp</code>。建议前端**只信 <code>type</code>**，不要反推 <code>queryChild</code>。</p>
+<p><strong>5. 行政区侧接口不变</strong></p>
+<p><code>stationTreeByRegion</code> &#x2F; <code>equipmentTreeByRegion</code> &#x2F; <code>stationTreeFiltered</code> &#x2F; <code>equipmentTreeFiltered</code> 这 4 个<strong>保持原样</strong>，<code>data</code> 还是单个对象。前端无需改。</p>
+<h4 id="2-2-3-提交清单（提交前必看）"><a href="#2-2-3-提交清单（提交前必看）" class="headerlink" title="2.2.3 提交清单（提交前必看）"></a>2.2.3 提交清单（提交前必看）</h4><ul>
+<li><input disabled="" type="checkbox"> <strong>前端已适配</strong> 6 个 List 接口（建议先让他们确认）</li>
+<li><input disabled="" type="checkbox"> <strong>后端其他服务</strong> 没人调这 6 个接口（已 grep 确认只有 3 个内部文件）</li>
+<li><input disabled="" type="checkbox"> <strong>commit 但不 push</strong>，等 2-3 天缓冲</li>
+</ul>
+<p><strong>commit message 草稿</strong>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">feat: 流域树接口改为多根List返回 + 缓存自愈</span><br><span class="line"></span><br><span class="line">- 流域侧6个tree接口 R&lt;TreeNode&gt; 改为 R&lt;List&lt;TreeNode&gt;&gt;</span><br><span class="line">- 去掉 RiverBasinTreeUtil 包出来的所有流域虚拟根</span><br><span class="line">- getRiverBasinTree 拆出 fetchBasinJsonStr() 复用，新增 setTreeNodeType 打标</span><br><span class="line">- stationTreeByBasin/equipmentTreeByBasin 循环内DB查询提到外面，过滤空根</span><br><span class="line">- getRegionTreeFromApi 调完第三方后顺手写缓存（独立try-catch，Redis故障不影响主流程）</span><br><span class="line">- 行政区侧4个接口保持原样</span><br></pre></td></tr></table></figure>
+
+<h4 id="2-2-4-性能特征"><a href="#2-2-4-性能特征" class="headerlink" title="2.2.4 性能特征"></a>2.2.4 性能特征</h4><table>
+<thead>
+<tr>
+<th>接口</th>
+<th>第一次（缓存空）</th>
+<th>后续命中</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>流域侧 4 个 *ByBasin &#x2F; *FilteredByBasin</td>
+<td>~500ms（DB 兜底）</td>
+<td>~400-700ms</td>
+</tr>
+<tr>
+<td>行政区侧 4 个 *ByRegion &#x2F; *Filtered</td>
+<td>~1500ms</td>
+<td>~500ms（缓存命中后）</td>
+</tr>
+</tbody></table>
+<p><strong>第一次访问 regionTree 慢 1500ms</strong> 是因为缓存空、调第三方。<strong>第二次起自动 ~500ms</strong>（自愈机制已写入 Redis）。</p>
+<p><code>stationTreeByBasin</code> &#x2F; <code>equipmentTreeByBasin</code> 无 rvcd 时会过滤空根，返回数量 ≤ 7，前端按数组遍历即可。</p>
+<h4 id="2-2-5-Redis-缓存自愈"><a href="#2-2-5-Redis-缓存自愈" class="headerlink" title="2.2.5 Redis 缓存自愈"></a>2.2.5 Redis 缓存自愈</h4><p><code>getRegionTreeFromApi</code> 加了 5 行自愈代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (jsonStr != <span class="literal">null</span> &amp;&amp; !jsonStr.isEmpty()) &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        redisUtils.hset(<span class="string">&quot;GDSW_AREA_TREE&quot;</span>, <span class="string">&quot;value&quot;</span>, GzipCompressionUtils.compress(jsonStr));</span><br><span class="line">        redisUtils.hset(<span class="string">&quot;GDSW_AREA_TREE&quot;</span>, <span class="string">&quot;time&quot;</span>, ...);</span><br><span class="line">        redisUtils.hset(<span class="string">&quot;GDSW_AREA_TREE&quot;</span>, <span class="string">&quot;name&quot;</span>, <span class="string">&quot;行政区划信息&quot;</span>);</span><br><span class="line">        log.info(<span class="string">&quot;区划信息缓存已写入（自愈）&quot;</span>);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception cacheEx) &#123;</span><br><span class="line">        log.warn(<span class="string">&quot;区划信息缓存写入失败，下次仍会重试: &#123;&#125;&quot;</span>, cacheEx.getMessage());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>写缓存<strong>独立 try-catch</strong>——Redis 挂了不影响主流程</li>
+<li>数据格式跟 <code>BasicDataTask</code> 一致（Base64(gzip)）</li>
+<li>缓存空会自动写，不需要定时任务</li>
+</ul>
+<blockquote>
+<p>[!tip] 关键设计点</p>
+<ol>
+<li><strong>写缓存独立 try-catch</strong>——Redis 故障不影响主流程，下次仍会重试</li>
+<li><strong>数据格式跟 BasicDataTask 一致</strong>（gzip 压缩）——避免数据格式不一致导致的兼容问题</li>
+<li><strong>缓存空自动写</strong>——不需要单独定时任务，访问即触发</li>
+</ol>
+</blockquote>
+<h4 id="2-2-6-滚动升级风险"><a href="#2-2-6-滚动升级风险" class="headerlink" title="2.2.6 滚动升级风险"></a>2.2.6 滚动升级风险</h4><ul>
+<li><strong>新接口</strong> vs <strong>老接口</strong>：因为是签名变更（不只是新增），需要<strong>前端先升级、后端再上线</strong>——或后端上线时前端暂时不能调这 6 个接口</li>
+<li><strong>建议</strong>：先 commit 不 push，前端确认适配后，再合并到 master</li>
+</ul>
+<p><strong>回滚方案</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git revert HEAD     <span class="comment"># 一键回退 3 个文件</span></span><br></pre></td></tr></table></figure>
+
+<p>无副作用（改动自包含，没改公共 API 依赖）。</p>
+<h4 id="2-2-7-未完成项"><a href="#2-2-7-未完成项" class="headerlink" title="2.2.7 未完成项"></a>2.2.7 未完成项</h4><ul>
+<li><strong>148 个孤儿设备</strong>还有 147 个 STCD 空的没补（紫洞那个被补了）</li>
+<li><strong><code>BasicDataTask</code> 没触发</strong>的原因没查（因为不需要了——现在自愈）</li>
+<li><strong>WARN 日志噪音</strong> <code>未找到父节点: PARENT_CODE=&#39;-1&#39;</code> 没修（业务约定的”无父”，代码当成查找 -1 父节点）</li>
+</ul>
+<h3 id="2-3-第二件事：设备类型筛选接口"><a href="#2-3-第二件事：设备类型筛选接口" class="headerlink" title="2.3 第二件事：设备类型筛选接口"></a>2.3 第二件事：设备类型筛选接口</h3><p>前端先调这两个接口拿到设备类型列表做下拉筛选，再用 <code>eqtp</code> 参数调设备树接口过滤。</p>
+<p><strong>典型用法：不传参，直接拿全量设备类型列表。</strong></p>
+<h4 id="2-3-1-接口列表"><a href="#2-3-1-接口列表" class="headerlink" title="2.3.1 接口列表"></a>2.3.1 接口列表</h4><p><strong>1. 按行政区获取设备类型列表</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">GET /dataCollection/equipmentTypesByRegion</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必填</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>addvcd</td>
+<td>string</td>
+<td>否</td>
+<td>行政区编码（前缀匹配），不传返回全量</td>
+</tr>
+<tr>
+<td>keyword</td>
+<td>string</td>
+<td>否</td>
+<td>设备名称关键词（模糊搜索）</td>
+</tr>
+</tbody></table>
+<p>不传参调用：<code>GET /dataCollection/equipmentTypesByRegion</code> → 返回行政区全量设备类型（34 个）</p>
+<p><strong>2. 按流域获取设备类型列表</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">GET /dataCollection/equipmentTypesByBasin</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必填</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>rvcd</td>
+<td>string</td>
+<td>否</td>
+<td>流域编码，不传返回全量</td>
+</tr>
+<tr>
+<td>keyword</td>
+<td>string</td>
+<td>否</td>
+<td>设备名称关键词（模糊搜索）</td>
+</tr>
+</tbody></table>
+<p>不传参调用：<code>GET /dataCollection/equipmentTypesByBasin</code> → 返回流域全量设备类型（6 个）</p>
+<h4 id="2-3-2-返回格式"><a href="#2-3-2-返回格式" class="headerlink" title="2.3.2 返回格式"></a>2.3.2 返回格式</h4><figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;success&quot;</span><span class="punctuation">:</span> <span class="literal"><span class="keyword">true</span></span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;errorCode&quot;</span><span class="punctuation">:</span> <span class="number">0</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;data&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">    <span class="string">&quot;在线H-ADCP&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="string">&quot;FWQ-浮子水位计&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="string">&quot;翻斗式雨量计&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="string">&quot;HADCP-水平式ADCP&quot;</span></span><br><span class="line">  <span class="punctuation">]</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>返回 <code>List&lt;String&gt;</code>，已去重，可直接用于下拉筛选。</p>
+<h4 id="2-3-3-前端使用流程"><a href="#2-3-3-前端使用流程" class="headerlink" title="2.3.3 前端使用流程"></a>2.3.3 前端使用流程</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">1. 用户选择行政区/流域</span><br><span class="line">   ↓</span><br><span class="line">2. 调 equipmentTypesByRegion / equipmentTypesByBasin 拿到设备类型列表</span><br><span class="line">   ↓</span><br><span class="line">3. 渲染下拉筛选框</span><br><span class="line">   ↓</span><br><span class="line">4. 用户选择设备类型后，调 equipmentTreeFiltered / equipmentTreeFilteredByBasin（传 eqtp 参数）</span><br></pre></td></tr></table></figure>
+
+<h4 id="2-3-4-实现说明"><a href="#2-3-4-实现说明" class="headerlink" title="2.3.4 实现说明"></a>2.3.4 实现说明</h4><ul>
+<li>内部调的是已有的 <code>equipmentTreeFiltered</code> &#x2F; <code>equipmentTreeFilteredByBasin</code>（<code>eqtp=null</code> 拿全部设备）</li>
+<li>从返回的树结构中递归收集 <code>type=4</code> 节点的 <code>queryChild.eqtp</code>，去重后返回</li>
+<li>行政区和流域返回的设备类型范围不同（流域过滤空根后范围更小）</li>
+</ul>
+<h3 id="2-4-第三件事：负一级河流逻辑说明"><a href="#2-4-第三件事：负一级河流逻辑说明" class="headerlink" title="2.4 第三件事：负一级河流逻辑说明"></a>2.4 第三件事：负一级河流逻辑说明</h3><h4 id="2-4-1-来源和含义"><a href="#2-4-1-来源和含义" class="headerlink" title="2.4.1 来源和含义"></a>2.4.1 来源和含义</h4><p>第三方流域数据接口（<code>http://10.144.32.219:9981/thirdpartyApi/getRiverDataByCache</code>）返回的原始数据中，<strong>上游数据本身就存在</strong> 5 个节点的 <code>RVNM</code> 为 **<code>-1级河流</code>**。</p>
+<p><strong>上游原始数据（已确认）</strong>：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;RVCD&quot;</span><span class="punctuation">:</span> <span class="string">&quot;812_813_-1&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;RVNM&quot;</span><span class="punctuation">:</span> <span class="string">&quot;-1级河流&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;RV_LEVEL&quot;</span><span class="punctuation">:</span> <span class="number">-11</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;PARENT_CODE&quot;</span><span class="punctuation">:</span> <span class="string">&quot;812_813&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;SORT&quot;</span><span class="punctuation">:</span> <span class="number">999</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>RVNM</code></td>
+<td><code>-1级河流</code></td>
+<td>上游原始名称，不是代码造的</td>
+</tr>
+<tr>
+<td><code>RV_LEVEL</code></td>
+<td><code>-11</code></td>
+<td>全部 1219 条记录中，只有这 5 条是 -11，是特殊的级别标记</td>
+</tr>
+<tr>
+<td><code>SORT</code></td>
+<td><code>999</code></td>
+<td><strong>上游数据本来就是 999</strong>，不是代码设的</td>
+</tr>
+<tr>
+<td><code>PARENT_CODE</code></td>
+<td><code>812_813</code></td>
+<td>指向真实父节点（珠江三角洲河网区）</td>
+</tr>
+<tr>
+<td><code>RVCD</code></td>
+<td><code>812_813_-1</code></td>
+<td>格式为父节点 id + <code>_-1</code></td>
+</tr>
+</tbody></table>
+<p>代码里 <code>SORT_LAST_MARKER = &quot;-1级河流&quot;</code> 只是排序标记，配合上游已有的 <code>SORT=999</code> 确保排最后，没有构造任何节点。</p>
+<h4 id="2-4-2-RV-LEVEL-分布"><a href="#2-4-2-RV-LEVEL-分布" class="headerlink" title="2.4.2 RV_LEVEL 分布"></a>2.4.2 RV_LEVEL 分布</h4><table>
+<thead>
+<tr>
+<th>RV_LEVEL</th>
+<th>条数</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>-11</td>
+<td>5</td>
+<td><code>-1级河流</code> 容器节点</td>
+</tr>
+<tr>
+<td>-1</td>
+<td>174</td>
+<td>—</td>
+</tr>
+<tr>
+<td>0</td>
+<td>95</td>
+<td>—</td>
+</tr>
+<tr>
+<td>1</td>
+<td>372</td>
+<td>—</td>
+</tr>
+<tr>
+<td>2</td>
+<td>357</td>
+<td>—</td>
+</tr>
+<tr>
+<td>3</td>
+<td>195</td>
+<td>—</td>
+</tr>
+<tr>
+<td>4</td>
+<td>21</td>
+<td>—</td>
+</tr>
+</tbody></table>
+<h4 id="2-4-3-具体例子：珠江三角洲河网区"><a href="#2-4-3-具体例子：珠江三角洲河网区" class="headerlink" title="2.4.3 具体例子：珠江三角洲河网区"></a>2.4.3 具体例子：珠江三角洲河网区</h4><p>以 <code>珠江三角洲河网区</code>（RVCD&#x3D;<code>812_813</code>）为例，对比两种河流：</p>
+<table>
+<thead>
+<tr>
+<th>河流</th>
+<th>节点 id（来自 RVCD1&#x2F;RVCD）</th>
+<th>父节点 pid</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>茅洲河</td>
+<td><code>HD16C000000S</code></td>
+<td><code>812_813</code></td>
+<td>上游分配了具体河流编码，直接挂在珠江三角洲下</td>
+</tr>
+<tr>
+<td>深圳河</td>
+<td><code>HD16D000000S</code></td>
+<td><code>812_813</code></td>
+<td>同上</td>
+</tr>
+<tr>
+<td><strong>-1级河流</strong></td>
+<td><code>812_813_-1</code></td>
+<td><code>812_813</code></td>
+<td>上游造的分类容器节点，也是直接挂在珠江三角洲下</td>
+</tr>
+<tr>
+<td>崖门水道</td>
+<td><code>HD2A0000000P</code></td>
+<td><strong><code>812_813_-1</code></strong></td>
+<td>上游没给它分配具体分类，归到了 -1级河流 下</td>
+</tr>
+</tbody></table>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">珠江三角洲河网区 (RVCD=812_813)</span><br><span class="line">│</span><br><span class="line">├── 茅洲河 (HD16C000000S)         ← 父节点直接是 812_813</span><br><span class="line">├── 深圳河 (HD16D000000S)         ← 父节点直接是 812_813</span><br><span class="line">├── 潭江   (13个子流域)</span><br><span class="line">├── 流溪河 (16个子流域)</span><br><span class="line">├── ... (其他27条有具体编码的河流)</span><br><span class="line">│</span><br><span class="line">└── -1级河流 (812_813_-1)          ← 上游造的容器，父节点也是 812_813</span><br><span class="line">    ├── 崖门水道    ← 父节点是 812_813_-1，不是 812_813</span><br><span class="line">    ├── 江门水道</span><br><span class="line">    ├── 西江干流水道</span><br><span class="line">    ├── 磨刀门水道</span><br><span class="line">    ├── 虎门水道</span><br><span class="line">    ├── ... (共147条)</span><br><span class="line">    └── 淡水湖</span><br></pre></td></tr></table></figure>
+
+<p><strong>关键区别</strong>：茅洲河和崖门水道<strong>都属于珠江三角洲</strong>，但上游数据的分类方式不同：</p>
+<ul>
+<li>茅洲河：上游分配了具体河流编码（<code>HD16C000000S</code>），父节点直接是珠江三角洲</li>
+<li>崖门水道：上游没有分配具体分类，被归到了 <code>-1级河流</code> 这个容器下，父节点是 <code>-1级河流</code>（<code>812_813_-1</code>）</li>
+</ul>
+<p>这些河流本身都是正常的（西江干流水道、磨刀门水道、虎门水道等都是珠江的重要水道），只是上游数据的一种分类习惯。</p>
+<h4 id="2-4-4-全部-5-个-1级河流-节点"><a href="#2-4-4-全部-5-个-1级河流-节点" class="headerlink" title="2.4.4 全部 5 个 -1级河流 节点"></a>2.4.4 全部 5 个 <code>-1级河流</code> 节点</h4><table>
+<thead>
+<tr>
+<th>节点 id</th>
+<th>父节点 pid</th>
+<th>子节点数</th>
+<th>所属流域</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>801_802_803_804_805_806_807_808_809_-1</code></td>
+<td><code>801_802_803_804_805_806_807_808_809</code></td>
+<td>1</td>
+<td>韶关区域</td>
+</tr>
+<tr>
+<td><code>812_813_-1</code></td>
+<td><code>812_813</code></td>
+<td>147</td>
+<td>珠江三角洲河网区</td>
+</tr>
+<tr>
+<td><code>815_-1</code></td>
+<td><code>815</code></td>
+<td>17</td>
+<td>粤东沿海诸河</td>
+</tr>
+<tr>
+<td><code>816_-1</code></td>
+<td><code>816</code></td>
+<td>1</td>
+<td>粤西诸河</td>
+</tr>
+<tr>
+<td><code>817_-1</code></td>
+<td><code>817</code></td>
+<td>1</td>
+<td>海南岛</td>
+</tr>
+</tbody></table>
+<h4 id="2-4-5-代码位置"><a href="#2-4-5-代码位置" class="headerlink" title="2.4.5 代码位置"></a>2.4.5 代码位置</h4><p>文件：<code>RiverBasinTreeUtil.java</code></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">String</span> <span class="variable">SORT_LAST_MARKER</span> <span class="operator">=</span> <span class="string">&quot;-1级河流&quot;</span>;  <span class="comment">// 第 172 行</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="2-4-6-用法：排序兜底"><a href="#2-4-6-用法：排序兜底" class="headerlink" title="2.4.6 用法：排序兜底"></a>2.4.6 用法：排序兜底</h4><p>在 <code>sortChildrenRecursively</code> 方法（第 174-191 行）中，对每个节点的子节点排序：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">node.getChildren().sort((a, b) -&gt; &#123;</span><br><span class="line">    <span class="type">boolean</span> <span class="variable">isMinusOneA</span> <span class="operator">=</span> a.getLabel() != <span class="literal">null</span> &amp;&amp; a.getLabel().contains(SORT_LAST_MARKER);</span><br><span class="line">    <span class="type">boolean</span> <span class="variable">isMinusOneB</span> <span class="operator">=</span> b.getLabel() != <span class="literal">null</span> &amp;&amp; b.getLabel().contains(SORT_LAST_MARKER);</span><br><span class="line">    <span class="keyword">if</span> (isMinusOneA == isMinusOneB) &#123;</span><br><span class="line">        <span class="comment">// 都是或都不是&quot;-1级河流&quot;，按 dictSort 正常排</span></span><br><span class="line">        <span class="keyword">return</span> Integer.compare(a.getDictSort(), a.getDictSort());</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 一方是&quot;-1级河流&quot;，排到最后</span></span><br><span class="line">    <span class="keyword">return</span> isMinusOneA ? <span class="number">1</span> : -<span class="number">1</span>;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p><strong>排序规则</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>情况</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>A 和 B 都不是 “-1级河流”</td>
+<td>按 <code>dictSort</code> 升序</td>
+</tr>
+<tr>
+<td>A 和 B 都是 “-1级河流”</td>
+<td>按 <code>dictSort</code> 升序</td>
+</tr>
+<tr>
+<td>A 是，B 不是</td>
+<td>A 排最后（return 1）</td>
+</tr>
+<tr>
+<td>A 不是，B 是</td>
+<td>B 排最后（return -1）</td>
+</tr>
+</tbody></table>
+<p>效果：”-1级河流”节点始终排在同一层级的最后面，不会混在正常河流中间。</p>
+<h4 id="2-4-7-影响范围"><a href="#2-4-7-影响范围" class="headerlink" title="2.4.7 影响范围"></a>2.4.7 影响范围</h4><ul>
+<li><strong>仅影响展示顺序</strong>，不影响数据查询、匹配、统计</li>
+<li><code>-1级河流</code> 节点是上游数据本来就有的，<code>SORT=999</code> 也是上游的值</li>
+<li>代码里没有造节点、没有改归属、没有改 sort，只是按上游的 sort 排序（<code>sortChildrenRecursively</code> 方法）</li>
+<li>前端展示时，用户会看到”-1级河流”在每个流域的最底部</li>
+</ul>
+<h4 id="2-4-8-与-PARENT-CODE-1-日志的关系"><a href="#2-4-8-与-PARENT-CODE-1-日志的关系" class="headerlink" title="2.4.8 与 PARENT_CODE=&#39;-1&#39; 日志的关系"></a>2.4.8 与 <code>PARENT_CODE=&#39;-1&#39;</code> 日志的关系</h4><p>日志中看到的 <code>未找到父节点: PARENT_CODE=&#39;-1&#39;</code>（<code>parseFlatJson</code> 第 144-146 行）和 <code>-1级河流</code> <strong>是两回事</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>概念</th>
+<th>字段</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>-1级河流</code></td>
+<td><code>RVNM</code>（河流名称）</td>
+<td>兜底容器节点，存放无法归类到具体子流域的河流，仅影响排序</td>
+</tr>
+<tr>
+<td><code>PARENT_CODE=&#39;-1&#39;</code></td>
+<td><code>PARENT_CODE</code>（父节点编码）</td>
+<td>某些节点的父节点编码是字符串 <code>&quot;-1&quot;</code>，在 <code>nodeMap</code> 里找不到，被当根节点处理</td>
+</tr>
+</tbody></table>
+<p>实际数据中，<code>-1级河流</code> 节点的 <code>PARENT_CODE</code> 指向的是真实父节点（如 <code>812_813</code>），不是 <code>&quot;-1&quot;</code>。而 <code>PARENT_CODE=&#39;-1&#39;</code> 的是另一批节点。代码里两者独立处理：</p>
+<ul>
+<li>名称标记 → 影响排序（sort&#x3D;999，排最后）</li>
+<li>父节点缺失 → 影响树结构（变根节点）</li>
+</ul>
+<h3 id="2-5-提交记录-b1cfd65"><a href="#2-5-提交记录-b1cfd65" class="headerlink" title="2.5 提交记录 b1cfd65"></a>2.5 提交记录 b1cfd65</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">feat: 流域接口返回多根节点 + 新增设备类型查询接口 + 缓存自愈</span><br></pre></td></tr></table></figure>
+
+<h4 id="2-5-1-改动文件（3-个）"><a href="#2-5-1-改动文件（3-个）" class="headerlink" title="2.5.1 改动文件（3 个）"></a>2.5.1 改动文件（3 个）</h4><table>
+<thead>
+<tr>
+<th>文件</th>
+<th>改动</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>TreeSelectorService.java</code></td>
+<td>+16&#x2F;-8</td>
+<td>6 个流域接口签名改为 <code>R&lt;List&lt;TreeNode&gt;&gt;</code>，新增 2 个设备类型方法</td>
+</tr>
+<tr>
+<td><code>TreeSelectorController.java</code></td>
+<td>+32&#x2F;-8</td>
+<td>对应端点签名同步改，新增 2 个设备类型端点</td>
+</tr>
+<tr>
+<td><code>TreeSelectorServiceImpl.java</code></td>
+<td>+200&#x2F;-58</td>
+<td>多根处理逻辑 + 缓存自愈 + 设备类型查询实现</td>
+</tr>
+</tbody></table>
+<h4 id="2-5-2-改动内容"><a href="#2-5-2-改动内容" class="headerlink" title="2.5.2 改动内容"></a>2.5.2 改动内容</h4><p><strong>1. 流域接口多根返回（破坏性变更）</strong></p>
+<p>6 个接口从 <code>R&lt;TreeNode&gt;</code> 改为 <code>R&lt;List&lt;TreeNode&gt;&gt;</code>：</p>
+<ul>
+<li><code>getRiverBasinTree</code></li>
+<li><code>getTree</code>（type&#x3D;basin 时）</li>
+<li><code>stationTreeByBasin</code></li>
+<li><code>equipmentTreeByBasin</code></li>
+<li><code>stationTreeFilteredByBasin</code></li>
+<li><code>equipmentTreeFilteredByBasin</code></li>
+</ul>
+<p>去掉 RiverBasinTreeUtil 的虚拟根（”所有流域”），7 个真实根流域直接以数组返回。带 rvcd 时返回单元素 list，不传 rvcd 返回多根（过滤空根）。</p>
+<p>行政区侧 4 个接口保持 <code>R&lt;TreeNode&gt;</code> 不变。</p>
+<p><strong>2. 新增设备类型筛选接口</strong></p>
+<ul>
+<li><code>GET /equipmentTypesByRegion</code> — 按行政区获取过滤后的设备类型列表（去重）</li>
+<li><code>GET /equipmentTypesByBasin</code> — 按流域获取过滤后的设备类型列表（去重）</li>
+</ul>
+<p>参数跟对应的过滤接口一致，不传参返回全量。内部复用已有的过滤逻辑，从结果树中提取 <code>queryChild.eqtp</code> 去重返回。</p>
+<p>Service 返回 <code>List&lt;String&gt;</code>，Controller 包装 <code>R</code>，符合规范。</p>
+<p><strong>3. 缓存自愈</strong></p>
+<ul>
+<li><code>getRegionTreeFromApi</code>：调完第三方接口后顺手写回 Redis（<code>GDSW_AREA_TREE</code>）</li>
+<li><code>fetchBasinJsonStr</code>：调完第三方接口后顺手写回 Redis（<code>GDSW_RIVER_B</code>）</li>
+<li>写缓存独立 try-catch，Redis 挂了不影响主流程</li>
+<li>数据格式跟 BasicDataTask 一致（gzip 压缩）</li>
+</ul>
+<h4 id="2-5-3-性能数据"><a href="#2-5-3-性能数据" class="headerlink" title="2.5.3 性能数据"></a>2.5.3 性能数据</h4><table>
+<thead>
+<tr>
+<th>接口</th>
+<th>耗时</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>equipmentTreeFilteredByBasin</td>
+<td>~330ms</td>
+</tr>
+<tr>
+<td>equipmentTypesByRegion</td>
+<td>~1071ms</td>
+</tr>
+<tr>
+<td>equipmentTypesByBasin</td>
+<td>~279ms</td>
+</tr>
+</tbody></table>
+<h4 id="2-5-4-前端注意"><a href="#2-5-4-前端注意" class="headerlink" title="2.5.4 前端注意"></a>2.5.4 前端注意</h4><ul>
+<li>流域侧 6 个接口的 <code>data</code> 从对象变成数组，需要适配</li>
+<li>行政区侧 4 个接口不变</li>
+<li>设备类型接口不传参即可拿到全量类型列表</li>
+</ul>
+<p><img src="/images/posts/%E6%95%B0%E6%8D%AE%E5%BD%92%E9%9B%866%E6%9C%88%E6%8E%A2%E6%9F%A5%E5%AE%9E%E5%BD%95-%E4%B8%89%E5%A4%A9%E4%B8%89%E4%BB%B6%E4%BA%8B/fig3-api-contract.png" alt="6 月 2 日接口对接全景图"><br><em>图 2-1：6&#x2F;2 接口对接全景——前端适配 + 性能特征 + 提交清单</em></p>
+<h3 id="2-6-6-2-经验总结"><a href="#2-6-6-2-经验总结" class="headerlink" title="2.6 6&#x2F;2 经验总结"></a>2.6 6&#x2F;2 经验总结</h3><blockquote>
+<p>[!tip] 三个”清晰”</p>
+<ol>
+<li><strong>接口签名变化要清晰</strong>——<code>R&lt;TreeNode&gt;</code> → <code>R&lt;List&lt;TreeNode&gt;&gt;</code> 是破坏性变更，必须先 commit 不 push、让前端确认后再 merge</li>
+<li><strong>接口返回格式要清晰</strong>——<code>List&lt;String&gt;</code> vs <code>R&lt;List&lt;String&gt;&gt;</code> 包装层级要统一</li>
+<li><strong>性能特征要清晰</strong>——第一次访问 vs 后续命中要分开标注，方便前端做 loading 提示</li>
+</ol>
+<p>[!warning] 三个”独立”</p>
+<ol>
+<li><strong>“设备类型筛选接口”和”流域树接口”是独立的两件事</strong>——不要因为它们都跟”设备”相关就合并实现</li>
+<li><strong>“缓存自愈”和”接口签名变更”是独立的两件事</strong>——分开 commit 方便回滚</li>
+<li><strong>“负一级河流”和”PARENT_CODE&#x3D;’-1’”是两个独立的概念</strong>——字段含义不同、代码路径不同，不要混用</li>
+</ol>
+</blockquote>
+<hr>
+<h2 id="三、6-月-3-日：5-个数据地雷探查"><a href="#三、6-月-3-日：5-个数据地雷探查" class="headerlink" title="三、6 月 3 日：5 个数据地雷探查"></a>三、6 月 3 日：5 个数据地雷探查</h2><h3 id="3-1-起点：今天的工作不是写功能"><a href="#3-1-起点：今天的工作不是写功能" class="headerlink" title="3.1 起点：今天的工作不是写功能"></a>3.1 起点：今天的工作不是写功能</h3><p>今天的工作不是写功能，而是 **”探路”**——把数据归集模块里几条看起来”理所当然”的东西扒开看了一遍。起因是一个简单的问题：「gdsw 远程库里到底哪张表才是组织架构？」一路追下去，连带把跨数据源查询机制、计划文档与代码不一致、<code>equipmentTypes</code> 接口的近重复值、公司表里的脏数据全部牵了出来。</p>
+<blockquote>
+<p>[!abstract] 今日五个核心发现</p>
+<ol>
+<li>组织架构只有 <code>bs_sw_cy_dh_company</code> 一张表，且用 <strong>邻接表 + materialized path</strong> 双表示</li>
+<li>“跨数据源 join” 实际是 <strong>Java 内存里两次查再拼</strong>，MySQL 层从来没真正跨过库</li>
+<li>计划文档写的是 <code>@DS(&quot;water&quot;)</code>，代码里却是 <code>@DS(&quot;slave&quot;)</code>——本地测不出差异因为两者同库</li>
+<li><code>/equipmentTypes</code> 返回 38 个唯一值里至少有 6-7 组语义重复，<code>DISTINCT</code> 解决不了字典污染</li>
+<li>公司表里一堆区县水文中心 <strong>同名两个 ID</strong>：一个雪花 ID、一个 UUID，历史迁移没去重</li>
+</ol>
+</blockquote>
+<p>下面逐个展开。</p>
+<h3 id="3-2-发现-1：组织架构表-bs-sw-cy-dh-company"><a href="#3-2-发现-1：组织架构表-bs-sw-cy-dh-company" class="headerlink" title="3.2 发现 1：组织架构表 bs_sw_cy_dh_company"></a>3.2 发现 1：组织架构表 <code>bs_sw_cy_dh_company</code></h3><p>最初的问题是：”带组织架构的表” 在 gdsw 远程库到底有几张。结论很干脆：<strong>只有一张</strong>，叫 <code>bs_sw_cy_dh_company</code>，528 行，32 个根节点。</p>
+<p>它的核心字段设计是典型的 <strong>“邻接表 + 物化路径” 双模式</strong>：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 关键字段</span></span><br><span class="line">ID            <span class="type">BIGINT</span>       <span class="comment">-- 雪花 ID（部分历史节点是 32 位 UUID，见发现 5）</span></span><br><span class="line">PARENT_ID     <span class="type">BIGINT</span>       <span class="comment">-- 邻接表的父指针</span></span><br><span class="line">TREE_CODE     <span class="type">VARCHAR</span>      <span class="comment">-- 逗号分隔的祖先 ID 路径，例如 &quot;,1813814710436458497,1813818490682961922,&quot;</span></span><br><span class="line">NAME          <span class="type">VARCHAR</span></span><br><span class="line">CODE          <span class="type">VARCHAR</span></span><br><span class="line">THIRDPARTY_ID <span class="type">VARCHAR</span></span><br><span class="line">UPDATE_TIME   DATETIME</span><br></pre></td></tr></table></figure>
+
+<p><code>PARENT_ID</code> 用来查”我的直接孩子”——<code>WHERE PARENT_ID = ?</code> 一刀就完，简单。<code>TREE_CODE</code> 用来查”我的所有后代”——<code>WHERE TREE_CODE LIKE &#39;,1813818490682961922,%&#39;</code>，避免递归 CTE。两个一起冗余，写入时要保证一致性，但查询非常爽。</p>
+<h4 id="3-2-1-根节点与水文业务主线"><a href="#3-2-1-根节点与水文业务主线" class="headerlink" title="3.2.1 根节点与水文业务主线"></a>3.2.1 根节点与水文业务主线</h4><p>根节点是 <strong>广东省水文厅</strong>（ID &#x3D; <code>1813814710436458497</code>），向下分两支：</p>
+<ul>
+<li><strong>厅内职能处室</strong>：办公室、规计处、防御处、调度处、人事处……</li>
+<li><strong>流域 + 直属单位</strong>：东江&#x2F;西江&#x2F;北江&#x2F;韩江 4 个流域管理局，加上广东省水文局、广东省水利水政监察局、广东省水科院等</li>
+</ul>
+<p>我重点扒了 <strong>水文业务这条主线</strong>——<code>PARENT_ID = 1813818490682961922</code>（广东省水文局）下面挂了：</p>
+<ul>
+<li>局内的现代化建设规划办、十五五规划办、科创办</li>
+<li><strong>12 个水文分局</strong>：深圳、广州、惠州、肇庆、韶关、汕头、佛山、江门、梅州、湛江、茂名、清远</li>
+<li>每个分局再往下挂区&#x2F;县水文中心和具体测站，比如广州分局下面有番禺、增城、从化、黄埔水文中心，惠州分局下面有博罗、惠东水文中心，再下面才是麒麟咀、太平场、三善滘这种具体站点</li>
+</ul>
+<h4 id="3-2-2-谁会引用这张表"><a href="#3-2-2-谁会引用这张表" class="headerlink" title="3.2.2 谁会引用这张表"></a>3.2.2 谁会引用这张表</h4><table>
+<thead>
+<tr>
+<th>表.字段</th>
+<th>关系</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>bs_sw_cy_dh_equipmentb.ATCUNIT_ID</code></td>
+<td>真外键</td>
+<td>字段注释直接写”隶属行业单位 ID（所属组织架构 ID）”</td>
+</tr>
+<tr>
+<td><code>bs_sw_cy_dh_station.ATCUNIT</code></td>
+<td><strong>字符串</strong></td>
+<td>“隶属”单位，存的是 NAME 不是 ID</td>
+</tr>
+<tr>
+<td><code>bs_sw_cy_dh_station.ADMAUTH</code></td>
+<td><strong>字符串</strong></td>
+<td>“信息管理”单位，存的是 NAME 不是 ID</td>
+</tr>
+<tr>
+<td><code>bs_sw_cy_dh_station.LOCALITY</code></td>
+<td><strong>字符串</strong></td>
+<td>“交换管理”单位，存的是 NAME 不是 ID</td>
+</tr>
+</tbody></table>
+<p><strong>最后一句尤其要命</strong>：测站表存的是单位名字符串，一旦公司表里同名节点出现（见发现 5），join 出来就是笛卡尔积。</p>
+<blockquote>
+<p>[!info] 双模式设计的取舍</p>
+<ul>
+<li><strong>邻接表（PARENT_ID）</strong>：写起来简单（新增&#x2F;删除只动一个字段），但查子树要递归 CTE</li>
+<li><strong>物化路径（TREE_CODE）</strong>：查子树一句 LIKE 搞定，但写入时要维护整条路径</li>
+<li><strong>两者冗余</strong>：写入时要保证一致性（应用层或 trigger），但查询性能最佳</li>
+</ul>
+</blockquote>
+<h3 id="3-3-发现-2：所谓”跨数据源查询”到底是怎么实现的"><a href="#3-3-发现-2：所谓”跨数据源查询”到底是怎么实现的" class="headerlink" title="3.3 发现 2：所谓”跨数据源查询”到底是怎么实现的"></a>3.3 发现 2：所谓”跨数据源查询”到底是怎么实现的</h3><p>用户问：”数据归集里的树是怎么跨数据源查询的？<code>stbprp</code> 表明明在另一个数据源啊？”</p>
+<blockquote>
+<p>[!warning] 反直觉但正确的答案<br><strong>MySQL 根本不支持跨库 JOIN</strong>（除非用 FEDERATED 引擎，而项目没启用）。所以 “跨源查询” 根本不是数据库层做的，而是 <strong>应用层分两次 SQL 各查一次，然后在 Java 内存里按 STCD 拼起来</strong>。</p>
+</blockquote>
+<h4 id="3-3-1-机制要点"><a href="#3-3-1-机制要点" class="headerlink" title="3.3.1 机制要点"></a>3.3.1 机制要点</h4><p><strong>mapper 的注解策略</strong>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Mapper</span></span><br><span class="line"><span class="meta">@DS(&quot;slave&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">StStbprpBMapper</span> <span class="keyword">extends</span> <span class="title class_">BaseMapper</span>&lt;StStbprpB&gt; &#123; &#125;</span><br><span class="line"><span class="comment">// ↑ 这个 mapper 永远走 ysq 库</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// EquipmentBMapper 没有 @DS，走默认的 master，也就是 gdsw 库</span></span><br></pre></td></tr></table></figure>
+
+<p>注解决定了 mapper 调用走哪个 <code>DataSource</code>，底层是 [[baomidou-dynamic-datasource]] 的 AOP 切换。也就是说每个 mapper <strong>“绑死”了它的数据源</strong>。</p>
+<p><strong>两步查 + 内存拼</strong>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 第一次查：去 ysq 库捞测站</span></span><br><span class="line">List&lt;StStbprpB&gt; stations = stStbprpBMapper.selectList(</span><br><span class="line">    <span class="keyword">new</span> <span class="title class_">QueryWrapper</span>&lt;StStbprpB&gt;().eq(<span class="string">&quot;USFL&quot;</span>, <span class="string">&quot;1&quot;</span>).likeRight(<span class="string">&quot;ADDVCD&quot;</span>, effectiveAddvcd)</span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 第二次查：用上一步的 STCD 列表去 gdsw 库捞设备</span></span><br><span class="line">List&lt;EquipmentB&gt; equipments = equipmentBMapper.selectList(</span><br><span class="line">    <span class="keyword">new</span> <span class="title class_">QueryWrapper</span>&lt;EquipmentB&gt;().in(<span class="string">&quot;STCD&quot;</span>, stations.stream().map(StStbprpB::getStcd).collect(toList()))</span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 然后在内存里按 STCD 分组，挂到对应测站节点下面</span></span><br></pre></td></tr></table></figure>
+
+<p>**拼接键就是 <code>STCD</code>**（测站编码）——这是两个库唯一稳定的共识字段。</p>
+<h4 id="3-3-2-隐藏成本"><a href="#3-3-2-隐藏成本" class="headerlink" title="3.3.2 隐藏成本"></a>3.3.2 隐藏成本</h4><p>第一次返回 N 条，第二次的 <code>IN (...)</code> 列表长度就是 N。MySQL 的 <code>max_allowed_packet</code> 和优化器对超长 IN 子句的处理能力都是有上限的，N 上千就要警惕。当前看 N 控制在百级别，安全；一旦放开过滤条件，可能要换成临时表 + JOIN 模式。</p>
+<h4 id="3-3-3-数据源映射（本地-application-local-yml）"><a href="#3-3-3-数据源映射（本地-application-local-yml）" class="headerlink" title="3.3.3 数据源映射（本地 application-local.yml）"></a>3.3.3 数据源映射（本地 <code>application-local.yml</code>）</h4><table>
+<thead>
+<tr>
+<th>key</th>
+<th>物理地址</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>master</code></td>
+<td><code>127.0.0.1:3306/gdsw</code></td>
+<td>主业务库</td>
+</tr>
+<tr>
+<td><code>slave</code></td>
+<td><code>19.25.36.199:15076/ysq</code></td>
+<td>水文数据源</td>
+</tr>
+<tr>
+<td><code>water</code></td>
+<td><code>19.25.36.199:15076/ysq</code></td>
+<td>本机和 slave <strong>同库</strong></td>
+</tr>
+<tr>
+<td><code>slave2</code></td>
+<td>另一个库</td>
+<td>河流数据 <code>getRiverData</code> 用</td>
+</tr>
+</tbody></table>
+<p>注意 <code>slave</code> 和 <code>water</code> 在本机指向同一个库——这就是下一个发现的引线。</p>
+<blockquote>
+<p>[!tip] 这个模式的隐藏成本</p>
+<ol>
+<li><strong>不是真正的跨库 JOIN</strong>——MySQL 不支持，应用层分两次查</li>
+<li><strong>mapper 跟数据源绑死</strong>——<code>@DS</code> 注解决定了 mapper 走哪个库，不能在运行时改</li>
+<li><strong><code>IN (...)</code> 列表长度有上限</strong>——N 太大需要换成临时表 + JOIN</li>
+<li><strong>STCD 是唯一共识字段</strong>——两个库的其他字段不一致，只能按 STCD 拼</li>
+</ol>
+</blockquote>
+<p><img src="/images/posts/%E6%95%B0%E6%8D%AE%E5%BD%92%E9%9B%866%E6%9C%88%E6%8E%A2%E6%9F%A5%E5%AE%9E%E5%BD%95-%E4%B8%89%E5%A4%A9%E4%B8%89%E4%BB%B6%E4%BA%8B/fig4-cross-datasource.png" alt="跨数据源查询机制示意图"><br><em>图 3-1：跨数据源查询机制——Java 内存里两次查 + STCD 拼接</em></p>
+<h3 id="3-4-发现-3：计划文档与实际代码不一致"><a href="#3-4-发现-3：计划文档与实际代码不一致" class="headerlink" title="3.4 发现 3：计划文档与实际代码不一致"></a>3.4 发现 3：计划文档与实际代码不一致</h3><p>巡查 <code>docs/superpowers/plans/2026-05-21-tree-selector-refactor.md</code> 时发现一个尴尬的对账问题。</p>
+<p>文档里第 105 &#x2F; 138 &#x2F; 161 行多处明确写：</p>
+<blockquote>
+<p>StStbprpBMapper.java — <code>@DS(&quot;water&quot;)</code></p>
+</blockquote>
+<p>但翻到代码 <code>StStbprpBMapper.java:9</code> 实际是：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@DS(&quot;slave&quot;)</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>[!danger] 本地测不出来，但生产可能出事<br>本机配置里 <code>slave</code> 和 <code>water</code> 都指向同一个 <code>ysq</code> 库，所以 <strong>怎么测都不报错</strong>。但生产&#x2F;测试环境的 yml 大概率把它们配成不同的物理库（这正是动态数据源存在的意义）。一旦不同，所有跨这个 mapper 的查询都在打错库。</p>
+</blockquote>
+<p>同一文件 <code>TreeSelectorServiceImpl.java</code> 里还有 <strong>自己跟自己不一致</strong> 的地方：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// line 509</span></span><br><span class="line"><span class="meta">@DS(&quot;water&quot;)</span></span><br><span class="line"><span class="keyword">public</span> ... getElementData(...) &#123; ... &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// line 544</span></span><br><span class="line"><span class="meta">@DS(&quot;slave&quot;)</span></span><br><span class="line"><span class="keyword">public</span> ... batchElementData(...) &#123; ... &#125;</span><br></pre></td></tr></table></figure>
+
+<p>两个方法读的是同一类元素表，DS 注解的字符串却不一样。两种可能：</p>
+<ol>
+<li><strong>故意区分</strong>：单条&#x2F;批量走不同物理库做读写分离。如果是这样，应该有注释说明。</li>
+<li><strong>历史遗留</strong>：refactor 时一处改了一处没改。</li>
+</ol>
+<p>需要去查生产 yml 来确认，但无论是哪种，<strong>当前注解和文档一致性是 0</strong>，得统一。</p>
+<blockquote>
+<p>[!warning] 这种”本地测不出但生产出事”的 bug 最危险</p>
+<ol>
+<li><strong>本地测不出</strong>——<code>slave</code> 和 <code>water</code> 同库</li>
+<li><strong>CI 测不出</strong>——CI 通常也用本地 yml</li>
+<li><strong>生产才会暴雷</strong>——但生产环境又复现困难</li>
+<li><strong>修起来简单</strong>——改注解 + 改文档，但<strong>找起来困难</strong>——没人会怀疑 <code>@DS</code> 注解</li>
+</ol>
+</blockquote>
+<h3 id="3-5-发现-4：-dataCollection-equipmentTypes-接口的近重复污染"><a href="#3-5-发现-4：-dataCollection-equipmentTypes-接口的近重复污染" class="headerlink" title="3.5 发现 4：/dataCollection/equipmentTypes 接口的近重复污染"></a>3.5 发现 4：<code>/dataCollection/equipmentTypes</code> 接口的近重复污染</h3><p>接口实现非常简单：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">QueryWrapper&lt;TreeEquipment&gt; wrapper = <span class="keyword">new</span> <span class="title class_">QueryWrapper</span>&lt;&gt;();</span><br><span class="line">wrapper.select(<span class="string">&quot;DISTINCT EQTP&quot;</span>).isNotNull(<span class="string">&quot;EQTP&quot;</span>).ne(<span class="string">&quot;EQTP&quot;</span>, <span class="string">&quot;&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<p>就一个 SQL 层的 <code>DISTINCT</code>。问题来了：</p>
+<ul>
+<li><strong>接口实际返回 38 个唯一 EQTP</strong></li>
+<li><strong>直查数据库 <code>SELECT DISTINCT EQTP FROM ...</code> 是 41 个</strong></li>
+<li>差的 3 个里包括 ADCP、流速仪，还有一个待确认</li>
+</ul>
+<p>差 3 个本身不大，但深挖 38 个里的内容才是真正的雷：<strong>至少有 6-7 组是语义重复（字面不同但显然同种设备）</strong>。</p>
+<h4 id="3-5-1-近重复实例"><a href="#3-5-1-近重复实例" class="headerlink" title="3.5.1 近重复实例"></a>3.5.1 近重复实例</h4><ol>
+<li><code>HADCP-水平式ADCP</code> vs <code>水平式ADCP</code>——带不带产品前缀</li>
+<li><code>在线HADCP</code> vs <code>在线H-ADCP</code>——一个连字符之差</li>
+<li><code>FWQ-浮子水位计</code> vs <code>FWG-浮子水位计</code> vs <code>浮子式水位计</code>——三种命名混杂</li>
+<li><code>BWG-气泡水位计</code> vs <code>气泡式水位计</code>——编码版 vs 通用版</li>
+<li><code>水质自动监测设备</code> vs <code>水质自动监测站</code>——“设备”和”站”在数据录入员脑子里是一回事</li>
+<li><code>雨量计</code> vs <code>翻斗式雨量计</code>——一个泛指一个具体</li>
+<li><code>5探头非接触式雷达</code> &#x2F; <code>4探头非接触式雷达</code> &#x2F; <code>单探头非接触雷达</code> &#x2F; <code>多探头固定式雷达</code>——这组可能真的不同，需要业务确认</li>
+</ol>
+<blockquote>
+<p>[!question] 为什么 DISTINCT 救不了<br><code>DISTINCT</code> 是字节级比较，它看 <code>&quot;在线HADCP&quot;</code> 和 <code>&quot;在线H-ADCP&quot;</code> 是两个不同字符串，没办法。要解决必须 <strong>在数据层（不是查询层）做归一化</strong>——一张 <code>EQTP -&gt; canonical_name</code> 映射表，或者干脆做受控字典，禁止录入员自由填。</p>
+</blockquote>
+<p>前端拿到这 38 个值往下拉框一塞，用户面对 <code>HADCP-水平式ADCP</code> 和 <code>水平式ADCP</code> 两个选项时怎么选？这是个长期会污染前端 UX 的小坑。</p>
+<h3 id="3-6-发现-5：公司表脏数据——同名节点两个-ID"><a href="#3-6-发现-5：公司表脏数据——同名节点两个-ID" class="headerlink" title="3.6 发现 5：公司表脏数据——同名节点两个 ID"></a>3.6 发现 5：公司表脏数据——同名节点两个 ID</h3><p>最后一个发现是无意中扒出来的。在看广州水文分局（PARENT_ID &#x3D; <code>1813821005054963713</code>）下面的孩子时，发现 <strong>两个「增城区水文中心」并列</strong>：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ID = 1876832803289645057            ← 雪花 ID，19 位数字</span><br><span class="line">ID = 2D4C663729774F93ABB96F7FF6503484  ← 32 位 UUID（旧系统留下）</span><br></pre></td></tr></table></figure>
+
+<p>继续扫了一遍，类似情况遍地都是：番禺、增城、从化、黄埔、南沙、惠东、博罗、龙门、紫金、东源、龙川、五华、兴宁、廉江、雷州、吴川、化州、高州、信宜、新丰、翁源、仁化、浈江、乐昌、揭西、惠来、陆丰、湘桥……<strong>几乎所有区县级水文中心都同时存在两个节点</strong>。</p>
+<blockquote>
+<p>[!bug] 根因猜测<br>历史数据从老系统迁移过来用的是 UUID 主键；新系统启用后，新建节点用雪花 ID。同步脚本没做去重，结果两套 ID 共存。</p>
+</blockquote>
+<h4 id="3-6-1-下游影响"><a href="#3-6-1-下游影响" class="headerlink" title="3.6.1 下游影响"></a>3.6.1 下游影响</h4><p>更要命的是 <strong>下游的影响</strong>：</p>
+<ul>
+<li>前端树形选择器按 ID 唯一，但展示按 NAME。用户在树里看到两个一模一样的「增城区水文中心」，根本不知道选哪个。</li>
+<li>内存里去重时 <strong>不能只按 ID</strong>，必须按 <code>(PARENT_ID, NAME)</code> 联合去重——而且要决策保留哪一个。</li>
+<li>接发现 1 的伏笔：<code>bs_sw_cy_dh_station.ATCUNIT</code> 存的是 NAME 字符串。如果按 NAME join 公司表，一对二就是笛卡尔积，测站数瞬间翻倍。</li>
+</ul>
+<blockquote>
+<p>[!warning] 这不是”加个 distinct”能解决的<br>必须从数据治理层面做一次清洗：按 <code>(PARENT_ID, NAME)</code> 聚合，保留新 ID（雪花），旧 ID（UUID）打软删除标记。同时要审计有没有外键指向旧 ID，指向旧 ID 的要 <strong>先重定向再标删</strong>，否则会产生悬空引用。</p>
+</blockquote>
+<h3 id="3-7-后续行动"><a href="#3-7-后续行动" class="headerlink" title="3.7 后续行动"></a>3.7 后续行动</h3><p>按优先级排：</p>
+<blockquote>
+<p>[!todo] 待办</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>统一 mapper 数据源注解</strong>：拉生产&#x2F;测试的 yml 对一下 <code>slave</code> 和 <code>water</code> 是不是真的同库；如果是，删一个 key；如果不是，决定 <code>StStbprpBMapper</code> 该指向哪个，并改掉 <code>TreeSelectorServiceImpl</code> 里 509 行和 544 行的不一致</li>
+<li><input disabled="" type="checkbox"> <strong>同步更新计划文档</strong>：<code>docs/superpowers/plans/2026-05-21-tree-selector-refactor.md</code> 里所有 <code>@DS(&quot;water&quot;)</code> 改成实际的注解值</li>
+<li><input disabled="" type="checkbox"> <strong>设备类型归一化</strong>：为 <code>/equipmentTypes</code> 加一张 <code>EQTP -&gt; canonical_name</code> 映射表，接口返回 canonical 列表；老数据可以保留，但前端不再看到</li>
+<li><input disabled="" type="checkbox"> <strong>公司表去重脚本</strong>：按 <code>(PARENT_ID, NAME)</code> 聚合，保留雪花 ID，UUID 节点先扫一遍外键引用，无引用直接删，有引用先重定向</li>
+<li><input disabled="" type="checkbox"> <strong>回归测试</strong>：所有以上动作做完后，必须跑 <code>/dataCollection/stationTreeFilteredByBasin</code> 等接口确认树结构没变</li>
+</ul>
+</blockquote>
+<blockquote>
+<p>[!quote] 一句话总结<br>今天没写一行业务代码，但把 5 个”地雷”都标了出来——这种工作的价值不在 PR 行数，而在以后少加几次班。</p>
+</blockquote>
+<p><img src="/images/posts/%E6%95%B0%E6%8D%AE%E5%BD%92%E9%9B%866%E6%9C%88%E6%8E%A2%E6%9F%A5%E5%AE%9E%E5%BD%95-%E4%B8%89%E5%A4%A9%E4%B8%89%E4%BB%B6%E4%BA%8B/fig5-data-mines.png" alt="5 个数据地雷汇总图"><br><em>图 3-2：5 个数据地雷汇总——组织架构、跨源机制、注解不一致、设备类型污染、公司表脏数据</em></p>
+<hr>
+<h2 id="四、跨日总结：三天的工作节奏"><a href="#四、跨日总结：三天的工作节奏" class="headerlink" title="四、跨日总结：三天的工作节奏"></a>四、跨日总结：三天的工作节奏</h2><h3 id="4-1-节奏对比"><a href="#4-1-节奏对比" class="headerlink" title="4.1 节奏对比"></a>4.1 节奏对比</h3><table>
+<thead>
+<tr>
+<th>日期</th>
+<th>工作类型</th>
+<th>产出</th>
+<th>涉及代码行数</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>6&#x2F;1</td>
+<td>改造 + 排查</td>
+<td>5 个接口、2 个工具方法、3 个文档</td>
+<td>+115 &#x2F; -57</td>
+</tr>
+<tr>
+<td>6&#x2F;2</td>
+<td>对接 + 说明</td>
+<td>3 个接口、3 个文档</td>
+<td>+48 &#x2F; -24</td>
+</tr>
+<tr>
+<td>6&#x2F;3</td>
+<td>探查 + 待办</td>
+<td>0 个接口改动、5 个待办、1 个工作记录</td>
+<td>0</td>
+</tr>
+</tbody></table>
+<p>**6&#x2F;1 是”行动日”<strong>——大量代码改动和接口上线；</strong>6&#x2F;2 是”收尾日”<strong>——写文档、对接前端；</strong>6&#x2F;3 是”反思日”**——不写代码，把隐藏问题挖出来。</p>
+<h3 id="4-2-三个”相互纠缠”的主题"><a href="#4-2-三个”相互纠缠”的主题" class="headerlink" title="4.2 三个”相互纠缠”的主题"></a>4.2 三个”相互纠缠”的主题</h3><p>回头看，三天的工作其实在反复围绕 3 个主题：</p>
+<ol>
+<li><strong>接口签名变更</strong>：6&#x2F;1 改了 6 个接口 → 6&#x2F;2 写对接文档 → 6&#x2F;3 发现文档和代码不一致</li>
+<li><strong>数据问题</strong>：6&#x2F;1 发现 148 个孤儿设备 → 6&#x2F;2 设备类型筛选接口 → 6&#x2F;3 发现设备类型污染</li>
+<li><strong>跨源机制</strong>：6&#x2F;1 改造时用 <code>@DS</code> → 6&#x2F;2 提交时跟 plan 对账 → 6&#x2F;3 发现注解不一致</li>
+</ol>
+<p><strong>这是耦合的代码基底的必然结果</strong>——改一个接口会牵出文档、数据、跨源三个层面的问题。</p>
+<h3 id="4-3-三个”应该记住”的经验"><a href="#4-3-三个”应该记住”的经验" class="headerlink" title="4.3 三个”应该记住”的经验"></a>4.3 三个”应该记住”的经验</h3><blockquote>
+<p>[!tip] 经验一：文档与代码同步<br>计划文档（<code>docs/superpowers/plans/*.md</code>）和实际代码必须保持一致。如果改了代码没改文档，3 天后自己都会忘记当初为什么这么改。建议每次提交都检查一下 plan 里有没有引用到改动的代码。</p>
+</blockquote>
+<blockquote>
+<p>[!tip] 经验二：数据问题用数据方式解决<br>148 个孤儿设备 STCD 为空——这种问题应该用 SQL 查 + 数据治理的方式解决，不要试图在代码里”模糊匹配”做补救。代码补救会引入不确定性，让数据问题更隐蔽。</p>
+</blockquote>
+<blockquote>
+<p>[!tip] 经验三：探查日比编码日更宝贵<br>6&#x2F;3 一行业务代码都没写，但挖出的 5 个数据地雷，可能比 6&#x2F;1 那一波改造更有长期价值。建议每周至少留 1 天做”探查日”，把”理所当然”全部扒开看一遍。</p>
+</blockquote>
+<hr>
+<h2 id="五、资料佐证"><a href="#五、资料佐证" class="headerlink" title="五、资料佐证"></a>五、资料佐证</h2><h3 id="5-1-数据库证据"><a href="#5-1-数据库证据" class="headerlink" title="5.1 数据库证据"></a>5.1 数据库证据</h3><h4 id="5-1-1-148-个孤儿设备-SQL"><a href="#5-1-1-148-个孤儿设备-SQL" class="headerlink" title="5.1.1 148 个孤儿设备 SQL"></a>5.1.1 148 个孤儿设备 SQL</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 查询孤儿设备</span></span><br><span class="line"><span class="keyword">SELECT</span> e.EQID, e.EQNM, e.EQTYP, e.LGTD, e.LTTD,</span><br><span class="line">       s.STCD, s.STNM</span><br><span class="line"><span class="keyword">FROM</span> bs_sw_cy_dh_equipmentb e</span><br><span class="line"><span class="keyword">LEFT</span> <span class="keyword">JOIN</span> bs_sw_cy_dh_station s</span><br><span class="line">  <span class="keyword">ON</span> <span class="built_in">ABS</span>(s.LGTD <span class="operator">-</span> e.LGTD) <span class="operator">&lt;</span> <span class="number">0.01</span></span><br><span class="line"> <span class="keyword">AND</span> <span class="built_in">ABS</span>(s.LTTD <span class="operator">-</span> e.LTTD) <span class="operator">&lt;</span> <span class="number">0.01</span></span><br><span class="line"><span class="keyword">WHERE</span> e.USFL <span class="operator">=</span> <span class="string">&#x27;1&#x27;</span> <span class="keyword">AND</span> (e.STCD <span class="keyword">IS</span> <span class="keyword">NULL</span> <span class="keyword">OR</span> e.STCD <span class="operator">=</span> <span class="string">&#x27;&#x27;</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 统计总数</span></span><br><span class="line"><span class="keyword">SELECT</span> <span class="built_in">COUNT</span>(<span class="operator">*</span>) <span class="keyword">AS</span> total,</span><br><span class="line">       <span class="built_in">SUM</span>(<span class="keyword">CASE</span> <span class="keyword">WHEN</span> STCD <span class="keyword">IS</span> <span class="keyword">NULL</span> <span class="keyword">OR</span> STCD <span class="operator">=</span> <span class="string">&#x27;&#x27;</span> <span class="keyword">THEN</span> <span class="number">1</span> <span class="keyword">ELSE</span> <span class="number">0</span> <span class="keyword">END</span>) <span class="keyword">AS</span> no_stcd,</span><br><span class="line">       <span class="built_in">SUM</span>(<span class="keyword">CASE</span> <span class="keyword">WHEN</span> EQID <span class="keyword">LIKE</span> <span class="string">&#x27; %&#x27;</span> <span class="keyword">THEN</span> <span class="number">1</span> <span class="keyword">ELSE</span> <span class="number">0</span> <span class="keyword">END</span>) <span class="keyword">AS</span> leading_space_eqid</span><br><span class="line"><span class="keyword">FROM</span> bs_sw_cy_dh_equipmentb <span class="keyword">WHERE</span> USFL <span class="operator">=</span> <span class="string">&#x27;1&#x27;</span>;</span><br><span class="line"><span class="comment">-- total=1813  no_stcd=148  leading_space_eqid=1</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="5-1-2-组织架构表结构"><a href="#5-1-2-组织架构表结构" class="headerlink" title="5.1.2 组织架构表结构"></a>5.1.2 组织架构表结构</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 关键字段</span></span><br><span class="line">ID            <span class="type">BIGINT</span>       <span class="comment">-- 雪花 ID（部分历史节点是 32 位 UUID）</span></span><br><span class="line">PARENT_ID     <span class="type">BIGINT</span>       <span class="comment">-- 邻接表的父指针</span></span><br><span class="line">TREE_CODE     <span class="type">VARCHAR</span>      <span class="comment">-- 逗号分隔的祖先 ID 路径</span></span><br><span class="line">NAME          <span class="type">VARCHAR</span></span><br><span class="line">CODE          <span class="type">VARCHAR</span></span><br><span class="line">THIRDPARTY_ID <span class="type">VARCHAR</span></span><br><span class="line">UPDATE_TIME   DATETIME</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 528 行，32 个根节点</span></span><br><span class="line"><span class="keyword">SELECT</span> <span class="built_in">COUNT</span>(<span class="operator">*</span>) <span class="keyword">FROM</span> bs_sw_cy_dh_company;  <span class="comment">-- 528</span></span><br><span class="line"><span class="keyword">SELECT</span> <span class="built_in">COUNT</span>(<span class="keyword">DISTINCT</span> PARENT_ID) <span class="keyword">FROM</span> bs_sw_cy_dh_company <span class="keyword">WHERE</span> PARENT_ID <span class="keyword">NOT</span> <span class="keyword">IN</span> (<span class="keyword">SELECT</span> ID <span class="keyword">FROM</span> bs_sw_cy_dh_company);  <span class="comment">-- 32</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="5-1-3-同名节点双-ID-检测"><a href="#5-1-3-同名节点双-ID-检测" class="headerlink" title="5.1.3 同名节点双 ID 检测"></a>5.1.3 同名节点双 ID 检测</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 检测 (PARENT_ID, NAME) 重复</span></span><br><span class="line"><span class="keyword">SELECT</span> PARENT_ID, NAME, <span class="built_in">COUNT</span>(<span class="operator">*</span>) <span class="keyword">AS</span> cnt,</span><br><span class="line">       GROUP_CONCAT(ID) <span class="keyword">AS</span> ids</span><br><span class="line"><span class="keyword">FROM</span> bs_sw_cy_dh_company</span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span> PARENT_ID, NAME</span><br><span class="line"><span class="keyword">HAVING</span> <span class="built_in">COUNT</span>(<span class="operator">*</span>) <span class="operator">&gt;</span> <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 升级为清洗脚本（保留雪花 ID，UUID 节点打软删）</span></span><br><span class="line"><span class="comment">-- 步骤 1: 找出有外键引用的旧 ID</span></span><br><span class="line"><span class="comment">-- 步骤 2: 重定向外键</span></span><br><span class="line"><span class="comment">-- 步骤 3: 标删旧 ID</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="5-2-提交记录（commit-b1cfd65）"><a href="#5-2-提交记录（commit-b1cfd65）" class="headerlink" title="5.2 提交记录（commit b1cfd65）"></a>5.2 提交记录（commit b1cfd65）</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">feat: 流域接口返回多根节点 + 新增设备类型查询接口 + 缓存自愈</span><br></pre></td></tr></table></figure>
+
+<p><strong>改动文件（3 个）</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>文件</th>
+<th>改动</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>TreeSelectorService.java</td>
+<td>+16&#x2F;-8</td>
+<td>6 个流域接口签名改为 R&lt;List<TreeNode>&gt;，新增 2 个设备类型方法</td>
+</tr>
+<tr>
+<td>TreeSelectorController.java</td>
+<td>+32&#x2F;-8</td>
+<td>对应端点签名同步改，新增 2 个设备类型端点</td>
+</tr>
+<tr>
+<td>TreeSelectorServiceImpl.java</td>
+<td>+200&#x2F;-58</td>
+<td>多根处理逻辑 + 缓存自愈 + 设备类型查询实现</td>
+</tr>
+</tbody></table>
+<p><strong>commit 关联</strong>：</p>
+<ul>
+<li>6&#x2F;2 提交 b1cfd65</li>
+<li>6&#x2F;1 的 type 字段、6&#x2F;1 的多根改造、6&#x2F;1 的性能优化、6&#x2F;2 的设备类型接口、6&#x2F;2 的缓存自愈 都在这次 commit 里</li>
+</ul>
+<h3 id="5-3-API-验证结果"><a href="#5-3-API-验证结果" class="headerlink" title="5.3 API 验证结果"></a>5.3 API 验证结果</h3><h4 id="5-3-1-type-字段链路验证"><a href="#5-3-1-type-字段链路验证" class="headerlink" title="5.3.1 type 字段链路验证"></a>5.3.1 type 字段链路验证</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 请求 equipmentTreeFilteredByBasin</span></span><br><span class="line">curl -s <span class="string">&quot;http://localhost:8080/dataCollection/equipmentTreeFilteredByBasin&quot;</span> | jq <span class="string">&#x27;.data[0]&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p>返回：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;812_813&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="number">2</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;children&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">    <span class="punctuation">&#123;</span></span><br><span class="line">      <span class="attr">&quot;id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;812_813_-1&quot;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;label&quot;</span><span class="punctuation">:</span> <span class="string">&quot;-1级河流&quot;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="number">2</span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;children&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">        <span class="punctuation">&#123;</span></span><br><span class="line">          <span class="attr">&quot;id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;HD2D0000000P&quot;</span><span class="punctuation">,</span></span><br><span class="line">          <span class="attr">&quot;label&quot;</span><span class="punctuation">:</span> <span class="string">&quot;鸡啼门水道&quot;</span><span class="punctuation">,</span></span><br><span class="line">          <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="number">2</span><span class="punctuation">,</span></span><br><span class="line">          <span class="attr">&quot;children&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">            <span class="punctuation">&#123;</span></span><br><span class="line">              <span class="attr">&quot;id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;81301880&quot;</span><span class="punctuation">,</span></span><br><span class="line">              <span class="attr">&quot;label&quot;</span><span class="punctuation">:</span> <span class="string">&quot;白蕉&quot;</span><span class="punctuation">,</span></span><br><span class="line">              <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="number">3</span><span class="punctuation">,</span></span><br><span class="line">              <span class="attr">&quot;queryChild&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;sttp&quot;</span><span class="punctuation">:</span> <span class="string">&quot;TT&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">              <span class="attr">&quot;children&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">                <span class="punctuation">&#123;</span> <span class="attr">&quot;id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;8480021031&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;label&quot;</span><span class="punctuation">:</span> <span class="string">&quot;在线H-ADCP&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="number">4</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">                <span class="punctuation">&#123;</span> <span class="attr">&quot;id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;PP81301880&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="number">4</span> <span class="punctuation">&#125;</span></span><br><span class="line">              <span class="punctuation">]</span></span><br><span class="line">            <span class="punctuation">&#125;</span></span><br><span class="line">          <span class="punctuation">]</span></span><br><span class="line">        <span class="punctuation">&#125;</span></span><br><span class="line">      <span class="punctuation">]</span></span><br><span class="line">    <span class="punctuation">&#125;</span></span><br><span class="line">  <span class="punctuation">]</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>✅ 全部正确。</p>
+<h4 id="5-3-2-设备类型接口验证"><a href="#5-3-2-设备类型接口验证" class="headerlink" title="5.3.2 设备类型接口验证"></a>5.3.2 设备类型接口验证</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl -s <span class="string">&quot;http://localhost:8080/dataCollection/equipmentTypesByBasin&quot;</span> | jq <span class="string">&#x27;.data&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p>返回 6 个（流域全量）：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">[</span></span><br><span class="line">  <span class="string">&quot;在线H-ADCP&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="string">&quot;HADCP-水平式ADCP&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="string">&quot;FWQ-浮子水位计&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="string">&quot;翻斗式雨量计&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="string">&quot;BWG-气泡水位计&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="string">&quot;FWG-浮子水位计&quot;</span></span><br><span class="line"><span class="punctuation">]</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="5-4-性能数据"><a href="#5-4-性能数据" class="headerlink" title="5.4 性能数据"></a>5.4 性能数据</h3><table>
+<thead>
+<tr>
+<th>接口</th>
+<th>第一次（缓存空）</th>
+<th>后续命中</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>riverBasinTree</code></td>
+<td>~330ms</td>
+<td>~150ms</td>
+<td>DB 直连</td>
+</tr>
+<tr>
+<td><code>stationTreeByBasin</code></td>
+<td>~500ms</td>
+<td>~400ms</td>
+<td>过滤空根</td>
+</tr>
+<tr>
+<td><code>equipmentTreeByBasin</code></td>
+<td>~500ms</td>
+<td>~400ms</td>
+<td>过滤空根</td>
+</tr>
+<tr>
+<td><code>equipmentTreeFilteredByBasin</code></td>
+<td>~330ms</td>
+<td>~250ms</td>
+<td>含过滤</td>
+</tr>
+<tr>
+<td><code>equipmentTypesByRegion</code></td>
+<td>~1071ms</td>
+<td>~800ms</td>
+<td>递归收集 + 去重</td>
+</tr>
+<tr>
+<td><code>equipmentTypesByBasin</code></td>
+<td>~279ms</td>
+<td>~200ms</td>
+<td>流域范围更小</td>
+</tr>
+<tr>
+<td><code>getRegionTreeFromApi</code></td>
+<td>~1500ms</td>
+<td>~500ms</td>
+<td>第一次调第三方</td>
+</tr>
+<tr>
+<td><code>stationTreeByRegion</code></td>
+<td>~1500ms</td>
+<td>~500ms</td>
+<td>第一次调第三方</td>
+</tr>
+<tr>
+<td><code>equipmentTreeByRegion</code></td>
+<td>~1500ms</td>
+<td>~500ms</td>
+<td>第一次调第三方</td>
+</tr>
+</tbody></table>
+<p><strong>DB 查询次数优化对比</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>接口</th>
+<th>改前</th>
+<th>改后</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>stationTreeByBasin</code> no-rvcd 测站查询</td>
+<td>7 次</td>
+<td>1 次</td>
+</tr>
+<tr>
+<td><code>equipmentTreeByBasin</code> 设备查询</td>
+<td>7 次</td>
+<td>1 次</td>
+</tr>
+</tbody></table>
+<p>7 个根场景下两个接口的 DB 查询总数从 14 次降到 2 次。</p>
+<h3 id="5-5-涉及文件清单"><a href="#5-5-涉及文件清单" class="headerlink" title="5.5 涉及文件清单"></a>5.5 涉及文件清单</h3><h4 id="5-5-1-后端代码"><a href="#5-5-1-后端代码" class="headerlink" title="5.5.1 后端代码"></a>5.5.1 后端代码</h4><table>
+<thead>
+<tr>
+<th>模块</th>
+<th>路径</th>
+<th>改动类型</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>API DTO</td>
+<td><code>gdsw-modules/algorithm-plugin-modules/algorithm-plugin-api/src/main/java/com/zny/algorithm/api/dto/TreeNode.java</code></td>
+<td>新增 type 字段</td>
+</tr>
+<tr>
+<td>Service 接口</td>
+<td><code>gdsw-modules/data-collection-modules/data-collection-api/src/main/java/com/zny/datacollection/api/service/TreeSelectorService.java</code></td>
+<td>6 个方法签名调整</td>
+</tr>
+<tr>
+<td>Service 实现</td>
+<td><code>gdsw-modules/data-collection-modules/data-collection-starter/src/main/java/com/zny/datacollection/starter/service/impl/TreeSelectorServiceImpl.java</code></td>
+<td>6 个方法重写 + 抽 fetchBasinJsonStr + 查询优化 + 空根过滤 + 缓存自愈</td>
+</tr>
+<tr>
+<td>Controller</td>
+<td><code>gdsw-modules/data-collection-modules/data-collection-core/src/main/java/com/zny/datacollection/core/controller/TreeSelectorController.java</code></td>
+<td>6 处端点签名调整</td>
+</tr>
+<tr>
+<td>工具类</td>
+<td><code>gdsw-modules/data-collection-modules/data-collection-starter/src/main/java/com/zny/datacollection/starter/utils/RiverBasinTreeUtil.java</code></td>
+<td>仅参考，未改动</td>
+</tr>
+<tr>
+<td>Mapper</td>
+<td><code>gdsw-modules/data-collection-modules/data-collection-core/src/main/java/com/zny/datacollection/core/mapper/StStbprpBMapper.java</code></td>
+<td><code>@DS(&quot;water&quot;)</code> vs <code>@DS(&quot;slave&quot;)</code> 待确认</td>
+</tr>
+</tbody></table>
+<h4 id="5-5-2-数据库表"><a href="#5-5-2-数据库表" class="headerlink" title="5.5.2 数据库表"></a>5.5.2 数据库表</h4><table>
+<thead>
+<tr>
+<th>表名</th>
+<th>用途</th>
+<th>行数</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>bs_sw_cy_dh_company</code></td>
+<td>组织架构</td>
+<td>528</td>
+<td>邻接表 + 物化路径双模式</td>
+</tr>
+<tr>
+<td><code>bs_sw_cy_dh_equipmentb</code></td>
+<td>设备</td>
+<td>1813</td>
+<td>148 个 STCD 为空</td>
+</tr>
+<tr>
+<td><code>bs_sw_cy_dh_station</code></td>
+<td>测站</td>
+<td>1051</td>
+<td>ATCUNIT 存 NAME 字符串</td>
+</tr>
+</tbody></table>
+<h4 id="5-5-3-文档"><a href="#5-5-3-文档" class="headerlink" title="5.5.3 文档"></a>5.5.3 文档</h4><table>
+<thead>
+<tr>
+<th>文档</th>
+<th>路径</th>
+<th>状态</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>6&#x2F;1 工作记录</td>
+<td><code>项目/数据归集系统/2026-06-01/2026-06-01工作记录.md</code></td>
+<td>已发布</td>
+</tr>
+<tr>
+<td>TreeNode type 字段</td>
+<td><code>项目/数据归集系统/2026-06-01/TreeNode-type字段功能.md</code></td>
+<td>已发布</td>
+</tr>
+<tr>
+<td>树接口流域多根改造</td>
+<td><code>项目/数据归集系统/2026-06-01/树接口流域多根改造.md</code></td>
+<td>已发布</td>
+</tr>
+<tr>
+<td>紫洞设备问题排查</td>
+<td><code>项目/数据归集系统/2026-06-01/紫洞设备问题排查.md</code></td>
+<td>已发布</td>
+</tr>
+<tr>
+<td>6&#x2F;2 tree 接口对接说明</td>
+<td><code>项目/数据归集系统/2026-06-02/tree接口改造对接说明.md</code></td>
+<td>已发布</td>
+</tr>
+<tr>
+<td>6&#x2F;2 设备类型筛选接口</td>
+<td><code>项目/数据归集系统/2026-06-02/设备类型筛选接口.md</code></td>
+<td>已发布</td>
+</tr>
+<tr>
+<td>6&#x2F;2 负一级河流逻辑</td>
+<td><code>项目/数据归集系统/2026-06-02/负一级河流逻辑说明.md</code></td>
+<td>已发布</td>
+</tr>
+<tr>
+<td>6&#x2F;3 数据归集探查</td>
+<td><code>项目/数据归集系统/2026-06-03/2026-06-03记录.md</code></td>
+<td>已发布</td>
+</tr>
+<tr>
+<td>6&#x2F;3 提交记录</td>
+<td><code>项目/数据归集系统/2026-06-03/提交记录.md</code></td>
+<td>已发布</td>
+</tr>
+</tbody></table>
+<h3 id="5-6-外部参考"><a href="#5-6-外部参考" class="headerlink" title="5.6 外部参考"></a>5.6 外部参考</h3><h4 id="5-6-1-baomidou-dynamic-datasource"><a href="#5-6-1-baomidou-dynamic-datasource" class="headerlink" title="5.6.1 baomidou-dynamic-datasource"></a>5.6.1 baomidou-dynamic-datasource</h4><ul>
+<li><strong>官方文档</strong>：<a target="_blank" rel="noopener" href="https://baomidou.com/guides/dynamic-datasource/">https://baomidou.com/guides/dynamic-datasource/</a></li>
+<li><strong>核心机制</strong>：基于 Spring AOP 的 <code>@DS</code> 注解 + <code>DataSource</code> 注册中心</li>
+<li><strong>本文引用</strong>：[[baomidou-dynamic-datasource]]</li>
+<li><strong>相关引用</strong>：mapper 注解 <code>@DS(&quot;slave&quot;)</code> 决定数据源</li>
+</ul>
+<h4 id="5-6-2-MyBatis-Plus"><a href="#5-6-2-MyBatis-Plus" class="headerlink" title="5.6.2 MyBatis-Plus"></a>5.6.2 MyBatis-Plus</h4><ul>
+<li><strong>官方文档</strong>：<a target="_blank" rel="noopener" href="https://baomidou.com/">https://baomidou.com/</a></li>
+<li><strong>本文引用</strong>：<code>QueryWrapper</code> &#x2F; <code>BaseMapper</code> &#x2F; <code>groupingBy</code> 等</li>
+</ul>
+<h4 id="5-6-3-MySQL-跨库限制"><a href="#5-6-3-MySQL-跨库限制" class="headerlink" title="5.6.3 MySQL 跨库限制"></a>5.6.3 MySQL 跨库限制</h4><ul>
+<li><strong>FEDERATED 引擎</strong>：<a target="_blank" rel="noopener" href="https://dev.mysql.com/doc/refman/8.0/en/federated-storage-engine.html">https://dev.mysql.com/doc/refman/8.0/en/federated-storage-engine.html</a></li>
+<li><strong>本文核心结论</strong>：MySQL 默认不支持跨库 JOIN，应用层分两次查 + 内存拼是常见做法</li>
+</ul>
+<h3 id="5-7-关联博客"><a href="#5-7-关联博客" class="headerlink" title="5.7 关联博客"></a>5.7 关联博客</h3><ul>
+<li><a href="/2026/05/21/%E6%A0%91%E7%BB%93%E6%9E%84%E9%80%89%E6%8B%A9%E5%99%A8-%E4%BB%8ERedis%E5%88%B0%E7%9B%B4%E8%BF%9E%E6%95%B0%E6%8D%AE%E5%BA%93/">《树结构选择器：从 Redis 到直连数据库的架构重构》</a>——5&#x2F;21 改造基础</li>
+<li><a href="/2025/12/Spring-Boot%E5%A4%9A%E6%95%B0%E6%8D%AE%E6%BA%90%E5%BC%80%E5%8F%91%E5%AE%9E%E8%B7%B5-%E4%BB%8E%E8%B8%A9%E5%9D%91%E5%88%B0%E8%A7%A3%E5%86%B3/">《Spring Boot 多数据源开发实践：从踩坑到解决》</a>——多数据源原理</li>
+<li><a href="/2026/05/07/%E6%B0%B4%E6%96%87%E6%95%B0%E6%8D%AE%E5%9D%87%E5%80%BC%E5%AF%B9%E6%AF%94%E6%9F%A5%E8%AF%A2Bug%E4%BF%AE%E5%A4%8D%E5%85%A8%E8%AE%B0%E5%BD%95/">《水文数据均值对比查询 Bug 修复全记录》</a>——同项目 bug 修复风格</li>
+<li><a href="/2026/03/19/%E5%B9%BF%E4%B8%9C%E6%B0%B4%E6%96%87%E9%A1%B9%E7%9B%AE%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5%E5%AE%9E%E5%BD%952026%E5%B9%B43%E6%9C%8819%E6%97%A5%E6%8A%80%E6%9C%AF%E6%8C%91%E6%88%98/">《广东水文项目问题排查实录 2026 年 3 月 19 日》</a>——同项目排查风格</li>
+</ul>
+<hr>
+<h2 id="六、经验总结与结语"><a href="#六、经验总结与结语" class="headerlink" title="六、经验总结与结语"></a>六、经验总结与结语</h2><h3 id="6-1-三个”不一样”"><a href="#6-1-三个”不一样”" class="headerlink" title="6.1 三个”不一样”"></a>6.1 三个”不一样”</h3><blockquote>
+<p>[!tip] 工作节奏不一样<br>6&#x2F;1 是行动日，6&#x2F;2 是收尾日，6&#x2F;3 是反思日。<strong>三天里只有 6&#x2F;1 写代码</strong>，但 6&#x2F;3 挖出的问题可能比 6&#x2F;1 那一波改造更有长期价值。不要把每天塞满编码。</p>
+</blockquote>
+<blockquote>
+<p>[!tip] 问题深度不一样<br>6&#x2F;1 的”148 个孤儿设备”是数据问题，6&#x2F;3 的”5 个数据地雷”是治理问题。前者改一行 SQL 就能修，后者需要跨部门协作。<strong>看清问题的层级</strong>比急着解决更重要。</p>
+</blockquote>
+<blockquote>
+<p>[!tip] 文档价值不一样<br>6&#x2F;2 的 3 篇对接文档（接口对接、设备类型、负一级河流）让前端和上游数据问题有了”单一可信源”。<strong>好的文档不是重复代码</strong>，而是解释”为什么这样设计”。</p>
+</blockquote>
+<h3 id="6-2-三个”应该坚持”"><a href="#6-2-三个”应该坚持”" class="headerlink" title="6.2 三个”应该坚持”"></a>6.2 三个”应该坚持”</h3><blockquote>
+<p>[!tip] 坚持写工作记录<br>6&#x2F;1 ~ 6&#x2F;3 三天每天都有工作记录，6&#x2F;1 的 8 个章节、6&#x2F;2 的 6 个章节、6&#x2F;3 的 7 个发现，都有完整的证据链。<strong>未来的你会感谢现在的自己</strong>。</p>
+</blockquote>
+<blockquote>
+<p>[!tip] 坚持用数据说话<br>148 不是拍脑袋，是 <code>SELECT COUNT(*)</code> 查出来的；7 个根流域不是猜的，是 <code>SELECT COUNT(DISTINCT PARENT_ID)</code> 算出来的。<strong>没有数据支撑的结论都是空话</strong>。</p>
+</blockquote>
+<blockquote>
+<p>[!tip] 坚持做”探查日”<br>每周至少留 1 天做”探查日”，把”理所当然”全部扒开看一遍。<strong>这种工作的价值不在 PR 行数，而在以后少加几次班</strong>。</p>
+</blockquote>
+<h3 id="6-3-结语"><a href="#6-3-结语" class="headerlink" title="6.3 结语"></a>6.3 结语</h3><p>三天三件事，看上去是分立的几个任务，实际上是数据归集系统从”能跑”到”跑得对”的一次集中检视。<strong>6&#x2F;1 的改造让它跑得更快，6&#x2F;2 的文档让它跑得更稳，6&#x2F;3 的探查让它跑得更对</strong>。</p>
+<p>下一个迭代的目标很明确：把 6&#x2F;3 那 5 个待办逐个落地——统一 mapper 注解、同步计划文档、设备类型归一化、公司表去重、回归测试。到那时，这套系统才真正称得上”production-ready”。</p>
+<blockquote>
+<p>如果你也在做类似的多数据源、多端点的前后端集成，希望这篇三天实录能给你一些参考。代码和文档都在文末的资料佐证里，欢迎对照复现。</p>
+</blockquote>
+<p><strong>—— 写于 2026 年 6 月 3 日深夜，把 5 个地雷都标完了</strong></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Spring-Boot/" rel="tag"># Spring Boot</a>
+              <a href="/tags/%E5%A4%9A%E6%95%B0%E6%8D%AE%E6%BA%90/" rel="tag"># 多数据源</a>
+              <a href="/tags/%E6%95%B0%E6%8D%AE%E5%BD%92%E9%9B%86/" rel="tag"># 数据归集</a>
+              <a href="/tags/%E6%A0%91%E9%80%89%E6%8B%A9%E5%99%A8/" rel="tag"># 树选择器</a>
+              <a href="/tags/baomidou-dynamic-datasource/" rel="tag"># baomidou-dynamic-datasource</a>
+              <a href="/tags/MySQL/" rel="tag"># MySQL</a>
+              <a href="/tags/%E6%95%B0%E6%8D%AE%E6%B2%BB%E7%90%86/" rel="tag"># 数据治理</a>
+              <a href="/tags/Bug%E6%8E%92%E6%9F%A5/" rel="tag"># Bug排查</a>
+              <a href="/tags/%E6%8E%A5%E5%8F%A3%E6%94%B9%E9%80%A0/" rel="tag"># 接口改造</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/05/29/Consul%E9%85%8D%E7%BD%AE%E8%B8%A9%E5%9D%91-%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2/" rel="prev" title="Consul 配置踩坑：数据源切换的陷阱与排查">
+                  <i class="fa fa-angle-left"></i> Consul 配置踩坑：数据源切换的陷阱与排查
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  
+  <div class="comments giscus-container">
+  </div>
+  
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">zhlifeiy35</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/zhdmm35" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"zhdmm35/zhdmm35.github.io","repo_id":"R_kgDOON4bhg","category":"Announcements","category_id":"DIC_kwDOON4bhs4C3dEc","mapping":"pathname","strict":0,"reactions_enabled":1,"emit_metadata":0,"theme":"preferred_color_scheme","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+
+<script>
+document.addEventListener('page:loaded', () => {
+  if (!CONFIG.page.comments) return;
+
+  NexT.utils.loadComments('.giscus-container')
+    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
+      attributes: {
+        async                   : true,
+        crossOrigin             : 'anonymous',
+        'data-repo'             : CONFIG.giscus.repo,
+        'data-repo-id'          : CONFIG.giscus.repo_id,
+        'data-category'         : CONFIG.giscus.category,
+        'data-category-id'      : CONFIG.giscus.category_id,
+        'data-mapping'          : CONFIG.giscus.mapping,
+        'data-strict'           : CONFIG.giscus.strict,
+        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
+        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
+        'data-theme'            : CONFIG.giscus.theme,
+        'data-lang'             : CONFIG.giscus.lang,
+        'data-input-position'   : CONFIG.giscus.input_position,
+        'data-loading'          : CONFIG.giscus.loading
+      },
+      parentNode: document.querySelector('.giscus-container')
+    }));
+});
+</script>
+
+</body>
+</html>
