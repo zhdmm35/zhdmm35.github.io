@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="导读 6&#x2F;11 实现的”钉钉同步触发 pass_user 同步”功能本身端到端跑通，但暴露出 6&#x2F;11 spec 文档第 46 行的一个事实错误判断：把 PassUserServiceImpl.synSysUserToPassUser() 里的 setParkId(DEFAULT_PARK_ID) 误判为”无效死代码”。实际是有效过滤。更糟的是下午挖出了真正的死亡覆盖链：adm">
+<meta property="og:type" content="article">
+<meta property="og:title" content="pass_user 死亡覆盖链与 spec 错误判断：从集成测试挖出 421 条脏数据">
+<meta property="og:url" content="https://zhlifeiy.codes/2026/06/12/2026-06-12-pass-user-death-chain/index.html">
+<meta property="og:site_name" content="我的技术博客">
+<meta property="og:description" content="导读 6&#x2F;11 实现的”钉钉同步触发 pass_user 同步”功能本身端到端跑通，但暴露出 6&#x2F;11 spec 文档第 46 行的一个事实错误判断：把 PassUserServiceImpl.synSysUserToPassUser() 里的 setParkId(DEFAULT_PARK_ID) 误判为”无效死代码”。实际是有效过滤。更糟的是下午挖出了真正的死亡覆盖链：adm">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/2026-06-12-pass-user-death-chain_001.jpg">
+<meta property="article:published_time" content="2026-06-12T10:00:00.000Z">
+<meta property="article:modified_time" content="2026-06-27T14:12:55.096Z">
+<meta property="article:author" content="zhlifeiy35">
+<meta property="article:tag" content="MyBatis">
+<meta property="article:tag" content="集成测试">
+<meta property="article:tag" content="多园区">
+<meta property="article:tag" content="死亡覆盖链">
+<meta property="article:tag" content="Bug修复">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/2026-06-12-pass-user-death-chain_001.jpg">
+
+
+<link rel="canonical" href="https://zhlifeiy.codes/2026/06/12/2026-06-12-pass-user-death-chain/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://zhlifeiy.codes/2026/06/12/2026-06-12-pass-user-death-chain/","path":"2026/06/12/2026-06-12-pass-user-death-chain/","title":"pass_user 死亡覆盖链与 spec 错误判断：从集成测试挖出 421 条脏数据"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>pass_user 死亡覆盖链与 spec 错误判断：从集成测试挖出 421 条脏数据 | 我的技术博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">我的技术博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">记录学习与成长</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-guestbook"><a href="/guestbook/" rel="section"><i class="fa fa-comment-dots fa-fw"></i>留言板</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%BC%E8%AF%BB"><span class="nav-number">1.</span> <span class="nav-text">导读</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link"><span class="nav-number">1.0.1.</span> <span class="nav-text">🎧 文章导读</span></a></li><li class="nav-item nav-level-4"><a class="nav-link"><span class="nav-number">1.0.2.</span> <span class="nav-text">🎵 背景音乐</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">2.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E9%98%B6%E6%AE%B5%EF%BC%9A%E9%9B%86%E6%88%90%E6%B5%8B%E8%AF%95-spec-%E9%94%99%E8%AF%AF%E5%88%A4%E6%96%AD"><span class="nav-number">3.</span> <span class="nav-text">第一阶段：集成测试 + spec 错误判断</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E5%9C%BA%E6%99%AF-T1%EF%BC%9Amock-%E7%94%A8%E6%88%B7%E6%B2%A1%E8%BF%9B-pass-user"><span class="nav-number">3.1.</span> <span class="nav-text">测试场景 T1：mock 用户没进 pass_user</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%8D%E6%9F%A5%E6%BA%90%E7%A0%81"><span class="nav-number">3.2.</span> <span class="nav-text">反查源码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#spec-%E9%94%99%E8%AF%AF%E5%88%A4%E6%96%AD%E7%9A%84%E4%BA%8B%E5%AE%9E%E7%BA%A0%E6%AD%A3"><span class="nav-number">3.3.</span> <span class="nav-text">spec 错误判断的事实纠正</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%9A%E5%8A%A1%E6%AD%A3%E7%A1%AE%E6%80%A7%E9%97%AE%E9%A2%98"><span class="nav-number">3.4.</span> <span class="nav-text">业务正确性问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E6%96%B9%E6%B3%95%E5%AD%A6%E7%9A%84%E5%8F%8D%E9%9D%A2%E6%A1%88%E4%BE%8B"><span class="nav-number">3.5.</span> <span class="nav-text">测试方法学的反面案例</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E4%BA%8C%E9%98%B6%E6%AE%B5%EF%BC%9A%E6%AD%BB%E4%BA%A1%E8%A6%86%E7%9B%96%E9%93%BE%E7%9A%84%E7%9C%9F%E6%AD%A3%E6%A0%B9%E5%9B%A0"><span class="nav-number">4.</span> <span class="nav-text">第二阶段：死亡覆盖链的真正根因</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%8E%B0%E8%B1%A1%E5%8D%87%E7%BA%A7"><span class="nav-number">4.1.</span> <span class="nav-text">现象升级</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%AD%BB%E4%BA%A1%E8%A6%86%E7%9B%96%E9%93%BE"><span class="nav-number">4.2.</span> <span class="nav-text">死亡覆盖链</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%87%8F%E5%8C%96%E8%84%8F%E6%95%B0%E6%8D%AE"><span class="nav-number">4.3.</span> <span class="nav-text">量化脏数据</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%AE%E5%A4%8D%E6%96%B9%E6%A1%88"><span class="nav-number">5.</span> <span class="nav-text">修复方案</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BF%AE%E5%A4%8D-1%EF%BC%9A%E8%AE%A9%E6%96%B0-sync-%E7%9A%84-pass-user-%E5%86%99%E5%85%A5%E6%AD%A3%E7%A1%AE%E7%9A%84-park-id"><span class="nav-number">5.1.</span> <span class="nav-text">修复 1：让新 sync 的 pass_user 写入正确的 park_id</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BF%AE%E5%A4%8D-2%EF%BC%9A%E6%B8%85%E7%90%86-321-%E6%9D%A1%E5%8E%86%E5%8F%B2-NULL-park-id-%E6%95%B0%E6%8D%AE"><span class="nav-number">5.2.</span> <span class="nav-text">修复 2：清理 321 条历史 NULL park_id 数据</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%AA%8C%E8%AF%81%E8%AF%81%E6%8D%AE"><span class="nav-number">5.3.</span> <span class="nav-text">验证证据</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E4%B8%AA%E8%B8%A9%E5%9D%91%E6%80%BB%E7%BB%93"><span class="nav-number">6.</span> <span class="nav-text">4 个踩坑总结</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9D%91-1%EF%BC%9Aline-478-setParkId-user-getParkId-%E6%B0%B8%E8%BF%9C%E4%BC%9A%E8%A6%86%E7%9B%96-line-447"><span class="nav-number">6.1.</span> <span class="nav-text">坑 1：line 478 setParkId(user.getParkId()) 永远会覆盖 line 447</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9D%91-2%EF%BC%9Aspec-plan-%E9%98%B6%E6%AE%B5%E8%AF%AF%E5%88%A4-BaseResultMap-%E7%BC%BA-park-id-%E6%98%A0%E5%B0%84"><span class="nav-number">6.2.</span> <span class="nav-text">坑 2：spec&#x2F;plan 阶段误判 BaseResultMap 缺 park_id 映射</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9D%91-3%EF%BC%9A%E5%A2%9E%E9%87%8F%E5%90%8C%E6%AD%A5%E5%AF%B9%E5%8E%86%E5%8F%B2%E8%84%8F%E6%95%B0%E6%8D%AE%E6%97%A0%E6%95%88"><span class="nav-number">6.3.</span> <span class="nav-text">坑 3：增量同步对历史脏数据无效</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9D%91-4%EF%BC%9AMyBatis-%E5%AD%90%E6%9F%A5%E8%AF%A2%E8%A1%8C%E4%B8%BA%E4%B8%80%E8%87%B4%E6%80%A7"><span class="nav-number">6.4.</span> <span class="nav-text">坑 4：MyBatis 子查询行为一致性</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8E%92%E6%9F%A5%E6%96%B9%E6%B3%95%E8%AE%BA"><span class="nav-number">7.</span> <span class="nav-text">排查方法论</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E8%A7%84%E8%8C%83"><span class="nav-number">8.</span> <span class="nav-text">代码规范</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E8%A6%86%E7%9B%96"><span class="nav-number">9.</span> <span class="nav-text">测试覆盖</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%9A%E5%8A%A1%E5%BD%B1%E5%93%8D"><span class="nav-number">10.</span> <span class="nav-text">业务影响</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BE%85%E5%8A%9E%E4%BA%8B%E9%A1%B9"><span class="nav-number">11.</span> <span class="nav-text">待办事项</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B3%E9%94%AE%E4%BB%A3%E7%A0%81%E4%BD%8D%E7%BD%AE"><span class="nav-number">12.</span> <span class="nav-text">关键代码位置</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zhlifeiy35</p>
+  <div class="site-description" itemprop="description">分享编程技术、AI经验、学习笔记</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">51</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">175</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zhdmm35" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zhdmm35" rel="noopener me" target="_blank"><i class="fa fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/2026-06-12-pass-user-death-chain_001.jpg" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/06/12/2026-06-12-pass-user-death-chain/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="我的技术博客">
+      <meta itemprop="description" content="分享编程技术、AI经验、学习笔记">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="pass_user 死亡覆盖链与 spec 错误判断：从集成测试挖出 421 条脏数据 | 我的技术博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          pass_user 死亡覆盖链与 spec 错误判断：从集成测试挖出 421 条脏数据
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-06-12 18:00:00" itemprop="dateCreated datePublished" datetime="2026-06-12T18:00:00+08:00">2026-06-12</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-06-27 22:12:55" itemprop="dateModified" datetime="2026-06-27T22:12:55+08:00">2026-06-27</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">后端开发</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E5%8D%97%E7%BD%91%E9%A1%B9%E7%9B%AE/" itemprop="url" rel="index"><span itemprop="name">南网项目</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="导读"><a href="#导读" class="headerlink" title="导读"></a>导读</h2><blockquote>
+<p>6&#x2F;11 实现的”钉钉同步触发 pass_user 同步”功能本身端到端跑通，但暴露出 6&#x2F;11 spec 文档第 46 行的一个<strong>事实错误判断</strong>：把 <code>PassUserServiceImpl.synSysUserToPassUser()</code> 里的 <code>setParkId(DEFAULT_PARK_ID)</code> 误判为”无效死代码”。<strong>实际是有效过滤</strong>。更糟的是下午挖出了真正的死亡覆盖链：admin 端 <code>UserMapperExt.xml</code> 的 <code>listByConditionExt</code> SQL <strong>没 select <code>urp.park_id</code> 列</strong>，导致 <code>user.getParkId()</code> 永远是 NULL，421 条 <code>pass_user.park_id</code> 全被污染成 NULL。</p>
+</blockquote>
+<span id="more"></span>
+
+<div class="audio-player">
+  <div class="audio-section">
+    <h4>🎧 文章导读</h4>
+    <audio controls preload="metadata">
+      <source src="/2026-06-12-pass-user-death-chain/narration.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+  <div class="audio-section">
+    <h4>🎵 背景音乐</h4>
+    <audio controls loop preload="metadata">
+      <source src="/2026-06-12-pass-user-death-chain/bgm.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+</div>
+
+<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>集成测试是揭露设计缺陷的最佳工具。这次集成测试同时挖出了三个问题：</p>
+<ol>
+<li>spec 文档第 46 行的事实错误判断（<code>setParkId(DEFAULT_PARK_ID)</code> 是死代码 → 实际是有效过滤）</li>
+<li>死亡覆盖链的真正根因（<code>UserMapperExt.xml</code> SELECT 漏列）</li>
+<li>421 条历史脏数据（其中 322 条本应是番禺基地用户）</li>
+</ol>
+<p>整个过程是一个标准的”反向归因”案例：表象和根因完全相反。</p>
+<p><img src="/2026-06-12-pass-user-death-chain/assets/images/fig1_001.jpg" alt="死亡覆盖链路流程图"><br><em>图1：pass_user.park_id 死亡覆盖链</em></p>
+<h2 id="第一阶段：集成测试-spec-错误判断"><a href="#第一阶段：集成测试-spec-错误判断" class="headerlink" title="第一阶段：集成测试 + spec 错误判断"></a>第一阶段：集成测试 + spec 错误判断</h2><h3 id="测试场景-T1：mock-用户没进-pass-user"><a href="#测试场景-T1：mock-用户没进-pass-user" class="headerlink" title="测试场景 T1：mock 用户没进 pass_user"></a>测试场景 T1：mock 用户没进 pass_user</h3><p>我准备了一个 mock 用户 <code>MOCK_TEST_PASS_001</code>，<code>USERID</code>、<code>DEPARTMENT</code>、<code>PDEPARTS</code> 三个字段都填了，调用 <code>POST /sync/mockDingUserSync</code> 后去查 <code>building_through.pass_user</code> 表，发现<strong>没有这个用户</strong>。</p>
+<p>第一反应：”Feign 调用失败了” 或 “through-service 那边有 bug”。</p>
+<p>但先用 <code>OpenFeign</code> 的日志和 <code>triggerPassUserSync</code> 的返回值（返回的是 affected rows 数）确认了一个关键事实：返回值是 <code>335</code>，<strong>不是 0</strong>。这意味着 <code>synSysUserToPassUser</code> 确实跑了，而且<strong>写了 335 个用户</strong>——只是没写我的 mock 用户。</p>
+<h3 id="反查源码"><a href="#反查源码" class="headerlink" title="反查源码"></a>反查源码</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// PassUserServiceImpl.java:442-466</span></span><br><span class="line"><span class="type">UserDTO</span> <span class="variable">userDTO</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">UserDTO</span>();</span><br><span class="line">userDTO.setParkId(DictConstants.DEFAULT_PARK_ID);  <span class="comment">// ← 这行是有效过滤</span></span><br><span class="line">userDTO.setDeleteFlag(DictConstants.DEL_FLAG_NO);</span><br><span class="line">pagingCondition.setEntity(userDTO);</span><br><span class="line"><span class="comment">// ...</span></span><br><span class="line">Page&lt;UserDTO&gt; userPage = userClient.paging(pagingCondition).getData();</span><br></pre></td></tr></table></figure>
+
+<p><code>userClient.paging(queryCondition)</code> 走的是 building 内部统一的查询协议，<strong>会用 <code>userDTO</code> 的所有非空字段做 WHERE 过滤</strong>。所以这一行的含义是：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">WHERE park_id = &#x27;284cd7570daf5d1ca8e121bc025f7a02&#x27; AND delete_flag = &#x27;0&#x27;</span><br></pre></td></tr></table></figure>
+
+<p>——只查”番禺基地”且未删除的用户。</p>
+<p>反查 <code>DictConstants.DEFAULT_PARK_ID</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// service-util/.../DictConstants.java:765</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">String</span> <span class="variable">DEFAULT_PARK_ID</span> <span class="operator">=</span> <span class="string">&quot;284cd7570daf5d1ca8e121bc025f7a02&quot;</span>;</span><br></pre></td></tr></table></figure>
+
+<p>这是硬编码的”番禺基地” park_id。也就是说，<strong>所有非番禺基地的钉钉用户，pass_user 同步后仍然不会出现</strong>。</p>
+<h3 id="spec-错误判断的事实纠正"><a href="#spec-错误判断的事实纠正" class="headerlink" title="spec 错误判断的事实纠正"></a>spec 错误判断的事实纠正</h3><p>6&#x2F;11 写的 spec 文档第 46 行断言 <code>setParkId(DEFAULT_PARK_ID)</code> 是”无效死代码”，<strong>这个判断是错的</strong>。我反复看了 <code>PassUserServiceImpl.synSysUserToPassUser()</code> 的源码后确认：这一行<strong>是有效过滤</strong>，它把同步范围限定在”番禺基地”。</p>
+<h3 id="业务正确性问题"><a href="#业务正确性问题" class="headerlink" title="业务正确性问题"></a>业务正确性问题</h3><p><code>DEFAULT_PARK_ID</code> 是番禺基地的硬编码。含义：<strong>所有非番禺基地的钉钉用户，pass_user 同步后不会出现</strong>。</p>
+<blockquote>
+<p>[!warning] 当前生产环境的潜在影响<br>现有 1161 个 sys_user 钉钉用户，假设大部分 park_id &#x3D; <code>284cd757...</code>（番禺基地），那 pass_user 同步功能基本正常。但如果：</p>
+<ol>
+<li>未来扩展到非番禺基地的新园区</li>
+<li>钉钉侧新增了非番禺基地的部门&#x2F;人员</li>
+<li>桥表里有非番禺基地的 org_id</li>
+</ol>
+<p>这些用户的 pass_user 记录<strong>永远不会出现</strong>，会直接影响 <code>/gateway/through/passUser/page</code> 接口的展示完整性。</p>
+</blockquote>
+<h3 id="测试方法学的反面案例"><a href="#测试方法学的反面案例" class="headerlink" title="测试方法学的反面案例"></a>测试方法学的反面案例</h3><p><strong>测试通过的 mock 数据</strong>：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;USERID&quot;</span><span class="punctuation">:</span> <span class="string">&quot;MOCK_TEST_PASS_003&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;DEPARTMENT&quot;</span><span class="punctuation">:</span> <span class="string">&quot;[136602494]&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;PDEPARTS&quot;</span><span class="punctuation">:</span> <span class="string">&quot;[[1, 136602494, 1]]&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p><code>136602494</code> 在桥表里映射到番禺基地 → <code>sys_user_park.park_id = 284cd757...</code> → 满足 <code>setParkId(DEFAULT_PARK_ID)</code> 过滤 → <strong>写入 pass_user</strong>。</p>
+<p><strong>测试失败的 mock 数据</strong>：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;USERID&quot;</span><span class="punctuation">:</span> <span class="string">&quot;MOCK_TEST_PASS_001&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;DEPARTMENT&quot;</span><span class="punctuation">:</span> <span class="string">&quot;[59096189]&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;PDEPARTS&quot;</span><span class="punctuation">:</span> <span class="string">&quot;[[1, 59096189, 1]]&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p><code>59096189</code> 不在桥表（之前测试硬删了）→ <code>sys_user_park.park_id = NULL</code> → <strong>被过滤</strong>。</p>
+<p><img src="/2026-06-12-pass-user-death-chain/assets/images/fig2_001.jpg" alt="421 条脏数据分布"><br><em>图2：421 条 NULL park_id 量化结果</em></p>
+<h2 id="第二阶段：死亡覆盖链的真正根因"><a href="#第二阶段：死亡覆盖链的真正根因" class="headerlink" title="第二阶段：死亡覆盖链的真正根因"></a>第二阶段：死亡覆盖链的真正根因</h2><h3 id="现象升级"><a href="#现象升级" class="headerlink" title="现象升级"></a>现象升级</h3><p>上午只判断了”setParkId(DEFAULT_PARK_ID) 是有效过滤”（事实纠正），下午继续深挖发现真正致命的是 admin 端 mapper 漏 SELECT 列表。</p>
+<p><code>pass_user.page</code> 接口（<code>POST /gateway/through/passUser/page</code>）按 parkId 过滤时，几乎所有数据都查不到（即使不是 NULL 的，parkId 也是错的）。</p>
+<h3 id="死亡覆盖链"><a href="#死亡覆盖链" class="headerlink" title="死亡覆盖链"></a>死亡覆盖链</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">sys_user 行 → UserMapperExt.xml listByConditionExt</span><br><span class="line">              → LEFT JOIN sys_user_park urp on u.user_id = urp.user_id</span><br><span class="line">              → SELECT u.user_id, u.user_name, ...  (漏了 urp.park_id!)</span><br><span class="line">              → UserDTO.parkId = null  (BaseResultMap 映射的字段没数据)</span><br><span class="line">              → line 478 passUserDTO.setParkId(user.getParkId())  →  null</span><br><span class="line">              → pass_user.park_id = NULL</span><br></pre></td></tr></table></figure>
+
+<p><strong>3 行代码的死亡覆盖链</strong>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// PassUserServiceImpl.java:445-478</span></span><br><span class="line"><span class="type">UserDTO</span> <span class="variable">userDTO</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">UserDTO</span>();</span><br><span class="line">userDTO.setParkId(DictConstants.DEFAULT_PARK_ID);  <span class="comment">// line 447: 设请求 parkId=番禺基地</span></span><br><span class="line">PagingCondition&lt;UserDTO&gt; pagingCondition = <span class="keyword">new</span> <span class="title class_">PagingCondition</span>&lt;&gt;();</span><br><span class="line">pagingCondition.setEntity(userDTO);</span><br><span class="line">Page&lt;UserDTO&gt; userPage = userClient.paging(pagingCondition).getData();</span><br><span class="line"><span class="comment">// 拿到 322 个番禺用户（userDTO.parkId 参与 WHERE 过滤）</span></span><br><span class="line"><span class="keyword">for</span> (UserDTO user : userPage.getRecords()) &#123;</span><br><span class="line">    <span class="type">PassUserDTO</span> <span class="variable">passUserDTO</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">PassUserDTO</span>();</span><br><span class="line">    passUserDTO.setParkId(user.getParkId());  <span class="comment">// line 478: user.parkId=NULL → 覆盖</span></span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>**为什么 line 447 看起来”起作用”但实际”无效”**：</p>
+<ul>
+<li>修复前 <code>setParkId(DEFAULT_PARK_ID)</code> 设的是 <code>userDTO.parkId = &quot;284cd757...&quot;</code> ✓</li>
+<li>admin-service WHERE 过滤：<code>urp.park_id = &#39;284cd757...&#39;</code> → 只返 322 个番禺用户 ✓</li>
+<li><strong>但 SELECT 没返回 park_id</strong> → userDTO.parkId 永远是 NULL ✗</li>
+<li>322 个番禺用户被 sync 进了 pass_user，<strong>但 park_id 全是 NULL</strong> ✗</li>
+</ul>
+<h3 id="量化脏数据"><a href="#量化脏数据" class="headerlink" title="量化脏数据"></a>量化脏数据</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> pu.real_name, pu.park_id, urp.park_id <span class="keyword">as</span> expected</span><br><span class="line"><span class="keyword">FROM</span> building_through.pass_user pu</span><br><span class="line"><span class="keyword">JOIN</span> building_admin.sys_user u <span class="keyword">ON</span> pu.sys_user_id <span class="operator">=</span> u.user_id</span><br><span class="line"><span class="keyword">JOIN</span> building_admin.sys_user_park urp <span class="keyword">ON</span> u.user_id <span class="operator">=</span> urp.user_id <span class="keyword">AND</span> urp.delete_flag <span class="operator">=</span> <span class="number">0</span></span><br><span class="line"><span class="keyword">WHERE</span> pu.park_id <span class="keyword">IS</span> <span class="keyword">NULL</span> <span class="keyword">OR</span> pu.park_id <span class="operator">!=</span> urp.park_id;</span><br><span class="line"><span class="comment">-- 命中 421 条，全是 pu.park_id = NULL</span></span><br></pre></td></tr></table></figure>
+
+<p>**421 条 <code>pass_user.park_id IS NULL</code>**，其中 <strong>322 条本应是番禺基地用户</strong>（park_id &#x3D; 284cd757…）。</p>
+<p><img src="/2026-06-12-pass-user-death-chain/assets/images/fig3_001.jpg" alt="UserMapperExt SQL 修复对比"><br><em>图3：UserMapperExt 漏 SELECT 列修复</em></p>
+<h2 id="修复方案"><a href="#修复方案" class="headerlink" title="修复方案"></a>修复方案</h2><h3 id="修复-1：让新-sync-的-pass-user-写入正确的-park-id"><a href="#修复-1：让新-sync-的-pass-user-写入正确的-park-id" class="headerlink" title="修复 1：让新 sync 的 pass_user 写入正确的 park_id"></a>修复 1：让新 sync 的 pass_user 写入正确的 park_id</h3><p><strong>改动文件 1</strong>：<code>UserMapperExt.xml</code></p>
+<p>SELECT 加 <code>,urp.park_id</code>，JOIN 改为子查询解决多园区用户重复问题：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">&lt;!-- 修改前 --&gt;</span></span><br><span class="line">SELECT DISTINCT u.user_id, u.user_name, ...</span><br><span class="line">FROM sys_user u</span><br><span class="line">LEFT JOIN sys_user_park urp on u.user_id = urp.user_id</span><br><span class="line"></span><br><span class="line"><span class="comment">&lt;!-- 修改后 --&gt;</span></span><br><span class="line">SELECT DISTINCT u.user_id, u.user_name, ..., urp.park_id</span><br><span class="line">FROM sys_user u</span><br><span class="line">LEFT JOIN (</span><br><span class="line">    SELECT user_id, MIN(park_id) as park_id</span><br><span class="line">    FROM sys_user_park</span><br><span class="line">    GROUP BY user_id</span><br><span class="line">) urp on u.user_id = urp.user_id</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>[!note] 为什么用子查询而不是直接 LEFT JOIN<br>同一个 user 可能在多个园区（<code>sys_user_park</code> 一对多），直接 LEFT JOIN 会让用户被 DISTINCT 出去后<strong>任一园区的 park_id 都可能漏选</strong>。子查询 <code>MIN(park_id) GROUP BY user_id</code> 保证每个 user 拿到一个<strong>确定的</strong> park_id 值。</p>
+</blockquote>
+<p>**故意不加 <code>WHERE delete_flag=&#39;0&#39;</code>**，与原 LEFT JOIN 行为一致（保持不过滤是原行为，加了反而引入行为变更）。</p>
+<p><strong>改动文件 2</strong>：<code>PassUserServiceImpl.java</code></p>
+<p>注释掉 line 447 <code>setParkId(DEFAULT_PARK_ID)</code>，让扫描覆盖所有园区：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// line 445-448</span></span><br><span class="line"><span class="comment">// 临时注释掉 setParkId：让扫描覆盖所有园区，配合 admin 端 mapper 改动让 pass_user 拿真实 parkId</span></span><br><span class="line"><span class="comment">// userDTO.setParkId(DictConstants.DEFAULT_PARK_ID);   &lt;!-- 注释 --&gt;</span></span><br><span class="line">PagingCondition&lt;UserDTO&gt; pagingCondition = <span class="keyword">new</span> <span class="title class_">PagingCondition</span>&lt;&gt;();</span><br><span class="line"><span class="type">UserDTO</span> <span class="variable">userDTO</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">UserDTO</span>();</span><br><span class="line">userDTO.setDeleteFlag(DictConstants.DEL_FLAG_NO);</span><br></pre></td></tr></table></figure>
+
+<h3 id="修复-2：清理-321-条历史-NULL-park-id-数据"><a href="#修复-2：清理-321-条历史-NULL-park-id-数据" class="headerlink" title="修复 2：清理 321 条历史 NULL park_id 数据"></a>修复 2：清理 321 条历史 NULL park_id 数据</h3><blockquote>
+<p>[!warning] 增量同步对历史脏数据无效<br>修复后 <code>synSysUserToPassUser</code> 走增量逻辑：<code>if (!userIds.contains(user.getUserId()))</code> 跳过已有。后果：<strong>321 个老 NULL park_id 的番禺用户永远不会被更新</strong>。必须单独 UPDATE。</p>
+</blockquote>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">UPDATE</span> pass_user pu</span><br><span class="line"><span class="keyword">JOIN</span> building_admin.sys_user u <span class="keyword">ON</span> pu.sys_user_id <span class="operator">=</span> u.user_id</span><br><span class="line"><span class="keyword">JOIN</span> building_admin.sys_user_park urp <span class="keyword">ON</span> u.user_id <span class="operator">=</span> urp.user_id <span class="keyword">AND</span> urp.delete_flag <span class="operator">=</span> <span class="number">0</span></span><br><span class="line"><span class="keyword">SET</span> pu.park_id <span class="operator">=</span> urp.park_id</span><br><span class="line"><span class="keyword">WHERE</span> pu.park_id <span class="keyword">IS</span> <span class="keyword">NULL</span>;</span><br><span class="line"><span class="comment">-- 预期: 更新 321 条（322 个番禺 - 1 个 MOCK_MIN_001 = 321）</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="验证证据"><a href="#验证证据" class="headerlink" title="验证证据"></a>验证证据</h3><p><strong>修复后跑一次 <code>synSysUserToPassUser</code>，268 条新 pass_user 完美匹配 sys_user_park.park_id</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>pass_user.real_name</th>
+<th>pass_user.park_id</th>
+<th>sys_user_park.park_id</th>
+<th>匹配</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>李泓希</td>
+<td>59258e4f…</td>
+<td>59258e4f…</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>陈启操</td>
+<td>a69dd3d6…</td>
+<td>a69dd3d6…</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>消防巡检卡</td>
+<td>a69dd3d6…</td>
+<td>a69dd3d6…</td>
+<td>✅</td>
+</tr>
+</tbody></table>
+<p><strong>Page 接口验证</strong>（parkId&#x3D;番禺基地 过滤）：</p>
+<ul>
+<li>修复前：<code>totalCount=0</code>（pass_user.park_id 全是 NULL，过滤后空集）</li>
+<li>修复后：<code>totalCount=2</code> (MOCK_MIN_001 + MOCK_PANYU_001)</li>
+</ul>
+<h2 id="4-个踩坑总结"><a href="#4-个踩坑总结" class="headerlink" title="4 个踩坑总结"></a>4 个踩坑总结</h2><h3 id="坑-1：line-478-setParkId-user-getParkId-永远会覆盖-line-447"><a href="#坑-1：line-478-setParkId-user-getParkId-永远会覆盖-line-447" class="headerlink" title="坑 1：line 478 setParkId(user.getParkId()) 永远会覆盖 line 447"></a>坑 1：line 478 setParkId(user.getParkId()) 永远会覆盖 line 447</h3><p>表面上 <code>setParkId(DEFAULT_PARK_ID)</code> 像是”死代码”——其实<strong>判断方向反了</strong>：</p>
+<ul>
+<li>错判断：line 447 是死代码，没生效</li>
+<li>真实：line 447 有效（WHERE 过滤返 322 个番禺用户），但 line 478 用 NULL 覆盖了 park_id 字段</li>
+<li>后果：322 个番禺 user 进了 pass_user，但 park_id 是 NULL</li>
+</ul>
+<p><strong>教训</strong>：判断”代码无效”前必须<strong>先 trace 完整的 setter → 调用 → mapper → 落库链路</strong>。</p>
+<h3 id="坑-2：spec-plan-阶段误判-BaseResultMap-缺-park-id-映射"><a href="#坑-2：spec-plan-阶段误判-BaseResultMap-缺-park-id-映射" class="headerlink" title="坑 2：spec&#x2F;plan 阶段误判 BaseResultMap 缺 park_id 映射"></a>坑 2：spec&#x2F;plan 阶段误判 BaseResultMap 缺 park_id 映射</h3><ul>
+<li>spec 写”改 2 个文件 4 处”，但 plan 写了”改 3 个文件”（多了 UserMapper.xml）</li>
+<li>实际查证 BaseResultMap line 30-31 已经有 <code>&lt;result column=&quot;park_id&quot; property=&quot;parkId&quot; jdbcType=&quot;VARCHAR&quot;/&gt;</code></li>
+<li>教训：<strong>写 plan 前先 <code>grep</code> 实际文件，不要凭印象判断</strong></li>
+</ul>
+<h3 id="坑-3：增量同步对历史脏数据无效"><a href="#坑-3：增量同步对历史脏数据无效" class="headerlink" title="坑 3：增量同步对历史脏数据无效"></a>坑 3：增量同步对历史脏数据无效</h3><ul>
+<li>修复前 sync 写了 421 条 NULL park_id 的 pass_user</li>
+<li>修复后 <code>synSysUserToPassUser</code> 走增量逻辑，跳过已有</li>
+<li>后果：321 个老 NULL park_id 的番禺 user 永远不会被更新</li>
+<li>教训：<strong>所有”增量同步”逻辑对老数据无效</strong>，必须单独 UPDATE 或 DELETE 重建</li>
+</ul>
+<h3 id="坑-4：MyBatis-子查询行为一致性"><a href="#坑-4：MyBatis-子查询行为一致性" class="headerlink" title="坑 4：MyBatis 子查询行为一致性"></a>坑 4：MyBatis 子查询行为一致性</h3><ul>
+<li>新子查询 <code>LEFT JOIN (SELECT user_id, MIN(park_id) FROM sys_user_park GROUP BY user_id) urp</code></li>
+<li>故意不加 <code>WHERE delete_flag=&#39;0&#39;</code>，与原 <code>LEFT JOIN sys_user_park urp</code>（不过滤）行为一致</li>
+<li>原则：<strong>修复不要引入额外行为变更</strong></li>
+</ul>
+<h2 id="排查方法论"><a href="#排查方法论" class="headerlink" title="排查方法论"></a>排查方法论</h2><ul>
+<li><strong>返回值优先</strong>：<code>synSysUserToPassUser</code> 返回 335 直接告诉我是过滤问题（写入了 335 个番禺用户，只是 mock 用户没在里面）。<strong>永远先看返回值再下结论</strong></li>
+<li><strong>完整 trace</strong>：从 controller → service → mapper → generic XML，每一层都要追到。这次 line 478 的 NULL 来自 6&#x2F;10 的 mapper 改动，跨 3 天的代码层才暴露</li>
+<li><strong>脏数据量化</strong>：发现 bug 后<strong>第一件事</strong>是量化脏数据量（”421 条 NULL，其中 322 条是番禺”）。这决定了修复优先级和清理工作量</li>
+</ul>
+<h2 id="代码规范"><a href="#代码规范" class="headerlink" title="代码规范"></a>代码规范</h2><ul>
+<li>“看起来无效”和”无效”是两回事。遇到可疑代码，必须<strong>追到底</strong>——读 caller 的实现才能判断”它真的没用”还是”它就是过滤条件”</li>
+<li>spec 写下”无效死代码”前应该能引用具体证据（哪行覆盖、哪行忽略）。6&#x2F;11 spec 没给证据就下了结论，6&#x2F;12 集成测试推翻</li>
+<li>写代码、读代码、写 spec、读 spec，<strong>每一个环节都可能引入错误</strong>。6&#x2F;11 我同时是实现者和 spec 写作者，<strong>缺乏第二视角</strong>。建议以后 spec 写完、实现开始前，让另一个人过一遍 spec 的事实性判断</li>
+</ul>
+<h2 id="测试覆盖"><a href="#测试覆盖" class="headerlink" title="测试覆盖"></a>测试覆盖</h2><ul>
+<li>集成测试的”端到端”必须真的”端到端”——从 mock 入口到最终落库表，<strong>每一张表都查一遍</strong>。这次只查了 <code>pass_user</code> 没查 <code>sys_user_park</code>，导致没发现 mapper 的 SELECT 漏列</li>
+<li>测试场景要包含”数据正确性”：除了”有没有写”，还要查”写得对不对”（pass_user.park_id 是不是等于 sys_user_park.park_id）</li>
+</ul>
+<h2 id="业务影响"><a href="#业务影响" class="headerlink" title="业务影响"></a>业务影响</h2><blockquote>
+<p>[!note] 影响范围<br>修复后所有<strong>新写入</strong>的 pass_user.park_id 都是正确的。<strong>但历史 321 条 NULL 数据</strong>需要单独清理（在运维窗口统一处理）。在清理完成前，<code>/gateway/through/passUser/page</code> 按 parkId 过滤会少返回 321 个番禺用户。</p>
+</blockquote>
+<h2 id="待办事项"><a href="#待办事项" class="headerlink" title="待办事项"></a>待办事项</h2><ul>
+<li><input disabled="" type="checkbox"> <strong>清理 321 条历史 NULL park_id 数据</strong>（运维窗口统一处理）</li>
+<li><input disabled="" type="checkbox"> <strong>验证 Page 接口的完整性</strong>：在历史数据清理后，重新跑一次 <code>parkId=番禺基地</code> 过滤，确认 totalCount 包含 322 条</li>
+<li><input disabled="" type="checkbox"> <strong>修改 spec 文档第 46 行</strong>（必改）：把”无效死代码”改成”有效过滤 + 行为约束”</li>
+<li><input disabled="" type="checkbox"> <strong>新提 issue&#x2F;spec</strong>：”pass_user 同步支持多园区”——调研其他园区 pass_user 是怎么同步的，再决定是否去掉 <code>setParkId(DEFAULT_PARK_ID)</code> 这一行</li>
+</ul>
+<h2 id="关键代码位置"><a href="#关键代码位置" class="headerlink" title="关键代码位置"></a>关键代码位置</h2><ul>
+<li><code>service-provider/admin-service/src/main/resources/mapper/UserMapperExt.xml:7-37</code> — SELECT + JOIN 改子查询</li>
+<li><code>service-provider/through-service/src/main/java/cn/csg/building/through/service/impl/PassUserServiceImpl.java:447</code> — 注释掉 setParkId</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/MyBatis/" rel="tag"># MyBatis</a>
+              <a href="/tags/%E9%9B%86%E6%88%90%E6%B5%8B%E8%AF%95/" rel="tag"># 集成测试</a>
+              <a href="/tags/%E5%A4%9A%E5%9B%AD%E5%8C%BA/" rel="tag"># 多园区</a>
+              <a href="/tags/%E6%AD%BB%E4%BA%A1%E8%A6%86%E7%9B%96%E9%93%BE/" rel="tag"># 死亡覆盖链</a>
+              <a href="/tags/Bug%E4%BF%AE%E5%A4%8D/" rel="tag"># Bug修复</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/06/11/2026-06-11-ding-park-bind/" rel="prev" title="钉钉同步写 sys_user_park + 园区绑定一级公司：从功能到 OGNL 经典踩坑">
+                  <i class="fa fa-angle-left"></i> 钉钉同步写 sys_user_park + 园区绑定一级公司：从功能到 OGNL 经典踩坑
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2026/06/15/2026-06-15-pass-user-fields-and-org-tree/" rel="next" title="pass_user 字段同步 + 人员列表联动 + 代码审查：折中方案与前端 import 来源踩坑">
+                  pass_user 字段同步 + 人员列表联动 + 代码审查：折中方案与前端 import 来源踩坑 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  
+  <div class="comments giscus-container">
+  </div>
+  
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">zhlifeiy35</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/zhdmm35" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"zhdmm35/zhdmm35.github.io","repo_id":"R_kgDOON4bhg","category":"Announcements","category_id":"DIC_kwDOON4bhs4C3dEc","mapping":"pathname","strict":0,"reactions_enabled":1,"emit_metadata":0,"theme":"preferred_color_scheme","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+
+<script>
+document.addEventListener('page:loaded', () => {
+  if (!CONFIG.page.comments) return;
+
+  NexT.utils.loadComments('.giscus-container')
+    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
+      attributes: {
+        async                   : true,
+        crossOrigin             : 'anonymous',
+        'data-repo'             : CONFIG.giscus.repo,
+        'data-repo-id'          : CONFIG.giscus.repo_id,
+        'data-category'         : CONFIG.giscus.category,
+        'data-category-id'      : CONFIG.giscus.category_id,
+        'data-mapping'          : CONFIG.giscus.mapping,
+        'data-strict'           : CONFIG.giscus.strict,
+        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
+        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
+        'data-theme'            : CONFIG.giscus.theme,
+        'data-lang'             : CONFIG.giscus.lang,
+        'data-input-position'   : CONFIG.giscus.input_position,
+        'data-loading'          : CONFIG.giscus.loading
+      },
+      parentNode: document.querySelector('.giscus-container')
+    }));
+});
+</script>
+
+</body>
+</html>

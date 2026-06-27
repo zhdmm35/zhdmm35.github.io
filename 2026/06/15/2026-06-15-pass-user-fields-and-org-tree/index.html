@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="导读 今天三个主题：钉钉同步补 pass_user 的手机号和部门（折中方案）、人员列表页面部门下拉按园区联动（前端 import 来源同名坑）、代码审查记录（已合并改动）。其中最值得记录的是折中方案的取舍——为什么”换部门同步”主动放弃，以及前端 import 同名函数指向不同后端接口这种隐蔽问题。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="pass_user 字段同步 + 人员列表联动 + 代码审查：折中方案与前端 import 来源踩坑">
+<meta property="og:url" content="https://zhlifeiy.codes/2026/06/15/2026-06-15-pass-user-fields-and-org-tree/index.html">
+<meta property="og:site_name" content="我的技术博客">
+<meta property="og:description" content="导读 今天三个主题：钉钉同步补 pass_user 的手机号和部门（折中方案）、人员列表页面部门下拉按园区联动（前端 import 来源同名坑）、代码审查记录（已合并改动）。其中最值得记录的是折中方案的取舍——为什么”换部门同步”主动放弃，以及前端 import 同名函数指向不同后端接口这种隐蔽问题。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/2026-06-15-pass-user-fields-and-org-tree_001.jpg">
+<meta property="article:published_time" content="2026-06-15T08:00:00.000Z">
+<meta property="article:modified_time" content="2026-06-27T14:12:55.185Z">
+<meta property="article:author" content="zhlifeiy35">
+<meta property="article:tag" content="钉钉同步">
+<meta property="article:tag" content="折中方案">
+<meta property="article:tag" content="Vue">
+<meta property="article:tag" content="代码审查">
+<meta property="article:tag" content="部门联动">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/2026-06-15-pass-user-fields-and-org-tree_001.jpg">
+
+
+<link rel="canonical" href="https://zhlifeiy.codes/2026/06/15/2026-06-15-pass-user-fields-and-org-tree/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://zhlifeiy.codes/2026/06/15/2026-06-15-pass-user-fields-and-org-tree/","path":"2026/06/15/2026-06-15-pass-user-fields-and-org-tree/","title":"pass_user 字段同步 + 人员列表联动 + 代码审查：折中方案与前端 import 来源踩坑"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>pass_user 字段同步 + 人员列表联动 + 代码审查：折中方案与前端 import 来源踩坑 | 我的技术博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">我的技术博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">记录学习与成长</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-guestbook"><a href="/guestbook/" rel="section"><i class="fa fa-comment-dots fa-fw"></i>留言板</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%BC%E8%AF%BB"><span class="nav-number">1.</span> <span class="nav-text">导读</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link"><span class="nav-number">1.0.1.</span> <span class="nav-text">🎧 文章导读</span></a></li><li class="nav-item nav-level-4"><a class="nav-link"><span class="nav-number">1.0.2.</span> <span class="nav-text">🎵 背景音乐</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">2.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Part-1%EF%BC%9A%E6%8A%98%E4%B8%AD%E6%96%B9%E6%A1%88%E9%80%89%E5%9E%8B"><span class="nav-number">3.</span> <span class="nav-text">Part 1：折中方案选型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%8C%E6%95%B4%E6%96%B9%E6%A1%88%E8%A6%81%E6%94%B9-3-%E5%A4%84%EF%BC%8C%E5%85%B6%E4%B8%AD-admin-%E9%87%8D%E5%BB%BA%E6%9C%80%E9%BA%BB%E7%83%A6"><span class="nav-number">3.1.</span> <span class="nav-text">完整方案要改 3 处，其中 admin 重建最麻烦</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E9%80%89%E6%8B%A9%E6%8A%98%E4%B8%AD"><span class="nav-number">3.2.</span> <span class="nav-text">为什么选择折中</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8D%95%E4%BD%8D-%E9%83%A8%E9%97%A8%E7%9A%84%E5%85%B3%E7%B3%BB%EF%BC%9A%E5%89%8D%E7%AB%AF%E6%90%9E%E5%AE%9A%EF%BC%8C%E5%90%8E%E7%AB%AF%E5%8F%AA%E5%AD%98%E4%B8%80%E4%B8%AA-org-id"><span class="nav-number">3.3.</span> <span class="nav-text">单位&#x2F;部门的关系：前端搞定，后端只存一个 org_id</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Part-2%EF%BC%9A%E5%AE%9E%E7%8E%B0"><span class="nav-number">4.</span> <span class="nav-text">Part 2：实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%94%B9%E5%8A%A8-1%EF%BC%9Aadmin-%E8%AE%A9-paging-%E5%B8%A6%E5%87%BA%E9%83%A8%E9%97%A8-org-id"><span class="nav-number">4.1.</span> <span class="nav-text">改动 1：admin 让 paging 带出部门 org_id</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%94%B9%E5%8A%A8-2%EF%BC%9Athrough-%E5%8A%A0-UPDATE-%E5%88%86%E6%94%AF-INSERT-%E8%A1%A5-org-id"><span class="nav-number">4.2.</span> <span class="nav-text">改动 2：through 加 UPDATE 分支 + INSERT 补 org_id</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#reviewer-%E5%BB%BA%E8%AE%AE%E5%8A%A0-Transactional-%E2%80%94%E2%80%94-%E4%B8%8D%E8%83%BD%E5%8A%A0"><span class="nav-number">4.3.</span> <span class="nav-text">reviewer 建议加 @Transactional —— 不能加</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E4%B8%8E%E9%AA%8C%E8%AF%81"><span class="nav-number">4.4.</span> <span class="nav-text">测试与验证</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8A%98%E4%B8%AD%E6%96%B9%E6%A1%88%E7%9A%84%E4%BB%A3%E4%BB%B7"><span class="nav-number">4.5.</span> <span class="nav-text">折中方案的代价</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Part-3%EF%BC%9A%E4%BA%BA%E5%91%98%E5%88%97%E8%A1%A8%E9%83%A8%E9%97%A8%E4%B8%8B%E6%8B%89%E6%8C%89%E5%9B%AD%E5%8C%BA%E8%81%94%E5%8A%A8"><span class="nav-number">5.</span> <span class="nav-text">Part 3：人员列表部门下拉按园区联动</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%9C%80%E6%B1%82"><span class="nav-number">5.1.</span> <span class="nav-text">需求</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B0%83%E7%94%A8%E9%93%BE%EF%BC%88trace-%E5%88%B0-mapper%EF%BC%89"><span class="nav-number">5.2.</span> <span class="nav-text">调用链（trace 到 mapper）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B3%E9%94%AE%E8%B8%A9%E5%9D%91%EF%BC%9A%E5%89%8D%E7%AB%AF%E5%90%8C%E5%90%8D-organizationTree-%E6%8C%87%E5%90%91%E4%B8%A4%E4%B8%AA%E4%B8%8D%E5%90%8C%E7%9A%84%E5%90%8E%E7%AB%AF%E6%8E%A5%E5%8F%A3"><span class="nav-number">5.3.</span> <span class="nav-text">关键踩坑：前端同名 organizationTree 指向两个不同的后端接口</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%80%E7%BB%88%E6%94%B9%E5%8A%A8%EF%BC%883-%E5%A4%84%EF%BC%89"><span class="nav-number">5.4.</span> <span class="nav-text">最终改动（3 处）</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-%E5%90%8E%E7%AB%AF%EF%BC%9AparkId-%E5%85%9C%E5%BA%95"><span class="nav-number">5.4.1.</span> <span class="nav-text">1. 后端：parkId 兜底</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-%E5%89%8D%E7%AB%AF%EF%BC%9AallocateOrg-%E5%8F%82%E6%95%B0%E5%8C%96"><span class="nav-number">5.4.2.</span> <span class="nav-text">2. 前端：allocateOrg 参数化</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-%E5%89%8D%E7%AB%AF%EF%BC%9Aimport-%E6%9D%A5%E6%BA%90%E4%BF%AE%E6%AD%A3"><span class="nav-number">5.4.3.</span> <span class="nav-text">3. 前端：import 来源修正</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%AA%8C%E8%AF%81"><span class="nav-number">5.5.</span> <span class="nav-text">验证</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B7%B2%E7%9F%A5%E9%99%90%E5%88%B6"><span class="nav-number">5.6.</span> <span class="nav-text">已知限制</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Part-4%EF%BC%9A%E4%BB%A3%E7%A0%81%E5%AE%A1%E6%9F%A5%E8%AE%B0%E5%BD%95"><span class="nav-number">6.</span> <span class="nav-text">Part 4：代码审查记录</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-UserMapperExt-xml-%E2%80%94-listByConditionExt-%E8%A1%A5%E9%83%A8%E9%97%A8-org-id"><span class="nav-number">6.1.</span> <span class="nav-text">1. UserMapperExt.xml — listByConditionExt 补部门 org_id</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-PassUserServiceImpl-java-%E2%80%94-synSysUserToPassUser-%E8%A1%A5-orgId-UPDATE-%E5%88%86%E6%94%AF"><span class="nav-number">6.2.</span> <span class="nav-text">2. PassUserServiceImpl.java — synSysUserToPassUser 补 orgId + UPDATE 分支</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%8F%E9%AA%8C%E6%80%BB%E7%BB%93"><span class="nav-number">7.</span> <span class="nav-text">经验总结</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8A%98%E4%B8%AD%E6%96%B9%E6%A1%88%E6%98%AF%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5%E7%9A%84%E6%A0%B8%E5%BF%83"><span class="nav-number">7.1.</span> <span class="nav-text">折中方案是工程实践的核心</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%89%8D%E7%AB%AF-import-%E5%90%8C%E5%90%8D%E5%87%BD%E6%95%B0%E7%9A%84%E9%9A%90%E8%94%BD%E6%80%A7"><span class="nav-number">7.2.</span> <span class="nav-text">前端 import 同名函数的隐蔽性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Transactional-%E4%B8%8D%E6%98%AF%E4%B8%87%E8%83%BD%E8%8D%AF"><span class="nav-number">7.3.</span> <span class="nav-text">@Transactional 不是万能药</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8A%98%E4%B8%AD%E6%96%B9%E6%A1%88%E8%A6%81%E6%9C%89%E2%80%9D%E5%9B%9E%E5%A4%B4%E8%A1%A5%E2%80%9D%E7%9A%84%E8%B7%AF%E5%BE%84"><span class="nav-number">7.4.</span> <span class="nav-text">折中方案要有”回头补”的路径</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B3%E8%81%94"><span class="nav-number">8.</span> <span class="nav-text">关联</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zhlifeiy35</p>
+  <div class="site-description" itemprop="description">分享编程技术、AI经验、学习笔记</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">51</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">175</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zhdmm35" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zhdmm35" rel="noopener me" target="_blank"><i class="fa fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/2026-06-15-pass-user-fields-and-org-tree_001.jpg" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/06/15/2026-06-15-pass-user-fields-and-org-tree/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="我的技术博客">
+      <meta itemprop="description" content="分享编程技术、AI经验、学习笔记">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="pass_user 字段同步 + 人员列表联动 + 代码审查：折中方案与前端 import 来源踩坑 | 我的技术博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          pass_user 字段同步 + 人员列表联动 + 代码审查：折中方案与前端 import 来源踩坑
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-06-15 16:00:00" itemprop="dateCreated datePublished" datetime="2026-06-15T16:00:00+08:00">2026-06-15</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-06-27 22:12:55" itemprop="dateModified" datetime="2026-06-27T22:12:55+08:00">2026-06-27</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">后端开发</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E5%8D%97%E7%BD%91%E9%A1%B9%E7%9B%AE/" itemprop="url" rel="index"><span itemprop="name">南网项目</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="导读"><a href="#导读" class="headerlink" title="导读"></a>导读</h2><blockquote>
+<p>今天三个主题：钉钉同步补 pass_user 的手机号和部门（折中方案）、人员列表页面部门下拉按园区联动（前端 import 来源同名坑）、代码审查记录（已合并改动）。其中<strong>最值得记录的是折中方案的取舍</strong>——为什么”换部门同步”主动放弃，以及<strong>前端 import 同名函数指向不同后端接口</strong>这种隐蔽问题。</p>
+</blockquote>
+<span id="more"></span>
+
+<div class="audio-player">
+  <div class="audio-section">
+    <h4>🎧 文章导读</h4>
+    <audio controls preload="metadata">
+      <source src="/2026-06-15-pass-user-fields-and-org-tree/narration.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+  <div class="audio-section">
+    <h4>🎵 背景音乐</h4>
+    <audio controls loop preload="metadata">
+      <source src="/2026-06-15-pass-user-fields-and-org-tree/bgm.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+</div>
+
+<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>钉钉同步的核心链路跑通后，<code>pass_user</code> 还缺两个字段：手机号、部门。看似简单的同步需求，挖下去发现要做完”完美方案”得改 3 处，且 admin 重建组织关系是拦路虎。</p>
+<p>同时前端人员列表部门下拉一直不能按所选园区联动——表面看是后端 bug，深入 trace 发现是<strong>前端 import 来源错了</strong>：<code>organizationTree</code> 同名函数在不同文件，调的是不同后端接口。</p>
+<p><img src="/2026-06-15-pass-user-fields-and-org-tree/assets/images/fig1_001.jpg" alt="折中方案示意图"><br><em>图1：折中方案示意图</em></p>
+<h2 id="Part-1：折中方案选型"><a href="#Part-1：折中方案选型" class="headerlink" title="Part 1：折中方案选型"></a>Part 1：折中方案选型</h2><h3 id="完整方案要改-3-处，其中-admin-重建最麻烦"><a href="#完整方案要改-3-处，其中-admin-重建最麻烦" class="headerlink" title="完整方案要改 3 处，其中 admin 重建最麻烦"></a>完整方案要改 3 处，其中 admin 重建最麻烦</h3><p>要让”已有钉钉人员换部门”也同步到 pass_user，需要打通三处：</p>
+<ol>
+<li><strong>admin 侧重建组织关系</strong> — <code>UserSyncServiceImpl</code> 第 225 行至今是个 <code>TODO</code>：钉钉用户换部门时，<code>sys_user_organization</code> 根本没被更新</li>
+<li><strong>paging 查询把 org_id 带出来</strong> — pass_user 同步是重新分页查 sys_user，而 <code>listByConditionExt</code> SELECT 里没有 org_id</li>
+<li><strong>pass_user 加 UPDATE 分支</strong> — 原方法只有 INSERT</li>
+</ol>
+<p>第 1 处是拦路虎：admin 的组织重建涉及软删旧关联、批量重建，还要顾及用户列表页等共用 <code>listByConditionExt</code> 的逻辑，改动面大、容易碰坏别处。</p>
+<h3 id="为什么选择折中"><a href="#为什么选择折中" class="headerlink" title="为什么选择折中"></a>为什么选择折中</h3><p>评估下来：手机号更新只差第 3 处（1 处），部门更新要三处全做。考虑到<strong>换部门是低频事件</strong>，而 admin 重建的风险和工作量都不划算，最终选择：</p>
+<ul>
+<li>✅ 手机号更新（已有人员改号 → 同步）</li>
+<li>✅ 新人部门首次写入（首次进 pass_user 就带上 org_id）</li>
+<li>✅ 顺带补齐历史空 org_id</li>
+<li>❌ <strong>已有人员换部门 → 不同步</strong>（接受这个误差，留到以后再做 admin 重建）</li>
+</ul>
+<h3 id="单位-部门的关系：前端搞定，后端只存一个-org-id"><a href="#单位-部门的关系：前端搞定，后端只存一个-org-id" class="headerlink" title="单位&#x2F;部门的关系：前端搞定，后端只存一个 org_id"></a>单位&#x2F;部门的关系：前端搞定，后端只存一个 org_id</h3><p>排查中发现页面上”所属部门”显示成两级（如 <code>西部检修试验分公司 &gt; 电气一次检修部</code>），一度以为要存两个字段。查清楚后发现：</p>
+<ul>
+<li><code>sys_organization</code> 是树结构（有 <code>parent_id</code>），部门是子级、公司是父级</li>
+<li>这个两级显示是<strong>前端</strong>做的——后端只返回 <code>org_id</code>，前端 <code>getParentNames</code>（<code>staffList.vue:2630</code>）沿 <code>parent_id</code> 往上爬拼出来</li>
+<li>所以 <code>pass_user</code> 只需存<strong>部门 org_id</strong>（子级），单位自动从树推出来，<strong>不用加列、不用单独同步单位</strong></li>
+</ul>
+<h2 id="Part-2：实现"><a href="#Part-2：实现" class="headerlink" title="Part 2：实现"></a>Part 2：实现</h2><h3 id="改动-1：admin-让-paging-带出部门-org-id"><a href="#改动-1：admin-让-paging-带出部门-org-id" class="headerlink" title="改动 1：admin 让 paging 带出部门 org_id"></a>改动 1：admin 让 paging 带出部门 org_id</h3><p><code>UserMapperExt.xml</code> 的 <code>listByConditionExt</code> 仿照已有的 <code>park_id</code> 子查询，加一个把用户<strong>部门 org_id</strong> 带出来的子查询。关键是”怎么取到部门那行”——钉钉用户的 org 是 <code>[部门, 公司]</code>，取 <code>parent_id</code> 非空的子级就是部门（公司是顶级、parent 为空）：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 部门 org_id：钉钉用户 org 为 [部门, 公司]，取 parent_id 非空的子级 */</span></span><br><span class="line"><span class="keyword">LEFT</span> <span class="keyword">JOIN</span> (</span><br><span class="line">    <span class="keyword">SELECT</span> uo2.user_id, <span class="built_in">MIN</span>(uo2.org_id) <span class="keyword">AS</span> org_id</span><br><span class="line">    <span class="keyword">FROM</span> sys_user_organization uo2</span><br><span class="line">    <span class="keyword">JOIN</span> sys_organization o2 <span class="keyword">ON</span> o2.org_id <span class="operator">=</span> uo2.org_id <span class="keyword">AND</span> o2.delete_flag <span class="operator">=</span> <span class="string">&#x27;0&#x27;</span></span><br><span class="line">    <span class="keyword">WHERE</span> uo2.delete_flag <span class="operator">=</span> <span class="string">&#x27;0&#x27;</span> <span class="keyword">AND</span> o2.parent_id <span class="keyword">IS</span> <span class="keyword">NOT NULL</span> <span class="keyword">AND</span> o2.parent_id <span class="operator">&lt;&gt;</span> <span class="string">&#x27;&#x27;</span></span><br><span class="line">    <span class="keyword">GROUP</span> <span class="keyword">BY</span> uo2.user_id</span><br><span class="line">) uorg <span class="keyword">ON</span> u.user_id <span class="operator">=</span> uorg.user_id</span><br></pre></td></tr></table></figure>
+
+<p>这里用聚合子查询（每用户聚出一行）而不是直接 JOIN，是为了避免一个用户有多条 org 关联时把主查询的行数撑爆——这是借鉴旁边 <code>park_id</code> 子查询的成熟写法。</p>
+<h3 id="改动-2：through-加-UPDATE-分支-INSERT-补-org-id"><a href="#改动-2：through-加-UPDATE-分支-INSERT-补-org-id" class="headerlink" title="改动 2：through 加 UPDATE 分支 + INSERT 补 org_id"></a>改动 2：through 加 UPDATE 分支 + INSERT 补 org_id</h3><p><code>PassUserServiceImpl.synSysUserToPassUser</code> 原来只有”新人 INSERT”。改成 INSERT + UPDATE 两条路，并且 UPDATE 加了<strong>脏检查</strong>——只有手机号变了、或 org_id 需要补，才进更新队列：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">String</span> <span class="variable">newPhone</span> <span class="operator">=</span> EncryptionUtils.phoneEncryptToHex(user.getPhone());</span><br><span class="line"><span class="type">boolean</span> <span class="variable">phoneChanged</span> <span class="operator">=</span> !Objects.equals(existing.getPhone(), newPhone);</span><br><span class="line"><span class="type">boolean</span> <span class="variable">orgNeedsFill</span> <span class="operator">=</span> StringUtils.isBlank(existing.getOrgId())</span><br><span class="line">        &amp;&amp; StringUtils.isNotBlank(user.getOrgId());</span><br><span class="line"><span class="keyword">if</span> (phoneChanged || orgNeedsFill) &#123;</span><br><span class="line">    <span class="comment">// ...构造 upd：setId/setPhone/setOrgId(若需)/标 distSyncStatus=PENDING/setUpdateTime...</span></span><br><span class="line">    toUpdate.add(upd);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>[!warning] 为什么必须做脏检查<br>如果无脑把所有关联用户都标 <code>distSyncStatus=PENDING</code>，每次钉钉同步都会触发<strong>全员分区&#x2F;设备重同步</strong>——哪怕没一个人变。脏检查确保只有真正变化的才重标 PENDING。</p>
+</blockquote>
+<h3 id="reviewer-建议加-Transactional-——-不能加"><a href="#reviewer-建议加-Transactional-——-不能加" class="headerlink" title="reviewer 建议加 @Transactional —— 不能加"></a>reviewer 建议加 @Transactional —— 不能加</h3><p>code review 时有人建议给 <code>synSysUserToPassUser</code> 加 <code>@Transactional</code> 保证原子性。<strong>这条不能采纳</strong>：该方法在 for 循环里调了 Feign <code>userClient.paging()</code>，整方法加事务等于<strong>在数据库事务里夹网络 IO</strong>——事务在等 HTTP 返回时一直占着连接和锁，是明确的反模式。真要原子性，得把两次 batch 写抽到独立的事务方法里，但不划算（这方法本身可重入、失败下次自愈）。</p>
+<h3 id="测试与验证"><a href="#测试与验证" class="headerlink" title="测试与验证"></a>测试与验证</h3><p>由于 dev 库没有真实钉钉用户，用 <code>POST /sync/mockDingUserSync</code> 注入测试用户（部门用真实存在的 <code>136541718</code> 电气一次检修部）。三条路径实测全绿：</p>
+<table>
+<thead>
+<tr>
+<th>路径</th>
+<th>验证</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>INSERT 新人</td>
+<td>pass_user 写入 phone + <strong>org_id&#x3D;136541718</strong>（以前会是空）</td>
+</tr>
+<tr>
+<td>UPDATE 改手机号</td>
+<td>phone 跟着变、<code>distSyncStatus=PENDING</code>、update_time 刷新</td>
+</tr>
+<tr>
+<td>UPDATE 补空 org_id</td>
+<td>真实用户”蓝文文”org_id 从 null → 61955385（外部厂家）</td>
+</tr>
+</tbody></table>
+<h3 id="折中方案的代价"><a href="#折中方案的代价" class="headerlink" title="折中方案的代价"></a>折中方案的代价</h3><p>这次的核心决策是**主动放弃”换部门同步”**——不是做不到，是代价（admin 组织重建）不划算。换部门低频，而手机号变更、新人入库是高频场景，折中方案用最小改动覆盖了主要收益。</p>
+<p>后续如果业务确实需要”换部门也同步”，回头补 admin 侧的 <code>UserSyncServiceImpl:225</code> 组织重建即可，pass_user 这边的 UPDATE 分支已经 ready。</p>
+<h2 id="Part-3：人员列表部门下拉按园区联动"><a href="#Part-3：人员列表部门下拉按园区联动" class="headerlink" title="Part 3：人员列表部门下拉按园区联动"></a>Part 3：人员列表部门下拉按园区联动</h2><h3 id="需求"><a href="#需求" class="headerlink" title="需求"></a>需求</h3><p>便捷通行”人员列表”页面（<code>/through/staffManage/staffList/staffList</code>）搜索栏有”园区”+”部门”两个筛选条件。</p>
+<ul>
+<li><strong>原状</strong>：选了园区，部门下拉显示的是<strong>当前登录人园区</strong>绑定的公司（后端写死 <code>baseUser.getParkId()</code>），与所选园区无关</li>
+<li><strong>需求</strong>：搜索栏选了园区 X，部门下拉只显示 X 绑定的公司</li>
+</ul>
+<h3 id="调用链（trace-到-mapper）"><a href="#调用链（trace-到-mapper）" class="headerlink" title="调用链（trace 到 mapper）"></a>调用链（trace 到 mapper）</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">前端 allocateOrg()</span><br><span class="line">  → organizationTree(params)        // @/api/common</span><br><span class="line">  → POST /admin/organization/selectCurParkOrgTree</span><br><span class="line">  → OrganizationController#getCurParkOrgTree</span><br><span class="line">  → OrganizationServiceImpl#getCurParkOrgTree</span><br><span class="line">  → loadCurParkTree(...)            // 递归构建树</span><br></pre></td></tr></table></figure>
+
+<p><strong>关键写死点</strong>：<code>OrganizationServiceImpl#getCurParkOrgTree</code> 第 338 行</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">parkOrganizationDTO.setParkId(baseUser.getParkId());  <span class="comment">// 忽略前端传入</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="关键踩坑：前端同名-organizationTree-指向两个不同的后端接口"><a href="#关键踩坑：前端同名-organizationTree-指向两个不同的后端接口" class="headerlink" title="关键踩坑：前端同名 organizationTree 指向两个不同的后端接口"></a>关键踩坑：前端同名 <code>organizationTree</code> 指向两个不同的后端接口</h3><p><img src="/2026-06-15-pass-user-fields-and-org-tree/assets/images/fig3_001.jpg" alt="前端 import 来源"><br><em>图3：前端 import 来源</em></p>
+<blockquote>
+<p>[!warning] 同名 organizationTree，指向两个不同的后端接口<br>前端有两个 <code>organizationTree</code> 函数，<strong>名字相同但调不同后端接口</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>import 来源</th>
+<th>后端接口</th>
+<th>方法</th>
+<th>行为</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>@/api/common</code></td>
+<td><code>/organization/selectCurParkOrgTree</code></td>
+<td><code>getCurParkOrgTree</code></td>
+<td>按园区绑定过滤</td>
+</tr>
+<tr>
+<td><code>@/api/system/user/user</code></td>
+<td><code>/organization/organizationTree</code></td>
+<td><code>selectOrganizationTree</code></td>
+<td>按用户权限返回全量，<strong>不读 parkId</strong></td>
+</tr>
+</tbody></table>
+<p><code>staffList.vue:1276</code> 原本 import 的是 <strong>user.js</strong> 那个，所以即便后端改好了 <code>getCurParkOrgTree</code>，传 parkId 也完全不生效——前端压根没调那个接口，照返回权限内的全量组织树，表现为”选了番禺基地还返回一大堆数据”。</p>
+</blockquote>
+<h3 id="最终改动（3-处）"><a href="#最终改动（3-处）" class="headerlink" title="最终改动（3 处）"></a>最终改动（3 处）</h3><h4 id="1-后端：parkId-兜底"><a href="#1-后端：parkId-兜底" class="headerlink" title="1. 后端：parkId 兜底"></a>1. 后端：parkId 兜底</h4><p><code>OrganizationServiceImpl.java#getCurParkOrgTree</code> 第 338 行：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 原</span></span><br><span class="line">parkOrganizationDTO.setParkId(baseUser.getParkId());</span><br><span class="line"><span class="comment">// 改为（前端传了就用，没传兜底当前登录人，向后兼容）</span></span><br><span class="line">parkOrganizationDTO.setParkId(</span><br><span class="line">        StringUtils.isNotEmpty(organizationDTO.getParkId())</span><br><span class="line">                ? organizationDTO.getParkId() : baseUser.getParkId());</span><br></pre></td></tr></table></figure>
+
+<h4 id="2-前端：allocateOrg-参数化"><a href="#2-前端：allocateOrg-参数化" class="headerlink" title="2. 前端：allocateOrg 参数化"></a>2. 前端：allocateOrg 参数化</h4><p><code>staffList.vue</code>：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 原</span></span><br><span class="line"><span class="title function_">allocateOrg</span>(<span class="params"></span>) &#123;</span><br><span class="line">  <span class="title function_">organizationTree</span>(&#123;&#125;).<span class="title function_">then</span>(<span class="function"><span class="params">res1</span> =&gt;</span> &#123; <span class="variable language_">this</span>.<span class="property">orgTreeDataTwo</span> = res1 &#125;)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 改为</span></span><br><span class="line"><span class="title function_">allocateOrg</span>(<span class="params">parkId</span>) &#123;</span><br><span class="line">  <span class="title function_">organizationTree</span>(parkId ? &#123; parkId &#125; : &#123;&#125;).<span class="title function_">then</span>(<span class="function"><span class="params">res1</span> =&gt;</span> &#123; <span class="variable language_">this</span>.<span class="property">orgTreeDataTwo</span> = res1 &#125;)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>搜索栏的 watcher 早已 <code>this.allocateOrg(val)</code> 传参，这处一接上就联动。空值传 <code>&#123;&#125;</code> → 后端兜底当前登录人园区。</p>
+<h4 id="3-前端：import-来源修正"><a href="#3-前端：import-来源修正" class="headerlink" title="3. 前端：import 来源修正"></a>3. 前端：import 来源修正</h4><p><code>staffList.vue:1276</code>：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 原</span></span><br><span class="line"><span class="keyword">import</span> &#123; organizationTree &#125; <span class="keyword">from</span> <span class="string">&#x27;@/api/system/user/user&#x27;</span></span><br><span class="line"><span class="comment">// 改为</span></span><br><span class="line"><span class="keyword">import</span> &#123; organizationTree &#125; <span class="keyword">from</span> <span class="string">&#x27;@/api/common&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="验证"><a href="#验证" class="headerlink" title="验证"></a>验证</h3><p><code>sys_park_organization</code> 查询确认番禺基地（<code>parkId = 284cd7570daf5d1ca8e121bc025f7a02</code>）绑定 <strong>5 个公司</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>org_id</th>
+<th>名称</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>136602494</td>
+<td>西部检修试验分公司</td>
+</tr>
+<tr>
+<td>c5e47144b0e514223df3947bfcd2f948</td>
+<td>园区总部</td>
+</tr>
+<tr>
+<td>59900345</td>
+<td>公司本部</td>
+</tr>
+<tr>
+<td>59969486</td>
+<td>信息通信分公司</td>
+</tr>
+<tr>
+<td>b9546c9600e99e789d7d86313c4941d6</td>
+<td>园区二级部门</td>
+</tr>
+</tbody></table>
+<p>验证步骤：重启 admin-service → 前端刷新 → 搜索栏选番禺基地 → 部门下拉应正好是这 5 个。</p>
+<h3 id="已知限制"><a href="#已知限制" class="headerlink" title="已知限制"></a>已知限制</h3><ul>
+<li><strong>新增弹窗切园区不联动</strong>：<code>changeParkId</code>（<code>staffList.vue:2005</code>）仍是空实现</li>
+<li><strong>编辑回填</strong>：<code>updateButton</code> 不调 <code>allocateOrg(res.parkId)</code></li>
+<li><strong><code>orgTreeDataThree</code> 共用</strong>：搜索栏、新增弹窗、钉钉用户弹窗共用同一个 <code>orgTreeDataTwo</code> 变量，互相影响</li>
+</ul>
+<p><img src="/2026-06-15-pass-user-fields-and-org-tree/assets/images/fig2_001.jpg" alt="代码审查表"><br><em>图2：代码审查表</em></p>
+<h2 id="Part-4：代码审查记录"><a href="#Part-4：代码审查记录" class="headerlink" title="Part 4：代码审查记录"></a>Part 4：代码审查记录</h2><h3 id="1-UserMapperExt-xml-—-listByConditionExt-补部门-org-id"><a href="#1-UserMapperExt-xml-—-listByConditionExt-补部门-org-id" class="headerlink" title="1. UserMapperExt.xml — listByConditionExt 补部门 org_id"></a>1. <code>UserMapperExt.xml</code> — <code>listByConditionExt</code> 补部门 org_id</h3><p><strong>审查结论</strong>：✅ 正确</p>
+<ul>
+<li><code>parent_id IS NOT NULL AND parent_id &lt;&gt; &#39;&#39;</code> 正确区分了”部门”和”公司”</li>
+<li><code>delete_flag = &#39;0&#39;</code> 在 WHERE 和 JOIN 两处都过滤</li>
+<li><code>MIN(uo2.org_id)</code> 处理一人多部门，取一个，注释写了一人一部门，MIN 只是兜底</li>
+<li>LEFT JOIN 意味着没有部门的用户 orgId 返回 null，不会丢失用户行</li>
+</ul>
+<h3 id="2-PassUserServiceImpl-java-—-synSysUserToPassUser-补-orgId-UPDATE-分支"><a href="#2-PassUserServiceImpl-java-—-synSysUserToPassUser-补-orgId-UPDATE-分支" class="headerlink" title="2. PassUserServiceImpl.java — synSysUserToPassUser 补 orgId + UPDATE 分支"></a>2. <code>PassUserServiceImpl.java</code> — <code>synSysUserToPassUser</code> 补 orgId + UPDATE 分支</h3><p><strong>审查结论</strong>：✅ 正确</p>
+<ul>
+<li><strong>Map 替换 List</strong>：查找从 O(n) 降到 O(1)</li>
+<li><strong>filter sysUserId 非空</strong>：排除了手动创建和访客的 pass_user</li>
+<li><strong>add 分支 setOrgId</strong>：依赖 admin 端 mapper 改动返回的 orgId 字段</li>
+<li><strong>update 分支</strong>：<code>if (StringUtils.isBlank(existing.getOrgId()))</code> 只补空值，不会覆盖已有的 orgId，安全</li>
+</ul>
+<p><strong>注意点</strong>：</p>
+<ul>
+<li><code>listByCondition(queryDTO)</code> 加载全量 pass_user 到内存建 Map，数据量大时注意内存</li>
+<li>update 分支没同步 real_name 和 face_pic，如果后续需要可以加，当前不改没问题</li>
+</ul>
+<h2 id="经验总结"><a href="#经验总结" class="headerlink" title="经验总结"></a>经验总结</h2><h3 id="折中方案是工程实践的核心"><a href="#折中方案是工程实践的核心" class="headerlink" title="折中方案是工程实践的核心"></a>折中方案是工程实践的核心</h3><p>“换部门同步”看似只是”再加一行代码”，深入追下去要做 3 处改动，其中 admin 重建是拦路虎。<strong>主动放弃低频场景</strong>比”硬上完整方案”更专业——这要求对业务频率、改动风险有量化判断。</p>
+<h3 id="前端-import-同名函数的隐蔽性"><a href="#前端-import-同名函数的隐蔽性" class="headerlink" title="前端 import 同名函数的隐蔽性"></a>前端 import 同名函数的隐蔽性</h3><p><code>organizationTree</code> 这个名字很常见，但<strong>不同文件里的同名函数调不同后端接口</strong>。这正是全局规则 <code>[2026-06-11] Plan review 必须 trace 完整调用链</code> 的延伸：<strong>不仅要 trace 到 mapper XML，前端 import 的真实指向也要落实</strong>。</p>
+<h3 id="Transactional-不是万能药"><a href="#Transactional-不是万能药" class="headerlink" title="@Transactional 不是万能药"></a>@Transactional 不是万能药</h3><p><code>synSysUserToPassUser</code> 加 <code>@Transactional</code> 看似合理，但<strong>事务 + Feign 网络 IO &#x3D; 反模式</strong>。事务持有连接和锁，HTTP 调用阻塞 → 连接占用久 → 整个系统跟着慢。</p>
+<h3 id="折中方案要有”回头补”的路径"><a href="#折中方案要有”回头补”的路径" class="headerlink" title="折中方案要有”回头补”的路径"></a>折中方案要有”回头补”的路径</h3><p>放弃”换部门同步”时，明确记录”回头补 admin 侧 UserSyncServiceImpl:225 组织重建即可”——这不是甩锅，是给未来的自己留路标。<strong>代码 + spec + obsidian 笔记三者对齐</strong>，未来才不会忘了为什么放弃。</p>
+<h2 id="关联"><a href="#关联" class="headerlink" title="关联"></a>关联</h2><ul>
+<li>[[2026-06-15 工作记录]]</li>
+<li>[[代码审查记录]]</li>
+<li>[[钉钉同步pass_user字段&#x2F;功能设计与实现]]</li>
+<li>[[人员列表部门按园区联动]]</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E9%92%89%E9%92%89%E5%90%8C%E6%AD%A5/" rel="tag"># 钉钉同步</a>
+              <a href="/tags/%E6%8A%98%E4%B8%AD%E6%96%B9%E6%A1%88/" rel="tag"># 折中方案</a>
+              <a href="/tags/Vue/" rel="tag"># Vue</a>
+              <a href="/tags/%E4%BB%A3%E7%A0%81%E5%AE%A1%E6%9F%A5/" rel="tag"># 代码审查</a>
+              <a href="/tags/%E9%83%A8%E9%97%A8%E8%81%94%E5%8A%A8/" rel="tag"># 部门联动</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/06/12/2026-06-12-pass-user-death-chain/" rel="prev" title="pass_user 死亡覆盖链与 spec 错误判断：从集成测试挖出 421 条脏数据">
+                  <i class="fa fa-angle-left"></i> pass_user 死亡覆盖链与 spec 错误判断：从集成测试挖出 421 条脏数据
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2026/06/16/2026-06-16-dist-sync-integration-test/" rel="next" title="dist_sync 分支集成测试报告：9 项功能 12 个用例全过">
+                  dist_sync 分支集成测试报告：9 项功能 12 个用例全过 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  
+  <div class="comments giscus-container">
+  </div>
+  
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">zhlifeiy35</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/zhdmm35" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"zhdmm35/zhdmm35.github.io","repo_id":"R_kgDOON4bhg","category":"Announcements","category_id":"DIC_kwDOON4bhs4C3dEc","mapping":"pathname","strict":0,"reactions_enabled":1,"emit_metadata":0,"theme":"preferred_color_scheme","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+
+<script>
+document.addEventListener('page:loaded', () => {
+  if (!CONFIG.page.comments) return;
+
+  NexT.utils.loadComments('.giscus-container')
+    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
+      attributes: {
+        async                   : true,
+        crossOrigin             : 'anonymous',
+        'data-repo'             : CONFIG.giscus.repo,
+        'data-repo-id'          : CONFIG.giscus.repo_id,
+        'data-category'         : CONFIG.giscus.category,
+        'data-category-id'      : CONFIG.giscus.category_id,
+        'data-mapping'          : CONFIG.giscus.mapping,
+        'data-strict'           : CONFIG.giscus.strict,
+        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
+        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
+        'data-theme'            : CONFIG.giscus.theme,
+        'data-lang'             : CONFIG.giscus.lang,
+        'data-input-position'   : CONFIG.giscus.input_position,
+        'data-loading'          : CONFIG.giscus.loading
+      },
+      parentNode: document.querySelector('.giscus-container')
+    }));
+});
+</script>
+
+</body>
+</html>

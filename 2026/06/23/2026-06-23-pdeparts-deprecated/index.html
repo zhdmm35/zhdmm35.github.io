@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="导读 6&#x2F;22 暴露的 PDEPARTS 下线问题，今天给出完整修复：废弃所有依赖 PDEPARTS 的解析，改用部门 UUID 沿 sys_organization.parent_id 递归上溯查 sys_park_organization 桥表（MySQL 8 CTE）。一个 commit 改了 8 个文件、+167&#x2F;-33，把昨天识别出的 4 个 Bug 全部修完。同时顺">
+<meta property="og:type" content="article">
+<meta property="og:title" content="PDEPARTS 废弃 + 头像同步修复 + 用户查询回归：递归 CTE 上溯">
+<meta property="og:url" content="https://zhlifeiy.codes/2026/06/23/2026-06-23-pdeparts-deprecated/index.html">
+<meta property="og:site_name" content="我的技术博客">
+<meta property="og:description" content="导读 6&#x2F;22 暴露的 PDEPARTS 下线问题，今天给出完整修复：废弃所有依赖 PDEPARTS 的解析，改用部门 UUID 沿 sys_organization.parent_id 递归上溯查 sys_park_organization 桥表（MySQL 8 CTE）。一个 commit 改了 8 个文件、+167&#x2F;-33，把昨天识别出的 4 个 Bug 全部修完。同时顺">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/2026-06-23-pdeparts-deprecated_001.jpg">
+<meta property="article:published_time" content="2026-06-23T10:00:00.000Z">
+<meta property="article:modified_time" content="2026-06-27T14:12:55.450Z">
+<meta property="article:author" content="zhlifeiy35">
+<meta property="article:tag" content="PDEPARTS废弃">
+<meta property="article:tag" content="递归CTE">
+<meta property="article:tag" content="头像同步">
+<meta property="article:tag" content="回归修复">
+<meta property="article:tag" content="BaseResultMap">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/2026-06-23-pdeparts-deprecated_001.jpg">
+
+
+<link rel="canonical" href="https://zhlifeiy.codes/2026/06/23/2026-06-23-pdeparts-deprecated/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://zhlifeiy.codes/2026/06/23/2026-06-23-pdeparts-deprecated/","path":"2026/06/23/2026-06-23-pdeparts-deprecated/","title":"PDEPARTS 废弃 + 头像同步修复 + 用户查询回归：递归 CTE 上溯"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>PDEPARTS 废弃 + 头像同步修复 + 用户查询回归：递归 CTE 上溯 | 我的技术博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">我的技术博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">记录学习与成长</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-guestbook"><a href="/guestbook/" rel="section"><i class="fa fa-comment-dots fa-fw"></i>留言板</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%BC%E8%AF%BB"><span class="nav-number">1.</span> <span class="nav-text">导读</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link"><span class="nav-number">1.0.1.</span> <span class="nav-text">🎧 文章导读</span></a></li><li class="nav-item nav-level-4"><a class="nav-link"><span class="nav-number">1.0.2.</span> <span class="nav-text">🎵 背景音乐</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">2.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E6%A0%B8%E5%BF%83%E4%BF%AE%E5%A4%8D%EF%BC%9A%E5%BA%9F%E5%BC%83-PDEPARTS%EF%BC%8C%E6%94%B9%E7%94%A8%E9%83%A8%E9%97%A8-UUID-%E4%B8%8A%E6%BA%AF"><span class="nav-number">3.</span> <span class="nav-text">一、核心修复：废弃 PDEPARTS，改用部门 UUID 上溯</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%96%B9%E6%A1%88"><span class="nav-number">3.1.</span> <span class="nav-text">方案</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%94%B9%E5%8A%A8%E6%96%87%E4%BB%B6"><span class="nav-number">3.2.</span> <span class="nav-text">改动文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E4%BE%9D%E8%B5%96"><span class="nav-number">3.3.</span> <span class="nav-text">数据依赖</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%98%B2%E7%8E%AF%E6%9C%BA%E5%88%B6"><span class="nav-number">3.4.</span> <span class="nav-text">防环机制</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E5%9B%9E%E5%BD%92%E4%BF%AE%E5%A4%8D%EF%BC%9A%E7%94%A8%E6%88%B7%E6%9F%A5%E8%AF%A2%E6%8E%A5%E5%8F%A3"><span class="nav-number">4.</span> <span class="nav-text">二、回归修复：用户查询接口</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Bug-1%EF%BC%9A-user-pagingOrgAndPark-%E2%86%92-listByOrgIdsAndParkId"><span class="nav-number">4.1.</span> <span class="nav-text">Bug 1：&#x2F;user&#x2F;pagingOrgAndPark → listByOrgIdsAndParkId</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Bug-2%EF%BC%9A-user-page-%E2%86%92-listByConditionExt"><span class="nav-number">4.2.</span> <span class="nav-text">Bug 2：&#x2F;user&#x2F;page → listByConditionExt</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E7%BB%84%E7%BB%87%E6%A0%91%E4%BF%AE%E5%A4%8D"><span class="nav-number">5.</span> <span class="nav-text">三、组织树修复</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Bug-3%EF%BC%9AselectCurParkOrgTree-%E8%BF%94%E5%9B%9E%E7%A9%BA"><span class="nav-number">5.1.</span> <span class="nav-text">Bug 3：selectCurParkOrgTree 返回空</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A2%9D%E5%A4%96%E6%94%B9%E8%BF%9B"><span class="nav-number">5.2.</span> <span class="nav-text">额外改进</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E9%92%89%E9%92%89%E5%A4%B4%E5%83%8F%E5%90%8C%E6%AD%A5"><span class="nav-number">6.</span> <span class="nav-text">四、钉钉头像同步</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%97%AE%E9%A2%98-1%EF%BC%9AsetFacePic-%E8%AF%AF%E5%86%99%E4%B8%BA-setFacePicAuditStatus"><span class="nav-number">6.1.</span> <span class="nav-text">问题 1：setFacePic 误写为 setFacePicAuditStatus</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%97%AE%E9%A2%98-2%EF%BC%9ADataphin-%E8%BF%94%E5%9B%9E%E7%9A%84-avatar-%E5%AE%8C%E5%85%A8%E6%B2%A1%E7%94%A8"><span class="nav-number">6.2.</span> <span class="nav-text">问题 2：Dataphin 返回的 avatar 完全没用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BF%AE%E5%A4%8D%E7%AD%96%E7%95%A5"><span class="nav-number">6.3.</span> <span class="nav-text">修复策略</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B3%E9%94%AE%E8%AE%BE%E8%AE%A1"><span class="nav-number">6.4.</span> <span class="nav-text">关键设计</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E4%B8%8D%E5%90%8C%E6%AD%A5%E5%9B%9E%E5%A1%AB%E7%A9%BA%E5%80%BC"><span class="nav-number">6.5.</span> <span class="nav-text">为什么不同步回填空值</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E5%85%B6%E4%BB%96%E5%8F%91%E7%8E%B0%EF%BC%88%E6%9C%AA%E4%BF%AE%E5%A4%8D%EF%BC%8C%E8%AE%B0%E5%BD%95%E5%A4%87%E6%9F%A5%EF%BC%89"><span class="nav-number">7.</span> <span class="nav-text">五、其他发现（未修复，记录备查）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%AD%E3%80%81%E9%AA%8C%E8%AF%81%E7%BB%93%E6%9E%9C"><span class="nav-number">8.</span> <span class="nav-text">六、验证结果</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8F%90%E4%BA%A4%E6%A6%82%E8%A7%88"><span class="nav-number">9.</span> <span class="nav-text">提交概览</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%8F%E9%AA%8C%E6%80%BB%E7%BB%93"><span class="nav-number">10.</span> <span class="nav-text">经验总结</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%92%E5%BD%92-CTE-%E7%9A%84%E5%AE%9E%E6%88%98%E4%BB%B7%E5%80%BC"><span class="nav-number">10.1.</span> <span class="nav-text">递归 CTE 的实战价值</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#BaseResultMap-%E9%94%99%E6%98%A0%E5%B0%84%E6%98%AF-MyBatis-Plus-%E9%9A%90%E5%BD%A2%E5%9D%91"><span class="nav-number">10.2.</span> <span class="nav-text">BaseResultMap 错映射是 MyBatis-Plus 隐形坑</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BB%E5%8A%A8%E6%94%BE%E5%BC%83%E4%BD%8E%E9%A2%91%E5%9C%BA%E6%99%AF%E6%98%AF%E5%B7%A5%E7%A8%8B%E7%BA%AA%E5%BE%8B"><span class="nav-number">10.3.</span> <span class="nav-text">主动放弃低频场景是工程纪律</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E8%BF%81%E7%A7%BB%E6%9C%9F%E8%A6%81%E5%88%97%E8%AF%A6%E7%BB%86%E6%B8%85%E5%8D%95"><span class="nav-number">10.4.</span> <span class="nav-text">数据迁移期要列详细清单</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B3%E8%81%94"><span class="nav-number">11.</span> <span class="nav-text">关联</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zhlifeiy35</p>
+  <div class="site-description" itemprop="description">分享编程技术、AI经验、学习笔记</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">51</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">175</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zhdmm35" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zhdmm35" rel="noopener me" target="_blank"><i class="fa fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/2026-06-23-pdeparts-deprecated_001.jpg" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/06/23/2026-06-23-pdeparts-deprecated/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="我的技术博客">
+      <meta itemprop="description" content="分享编程技术、AI经验、学习笔记">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="PDEPARTS 废弃 + 头像同步修复 + 用户查询回归：递归 CTE 上溯 | 我的技术博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          PDEPARTS 废弃 + 头像同步修复 + 用户查询回归：递归 CTE 上溯
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-06-23 18:00:00" itemprop="dateCreated datePublished" datetime="2026-06-23T18:00:00+08:00">2026-06-23</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-06-27 22:12:55" itemprop="dateModified" datetime="2026-06-27T22:12:55+08:00">2026-06-27</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">后端开发</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E5%8D%97%E7%BD%91%E9%A1%B9%E7%9B%AE/" itemprop="url" rel="index"><span itemprop="name">南网项目</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="导读"><a href="#导读" class="headerlink" title="导读"></a>导读</h2><blockquote>
+<p>6&#x2F;22 暴露的 PDEPARTS 下线问题，今天给出完整修复：废弃所有依赖 PDEPARTS 的解析，改用部门 UUID 沿 <code>sys_organization.parent_id</code> 递归上溯查 <code>sys_park_organization</code> 桥表（MySQL 8 CTE）。一个 commit 改了 8 个文件、+167&#x2F;-33，把昨天识别出的 4 个 Bug 全部修完。同时顺手把头像同步 bug（<code>setFacePic</code> 误写为 <code>setFacePicAuditStatus</code>）修了，并补充 <code>face_pic=&#39;2&#39;</code> 历史脏数据的处理策略。</p>
+</blockquote>
+<span id="more"></span>
+
+<div class="audio-player">
+  <div class="audio-section">
+    <h4>🎧 文章导读</h4>
+    <audio controls preload="metadata">
+      <source src="/2026-06-23-pdeparts-deprecated/narration.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+  <div class="audio-section">
+    <h4>🎵 背景音乐</h4>
+    <audio controls loop preload="metadata">
+      <source src="/2026-06-23-pdeparts-deprecated/bgm.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+</div>
+
+<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>6&#x2F;22 链路测试报告里挖出来的 4 个 Bug，今天一次性收尾。核心是 PDEPARTS 替代方案：用递归 CTE 沿部门 UUID 上溯查桥表，这是 MySQL 8 才支持的语法（项目里其他 SQL 都很”老派”，没想到会用到 CTE）。</p>
+<p><img src="/2026-06-23-pdeparts-deprecated/assets/images/fig1_001.jpg" alt="递归 CTE 上溯"><br><em>图1：递归 CTE 上溯</em></p>
+<h2 id="一、核心修复：废弃-PDEPARTS，改用部门-UUID-上溯"><a href="#一、核心修复：废弃-PDEPARTS，改用部门-UUID-上溯" class="headerlink" title="一、核心修复：废弃 PDEPARTS，改用部门 UUID 上溯"></a>一、核心修复：废弃 PDEPARTS，改用部门 UUID 上溯</h2><h3 id="方案"><a href="#方案" class="headerlink" title="方案"></a>方案</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">WITH</span> <span class="keyword">RECURSIVE</span> org_chain <span class="keyword">AS</span> (</span><br><span class="line">  <span class="keyword">SELECT</span> org_id, parent_id, <span class="number">0</span> <span class="keyword">AS</span> depth <span class="keyword">FROM</span> sys_organization</span><br><span class="line">  <span class="keyword">WHERE</span> org_id <span class="operator">=</span> #&#123;deptOrgId&#125; <span class="keyword">AND</span> delete_flag<span class="operator">=</span><span class="string">&#x27;0&#x27;</span></span><br><span class="line">  <span class="keyword">UNION</span> <span class="keyword">ALL</span></span><br><span class="line">  <span class="keyword">SELECT</span> o.org_id, o.parent_id, c.depth<span class="operator">+</span><span class="number">1</span> <span class="keyword">FROM</span> sys_organization o</span><br><span class="line">  <span class="keyword">JOIN</span> org_chain c <span class="keyword">ON</span> o.org_id <span class="operator">=</span> c.parent_id <span class="keyword">AND</span> o.delete_flag<span class="operator">=</span><span class="string">&#x27;0&#x27;</span></span><br><span class="line">  <span class="keyword">WHERE</span> c.parent_id <span class="keyword">IS</span> <span class="keyword">NOT NULL</span> <span class="keyword">AND</span> c.parent_id <span class="operator">&lt;&gt;</span> <span class="string">&#x27;&#x27;</span> <span class="keyword">AND</span> c.depth <span class="operator">&lt;</span> <span class="number">20</span></span><br><span class="line">)</span><br><span class="line"><span class="keyword">SELECT</span> po.<span class="operator">*</span> <span class="keyword">FROM</span> sys_park_organization po</span><br><span class="line"><span class="keyword">JOIN</span> org_chain c <span class="keyword">ON</span> po.org_id <span class="operator">=</span> c.org_id</span><br><span class="line"><span class="keyword">WHERE</span> po.delete_flag<span class="operator">=</span><span class="string">&#x27;0&#x27;</span> <span class="keyword">ORDER</span> <span class="keyword">BY</span> c.depth <span class="keyword">ASC</span> LIMIT <span class="number">1</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="改动文件"><a href="#改动文件" class="headerlink" title="改动文件"></a>改动文件</h3><table>
+<thead>
+<tr>
+<th>文件</th>
+<th>改动</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>UserSyncServiceImpl.java</code></td>
+<td>ADD&#x2F;UPDATE 分支：<code>getCompanyIdFromPDeparts()</code> → <code>findParkByOrgWalkUp(getDepartment())</code>；部门列表从 PDEPARTS 数组改为单值构造</td>
+</tr>
+<tr>
+<td><code>ParkOrganizationServiceImpl.java</code></td>
+<td>新增 <code>findParkByOrgWalkUp</code> 实现</td>
+</tr>
+<tr>
+<td><code>ParkOrganizationMapper.xml</code></td>
+<td>新增 CTE 递归 SQL</td>
+</tr>
+<tr>
+<td><code>IParkOrganizationService.java</code></td>
+<td>接口定义</td>
+</tr>
+</tbody></table>
+<h3 id="数据依赖"><a href="#数据依赖" class="headerlink" title="数据依赖"></a>数据依赖</h3><p><code>sys_user_organization.org_id</code> 从公司级改为存<strong>用户直接部门 UUID</strong>。桥表 <code>sys_park_organization</code> 需要有公司级 org_id → park_id 映射（广蓄&#x2F;清蓄已补）。</p>
+<h3 id="防环机制"><a href="#防环机制" class="headerlink" title="防环机制"></a>防环机制</h3><p><code>AND c.depth &lt; 20</code> 是<strong>防环保险</strong>——理论上 <code>sys_organization.parent_id</code> 应该是有向无环树，但万一数据脏了（人为乱改 parent_id）会无限递归。20 层足够业务穿透（公司级通常 3-5 层）。</p>
+<h2 id="二、回归修复：用户查询接口"><a href="#二、回归修复：用户查询接口" class="headerlink" title="二、回归修复：用户查询接口"></a>二、回归修复：用户查询接口</h2><p>PDEPARTS 修复后 <code>sys_user_organization.org_id</code> 语义变更（公司级→部门级），导致两个用户查询接口返回 0 条。</p>
+<h3 id="Bug-1：-user-pagingOrgAndPark-→-listByOrgIdsAndParkId"><a href="#Bug-1：-user-pagingOrgAndPark-→-listByOrgIdsAndParkId" class="headerlink" title="Bug 1：/user/pagingOrgAndPark → listByOrgIdsAndParkId"></a>Bug 1：<code>/user/pagingOrgAndPark</code> → <code>listByOrgIdsAndParkId</code></h3><ul>
+<li><strong>现象</strong>：带 orgId+parkId 搜用户返回 0 条</li>
+<li><strong>根因</strong>：SQL 通过 <code>uo.org_id = po.org_id</code> JOIN 桥表，部门级 ≠ 公司级 → JOIN 失效</li>
+<li><strong>修复</strong>（UserMapper.xml）：去掉桥表 JOIN，<code>sys_user_park</code> 直连 <code>sys_user_organization</code></li>
+</ul>
+<h3 id="Bug-2：-user-page-→-listByConditionExt"><a href="#Bug-2：-user-page-→-listByConditionExt" class="headerlink" title="Bug 2：/user/page → listByConditionExt"></a>Bug 2：<code>/user/page</code> → <code>listByConditionExt</code></h3><ul>
+<li><strong>现象</strong>：带 orgId+parkId 搜用户返回 0 条，只搜 parkId 能搜到 138 条</li>
+<li><strong>根因</strong>：<code>uo.org_id = #&#123;orgId&#125;</code> 精确匹配部门级 ≠ 公司级</li>
+<li><strong>修复</strong>（UserMapperExt.xml）：orgId 过滤改用 <code>urp.org_id</code>（sys_user_park 公司级），urp 子查询加 <code>MIN(org_id)</code></li>
+</ul>
+<p><img src="/2026-06-23-pdeparts-deprecated/assets/images/fig2_001.jpg" alt="组织树修复"><br><em>图2：组织树修复</em></p>
+<h2 id="三、组织树修复"><a href="#三、组织树修复" class="headerlink" title="三、组织树修复"></a>三、组织树修复</h2><h3 id="Bug-3：selectCurParkOrgTree-返回空"><a href="#Bug-3：selectCurParkOrgTree-返回空" class="headerlink" title="Bug 3：selectCurParkOrgTree 返回空"></a>Bug 3：<code>selectCurParkOrgTree</code> 返回空</h3><ul>
+<li><strong>现象</strong>：广蓄园区组织树返回 <code>[]</code></li>
+<li><strong>根因</strong>：递归从 <code>parentId=&quot;&quot;</code> 起步，UUID 组织树根节点 <code>parent_id=NULL</code>，<code>equalsIgnoreCase(null, &quot;&quot;)</code> &#x3D; false → 根进不来</li>
+<li><strong>修复</strong>（OrganizationServiceImpl.java）：<code>loadCurParkTree</code> 和 <code>loadOrganizationTree</code> 的匹配条件兼容 null 和 “” 两种根写法</li>
+</ul>
+<h3 id="额外改进"><a href="#额外改进" class="headerlink" title="额外改进"></a>额外改进</h3><ul>
+<li><code>selectOrganizationTree</code> 强制 <code>delete_flag=&#39;0&#39;</code>（原来不过滤）</li>
+<li><code>getCompanyList</code> 改为两级树（一级公司 + 二级子节点）</li>
+<li><code>saveCompanyBind</code> 去掉 <code>orgIds</code> 非空校验</li>
+</ul>
+<p><img src="/2026-06-23-pdeparts-deprecated/assets/images/fig3_001.jpg" alt="头像同步策略表"><br><em>图3：头像同步策略表</em></p>
+<h2 id="四、钉钉头像同步"><a href="#四、钉钉头像同步" class="headerlink" title="四、钉钉头像同步"></a>四、钉钉头像同步</h2><h3 id="问题-1：setFacePic-误写为-setFacePicAuditStatus"><a href="#问题-1：setFacePic-误写为-setFacePicAuditStatus" class="headerlink" title="问题 1：setFacePic 误写为 setFacePicAuditStatus"></a>问题 1：<code>setFacePic</code> 误写为 <code>setFacePicAuditStatus</code></h3><p><code>UserSyncServiceImpl.java</code> 第 129 行 bug：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 错误代码（bug）</span></span><br><span class="line">userDTO.setFacePic(FACE_CHANGE_AUDIT_STATUS_REFUSE);  <span class="comment">// ← 应该是 setFacePicAuditStatus</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 正确代码（修复后）</span></span><br><span class="line">userDTO.setFacePicAuditStatus(FACE_CHANGE_AUDIT_STATUS_REFUSE);</span><br></pre></td></tr></table></figure>
+
+<p>导致所有钉钉同步用户 <code>face_pic = &#39;2&#39;</code>（这是 audit_status 的”拒绝”状态，不是 face_pic 的值）。</p>
+<h3 id="问题-2：Dataphin-返回的-avatar-完全没用"><a href="#问题-2：Dataphin-返回的-avatar-完全没用" class="headerlink" title="问题 2：Dataphin 返回的 avatar 完全没用"></a>问题 2：Dataphin 返回的 avatar 完全没用</h3><p><code>PROFILEPHOTOURL</code>（avatar 字段）包含钉钉头像 URL，但同步代码完全没用这个字段。</p>
+<h3 id="修复策略"><a href="#修复策略" class="headerlink" title="修复策略"></a>修复策略</h3><table>
+<thead>
+<tr>
+<th>用户类型</th>
+<th>face_pic 现状</th>
+<th>同步后行为</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>新用户</td>
+<td>—</td>
+<td>下载钉钉头像 → upload aided OSS → <code>/fs/hikFacePic/...</code></td>
+</tr>
+<tr>
+<td>老用户（脏值<code>&quot;2&quot;</code>）</td>
+<td><code>&quot;2&quot;</code></td>
+<td>有头像→<code>/fs/...</code>；无头像→清空</td>
+</tr>
+<tr>
+<td>老用户（空值）</td>
+<td>空&#x2F;NULL</td>
+<td><strong>不回填</strong>（避免批量下载几千个头像占事务）</td>
+</tr>
+<tr>
+<td>老用户（正常<code>/fs/...</code>）</td>
+<td>正常路径</td>
+<td>不覆盖</td>
+</tr>
+</tbody></table>
+<h3 id="关键设计"><a href="#关键设计" class="headerlink" title="关键设计"></a>关键设计</h3><ul>
+<li><code>uploadDingAvatar</code> 整段 try&#x2F;catch，<strong>Feign 超时 &#x2F; aided 宕机不影响同步事务</strong></li>
+<li><code>shouldBackfillFacePic</code> 第一版只匹配脏值 <code>&quot;2&quot;</code>，空值留给后续离线任务</li>
+</ul>
+<h3 id="为什么不同步回填空值"><a href="#为什么不同步回填空值" class="headerlink" title="为什么不同步回填空值"></a>为什么不同步回填空值</h3><p>如果对所有空值用户都触发头像下载：</p>
+<ul>
+<li>15000 用户 × 头像下载（每张 ~2MB）&#x3D; 30GB 网络流量</li>
+<li>单个事务内长时间 IO 阻塞</li>
+<li>失败重试成本高</li>
+</ul>
+<p><strong>主动放弃空值回填</strong>——这是和 pass_user 字段同步同样的折中思路：高频场景做，低频场景留给后续离线任务。</p>
+<h2 id="五、其他发现（未修复，记录备查）"><a href="#五、其他发现（未修复，记录备查）" class="headerlink" title="五、其他发现（未修复，记录备查）"></a>五、其他发现（未修复，记录备查）</h2><table>
+<thead>
+<tr>
+<th>问题</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>sys_user_organization.id</code> 列长不够</td>
+<td>varchar(64) → UUID 时代 36+36&#x3D;72 &gt; 64，生产需 <code>ALTER TABLE sys_user_organization MODIFY COLUMN id varchar(128)</code></td>
+</tr>
+<tr>
+<td>桥表数据</td>
+<td>广蓄&#x2F;清蓄需 INSERT UUID 映射（生产 UUID 和 dev 不同，需先查）</td>
+</tr>
+<tr>
+<td>dev OSS 未配置</td>
+<td><code>config.enabled: false</code>，需在 <code>bootstrap-dev.yml</code> 加 oss 配置（provider:local, bucketName:Windows 路径）</td>
+</tr>
+<tr>
+<td><code>face_pic=&#39;2&#39;</code> 历史脏数据</td>
+<td>~160 条（全软删），5 条未删的全是测试账号</td>
+</tr>
+</tbody></table>
+<h2 id="六、验证结果"><a href="#六、验证结果" class="headerlink" title="六、验证结果"></a>六、验证结果</h2><ul>
+<li>mock 端到端测试：admin 侧 sys_user + sys_user_organization + sys_user_park ✅，through 侧 pass_user dist_sync_status&#x3D;PENDING ✅</li>
+<li><code>/user/page</code> MCP 验证：带 orgId+parkId 改前 0 条 → 改后 3 条 ✅</li>
+<li><code>/user/pagingOrgAndPark</code> MCP 验证：改前 0 条 → 改后 3 条 ✅</li>
+<li><code>selectCurParkOrgTree</code> 递归 null 兼容：修复后返回树结构 ✅</li>
+<li>Java 8 编译通过 ✅</li>
+</ul>
+<h2 id="提交概览"><a href="#提交概览" class="headerlink" title="提交概览"></a>提交概览</h2><p><strong>提交</strong>: <code>f78fbe0be</code> (8 files, +167 -33)<br><strong>分支</strong>: <code>618zh</code></p>
+<table>
+<thead>
+<tr>
+<th>类别</th>
+<th>文件数</th>
+<th>行数</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>核心修复（PDEPARTS）</td>
+<td>4</td>
+<td>+98</td>
+</tr>
+<tr>
+<td>回归修复（查询接口）</td>
+<td>2</td>
+<td>+22</td>
+</tr>
+<tr>
+<td>组织树修复</td>
+<td>1</td>
+<td>+15</td>
+</tr>
+<tr>
+<td>头像同步修复</td>
+<td>1</td>
+<td>+27</td>
+</tr>
+<tr>
+<td>其他杂项</td>
+<td>0</td>
+<td>+5</td>
+</tr>
+</tbody></table>
+<h2 id="经验总结"><a href="#经验总结" class="headerlink" title="经验总结"></a>经验总结</h2><h3 id="递归-CTE-的实战价值"><a href="#递归-CTE-的实战价值" class="headerlink" title="递归 CTE 的实战价值"></a>递归 CTE 的实战价值</h3><p>MySQL 8 的 <code>WITH RECURSIVE</code> 解决了”沿树结构上溯直到命中条件”这类问题，比 Java 里写递归函数简洁 100 倍：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Java 递归方案（伪代码）</span></span><br><span class="line"><span class="type">Organization</span> <span class="variable">org</span> <span class="operator">=</span> findOrgById(deptOrgId);</span><br><span class="line"><span class="keyword">while</span> (org != <span class="literal">null</span> &amp;&amp; org.getParentId() != <span class="literal">null</span>) &#123;</span><br><span class="line">    <span class="type">ParkOrganizationDTO</span> <span class="variable">bind</span> <span class="operator">=</span> findParkByOrg(org.getOrgId());</span><br><span class="line">    <span class="keyword">if</span> (bind != <span class="literal">null</span>) <span class="keyword">return</span> bind;</span><br><span class="line">    org = findOrgById(org.getParentId());</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line"><span class="comment">// 缺点：N 次 SQL，无法在事务里优化</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- SQL CTE 方案</span></span><br><span class="line"><span class="keyword">WITH</span> <span class="keyword">RECURSIVE</span> org_chain <span class="keyword">AS</span> (...)</span><br><span class="line"><span class="keyword">SELECT</span> ... LIMIT <span class="number">1</span>;</span><br><span class="line"><span class="comment">-- 优点：1 次 SQL，DB 优化器能并行</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="BaseResultMap-错映射是-MyBatis-Plus-隐形坑"><a href="#BaseResultMap-错映射是-MyBatis-Plus-隐形坑" class="headerlink" title="BaseResultMap 错映射是 MyBatis-Plus 隐形坑"></a>BaseResultMap 错映射是 MyBatis-Plus 隐形坑</h3><p>第 2 个回归 bug 的根因：<code>UserParkMapper.xml</code> 的 <code>BaseResultMap</code> 把 <code>org_id</code> 和 <code>park_id</code> 都映射到 <code>parkId</code> 字段。<strong>没有配置 <code>mapUnderscoreToCamelCase</code><strong>，裸 <code>resultType</code> 也不行。最终采用</strong>显式 AS 别名</strong>的方式绕过：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">select</span> <span class="attr">id</span>=<span class="string">&quot;listActiveByUserIds&quot;</span> <span class="attr">resultType</span>=<span class="string">&quot;...UserParkDTO&quot;</span>&gt;</span></span><br><span class="line">  SELECT user_id AS userId,</span><br><span class="line">         org_id  AS orgId,    <span class="comment">&lt;!-- 显式别名，绕开 BaseResultMap 错映射 --&gt;</span></span><br><span class="line">         park_id AS parkId</span><br><span class="line">  FROM sys_user_park</span><br><span class="line">  WHERE user_id IN (...)</span><br><span class="line">    AND delete_flag = &#x27;0&#x27;</span><br><span class="line"><span class="tag">&lt;/<span class="name">select</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>教训</strong>：MyBatis-Plus 的 BaseResultMap 自动生成不是万能的，手写 resultType 时必须显式 AS 别名。</p>
+<h3 id="主动放弃低频场景是工程纪律"><a href="#主动放弃低频场景是工程纪律" class="headerlink" title="主动放弃低频场景是工程纪律"></a>主动放弃低频场景是工程纪律</h3><p>头像回填同步只覆盖”脏值 <code>&quot;2&quot;</code>“和”新用户”，<strong>空值留给离线任务</strong>：</p>
+<ul>
+<li>高频场景（新用户入库）：立即做</li>
+<li>低频场景（存量空值回填）：数据迁移期单独跑</li>
+</ul>
+<p>这与之前 pass_user 字段同步”换部门放弃”的思路一致：<strong>折中方案的纪律是分清高频&#x2F;低频，专注高频场景</strong>。</p>
+<h3 id="数据迁移期要列详细清单"><a href="#数据迁移期要列详细清单" class="headerlink" title="数据迁移期要列详细清单"></a>数据迁移期要列详细清单</h3><p>5 个未修复的发现都是”未来生产要处理”的：</p>
+<ul>
+<li><code>sys_user_organization.id</code> 列长不够——生产环境必须 ALTER</li>
+<li>桥表数据（广蓄&#x2F;清蓄 UUID）——需要从生产 dump 提取</li>
+<li>dev OSS 配置——本地开发才能验证头像链路</li>
+<li><code>face_pic=&#39;2&#39;</code> 历史脏数据——需要在迁移脚本里清理</li>
+</ul>
+<p>这些不能”先上线再说”——必须先列出清单，每条 owner + 截止日期。</p>
+<h2 id="关联"><a href="#关联" class="headerlink" title="关联"></a>关联</h2><ul>
+<li>[[2026-06-22 工作记录]]</li>
+<li>[[钉钉同步园区失败-PDEPARTS字段下线&#x2F;问题分析与修复]]</li>
+<li>[[用户同步园区下发完整链路]]</li>
+<li>[[2026-06-22 钉钉同步真实格式链路测试报告]]</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/PDEPARTS%E5%BA%9F%E5%BC%83/" rel="tag"># PDEPARTS废弃</a>
+              <a href="/tags/%E9%80%92%E5%BD%92CTE/" rel="tag"># 递归CTE</a>
+              <a href="/tags/%E5%A4%B4%E5%83%8F%E5%90%8C%E6%AD%A5/" rel="tag"># 头像同步</a>
+              <a href="/tags/%E5%9B%9E%E5%BD%92%E4%BF%AE%E5%A4%8D/" rel="tag"># 回归修复</a>
+              <a href="/tags/BaseResultMap/" rel="tag"># BaseResultMap</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/06/22/2026-06-22-pdeparts-offline/" rel="prev" title="PDEPARTS 字段下线与钉钉同步真实格式链路测试报告">
+                  <i class="fa fa-angle-left"></i> PDEPARTS 字段下线与钉钉同步真实格式链路测试报告
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2026/06/25/2026-06-25-perf-avatar-backfill/" rel="next" title="钉钉同步性能优化（异步化+批量化）+ 头像回填 CDN 解析失败">
+                  钉钉同步性能优化（异步化+批量化）+ 头像回填 CDN 解析失败 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  
+  <div class="comments giscus-container">
+  </div>
+  
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">zhlifeiy35</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/zhdmm35" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"zhdmm35/zhdmm35.github.io","repo_id":"R_kgDOON4bhg","category":"Announcements","category_id":"DIC_kwDOON4bhs4C3dEc","mapping":"pathname","strict":0,"reactions_enabled":1,"emit_metadata":0,"theme":"preferred_color_scheme","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+
+<script>
+document.addEventListener('page:loaded', () => {
+  if (!CONFIG.page.comments) return;
+
+  NexT.utils.loadComments('.giscus-container')
+    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
+      attributes: {
+        async                   : true,
+        crossOrigin             : 'anonymous',
+        'data-repo'             : CONFIG.giscus.repo,
+        'data-repo-id'          : CONFIG.giscus.repo_id,
+        'data-category'         : CONFIG.giscus.category,
+        'data-category-id'      : CONFIG.giscus.category_id,
+        'data-mapping'          : CONFIG.giscus.mapping,
+        'data-strict'           : CONFIG.giscus.strict,
+        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
+        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
+        'data-theme'            : CONFIG.giscus.theme,
+        'data-lang'             : CONFIG.giscus.lang,
+        'data-input-position'   : CONFIG.giscus.input_position,
+        'data-loading'          : CONFIG.giscus.loading
+      },
+      parentNode: document.querySelector('.giscus-container')
+    }));
+});
+</script>
+
+</body>
+</html>

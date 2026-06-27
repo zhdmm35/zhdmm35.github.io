@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="导读 今天捅了两个马蜂窝：中台 Dataphin 下线了 PDEPARTS 字段，导致所有依赖该字段解析公司归属的 Java 逻辑静默失效（getCompanyIdFromPDeparts &#x2F; getDepartmentAsList 返回 null），1542 个 Ding 用户 100% 缺 sys_user_park；用真实格式跑 12 个端到端测试用例，又挖出 4 个新 bug（增">
+<meta property="og:type" content="article">
+<meta property="og:title" content="PDEPARTS 字段下线与钉钉同步真实格式链路测试报告">
+<meta property="og:url" content="https://zhlifeiy.codes/2026/06/22/2026-06-22-pdeparts-offline/index.html">
+<meta property="og:site_name" content="我的技术博客">
+<meta property="og:description" content="导读 今天捅了两个马蜂窝：中台 Dataphin 下线了 PDEPARTS 字段，导致所有依赖该字段解析公司归属的 Java 逻辑静默失效（getCompanyIdFromPDeparts &#x2F; getDepartmentAsList 返回 null），1542 个 Ding 用户 100% 缺 sys_user_park；用真实格式跑 12 个端到端测试用例，又挖出 4 个新 bug（增">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/2026-06-22-pdeparts-offline_001.jpg">
+<meta property="article:published_time" content="2026-06-22T11:00:00.000Z">
+<meta property="article:modified_time" content="2026-06-27T14:12:55.363Z">
+<meta property="article:author" content="zhlifeiy35">
+<meta property="article:tag" content="集成测试">
+<meta property="article:tag" content="PDEPARTS下线">
+<meta property="article:tag" content="数据模型变更">
+<meta property="article:tag" content="Dataphin">
+<meta property="article:tag" content="真实格式">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/2026-06-22-pdeparts-offline_001.jpg">
+
+
+<link rel="canonical" href="https://zhlifeiy.codes/2026/06/22/2026-06-22-pdeparts-offline/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://zhlifeiy.codes/2026/06/22/2026-06-22-pdeparts-offline/","path":"2026/06/22/2026-06-22-pdeparts-offline/","title":"PDEPARTS 字段下线与钉钉同步真实格式链路测试报告"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>PDEPARTS 字段下线与钉钉同步真实格式链路测试报告 | 我的技术博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">我的技术博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">记录学习与成长</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-guestbook"><a href="/guestbook/" rel="section"><i class="fa fa-comment-dots fa-fw"></i>留言板</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%BC%E8%AF%BB"><span class="nav-number">1.</span> <span class="nav-text">导读</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link"><span class="nav-number">1.0.1.</span> <span class="nav-text">🎧 文章导读</span></a></li><li class="nav-item nav-level-4"><a class="nav-link"><span class="nav-number">1.0.2.</span> <span class="nav-text">🎵 背景音乐</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">2.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E8%83%8C%E6%99%AF"><span class="nav-number">3.</span> <span class="nav-text">问题背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8E%92%E6%9F%A5%E6%80%9D%E8%B7%AF"><span class="nav-number">4.</span> <span class="nav-text">排查思路</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%8E%E7%8E%B0%E8%B1%A1%E5%85%A5%E6%89%8B%EF%BC%9Atrace-%E6%95%B4%E6%9D%A1%E5%90%8C%E6%AD%A5%E9%93%BE%E8%B7%AF"><span class="nav-number">4.1.</span> <span class="nav-text">从现象入手：trace 整条同步链路</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9F%A5%E7%9C%9F%E5%AE%9E%E5%BA%93%E6%89%BE%E8%AF%81%E6%8D%AE%EF%BC%9Adist-sync-status-%E5%88%86%E5%B8%83%E5%BC%82%E5%B8%B8"><span class="nav-number">4.2.</span> <span class="nav-text">查真实库找证据：dist_sync_status 分布异常</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9F%A5-0618-%E7%94%9F%E4%BA%A7-dump%EF%BC%9ADing-%E7%94%A8%E6%88%B7-100-%E7%BC%BA-sys-user-park"><span class="nav-number">4.3.</span> <span class="nav-text">查 0618 生产 dump：Ding 用户 100% 缺 sys_user_park</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%A8%E6%88%B7%E6%8F%90%E4%BE%9B%E5%85%B3%E9%94%AE%E8%AF%81%E6%8D%AE%EF%BC%9ApDeparts-null-%E7%9A%84%E7%9C%9F%E5%AE%9E%E5%93%8D%E5%BA%94"><span class="nav-number">4.4.</span> <span class="nav-text">用户提供关键证据：pDeparts&#x3D;null 的真实响应</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B9%E5%9B%A0%E5%88%86%E6%9E%90"><span class="nav-number">5.</span> <span class="nav-text">根因分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%AC%A1%E8%A6%81-Bug%EF%BC%9AsynSysUserToPassUser-ADD-%E5%88%86%E6%94%AF%E6%BC%8F%E8%AE%BE-distSyncStatus"><span class="nav-number">6.</span> <span class="nav-text">次要 Bug：synSysUserToPassUser ADD 分支漏设 distSyncStatus</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B3%E4%BA%8E-EncryptionUtils-%E7%9A%84%E6%8E%92%E6%9F%A5%E5%BC%AF%E8%B7%AF"><span class="nav-number">7.</span> <span class="nav-text">关于 EncryptionUtils 的排查弯路</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%AE%E5%A4%8D%E6%96%B9%E6%A1%88"><span class="nav-number">8.</span> <span class="nav-text">修复方案</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#PDEPARTS-%E7%9B%B8%E5%85%B3%EF%BC%88%E4%B8%BB%E5%9B%A0%EF%BC%89"><span class="nav-number">8.1.</span> <span class="nav-text">PDEPARTS 相关（主因）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#synSysUserToPassUser-ADD-%E5%88%86%E6%94%AF%EF%BC%88%E6%AC%A1%E8%A6%81-Bug%EF%BC%89"><span class="nav-number">8.2.</span> <span class="nav-text">synSysUserToPassUser ADD 分支（次要 Bug）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9C%9F%E5%AE%9E%E6%A0%BC%E5%BC%8F%E9%93%BE%E8%B7%AF%E6%B5%8B%E8%AF%95%E6%8A%A5%E5%91%8A"><span class="nav-number">9.</span> <span class="nav-text">真实格式链路测试报告</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AD%97%E6%AE%B5%E6%98%A0%E5%B0%84%E5%8F%98%E6%9B%B4%EF%BC%88%E5%B7%B2%E9%80%82%E9%85%8D%E7%94%9F%E4%BA%A7%EF%BC%89"><span class="nav-number">9.1.</span> <span class="nav-text">字段映射变更（已适配生产）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#mock-%E6%95%B0%E6%8D%AE%E6%A0%BC%E5%BC%8F%EF%BC%88%E7%9C%9F%E5%AE%9E%E7%94%9F%E4%BA%A7%E6%A0%BC%E5%BC%8F%EF%BC%89"><span class="nav-number">9.2.</span> <span class="nav-text">mock 数据格式（真实生产格式）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#HTTP-%E5%B1%82%E6%B5%8B%E8%AF%95%E7%BB%93%E6%9E%9C"><span class="nav-number">9.3.</span> <span class="nav-text">HTTP 层测试结果</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DB-%E8%90%BD%E5%BA%93%EF%BC%88%E5%85%B3%E9%94%AE%E5%8F%91%E7%8E%B0%EF%BC%89"><span class="nav-number">9.4.</span> <span class="nav-text">DB 落库（关键发现）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E4%B8%AA%E6%96%B0-Bug"><span class="nav-number">10.</span> <span class="nav-text">4 个新 Bug</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Bug-1%EF%BC%9A%E5%A2%9E%E9%87%8F%E6%9B%B4%E6%96%B0%E5%8F%96%E6%B6%88%E5%88%A0%E9%99%A4%E6%A0%87%E8%AE%B0%E5%A4%B1%E6%95%88"><span class="nav-number">10.1.</span> <span class="nav-text">Bug#1：增量更新取消删除标记失效</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Bug-2%EF%BC%9A%E5%9B%AD%E5%8C%BA%E9%93%BE%E8%B7%AF%E4%BB%8D%E4%BE%9D%E8%B5%96-PDEPARTS"><span class="nav-number">10.2.</span> <span class="nav-text">Bug#2：园区链路仍依赖 PDEPARTS</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Bug-3%EF%BC%9Apass-user-%E9%93%BE%E8%B7%AF%E5%90%8C%E6%A0%B7%E4%BE%9D%E8%B5%96-PDEPARTS"><span class="nav-number">10.3.</span> <span class="nav-text">Bug#3：pass_user 链路同样依赖 PDEPARTS</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Bug-4%EF%BC%88%E8%AE%BE%E8%AE%A1%E5%B1%82%EF%BC%89%EF%BC%9A%E9%83%A8%E9%97%A8-vs-%E5%85%AC%E5%8F%B8%E6%95%B0%E6%8D%AE%E6%BA%90%E4%B8%8D%E4%B8%80%E8%87%B4"><span class="nav-number">10.4.</span> <span class="nav-text">Bug#4（设计层）：部门 vs 公司数据源不一致</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BD%AF%E5%88%A0%E6%81%A2%E5%A4%8D"><span class="nav-number">10.5.</span> <span class="nav-text">软删恢复</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%A8%E6%88%B7%E5%90%8C%E6%AD%A5%E2%86%92%E5%9B%AD%E5%8C%BA%E4%B8%8B%E5%8F%91-%E5%AE%8C%E6%95%B4%E9%93%BE%E8%B7%AF%EF%BC%88%E6%94%B9%E5%8A%A8%E5%90%8E%EF%BC%89"><span class="nav-number">11.</span> <span class="nav-text">用户同步→园区下发 完整链路（改动后）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#findParkByOrgWalkUp-%E9%80%92%E5%BD%92-CTE"><span class="nav-number">11.1.</span> <span class="nav-text">findParkByOrgWalkUp 递归 CTE</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A1%A5%E8%A1%A8%E8%AF%AD%E4%B9%89"><span class="nav-number">11.2.</span> <span class="nav-text">桥表语义</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%8F%E9%AA%8C%E6%80%BB%E7%BB%93"><span class="nav-number">12.</span> <span class="nav-text">经验总结</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8E%92%E6%9F%A5%E6%96%B9%E6%B3%95%E8%AE%BA"><span class="nav-number">12.1.</span> <span class="nav-text">排查方法论</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E8%A7%84%E8%8C%83"><span class="nav-number">12.2.</span> <span class="nav-text">代码规范</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E8%A6%86%E7%9B%96"><span class="nav-number">12.3.</span> <span class="nav-text">测试覆盖</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BE%85%E5%8A%9E%E4%BA%8B%E9%A1%B9"><span class="nav-number">13.</span> <span class="nav-text">待办事项</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B3%E8%81%94"><span class="nav-number">14.</span> <span class="nav-text">关联</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zhlifeiy35</p>
+  <div class="site-description" itemprop="description">分享编程技术、AI经验、学习笔记</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">51</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">175</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zhdmm35" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zhdmm35" rel="noopener me" target="_blank"><i class="fa fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/2026-06-22-pdeparts-offline_001.jpg" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/06/22/2026-06-22-pdeparts-offline/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="我的技术博客">
+      <meta itemprop="description" content="分享编程技术、AI经验、学习笔记">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="PDEPARTS 字段下线与钉钉同步真实格式链路测试报告 | 我的技术博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          PDEPARTS 字段下线与钉钉同步真实格式链路测试报告
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-06-22 19:00:00" itemprop="dateCreated datePublished" datetime="2026-06-22T19:00:00+08:00">2026-06-22</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-06-27 22:12:55" itemprop="dateModified" datetime="2026-06-27T22:12:55+08:00">2026-06-27</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">后端开发</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E5%8D%97%E7%BD%91%E9%A1%B9%E7%9B%AE/" itemprop="url" rel="index"><span itemprop="name">南网项目</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="导读"><a href="#导读" class="headerlink" title="导读"></a>导读</h2><blockquote>
+<p>今天捅了两个马蜂窝：<strong>中台 Dataphin 下线了 PDEPARTS 字段</strong>，导致所有依赖该字段解析公司归属的 Java 逻辑静默失效（<code>getCompanyIdFromPDeparts</code> &#x2F; <code>getDepartmentAsList</code> 返回 null），1542 个 Ding 用户 100% 缺 sys_user_park；<strong>用真实格式跑 12 个端到端测试用例</strong>，又挖出 4 个新 bug（增量更新取消删除标记失效、园区链路仍依赖 PDEPARTS、pass_user 链路同样依赖 PDEPARTS、部门 vs 公司数据源不一致）。修复方案是改用部门 UUID 沿 parent_id 递归上溯查桥表（CTE），以及补回 synSysUserToPassUser ADD 分支漏设的 distSyncStatus。</p>
+</blockquote>
+<span id="more"></span>
+
+<div class="audio-player">
+  <div class="audio-section">
+    <h4>🎧 文章导读</h4>
+    <audio controls preload="metadata">
+      <source src="/2026-06-22-pdeparts-offline/narration.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+  <div class="audio-section">
+    <h4>🎵 背景音乐</h4>
+    <audio controls loop preload="metadata">
+      <source src="/2026-06-22-pdeparts-offline/bgm.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+</div>
+
+<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>钉钉用户同步链路异常：园区侧永远收不到人员数据，门禁通行功能受影响。最初以为是某个 service 的小 bug，深挖才发现是中台数据模型层变更（<code>PDEPARTS</code> 字段下线）导致整条链路静默失效。</p>
+<p>这种”上游变更、下游无感”的故障最难排查——没有异常日志，没有错误码，只有”业务不工作”的最终表现。</p>
+<h2 id="问题背景"><a href="#问题背景" class="headerlink" title="问题背景"></a>问题背景</h2><p>钉钉用户数据从南网中台 Dataphin 流入园区平台，经过四个环节最终下发到各园区：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">中台拉数据 → admin 写本地（sys_user / sys_user_organization / sys_user_park）</span><br><span class="line">   → Feign 调 through 补写总部 pass_user</span><br><span class="line">   → 定时任务通过 ROMA 下发园区</span><br></pre></td></tr></table></figure>
+
+<p>这条链路上任一环节数据缺失，下游就会拿到空值，最终表现为”园区收不到人员”。</p>
+<p>本次问题正是链路最上游的数据模型发生了变更——中台 Dataphin 的 <code>h_user</code> 表下线了 <code>PDEPARTS</code> 字段，同时 <code>department</code> 字段从数字 JSON 数组格式（如 <code>[494216765]</code>）变成了 UUID 字符串（如 <code>e6a63c82-80bc-4a75-8d71-67675cfcf5ec</code>）。</p>
+<p><img src="/2026-06-22-pdeparts-offline/assets/images/fig1_001.jpg" alt="Dataphin 数据流断链"><br><em>图1：Dataphin 数据流断链</em></p>
+<h2 id="排查思路"><a href="#排查思路" class="headerlink" title="排查思路"></a>排查思路</h2><h3 id="从现象入手：trace-整条同步链路"><a href="#从现象入手：trace-整条同步链路" class="headerlink" title="从现象入手：trace 整条同步链路"></a>从现象入手：trace 整条同步链路</h3><p>用户最初报告的现象是”园区写不进 pass_user”。从终端往回追溯，pass_user 是 through 服务写的，入口是 <code>PassUserClient.synSysUserToPassUser()</code> 这个 Feign 调用。</p>
+<p><strong>关键教训</strong>：本地 mock 数据的 PDEPARTS 是手工构造的、格式正确，所以本地测试看起来都正常——这埋下了后面一个重要教训。</p>
+<h3 id="查真实库找证据：dist-sync-status-分布异常"><a href="#查真实库找证据：dist-sync-status-分布异常" class="headerlink" title="查真实库找证据：dist_sync_status 分布异常"></a>查真实库找证据：dist_sync_status 分布异常</h3><p><img src="/2026-06-22-pdeparts-offline/assets/images/fig2_001.jpg" alt="dist_sync_status 分布"><br><em>图2：dist_sync_status 分布</em></p>
+<p>用 MCP 查 building_through 库的 pass_user 表，按 <code>dist_sync_status</code> 分组统计：</p>
+<ul>
+<li><strong>NONE 454 条</strong>（标记为”总部数据无需同步”，正常）</li>
+<li><strong>ING 236 条</strong>（卡在”已下发待 ACK”状态）</li>
+<li><strong>null 7 条</strong>（新创建的 pass_user 完全没有 status）</li>
+</ul>
+<p>null 状态这 7 条很可疑——追溯到 <code>PassUserServiceImpl.synSysUserToPassUser()</code> 的 ADD 分支，发现了第二个 Bug：**新增分支漏设 <code>distSyncStatus</code>**。</p>
+<h3 id="查-0618-生产-dump：Ding-用户-100-缺-sys-user-park"><a href="#查-0618-生产-dump：Ding-用户-100-缺-sys-user-park" class="headerlink" title="查 0618 生产 dump：Ding 用户 100% 缺 sys_user_park"></a>查 0618 生产 dump：Ding 用户 100% 缺 sys_user_park</h3><p>继续往上翻：admin 服务的 <code>synSysUserToPassUser</code> 是从 sys_user 关联 sys_user_park 拿 parkId 的。如果 sys_user_park 没写，下游 passUserDTO.parkId 就是 null。</p>
+<p>用 Python 解析 <code>E:/nanwang/项目会用压缩包/数据库sql文件/db0618(1).sql</code> 这个 12MB 的生产快照：</p>
+<blockquote>
+<p><strong>1542 个 <code>user_from=&#39;Ding&#39;</code> 的真实钉钉用户里，0 个有 sys_user_park 记录（100% 缺失）</strong>。只有 182 个（11.8%）有 sys_user_organization 记录——这 11.8% 是老格式时代的存量。</p>
+</blockquote>
+<h3 id="用户提供关键证据：pDeparts-null-的真实响应"><a href="#用户提供关键证据：pDeparts-null-的真实响应" class="headerlink" title="用户提供关键证据：pDeparts&#x3D;null 的真实响应"></a>用户提供关键证据：pDeparts&#x3D;null 的真实响应</h3><p>转折点来了。用户提供了真实的 Dataphin 响应样本：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">DataPhinUser(userId=$:LWCP_v1:$4G18hbvCSH4n5IRfVMkxGoF3Ti+7WKR7,</span><br><span class="line">  openId=wBSKiPJ5gTiPjwcR0gB1xMNQiEiE,</span><br><span class="line">  department=e6a63c82-80bc-4a75-8d71-67675cfcf5ec,  // UUID</span><br><span class="line">  pDeparts=null,                                       // 彻底没了</span><br><span class="line">  name=马漫欢, mobile=15602386855, ...)</span><br></pre></td></tr></table></figure>
+
+<p>再去查 <code>DataPhinClientImpl.queryDingUser()</code> 的”全字段探测”日志——它调 <code>setReturnFields(null)</code> 探测 Dataphin <code>h_user</code> 表所有可用列，返回的 metaColumns 完整列表里<strong>根本没有 PDEPARTS</strong>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">PROFILEPHOTOURL, EXTATTR, DINGTALKUNIONID, STATE, EMAIL, HOMEPHONE, ENTRYDATE,</span><br><span class="line">OFFICEPHONE, EMPLOYEENUMBER, OBJECTID, POSITION, ..., PARENTID, PASSWORD,</span><br><span class="line">TITLE, CREATEDTIME, WECHATUSERID, SORTKEY, MOBILE</span><br></pre></td></tr></table></figure>
+
+<p><strong>没有 PDEPARTS</strong>。也就是说，字段在源表里被删了，不是代码忘了请求。这个证据把根因坐实。</p>
+<h2 id="根因分析"><a href="#根因分析" class="headerlink" title="根因分析"></a>根因分析</h2><blockquote>
+<p>[!danger] 根因描述<br>中台 Dataphin <code>h_user</code> 源表下线了 <code>PDEPARTS</code> 字段，同时 <code>department</code> 字段格式从数字 JSON 数组变为 UUID 字符串。所有依赖这两个字段解析公司归属和部门挂靠的 Java 逻辑（<code>getCompanyIdFromPDeparts</code>、<code>getDepartmentAsList</code>）静默返回 null&#x2F;空集合，导致 sys_user_park 和 sys_user_organization 全部缺失，下游 pass_user 拿不到 parkId，整条下发链路断裂。</p>
+</blockquote>
+<p><code>DataPhinUserResp.java:135-153</code> 的 <code>getCompanyIdFromPDeparts()</code>，在 pDeparts 为空时直接返回 null：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> String <span class="title function_">getCompanyIdFromPDeparts</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (!StringUtils.hasText(<span class="built_in">this</span>.pDeparts)) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">null</span>;  <span class="comment">// ← pDeparts=null，直接返回 null</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// ...解析 [[dept, company, seq]] 取 [0][1]...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>链路从此处开始崩塌：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">sys_user 没有 sys_user_park 关联</span><br><span class="line">   → listByConditionExt（UserMapperExt.xml 的 LEFT JOIN）查不到 park_id</span><br><span class="line">   → synSysUserToPassUser 写入 passUserDTO.setParkId(null)</span><br><span class="line">   → PassDistSyncer.resolveShouldSync(null) 返回 false</span><br><span class="line">   → 标记 NONE&quot;总部数据无需同步&quot;</span><br><span class="line">   → 永不下发到园区</span><br></pre></td></tr></table></figure>
+
+<h2 id="次要-Bug：synSysUserToPassUser-ADD-分支漏设-distSyncStatus"><a href="#次要-Bug：synSysUserToPassUser-ADD-分支漏设-distSyncStatus" class="headerlink" title="次要 Bug：synSysUserToPassUser ADD 分支漏设 distSyncStatus"></a>次要 Bug：synSysUserToPassUser ADD 分支漏设 distSyncStatus</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// PassUserServiceImpl.java:471-488（ADD 分支，漏了一行）</span></span><br><span class="line">passUserDTO.setParkId(user.getParkId());</span><br><span class="line">passUserDTO.setOrgId(user.getOrgId());</span><br><span class="line">passUserDTO.setDeleteFlag(DictConstants.DEL_FLAG_NO);</span><br><span class="line">WebExtUtils.iniCreate(passUserDTO);</span><br><span class="line"><span class="comment">// ← 这里没有 setDistSyncStatus(PENDING)！</span></span><br><span class="line">toAdd.add(passUserDTO);</span><br></pre></td></tr></table></figure>
+
+<p>对比同方法 <code>createTempPassUser()</code> 第 184-186 行是有这个状态的——唯独 ADD 分支漏了。</p>
+<blockquote>
+<p>[!info] 为什么是 null 而不是其他值<br><code>pass_user.dist_sync_status</code> 列在仓库里没有任何 ALTER 迁移脚本，列定义 <code>DEFAULT = null</code>、<code>IS_NULLABLE=YES</code>——是手动加的列。通用 mapper 的 <code>addSelective</code> 只插非 null 字段，不设就是 null。而 <code>findByDistSyncStatus</code> 查询是 <code>WHERE dist_sync_status = &#39;PENDING&#39;</code>（PassUserMapper.xml:1378-1381），null 状态永远查不到。</p>
+</blockquote>
+<p>数据库佐证：building_through 库里 7 条 <code>dist_sync_status IS NULL</code> 的记录全是 6&#x2F;12-6&#x2F;16 的测试数据。</p>
+<h2 id="关于-EncryptionUtils-的排查弯路"><a href="#关于-EncryptionUtils-的排查弯路" class="headerlink" title="关于 EncryptionUtils 的排查弯路"></a>关于 EncryptionUtils 的排查弯路</h2><p>排查过程中走了两次弯路，值得记录。一开始怀疑两个地方：</p>
+<ol>
+<li><del><code>synSysUserToPassUser</code> 里 <code>phoneEncryptToHex(user.getPhone())</code> 二次加密</del>——实际 <code>EncryptionUtils.phoneEncryptToHex</code> 是<strong>幂等</strong>的（只在 <code>length==11</code> 时加密，已加密的 64 位 hex 原样返回），不会二次加密</li>
+<li><del><code>idCardSubTail(null, 4)</code> NPE</del>——<code>idCardSubTail</code> 内部 <code>StringUtils.isEmpty(null)</code> 为 true 直接返回 null，不会 NPE</li>
+</ol>
+<blockquote>
+<p>[!warning] 教训<br><strong>下结论前先读 utils 的实现</strong>，不要靠方法名望文生义。这两个误报各占去半小时排查时间。</p>
+</blockquote>
+<h2 id="修复方案"><a href="#修复方案" class="headerlink" title="修复方案"></a>修复方案</h2><h3 id="PDEPARTS-相关（主因）"><a href="#PDEPARTS-相关（主因）" class="headerlink" title="PDEPARTS 相关（主因）"></a>PDEPARTS 相关（主因）</h3><ol>
+<li>**废弃 <code>getCompanyIdFromPDeparts()</code>**——字段没了，方法彻底作废</li>
+<li><strong>改用 PARENTID UUID 定位组织</strong>——新 schema 里 <code>department</code>（映射自 PARENTID）是父级组织节点 UUID。要从这个 UUID 出发，沿 <code>sys_organization.parent_id</code> 往上找公司级节点</li>
+<li><strong>重建 <code>sys_park_organization</code> 桥表</strong>——现在存的是老数字 id（<code>59096189</code>、<code>136602494</code>），新 UUID 对不上，查 park_id 永远查不到</li>
+</ol>
+<h3 id="synSysUserToPassUser-ADD-分支（次要-Bug）"><a href="#synSysUserToPassUser-ADD-分支（次要-Bug）" class="headerlink" title="synSysUserToPassUser ADD 分支（次要 Bug）"></a>synSysUserToPassUser ADD 分支（次要 Bug）</h3><p>补一行：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">passUserDTO.setDistSyncStatus(PaasDistSyncStatus.PENDING.getStatus());</span><br></pre></td></tr></table></figure>
+
+<p>并刷存量 7 条 null 状态数据：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">UPDATE</span> pass_user</span><br><span class="line"><span class="keyword">SET</span> dist_sync_status <span class="operator">=</span> <span class="string">&#x27;PENDING&#x27;</span></span><br><span class="line"><span class="keyword">WHERE</span> dist_sync_status <span class="keyword">IS</span> <span class="keyword">NULL</span></span><br><span class="line">  <span class="keyword">AND</span> delete_flag <span class="operator">=</span> <span class="string">&#x27;0&#x27;</span>;</span><br></pre></td></tr></table></figure>
+
+<h2 id="真实格式链路测试报告"><a href="#真实格式链路测试报告" class="headerlink" title="真实格式链路测试报告"></a>真实格式链路测试报告</h2><h3 id="字段映射变更（已适配生产）"><a href="#字段映射变更（已适配生产）" class="headerlink" title="字段映射变更（已适配生产）"></a>字段映射变更（已适配生产）</h3><table>
+<thead>
+<tr>
+<th>Java 字段</th>
+<th>旧 <code>@JsonProperty</code></th>
+<th>新 <code>@JsonProperty</code></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>userId</code></td>
+<td><code>USERID</code></td>
+<td><strong><code>DINGID</code></strong></td>
+</tr>
+<tr>
+<td><code>openId</code></td>
+<td><code>OPENID</code></td>
+<td><strong><code>DINGTALKUNIONID</code></strong></td>
+</tr>
+<tr>
+<td><code>department</code></td>
+<td><code>DEPARTMENT</code></td>
+<td><strong><code>PARENTID</code></strong></td>
+</tr>
+<tr>
+<td><code>orgEmail</code></td>
+<td><code>ORGEMAIL</code></td>
+<td><strong><code>EMAIL</code></strong></td>
+</tr>
+<tr>
+<td><code>avatar</code></td>
+<td><code>AVATAR</code></td>
+<td><strong><code>PROFILEPHOTOURL</code></strong></td>
+</tr>
+<tr>
+<td><code>userOrder</code></td>
+<td><code>USERORDER</code></td>
+<td><strong><code>SORTKEY</code></strong></td>
+</tr>
+<tr>
+<td><code>tsUserId</code></td>
+<td><code>TSUSERID</code></td>
+<td><strong><code>OBJECTID</code></strong></td>
+</tr>
+</tbody></table>
+<h3 id="mock-数据格式（真实生产格式）"><a href="#mock-数据格式（真实生产格式）" class="headerlink" title="mock 数据格式（真实生产格式）"></a>mock 数据格式（真实生产格式）</h3><ul>
+<li><code>PARENTID</code>：单个 UUID（如 <code>e6a63c82-80bc-4a75-8d71-67675cfcf5ec</code>）</li>
+<li><code>PDEPARTS</code>：<code>null</code>（生产不再返回）</li>
+<li>4 个 mock 用户用不同 UUID 模拟”同部门 → 换部门 → 跨园区”</li>
+</ul>
+<h3 id="HTTP-层测试结果"><a href="#HTTP-层测试结果" class="headerlink" title="HTTP 层测试结果"></a>HTTP 层测试结果</h3><table>
+<thead>
+<tr>
+<th>用例</th>
+<th>HTTP</th>
+<th>data</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>T6 companyList</td>
+<td>200</td>
+<td>4 条</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>T7 saveCompanyBind</td>
+<td>200</td>
+<td>null</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>T8 互斥</td>
+<td>200</td>
+<td>FAIL_OPERATE</td>
+<td>✅ 业务失败符合预期</td>
+</tr>
+<tr>
+<td>T1 同步</td>
+<td>200</td>
+<td>1</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>T2 幂等</td>
+<td>200</td>
+<td>1</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>T3 重名</td>
+<td>200</td>
+<td>1</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>T4-create</td>
+<td>200</td>
+<td>1</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>T4-update 换部门</td>
+<td>200</td>
+<td>1</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>T12 dirty check</td>
+<td>200</td>
+<td>1</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>T5-create</td>
+<td>200</td>
+<td>1</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>T5-update 跨园区</td>
+<td>200</td>
+<td>1</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>T11 getCurParkOrgTree</td>
+<td>200</td>
+<td>2 条</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>T9 parkName&#x2F;orgName&#x2F;userName 筛选</td>
+<td>200</td>
+<td>totalCount:0</td>
+<td>⚠️ Bug#1 副作用</td>
+</tr>
+</tbody></table>
+<h3 id="DB-落库（关键发现）"><a href="#DB-落库（关键发现）" class="headerlink" title="DB 落库（关键发现）"></a>DB 落库（关键发现）</h3><table>
+<thead>
+<tr>
+<th>表</th>
+<th>本次同步结果</th>
+<th>状态</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>sys_user</code></td>
+<td>4 个 mock 用户全 <code>delete_flag=1</code></td>
+<td>❌ <strong>Bug#1</strong></td>
+</tr>
+<tr>
+<td><code>sys_user_organization</code></td>
+<td>4 条新记录，<code>org_id=PARENTID UUID</code></td>
+<td>✅ 新代码适配</td>
+</tr>
+<tr>
+<td><code>sys_user_park</code></td>
+<td><strong>0 条新记录</strong>，全是 06-16 首次测试快照</td>
+<td>❌ <strong>Bug#2</strong></td>
+</tr>
+<tr>
+<td><code>pass_user</code></td>
+<td><strong>0 条变化</strong>，全是 06-16 快照</td>
+<td>❌ <strong>Bug#3</strong></td>
+</tr>
+</tbody></table>
+<p><img src="/2026-06-22-pdeparts-offline/assets/images/fig3_001.jpg" alt="4 个 Bug 表格"><br><em>图3：4 个 Bug 表格</em></p>
+<h2 id="4-个新-Bug"><a href="#4-个新-Bug" class="headerlink" title="4 个新 Bug"></a>4 个新 Bug</h2><h3 id="Bug-1：增量更新取消删除标记失效"><a href="#Bug-1：增量更新取消删除标记失效" class="headerlink" title="Bug#1：增量更新取消删除标记失效"></a>Bug#1：增量更新取消删除标记失效</h3><ul>
+<li><strong>位置</strong>：<code>UserSyncServiceImpl.java:146-180</code>（<code>toUpdateUsers</code> stream 内的 map 块）</li>
+<li><strong>症状</strong>：本次同步后所有已存在用户被软删（<code>delete_flag=1</code>），T9&#x2F;T10 查询 <code>totalCount=0</code></li>
+<li><strong>根因</strong>：第 161 行 <code>existDingUser.setDeleteFlag(NO)</code> 只修改了 <code>existDingUserMap</code> value 的引用对象，但新构造的 <code>updateUser</code> DTO（真正写入 DB 的对象）未设置 <code>deleteFlag</code> 字段</li>
+<li><strong>影响范围</strong>：所有走 update 分支的已存在钉钉用户（含真实员工），本次 <strong>5297 个真实用户被一并错误软删</strong></li>
+</ul>
+<p><strong>修复方向</strong>：在 <code>updateUser</code> DTO 中显式 <code>setDeleteFlag(DEL_FLAG_NO)</code>；或确认 <code>listByCondition</code> 返回的对象与 <code>existDingUserMap</code> value 是否同一引用，并据此调整 list 的 <code>peek</code> 时机。</p>
+<h3 id="Bug-2：园区链路仍依赖-PDEPARTS"><a href="#Bug-2：园区链路仍依赖-PDEPARTS" class="headerlink" title="Bug#2：园区链路仍依赖 PDEPARTS"></a>Bug#2：园区链路仍依赖 PDEPARTS</h3><ul>
+<li><strong>位置</strong>：<code>UserSyncServiceImpl.java:228, 297, 307</code></li>
+<li><strong>症状</strong>：<code>PDEPARTS=null</code> 时 <code>getCompanyIdFromPDeparts()</code> 返回 <code>null</code>，整个园区写&#x2F;更新&#x2F;跨园区跳过</li>
+<li><strong>根因</strong>：真实生产数据不再返回 <code>PDEPARTS</code>，公司 ID 失去来源</li>
+</ul>
+<p><strong>修复方向</strong>：</p>
+<ul>
+<li>A. <code>DataPhinUser</code> 新增 <code>companyId</code> 字段（直接来自中台）</li>
+<li>B. 通过 <code>PARENTID</code> → <code>sys_organization</code> 表反查公司</li>
+<li>C. 保持现状但与业务确认新数据源</li>
+</ul>
+<h3 id="Bug-3：pass-user-链路同样依赖-PDEPARTS"><a href="#Bug-3：pass-user-链路同样依赖-PDEPARTS" class="headerlink" title="Bug#3：pass_user 链路同样依赖 PDEPARTS"></a>Bug#3：pass_user 链路同样依赖 PDEPARTS</h3><p>与 Bug#2 同一根因，<strong>修复与 Bug#2 一并处理</strong>。</p>
+<h3 id="Bug-4（设计层）：部门-vs-公司数据源不一致"><a href="#Bug-4（设计层）：部门-vs-公司数据源不一致" class="headerlink" title="Bug#4（设计层）：部门 vs 公司数据源不一致"></a>Bug#4（设计层）：部门 vs 公司数据源不一致</h3><ul>
+<li><strong>症状</strong>：<code>sys_user_organization</code> 走 <code>PARENTID</code>（新代码已适配 UUID），但 <code>sys_user_park</code> &#x2F; <code>pass_user</code> 仍走 <code>PDEPARTS</code>。两边数据格式（UUID vs 数字 ID）和值完全不一致</li>
+<li><strong>建议</strong>：统一公司获取逻辑，所有关联表用同一来源</li>
+</ul>
+<h3 id="软删恢复"><a href="#软删恢复" class="headerlink" title="软删恢复"></a>软删恢复</h3><blockquote>
+<p>测试造成的影响：5297 个真实用户被错误软删（删前 Ding 用户 5301）</p>
+</blockquote>
+<p>执行恢复 SQL：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">UPDATE</span> sys_user <span class="keyword">SET</span> delete_flag<span class="operator">=</span><span class="string">&#x27;0&#x27;</span> <span class="keyword">WHERE</span> user_from<span class="operator">=</span><span class="string">&#x27;Ding&#x27;</span> <span class="keyword">AND</span> delete_flag<span class="operator">=</span><span class="string">&#x27;1&#x27;</span>;</span><br><span class="line"><span class="comment">-- 影响：5301 行（Changed: 5301），全部恢复</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="用户同步→园区下发-完整链路（改动后）"><a href="#用户同步→园区下发-完整链路（改动后）" class="headerlink" title="用户同步→园区下发 完整链路（改动后）"></a>用户同步→园区下发 完整链路（改动后）</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">Dataphin API (DataPhinUser department: UUID)</span><br><span class="line">   → handleDingUserSync (admin-service)</span><br><span class="line">      → 写 sys_user</span><br><span class="line">      → 写 sys_user_organization (org_id = 部门 UUID)</span><br><span class="line">      → 写 sys_user_park (org_id = 公司级 org_id, park_id)</span><br><span class="line">         ↑ 需要 findParkByOrgWalkUp 递归 CTE</span><br><span class="line">      → triggerPassUserSync Feign → synSysUserToPassUser (through-service)</span><br><span class="line">         → 写 pass_user (dist_sync_status=PENDING)</span><br><span class="line">   → PassDistSyncer (90s 定时)</span><br><span class="line">      → ROMA → 园区 pass_user</span><br></pre></td></tr></table></figure>
+
+<h3 id="findParkByOrgWalkUp-递归-CTE"><a href="#findParkByOrgWalkUp-递归-CTE" class="headerlink" title="findParkByOrgWalkUp 递归 CTE"></a>findParkByOrgWalkUp 递归 CTE</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">WITH</span> <span class="keyword">RECURSIVE</span> org_chain <span class="keyword">AS</span> (</span><br><span class="line">    <span class="comment">-- 起点：用户部门 UUID</span></span><br><span class="line">    <span class="keyword">SELECT</span> org_id, parent_id, <span class="number">0</span> <span class="keyword">AS</span> depth</span><br><span class="line">    <span class="keyword">FROM</span> sys_organization</span><br><span class="line">    <span class="keyword">WHERE</span> org_id <span class="operator">=</span> #&#123;deptOrgId&#125; <span class="keyword">AND</span> delete_flag <span class="operator">=</span> <span class="string">&#x27;0&#x27;</span></span><br><span class="line">    <span class="keyword">UNION</span> <span class="keyword">ALL</span></span><br><span class="line">    <span class="comment">-- 逐层往上</span></span><br><span class="line">    <span class="keyword">SELECT</span> o.org_id, o.parent_id, c.depth <span class="operator">+</span> <span class="number">1</span></span><br><span class="line">    <span class="keyword">FROM</span> sys_organization o</span><br><span class="line">    <span class="keyword">JOIN</span> org_chain c <span class="keyword">ON</span> o.org_id <span class="operator">=</span> c.parent_id <span class="keyword">AND</span> o.delete_flag <span class="operator">=</span> <span class="string">&#x27;0&#x27;</span></span><br><span class="line">    <span class="keyword">WHERE</span> c.parent_id <span class="keyword">IS</span> <span class="keyword">NOT NULL</span> <span class="keyword">AND</span> c.parent_id <span class="operator">&lt;&gt;</span> <span class="string">&#x27;&#x27;</span> <span class="keyword">AND</span> c.depth <span class="operator">&lt;</span> <span class="number">20</span>  <span class="comment">-- 防环</span></span><br><span class="line">)</span><br><span class="line"><span class="keyword">SELECT</span> po.<span class="operator">*</span></span><br><span class="line"><span class="keyword">FROM</span> sys_park_organization po</span><br><span class="line"><span class="keyword">JOIN</span> org_chain c <span class="keyword">ON</span> po.org_id <span class="operator">=</span> c.org_id</span><br><span class="line"><span class="keyword">WHERE</span> po.delete_flag <span class="operator">=</span> <span class="string">&#x27;0&#x27;</span></span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> c.depth <span class="keyword">ASC</span>   <span class="comment">-- 取最近的命中祖先</span></span><br><span class="line">LIMIT <span class="number">1</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="桥表语义"><a href="#桥表语义" class="headerlink" title="桥表语义"></a>桥表语义</h3><p><code>sys_park_organization</code>（桥表）里配的是 <strong>“公司级 org_id ↔ park_id”</strong> 的映射。”公司”&#x3D; 桥表里配了的那个组织节点，它可以是根、可以是电厂级、也可以是部门级 —— 取决于你在 <code>sys_park_organization</code> 里配了哪一层。</p>
+<blockquote>
+<p>[!example] 三种配法</p>
+<ul>
+<li>桥表配”广蓄电厂 → 广蓄园区” → 广蓄电厂及其下面所有人都归广蓄园区</li>
+<li>桥表配”南方电网总部 → 某园区” → 整棵树的人都归那个园区</li>
+<li>两个都配了 → CTE 取最近的（depth 小的）</li>
+</ul>
+</blockquote>
+<h2 id="经验总结"><a href="#经验总结" class="headerlink" title="经验总结"></a>经验总结</h2><h3 id="排查方法论"><a href="#排查方法论" class="headerlink" title="排查方法论"></a>排查方法论</h3><ul>
+<li><strong>从终端现象往回追溯链路</strong>，每一环用真实数据（生产 dump、MCP 查库、API 响应样本）验证，不要只在本地复现。<strong>本地 mock 是最大的盲区</strong></li>
+<li>下结论前先读 utils 的实现，不要靠方法名望文生义</li>
+<li>排查起点永远先看返回值（affected rows、日志）—— <code>synSysUserToPassUser</code> 返回 335 立刻说明是过滤问题</li>
+</ul>
+<h3 id="代码规范"><a href="#代码规范" class="headerlink" title="代码规范"></a>代码规范</h3><ul>
+<li>依赖外部数据字段的解析方法，字段缺失时应该打 <strong>WARN 日志</strong>而不是静默返回 null——<code>getCompanyIdFromPDeparts</code> 和 <code>getDepartmentAsList</code> 都是静默失败的，导致问题难以被监控发现</li>
+<li>数据模型层变更应该有<strong>契约测试</strong>或<strong>schema 校验</strong>，字段下线时让集成测试第一时间失败</li>
+</ul>
+<h3 id="测试覆盖"><a href="#测试覆盖" class="headerlink" title="测试覆盖"></a>测试覆盖</h3><ul>
+<li>跨服务同步链路应该有端到端集成测试，用<strong>接近真实格式的样本数据</strong>（包括 UUID 格式的 department），而不只是构造正确格式的 mock</li>
+<li>测试场景要包含”数据正确性”——除了”有没有写”，还要查”写得对不对”</li>
+</ul>
+<h2 id="待办事项"><a href="#待办事项" class="headerlink" title="待办事项"></a>待办事项</h2><ul>
+<li><input disabled="" type="checkbox"> 确认 dept 接口（<code>queryDingDept</code>）返回格式是否能串成组织树，再决定 PDEPARTS 的替代方案</li>
+<li><input disabled="" type="checkbox"> 修复 Bug#1（增量更新取消删除标记失效）</li>
+<li><input disabled="" type="checkbox"> 修复 Bug#2（园区链路改用 PARENTID）</li>
+<li><input disabled="" type="checkbox"> 修复 Bug#3（pass_user 链路同步适配）</li>
+<li><input disabled="" type="checkbox"> 解决 Bug#4（部门 vs 公司数据源统一）</li>
+<li><input disabled="" type="checkbox"> 重建 <code>sys_park_organization</code> 桥表（新 UUID 映射）</li>
+</ul>
+<h2 id="关联"><a href="#关联" class="headerlink" title="关联"></a>关联</h2><ul>
+<li>[[2026-06-22 工作记录]]</li>
+<li>[[钉钉同步园区失败-PDEPARTS字段下线&#x2F;问题分析与修复]]</li>
+<li>[[用户同步园区下发完整链路]]</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E9%9B%86%E6%88%90%E6%B5%8B%E8%AF%95/" rel="tag"># 集成测试</a>
+              <a href="/tags/PDEPARTS%E4%B8%8B%E7%BA%BF/" rel="tag"># PDEPARTS下线</a>
+              <a href="/tags/%E6%95%B0%E6%8D%AE%E6%A8%A1%E5%9E%8B%E5%8F%98%E6%9B%B4/" rel="tag"># 数据模型变更</a>
+              <a href="/tags/Dataphin/" rel="tag"># Dataphin</a>
+              <a href="/tags/%E7%9C%9F%E5%AE%9E%E6%A0%BC%E5%BC%8F/" rel="tag"># 真实格式</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/06/16/2026-06-16-dist-sync-integration-test/" rel="prev" title="dist_sync 分支集成测试报告：9 项功能 12 个用例全过">
+                  <i class="fa fa-angle-left"></i> dist_sync 分支集成测试报告：9 项功能 12 个用例全过
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2026/06/23/2026-06-23-pdeparts-deprecated/" rel="next" title="PDEPARTS 废弃 + 头像同步修复 + 用户查询回归：递归 CTE 上溯">
+                  PDEPARTS 废弃 + 头像同步修复 + 用户查询回归：递归 CTE 上溯 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  
+  <div class="comments giscus-container">
+  </div>
+  
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">zhlifeiy35</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/zhdmm35" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"zhdmm35/zhdmm35.github.io","repo_id":"R_kgDOON4bhg","category":"Announcements","category_id":"DIC_kwDOON4bhs4C3dEc","mapping":"pathname","strict":0,"reactions_enabled":1,"emit_metadata":0,"theme":"preferred_color_scheme","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+
+<script>
+document.addEventListener('page:loaded', () => {
+  if (!CONFIG.page.comments) return;
+
+  NexT.utils.loadComments('.giscus-container')
+    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
+      attributes: {
+        async                   : true,
+        crossOrigin             : 'anonymous',
+        'data-repo'             : CONFIG.giscus.repo,
+        'data-repo-id'          : CONFIG.giscus.repo_id,
+        'data-category'         : CONFIG.giscus.category,
+        'data-category-id'      : CONFIG.giscus.category_id,
+        'data-mapping'          : CONFIG.giscus.mapping,
+        'data-strict'           : CONFIG.giscus.strict,
+        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
+        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
+        'data-theme'            : CONFIG.giscus.theme,
+        'data-lang'             : CONFIG.giscus.lang,
+        'data-input-position'   : CONFIG.giscus.input_position,
+        'data-loading'          : CONFIG.giscus.loading
+      },
+      parentNode: document.querySelector('.giscus-container')
+    }));
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="导读 编译跑绿后，启动链路又冒出 6 个连环坑：MySQL 没 building_* 用户、property-service 写死内网 IP、admin 种子用户密码是 SHA512×2、is_enable&#x3D;1 居然是禁用、gateway 报 JWT NPE、前端访问报 401。本篇一次性梳理这 6 个坑的根因、修复方案、排查顺序，以及哪些是”反直觉的项目约定”。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="6 个启动连环坑：从 MySQL 用户到前端 401 的完整链路打通">
+<meta property="og:url" content="https://zhlifeiy.codes/2026/06/09/2026-06-09-six-fixes/index.html">
+<meta property="og:site_name" content="我的技术博客">
+<meta property="og:description" content="导读 编译跑绿后，启动链路又冒出 6 个连环坑：MySQL 没 building_* 用户、property-service 写死内网 IP、admin 种子用户密码是 SHA512×2、is_enable&#x3D;1 居然是禁用、gateway 报 JWT NPE、前端访问报 401。本篇一次性梳理这 6 个坑的根因、修复方案、排查顺序，以及哪些是”反直觉的项目约定”。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/2026-06-09-six-fixes_001.jpg">
+<meta property="article:published_time" content="2026-06-09T14:00:00.000Z">
+<meta property="article:modified_time" content="2026-06-27T14:12:54.739Z">
+<meta property="article:author" content="zhlifeiy35">
+<meta property="article:tag" content="Spring Cloud">
+<meta property="article:tag" content="Gateway">
+<meta property="article:tag" content="Feign">
+<meta property="article:tag" content="JWT">
+<meta property="article:tag" content="Nacos">
+<meta property="article:tag" content="启动修复">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/2026-06-09-six-fixes_001.jpg">
+
+
+<link rel="canonical" href="https://zhlifeiy.codes/2026/06/09/2026-06-09-six-fixes/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://zhlifeiy.codes/2026/06/09/2026-06-09-six-fixes/","path":"2026/06/09/2026-06-09-six-fixes/","title":"6 个启动连环坑：从 MySQL 用户到前端 401 的完整链路打通"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>6 个启动连环坑：从 MySQL 用户到前端 401 的完整链路打通 | 我的技术博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">我的技术博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">记录学习与成长</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-guestbook"><a href="/guestbook/" rel="section"><i class="fa fa-comment-dots fa-fw"></i>留言板</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%BC%E8%AF%BB"><span class="nav-number">1.</span> <span class="nav-text">导读</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link"><span class="nav-number">1.0.1.</span> <span class="nav-text">🎧 文章导读</span></a></li><li class="nav-item nav-level-4"><a class="nav-link"><span class="nav-number">1.0.2.</span> <span class="nav-text">🎵 背景音乐</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">2.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9D%91-1%EF%BC%9AMySQL-%E6%B2%A1%E6%9C%89-building-%E7%94%A8%E6%88%B7"><span class="nav-number">3.</span> <span class="nav-text">坑 1：MySQL 没有 building_* 用户</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%8E%B0%E8%B1%A1"><span class="nav-number">3.1.</span> <span class="nav-text">现象</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B9%E5%9B%A0"><span class="nav-number">3.2.</span> <span class="nav-text">根因</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BF%AE%E5%A4%8D"><span class="nav-number">3.3.</span> <span class="nav-text">修复</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9D%91-2%EF%BC%9Aproperty-service-%E5%86%99%E6%AD%BB%E5%86%85%E7%BD%91-IP"><span class="nav-number">4.</span> <span class="nav-text">坑 2：property-service 写死内网 IP</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9D%91-3%EF%BC%9Aadmin-%E7%A7%8D%E5%AD%90%E7%94%A8%E6%88%B7%E5%AF%86%E7%A0%81%E7%AE%97%E6%B3%95"><span class="nav-number">5.</span> <span class="nav-text">坑 3：admin 种子用户密码算法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8A%A0%E5%AF%86%E9%80%BB%E8%BE%91%EF%BC%88service-util-LoginPwdCryptoUtil-java%EF%BC%89"><span class="nav-number">5.1.</span> <span class="nav-text">加密逻辑（service-util&#x2F;...&#x2F;LoginPwdCryptoUtil.java）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Python-%E5%A4%8D%E7%8E%B0%EF%BC%88%E5%B7%B2%E9%AA%8C%E8%AF%81%EF%BC%89"><span class="nav-number">5.2.</span> <span class="nav-text">Python 复现（已验证）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8F%92-admin-%E7%A7%8D%E5%AD%90%E7%94%A8%E6%88%B7"><span class="nav-number">5.3.</span> <span class="nav-text">插 admin 种子用户</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9D%91-4%EF%BC%9Ais-enable-1-%E5%B1%85%E7%84%B6%E6%98%AF%E7%A6%81%E7%94%A8"><span class="nav-number">6.</span> <span class="nav-text">坑 4：is_enable&#x3D;1 居然是禁用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9D%91-5%EF%BC%9Agateway-%E5%90%AF%E5%8A%A8-3-%E4%B8%AA-NPE"><span class="nav-number">7.</span> <span class="nav-text">坑 5：gateway 启动 3 个 NPE</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%8E%B0%E8%B1%A1-1"><span class="nav-number">7.1.</span> <span class="nav-text">现象</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B9%E5%9B%A0-1"><span class="nav-number">7.2.</span> <span class="nav-text">根因</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BF%AE%E5%A4%8D-1"><span class="nav-number">7.3.</span> <span class="nav-text">修复</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#JWT-NPE-%E6%80%8E%E4%B9%88%E6%8C%96%E5%87%BA%E6%9D%A5%E7%9A%84"><span class="nav-number">7.4.</span> <span class="nav-text">JWT NPE 怎么挖出来的</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Nacos-%E5%AE%8C%E6%95%B4%E9%85%8D%E7%BD%AE"><span class="nav-number">7.5.</span> <span class="nav-text">Nacos 完整配置</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9D%91-6%EF%BC%9A%E5%89%8D%E7%AB%AF-401-%E4%B8%8D%E4%B8%80%E5%AE%9A%E6%98%AF-token-%E9%94%99"><span class="nav-number">8.</span> <span class="nav-text">坑 6：前端 401 不一定是 token 错</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%8E%B0%E8%B1%A1-2"><span class="nav-number">8.1.</span> <span class="nav-text">现象</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B9%E5%9B%A0-2"><span class="nav-number">8.2.</span> <span class="nav-text">根因</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BF%AE%E5%A4%8D-2"><span class="nav-number">8.3.</span> <span class="nav-text">修复</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%89%8D%E7%AB%AF%E4%B8%A4%E5%A4%84%E9%85%8D%E5%A5%97%E6%94%B9"><span class="nav-number">8.4.</span> <span class="nav-text">前端两处配套改</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-%E4%B8%AA%E5%9D%91%E7%9A%84%E9%93%BE%E8%B7%AF%E6%80%BB%E7%BB%93"><span class="nav-number">9.</span> <span class="nav-text">6 个坑的链路总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%8F%E9%AA%8C%E6%80%BB%E7%BB%93"><span class="nav-number">10.</span> <span class="nav-text">经验总结</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8E%92%E6%9F%A5%E9%A1%BA%E5%BA%8F%E7%9A%84%E6%99%BA%E6%85%A7"><span class="nav-number">10.1.</span> <span class="nav-text">排查顺序的智慧</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%8D%E7%9B%B4%E8%A7%89%E7%BA%A6%E5%AE%9A%E7%9A%84%E6%9D%A5%E6%BA%90"><span class="nav-number">10.2.</span> <span class="nav-text">反直觉约定的来源</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#401-%E2%89%A0-token-%E5%A4%B1%E6%95%88"><span class="nav-number">10.3.</span> <span class="nav-text">401 ≠ token 失效</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#500-%E7%BD%91%E5%85%B3%E6%94%BE%E8%A1%8C%E4%BA%86"><span class="nav-number">10.4.</span> <span class="nav-text">500 &#x3D; 网关放行了</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#javap-%E6%98%AF-jar-%E5%8F%8D%E7%BC%96%E8%AF%91%E5%BF%85%E6%9D%80%E5%99%A8"><span class="nav-number">10.5.</span> <span class="nav-text">javap 是 jar 反编译必杀器</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8B%E4%B8%80%E6%AD%A5"><span class="nav-number">11.</span> <span class="nav-text">下一步</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zhlifeiy35</p>
+  <div class="site-description" itemprop="description">分享编程技术、AI经验、学习笔记</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">51</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">175</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zhdmm35" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zhdmm35" rel="noopener me" target="_blank"><i class="fa fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/2026-06-09-six-fixes_001.jpg" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/06/09/2026-06-09-six-fixes/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="我的技术博客">
+      <meta itemprop="description" content="分享编程技术、AI经验、学习笔记">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="6 个启动连环坑：从 MySQL 用户到前端 401 的完整链路打通 | 我的技术博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          6 个启动连环坑：从 MySQL 用户到前端 401 的完整链路打通
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-06-09 22:00:00" itemprop="dateCreated datePublished" datetime="2026-06-09T22:00:00+08:00">2026-06-09</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-06-27 22:12:54" itemprop="dateModified" datetime="2026-06-27T22:12:54+08:00">2026-06-27</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">后端开发</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E5%8D%97%E7%BD%91%E9%A1%B9%E7%9B%AE/" itemprop="url" rel="index"><span itemprop="name">南网项目</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="导读"><a href="#导读" class="headerlink" title="导读"></a>导读</h2><blockquote>
+<p>编译跑绿后，启动链路又冒出 6 个连环坑：MySQL 没 <code>building_*</code> 用户、property-service 写死内网 IP、admin 种子用户密码是 SHA512×2、<code>is_enable=1</code> 居然是禁用、gateway 报 JWT NPE、前端访问报 401。本篇一次性梳理这 6 个坑的根因、修复方案、排查顺序，以及哪些是”反直觉的项目约定”。</p>
+</blockquote>
+<span id="more"></span>
+
+<div class="audio-player">
+  <div class="audio-section">
+    <h4>🎧 文章导读</h4>
+    <audio controls preload="metadata">
+      <source src="/2026-06-09-six-fixes/narration.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+  <div class="audio-section">
+    <h4>🎵 背景音乐</h4>
+    <audio controls loop preload="metadata">
+      <source src="/2026-06-09-six-fixes/bgm.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+</div>
+
+<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>环境编译通过只是开始。真正启动 admin-service 时，才发现问题像洋葱一样一层层剥开：连不上 MySQL → admin 用户密码哈希算法不对 → <code>is_enable</code> 字段语义反过来 → 启动后 NPE → 前端 401。</p>
+<p>这一篇把 6 个修复合并在一起，因为它们是一条链上的——前一个修不完后一个根本看不到。</p>
+<p><img src="/2026-06-09-six-fixes/assets/images/fig1_001.jpg" alt="6 个连环坑链路示意"><br><em>图1：从 MySQL 到 401 的启动链路</em></p>
+<h2 id="坑-1：MySQL-没有-building-用户"><a href="#坑-1：MySQL-没有-building-用户" class="headerlink" title="坑 1：MySQL 没有 building_* 用户"></a>坑 1：MySQL 没有 <code>building_*</code> 用户</h2><h3 id="现象"><a href="#现象" class="headerlink" title="现象"></a>现象</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">CannotGetJdbcConnectionException: Failed to obtain JDBC Connection; </span><br><span class="line">nested exception is java.sql.SQLException: </span><br><span class="line">Access denied for user &#x27;building_admin&#x27;@&#x27;localhost&#x27; (using password: YES)</span><br></pre></td></tr></table></figure>
+
+<h3 id="根因"><a href="#根因" class="headerlink" title="根因"></a>根因</h3><p><code>bootstrap-dev.yml</code> 写死了 <code>username: building_admin / password: building_admin@123</code>，但 MySQL 里<strong>只有 root、travel、系统用户</strong>——从来没人建过 <code>building_*</code> 系列用户。</p>
+<h3 id="修复"><a href="#修复" class="headerlink" title="修复"></a>修复</h3><p>8 个用户 + 授权 SQL：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">USER</span> IF <span class="keyword">NOT</span> <span class="keyword">EXISTS</span> <span class="string">&#x27;building_admin&#x27;</span>@<span class="string">&#x27;localhost&#x27;</span>   IDENTIFIED <span class="keyword">BY</span> <span class="string">&#x27;building_admin@123&#x27;</span>;</span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">USER</span> IF <span class="keyword">NOT</span> <span class="keyword">EXISTS</span> <span class="string">&#x27;building_bpm&#x27;</span>@<span class="string">&#x27;localhost&#x27;</span>     IDENTIFIED <span class="keyword">BY</span> <span class="string">&#x27;building_bpm@123&#x27;</span>;</span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">USER</span> IF <span class="keyword">NOT</span> <span class="keyword">EXISTS</span> <span class="string">&#x27;building_env&#x27;</span>@<span class="string">&#x27;localhost&#x27;</span>     IDENTIFIED <span class="keyword">BY</span> <span class="string">&#x27;building_env@123&#x27;</span>;</span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">USER</span> IF <span class="keyword">NOT</span> <span class="keyword">EXISTS</span> <span class="string">&#x27;building_biz&#x27;</span>@<span class="string">&#x27;localhost&#x27;</span>     IDENTIFIED <span class="keyword">BY</span> <span class="string">&#x27;building_biz@123&#x27;</span>;</span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">USER</span> IF <span class="keyword">NOT</span> <span class="keyword">EXISTS</span> <span class="string">&#x27;building_smart&#x27;</span>@<span class="string">&#x27;localhost&#x27;</span>   IDENTIFIED <span class="keyword">BY</span> <span class="string">&#x27;building_smart@123&#x27;</span>;</span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">USER</span> IF <span class="keyword">NOT</span> <span class="keyword">EXISTS</span> <span class="string">&#x27;building_through&#x27;</span>@<span class="string">&#x27;localhost&#x27;</span> IDENTIFIED <span class="keyword">BY</span> <span class="string">&#x27;building_through@123&#x27;</span>;</span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">USER</span> IF <span class="keyword">NOT</span> <span class="keyword">EXISTS</span> <span class="string">&#x27;building_jobs&#x27;</span>@<span class="string">&#x27;localhost&#x27;</span>    IDENTIFIED <span class="keyword">BY</span> <span class="string">&#x27;building_jobs@123&#x27;</span>;</span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">USER</span> IF <span class="keyword">NOT</span> <span class="keyword">EXISTS</span> <span class="string">&#x27;building_nacos&#x27;</span>@<span class="string">&#x27;localhost&#x27;</span>   IDENTIFIED <span class="keyword">BY</span> <span class="string">&#x27;building_nacos@123&#x27;</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">GRANT</span> <span class="keyword">ALL</span> PRIVILEGES <span class="keyword">ON</span> building_admin.<span class="operator">*</span>   <span class="keyword">TO</span> <span class="string">&#x27;building_admin&#x27;</span>@<span class="string">&#x27;localhost&#x27;</span>;</span><br><span class="line"><span class="keyword">GRANT</span> <span class="keyword">ALL</span> PRIVILEGES <span class="keyword">ON</span> building_bpm.<span class="operator">*</span>     <span class="keyword">TO</span> <span class="string">&#x27;building_bpm&#x27;</span>@<span class="string">&#x27;localhost&#x27;</span>;</span><br><span class="line"><span class="comment">-- ... 共 8 个 GRANT</span></span><br><span class="line"></span><br><span class="line">FLUSH PRIVILEGES;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>[!warning] 关键发现<br>项目记录说”11 个数据库”，实际只有 <strong>8 个 unique</strong>：</p>
+<ul>
+<li><code>admin + aided</code> 共用 <code>building_admin</code></li>
+<li><code>through + security</code> 共用 <code>building_through</code></li>
+<li><code>property + warning</code> 共用 <code>building_biz</code></li>
+</ul>
+<p>反直觉的项目约定——<strong>服务 ≠ 库</strong>。</p>
+</blockquote>
+<h2 id="坑-2：property-service-写死内网-IP"><a href="#坑-2：property-service-写死内网-IP" class="headerlink" title="坑 2：property-service 写死内网 IP"></a>坑 2：property-service 写死内网 IP</h2><p><code>property-service/src/main/resources/bootstrap-dev.yml</code> 3 处 IP 全部指向 <code>10.152.238.245</code>（堡垒机内网）：</p>
+<table>
+<thead>
+<tr>
+<th>行</th>
+<th>字段</th>
+<th>改前</th>
+<th>改后</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>5</td>
+<td><code>NACOS_SERVER</code></td>
+<td><code>10.152.238.245:8848</code></td>
+<td><code>127.0.0.1:8848</code></td>
+</tr>
+<tr>
+<td>10</td>
+<td><code>MYSQL_SERVER</code></td>
+<td><code>10.152.238.245:3306</code></td>
+<td><code>127.0.0.1:3306</code></td>
+</tr>
+<tr>
+<td>14</td>
+<td>Redis host</td>
+<td><code>10.152.238.245</code></td>
+<td><code>127.0.0.1</code></td>
+</tr>
+</tbody></table>
+<p>估计是某次开发连堡垒机调测忘了改回来。<strong>其他服务都是 <code>127.0.0.1</code>，唯独 property 是内网</strong>。</p>
+<p><img src="/2026-06-09-six-fixes/assets/images/fig2_001.jpg" alt="property 内网 IP 残留配置"><br><em>图2：property 写死内网 IP</em></p>
+<h2 id="坑-3：admin-种子用户密码算法"><a href="#坑-3：admin-种子用户密码算法" class="headerlink" title="坑 3：admin 种子用户密码算法"></a>坑 3：admin 种子用户密码算法</h2><p>admin 起来后登录报 <code>用户名或密码错误</code>。一开始以为是 hash 算法不对——确实不对，但不是 BCrypt，是 <strong>SHA512 × 2 次 + 盐</strong>。</p>
+<h3 id="加密逻辑（service-util-LoginPwdCryptoUtil-java）"><a href="#加密逻辑（service-util-LoginPwdCryptoUtil-java）" class="headerlink" title="加密逻辑（service-util/.../LoginPwdCryptoUtil.java）"></a>加密逻辑（<code>service-util/.../LoginPwdCryptoUtil.java</code>）</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">int</span> <span class="variable">HASH_INTERATIONS</span> <span class="operator">=</span> <span class="number">2</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> String <span class="title function_">enCryptPassword</span><span class="params">(String password, String salt)</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> Hex.encodeHexString(</span><br><span class="line">        hash(StringUtils.getBytesUtf8(password), StringUtils.getBytesUtf8(salt), HASH_INTERATIONS));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>算法总结：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">password_hash = SHA512( SHA512(salt + password) )   转 hex 字符串</span><br><span class="line">salt         = Base64(32 字节随机)</span><br></pre></td></tr></table></figure>
+
+<h3 id="Python-复现（已验证）"><a href="#Python-复现（已验证）" class="headerlink" title="Python 复现（已验证）"></a>Python 复现（已验证）</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> hashlib, base64, os</span><br><span class="line"></span><br><span class="line">password = <span class="string">&quot;123456&quot;</span></span><br><span class="line">salt_bytes = os.urandom(<span class="number">32</span>)</span><br><span class="line">salt = base64.b64encode(salt_bytes).decode(<span class="string">&#x27;utf-8&#x27;</span>)</span><br><span class="line"></span><br><span class="line">h = hashlib.sha512()</span><br><span class="line">h.update(salt_bytes)</span><br><span class="line">h.update(password.encode(<span class="string">&#x27;utf-8&#x27;</span>))</span><br><span class="line">hashed = h.digest()                   <span class="comment"># 第一次</span></span><br><span class="line"></span><br><span class="line">h = hashlib.sha512()</span><br><span class="line">h.update(hashed)</span><br><span class="line">hashed = h.digest()                   <span class="comment"># 第二次</span></span><br><span class="line"></span><br><span class="line">password_hash = hashed.<span class="built_in">hex</span>()           <span class="comment"># 转 hex</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="插-admin-种子用户"><a href="#插-admin-种子用户" class="headerlink" title="插 admin 种子用户"></a>插 admin 种子用户</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">INSERT INTO</span> sys_user (</span><br><span class="line">  user_id, user_name, password, password_salt,</span><br><span class="line">  user_status, real_name, is_enable, tenant_id,</span><br><span class="line">  delete_flag, face_pic_status, face_pic_audit_status,</span><br><span class="line">  create_id, create_name, create_time,</span><br><span class="line">  update_id, update_name, update_time</span><br><span class="line">) <span class="keyword">VALUES</span> (</span><br><span class="line">  <span class="string">&#x27;1&#x27;</span>, <span class="string">&#x27;admin&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;&lt;上面算的 hash&gt;&#x27;</span>, <span class="string">&#x27;&lt;上面算的 salt&gt;&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;1&#x27;</span>, <span class="string">&#x27;admin&#x27;</span>, <span class="number">0</span>, <span class="string">&#x27;000000&#x27;</span>,     <span class="comment">-- is_enable=0 才是启用</span></span><br><span class="line">  <span class="string">&#x27;0&#x27;</span>, <span class="string">&#x27;0&#x27;</span>, <span class="string">&#x27;0&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;admin&#x27;</span>, <span class="string">&#x27;admin&#x27;</span>, NOW(),</span><br><span class="line">  <span class="string">&#x27;admin&#x27;</span>, <span class="string">&#x27;admin&#x27;</span>, NOW()</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>[!warning] 实战坑<br><code>real_name</code> 填”超级管理员”被 MySQL 拒（<code>Data too long</code>），改 <code>admin</code> 才过——这列虽然 <code>varchar(64)</code> 但表可能是 <code>utf8</code> 而非 <code>utf8mb4</code>。<strong>遇到这种错就缩短内容</strong>。</p>
+</blockquote>
+<h2 id="坑-4：is-enable-1-居然是禁用"><a href="#坑-4：is-enable-1-居然是禁用" class="headerlink" title="坑 4：is_enable=1 居然是禁用"></a>坑 4：<code>is_enable=1</code> 居然是禁用</h2><p>修完密码又报错 <code>账号已被锁定</code>。看源码（<code>UserController.java:195</code>）：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (sysUser.getIsEnable() != <span class="literal">null</span> &amp;&amp; DictConstants.DISABLE_FLAG.equals(sysUser.getIsEnable())) &#123;</span><br><span class="line">    <span class="keyword">return</span> BaseResult.fail(<span class="literal">null</span>, <span class="string">&quot;账号已被锁定，请联系管理员启用&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>DictConstants.DISABLE_FLAG = &quot;1&quot;</code>——**<code>is_enable=1</code> 居然是禁用的意思**。完全违反 Spring&#x2F;Java 命名直觉。</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>我以为</th>
+<th>项目实际</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>is_enable = 0</code></td>
+<td>禁用</td>
+<td><strong>启用</strong> ✅</td>
+</tr>
+<tr>
+<td><code>is_enable = 1</code></td>
+<td>启用</td>
+<td><strong>禁用</strong> ❌</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>[!warning] 锁定陷阱<br>密码错 5 次自动设 <code>is_enable = &quot;1&quot;</code> 锁定。<strong>调试期不要乱试密码</strong>——一旦锁了，要直接 SQL 改 <code>is_enable=0</code>，不然怎么试都”已被锁定”。</p>
+</blockquote>
+<p><img src="/2026-06-09-six-fixes/assets/images/fig3_001.jpg" alt="is_enable 反向语义示意"><br><em>图3：is_enable&#x3D;1 居然是禁用</em></p>
+<h2 id="坑-5：gateway-启动-3-个-NPE"><a href="#坑-5：gateway-启动-3-个-NPE" class="headerlink" title="坑 5：gateway 启动 3 个 NPE"></a>坑 5：gateway 启动 3 个 NPE</h2><h3 id="现象-1"><a href="#现象-1" class="headerlink" title="现象"></a>现象</h3><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Bean</th>
+<th>触发原因</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td><code>devServicRouteLocator</code></td>
+<td><code>CommonProperties.deployments</code> 为 null</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>dynamicRouteNacosListener</code></td>
+<td><code>NacosConfigProperties</code> bean 不存在（<code>enabled: false</code> 干掉了）</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>jwtTokenService</code></td>
+<td><code>JwtAuthProperties.jwts</code> 为 null</td>
+</tr>
+</tbody></table>
+<h3 id="根因-1"><a href="#根因-1" class="headerlink" title="根因"></a>根因</h3><p>Nacos 拒绝带连字符的 group 名（控制台报”不允许非法字符”），但项目代码默认是 <code>smart-building</code>。<strong>网关问 Nacos 拿 <code>smart-building</code> 组 → 404 → 配置全空</strong>。</p>
+<h3 id="修复-1"><a href="#修复-1" class="headerlink" title="修复"></a>修复</h3><p><code>bootstrap.yml</code> 5 处 <code>$&#123;NACOS_GROUP:smart-building&#125;</code> 全部改成 <code>smart_building</code>：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">spring.cloud.nacos.discovery.group:</span> <span class="string">smart_building</span></span><br><span class="line"><span class="attr">spring.cloud.nacos.config.group:</span> <span class="string">smart_building</span></span><br><span class="line"><span class="comment"># ... shared-configs[0..2].group</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="JWT-NPE-怎么挖出来的"><a href="#JWT-NPE-怎么挖出来的" class="headerlink" title="JWT NPE 怎么挖出来的"></a>JWT NPE 怎么挖出来的</h3><p>第 3 个 NPE 的堆栈只指到 <code>JwtTokenService.&lt;init&gt;:54</code>，源码在 <code>com.xxkj:common-auth</code> jar 里。<strong>诊断路径</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 反编译 jar</span></span><br><span class="line">javap -p -classpath common-auth-2.6.0-SNAPSHOT.jar com.xxkj.auth.service.JwtTokenService</span><br><span class="line">javap -p -classpath ... com.xxkj.auth.properties.JwtAuthProperties</span><br><span class="line">javap -v -classpath ... com.xxkj.auth.model.JwtAuthInfo   <span class="comment"># 找 @ConfigurationProperties 的 prefix</span></span><br></pre></td></tr></table></figure>
+
+<p>反编译结果：<code>JwtAuthProperties</code> 的 prefix &#x3D; <code>icfg.auth</code>，字段 <code>jwts</code> 继承 <code>BaseAuthInfo</code>（含 <code>secret</code>、<code>accessTokenExpiration</code>、<code>refreshTokenExpiration</code> 等）。</p>
+<h3 id="Nacos-完整配置"><a href="#Nacos-完整配置" class="headerlink" title="Nacos 完整配置"></a>Nacos 完整配置</h3><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">icfg:</span></span><br><span class="line">  <span class="attr">admin:</span></span><br><span class="line">    <span class="attr">service-id:</span> <span class="string">admin</span></span><br><span class="line">  <span class="attr">auth:</span></span><br><span class="line">    <span class="attr">jwts:</span></span><br><span class="line">      <span class="attr">secret:</span> <span class="string">smart-park-default-jwt-secret-please-change-in-production</span></span><br><span class="line">      <span class="attr">accessTokenExpiration:</span> <span class="number">3600</span></span><br><span class="line">      <span class="attr">refreshTokenExpiration:</span> <span class="number">86400</span></span><br><span class="line">      <span class="attr">autoRefresh:</span> <span class="literal">true</span></span><br><span class="line">      <span class="attr">singleLogin:</span> <span class="literal">false</span></span><br><span class="line">      <span class="attr">issuer:</span> <span class="string">smart-park</span></span><br><span class="line">  <span class="attr">common:</span></span><br><span class="line">    <span class="attr">deployments:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="attr">serviceId:</span> <span class="string">through-service</span></span><br><span class="line">        <span class="attr">deployPort:</span> <span class="number">18134</span></span><br><span class="line">      <span class="comment"># ... 共 11 个服务</span></span><br><span class="line">    <span class="attr">feign-url:</span></span><br><span class="line">      <span class="attr">aided:</span> <span class="string">http://127.0.0.1:18100</span></span><br><span class="line">      <span class="attr">admin:</span> <span class="string">http://127.0.0.1:18200</span></span><br><span class="line">      <span class="attr">through:</span> <span class="string">http://127.0.0.1:18134</span></span><br><span class="line">      <span class="attr">security:</span> <span class="string">http://127.0.0.1:18135</span></span><br><span class="line">      <span class="attr">iot:</span> <span class="string">http://127.0.0.1:18350</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="坑-6：前端-401-不一定是-token-错"><a href="#坑-6：前端-401-不一定是-token-错" class="headerlink" title="坑 6：前端 401 不一定是 token 错"></a>坑 6：前端 401 不一定是 token 错</h2><h3 id="现象-2"><a href="#现象-2" class="headerlink" title="现象"></a>现象</h3><p>前端 <code>npm run dev</code> 起来后点登录：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;status&quot;</span><span class="punctuation">:</span> <span class="number">500</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;message&quot;</span><span class="punctuation">:</span> <span class="string">&quot;Connection refused: no further information: /127.0.0.1:18200&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>把 <code>VUE_APP_GATEWAY</code> 改成 <code>http://localhost:10001</code>（本地网关）后，<strong>报 401</strong>。</p>
+<h3 id="根因-2"><a href="#根因-2" class="headerlink" title="根因"></a>根因</h3><p><code>JwtAuthProperties.publicApiPatterns</code>（反编译 <code>com.xxkj:common-auth</code>）是<strong>白名单</strong>——只有路径在这个白名单里，网关的 <code>AccessControlFilter</code> 才放行到下游。<strong>没配的话默认是空集</strong> → 任何 <code>/admin/**</code> 请求都被网关直接 401。</p>
+<h3 id="修复-2"><a href="#修复-2" class="headerlink" title="修复"></a>修复</h3><p>Nacos <code>application.yml</code> 加 <code>publicApiPatterns</code>：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">icfg:</span></span><br><span class="line">  <span class="attr">auth:</span></span><br><span class="line">    <span class="attr">publicApiPatterns:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">/admin/user/login</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">/admin/user/logout</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">/admin/captcha/image</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="前端两处配套改"><a href="#前端两处配套改" class="headerlink" title="前端两处配套改"></a>前端两处配套改</h3><p><code>E:\nanwang\zhyq-admin - no module\.env.development</code> 第 10 行：</p>
+<figure class="highlight diff"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="deletion">- VUE_APP_GATEWAY = &#x27;http://10.182.5.212:8080&#x27;</span></span><br><span class="line"><span class="addition">+ VUE_APP_GATEWAY = &#x27;http://localhost:10001&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p><code>vue.config.js</code> 第 39-41 行：</p>
+<figure class="highlight diff"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">  &#x27;/gateway&#x27;: &#123;</span><br><span class="line">    target: process.env.VUE_APP_GATEWAY,</span><br><span class="line">    secure: false,</span><br><span class="line">    changeOrigin: true,</span><br><span class="line"><span class="deletion">-   //  pathRewrite: &#123; &#x27;^/gateway&#x27;: &#x27;&#x27; &#125;</span></span><br><span class="line"><span class="addition">+   pathRewrite: &#123; &#x27;^/gateway&#x27;: &#x27;&#x27; &#125;</span></span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>[!warning] 三种白名单的区别</p>
+<ul>
+<li><code>loginRelaApis</code> — Gateway 拦截这些路径，<strong>加 token</strong> 再返回</li>
+<li><code>logoutRelaApis</code> — Gateway 拦截这些路径，<strong>清除 token</strong></li>
+<li><code>publicApiPatterns</code> — <strong>免鉴权</strong>路径（不校验 token 就能访问）</li>
+</ul>
+<p>登录接口要同时配 <code>loginRelaApis</code> + <code>publicApiPatterns</code> 才能正确工作。</p>
+</blockquote>
+<h2 id="6-个坑的链路总结"><a href="#6-个坑的链路总结" class="headerlink" title="6 个坑的链路总结"></a>6 个坑的链路总结</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">✅ MySQL 用户（坑1） ─→ ✅ property IP（坑2） ─→ ✅ admin 启动</span><br><span class="line">                                                    │</span><br><span class="line">                          ❌ 密码错（坑3） ─→ ❌ is_enable=1 锁定（坑4） ─→ ❌ JWT NPE（坑5）</span><br><span class="line">                                                                                │</span><br><span class="line">                                                                                ▼</span><br><span class="line">                                                              ❌ 前端 401（坑6）</span><br></pre></td></tr></table></figure>
+
+<h2 id="经验总结"><a href="#经验总结" class="headerlink" title="经验总结"></a>经验总结</h2><h3 id="排查顺序的智慧"><a href="#排查顺序的智慧" class="headerlink" title="排查顺序的智慧"></a>排查顺序的智慧</h3><p>6 个坑看似随机，但<strong>顺序排查</strong>效率最高：先连得上（用户、IP），再起得来（启动参数、JWT），最后访问得通（白名单、路由）。<strong>不要跳着来</strong>——后面的问题依赖前面的解决状态。</p>
+<h3 id="反直觉约定的来源"><a href="#反直觉约定的来源" class="headerlink" title="反直觉约定的来源"></a>反直觉约定的来源</h3><ul>
+<li><code>is_enable=1</code> 是禁用：Blade 框架通用约定，但违反 Spring&#x2F;Java 直觉</li>
+<li>密码是 SHA512×2：Blade 框架的旧版加密，未切到 BCrypt</li>
+<li>8 个库不是 11 个：项目历史变更</li>
+</ul>
+<p><strong>有 <code>DictConstants.X</code> 这种常量时，永远看常量、不要猜</strong>。</p>
+<h3 id="401-≠-token-失效"><a href="#401-≠-token-失效" class="headerlink" title="401 ≠ token 失效"></a>401 ≠ token 失效</h3><p>看到 401 第一反应是”token 失效”，但<strong>更常见的是白名单没配</strong>——尤其是登录接口本身被 401，是经典”白名单缺登录路径”症状。<strong>白名单问题优先排查</strong>。</p>
+<h3 id="500-网关放行了"><a href="#500-网关放行了" class="headerlink" title="500 &#x3D; 网关放行了"></a>500 &#x3D; 网关放行了</h3><p>看到 500 + <code>Connection refused: 18200</code>，<strong>是好消息</strong>——说明网关这层完全 OK，问题只在下游服务没起。<strong>别去改网关</strong>。</p>
+<h3 id="javap-是-jar-反编译必杀器"><a href="#javap-是-jar-反编译必杀器" class="headerlink" title="javap 是 jar 反编译必杀器"></a>javap 是 jar 反编译必杀器</h3><p>JDK 自带 <code>javap</code>，反编译私有 jar 不需要额外装。常用命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">javap -p ClassName              <span class="comment"># 看方法签名</span></span><br><span class="line">javap -v ClassName              <span class="comment"># 看字节码（含注解）</span></span><br><span class="line">javap -classpath xxx.jar ClassName  <span class="comment"># 看 jar 里某个类</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="下一步"><a href="#下一步" class="headerlink" title="下一步"></a>下一步</h2><p>启动链路打通了，但 admin 启动后菜单还是空——<code>sys_role</code> &#x2F; <code>sys_resource</code> 都没数据。下一篇讲怎么补 token、登录后权限、以及 980.sql 数据导入。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Spring-Cloud/" rel="tag"># Spring Cloud</a>
+              <a href="/tags/Gateway/" rel="tag"># Gateway</a>
+              <a href="/tags/Feign/" rel="tag"># Feign</a>
+              <a href="/tags/JWT/" rel="tag"># JWT</a>
+              <a href="/tags/Nacos/" rel="tag"># Nacos</a>
+              <a href="/tags/%E5%90%AF%E5%8A%A8%E4%BF%AE%E5%A4%8D/" rel="tag"># 启动修复</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/06/09/2026-06-09-spring-cloud-env-setup/" rel="prev" title="接手烂尾的 Spring Cloud 微服务项目：从零搭建 26 模块编译环境">
+                  <i class="fa fa-angle-left"></i> 接手烂尾的 Spring Cloud 微服务项目：从零搭建 26 模块编译环境
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2026/06/10/2026-06-10-login-token-and-summary/" rel="next" title="登录 token 补齐与项目改动全量汇总">
+                  登录 token 补齐与项目改动全量汇总 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  
+  <div class="comments giscus-container">
+  </div>
+  
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">zhlifeiy35</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/zhdmm35" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"zhdmm35/zhdmm35.github.io","repo_id":"R_kgDOON4bhg","category":"Announcements","category_id":"DIC_kwDOON4bhs4C3dEc","mapping":"pathname","strict":0,"reactions_enabled":1,"emit_metadata":0,"theme":"preferred_color_scheme","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+
+<script>
+document.addEventListener('page:loaded', () => {
+  if (!CONFIG.page.comments) return;
+
+  NexT.utils.loadComments('.giscus-container')
+    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
+      attributes: {
+        async                   : true,
+        crossOrigin             : 'anonymous',
+        'data-repo'             : CONFIG.giscus.repo,
+        'data-repo-id'          : CONFIG.giscus.repo_id,
+        'data-category'         : CONFIG.giscus.category,
+        'data-category-id'      : CONFIG.giscus.category_id,
+        'data-mapping'          : CONFIG.giscus.mapping,
+        'data-strict'           : CONFIG.giscus.strict,
+        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
+        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
+        'data-theme'            : CONFIG.giscus.theme,
+        'data-lang'             : CONFIG.giscus.lang,
+        'data-input-position'   : CONFIG.giscus.input_position,
+        'data-loading'          : CONFIG.giscus.loading
+      },
+      parentNode: document.querySelector('.giscus-container')
+    }));
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="导读 dist_sync 分支自 6&#x2F;10 起的所有改动（19 个提交 + 6&#x2F;16 未提交的”部门+园区更新”），今天做端到端集成测试。9 项功能 12 个用例全过，未发现阻断性缺陷。1 处 dist_sync_status 表现差异已查明为下游消费者正常行为（非 bug）。这篇不是技术深挖，是测试方法 + DB 证据 + 关键发现的完整记录，适合需要做类似集成测试的同行参考">
+<meta property="og:type" content="article">
+<meta property="og:title" content="dist_sync 分支集成测试报告：9 项功能 12 个用例全过">
+<meta property="og:url" content="https://zhlifeiy.codes/2026/06/16/2026-06-16-dist-sync-integration-test/index.html">
+<meta property="og:site_name" content="我的技术博客">
+<meta property="og:description" content="导读 dist_sync 分支自 6&#x2F;10 起的所有改动（19 个提交 + 6&#x2F;16 未提交的”部门+园区更新”），今天做端到端集成测试。9 项功能 12 个用例全过，未发现阻断性缺陷。1 处 dist_sync_status 表现差异已查明为下游消费者正常行为（非 bug）。这篇不是技术深挖，是测试方法 + DB 证据 + 关键发现的完整记录，适合需要做类似集成测试的同行参考">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/2026-06-16-dist-sync-integration-test_001.jpg">
+<meta property="article:published_time" content="2026-06-16T05:00:00.000Z">
+<meta property="article:modified_time" content="2026-06-27T14:12:55.271Z">
+<meta property="article:author" content="zhlifeiy35">
+<meta property="article:tag" content="集成测试">
+<meta property="article:tag" content="dist_sync">
+<meta property="article:tag" content="端到端测试">
+<meta property="article:tag" content="多表一致性">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/2026-06-16-dist-sync-integration-test_001.jpg">
+
+
+<link rel="canonical" href="https://zhlifeiy.codes/2026/06/16/2026-06-16-dist-sync-integration-test/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://zhlifeiy.codes/2026/06/16/2026-06-16-dist-sync-integration-test/","path":"2026/06/16/2026-06-16-dist-sync-integration-test/","title":"dist_sync 分支集成测试报告：9 项功能 12 个用例全过"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>dist_sync 分支集成测试报告：9 项功能 12 个用例全过 | 我的技术博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">我的技术博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">记录学习与成长</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-guestbook"><a href="/guestbook/" rel="section"><i class="fa fa-comment-dots fa-fw"></i>留言板</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%BC%E8%AF%BB"><span class="nav-number">1.</span> <span class="nav-text">导读</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link"><span class="nav-number">1.0.1.</span> <span class="nav-text">🎧 文章导读</span></a></li><li class="nav-item nav-level-4"><a class="nav-link"><span class="nav-number">1.0.2.</span> <span class="nav-text">🎵 背景音乐</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E6%A6%82%E8%A7%88"><span class="nav-number">2.</span> <span class="nav-text">测试概览</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E7%BB%93%E8%AE%BA"><span class="nav-number">3.</span> <span class="nav-text">一、结论</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E7%8E%AF%E5%A2%83"><span class="nav-number">4.</span> <span class="nav-text">二、环境</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E5%85%B3%E9%94%AE%E7%94%A8%E4%BE%8B%E4%B8%8E-DB-%E8%AF%81%E6%8D%AE"><span class="nav-number">5.</span> <span class="nav-text">三、关键用例与 DB 证据</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#T1-%E6%96%B0%E5%BB%BA%E7%94%A8%E6%88%B7%E5%85%A8%E9%93%BE%E8%B7%AF%EF%BC%88Feature-A-C-D%EF%BC%89"><span class="nav-number">5.1.</span> <span class="nav-text">T1 新建用户全链路（Feature A+C+D）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#T3-%E7%94%A8%E6%88%B7%E5%90%8D%E9%87%8D%E5%A4%8D%E8%BF%BD%E5%8A%A0%E9%9A%8F%E6%9C%BA%E6%95%B0%EF%BC%88Feature-F%EF%BC%89"><span class="nav-number">5.2.</span> <span class="nav-text">T3 用户名重复追加随机数（Feature F）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#T4-%E6%8D%A2%E9%83%A8%E9%97%A8%E3%80%81%E5%90%8C%E5%85%AC%E5%8F%B8%EF%BC%88Feature-I-%E9%87%8D%E5%BB%BA-sys-user-organization%EF%BC%89"><span class="nav-number">5.3.</span> <span class="nav-text">T4 换部门、同公司（Feature I 重建 sys_user_organization）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#T5-%E8%B7%A8%E5%9B%AD%E5%8C%BA%E8%B0%83%E5%B2%97%EF%BC%88Feature-I-%E6%9B%B4%E6%96%B0-sys-user-park%EF%BC%89"><span class="nav-number">5.4.</span> <span class="nav-text">T5 跨园区调岗（Feature I 更新 sys_user_park）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#T6-T8-%E5%9B%AD%E5%8C%BA%E7%BB%91%E5%AE%9A%E5%85%AC%E5%8F%B8%EF%BC%88Feature-B%EF%BC%89"><span class="nav-number">5.5.</span> <span class="nav-text">T6-T8 园区绑定公司（Feature B）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#T9-%E8%B4%A6%E5%8F%B7%E5%88%97%E8%A1%A8%E7%AD%9B%E9%80%89%EF%BC%88Feature-E%EF%BC%89"><span class="nav-number">5.6.</span> <span class="nav-text">T9 账号列表筛选（Feature E）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#T10-user-page-%E8%BF%94%E5%9B%9E%E5%AD%97%E6%AE%B5%EF%BC%88Feature-H%EF%BC%89"><span class="nav-number">5.7.</span> <span class="nav-text">T10 user&#x2F;page 返回字段（Feature H）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#T11-%E5%9B%AD%E5%8C%BA%E9%83%A8%E9%97%A8%E6%A0%91%E8%BF%87%E6%BB%A4%EF%BC%88Feature-G%EF%BC%89"><span class="nav-number">5.8.</span> <span class="nav-text">T11 园区部门树过滤（Feature G）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#T12-dirty-check%EF%BC%88Feature-I%EF%BC%89"><span class="nav-number">5.9.</span> <span class="nav-text">T12 dirty check（Feature I）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E8%A7%82%E5%AF%9F%E4%B8%8E%E8%AF%B4%E6%98%8E"><span class="nav-number">6.</span> <span class="nav-text">四、观察与说明</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-dist-sync-status-T4-PENDING-T5-NONE%EF%BC%88%E9%9D%9E-bug%EF%BC%89"><span class="nav-number">6.1.</span> <span class="nav-text">1. dist_sync_status: T4&#x3D;PENDING &#x2F; T5&#x3D;NONE（非 bug）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-%E6%8E%A2%E9%92%88-org-id-NULL-%E7%9A%84%E6%AD%A3%E7%A1%AE%E6%80%A7"><span class="nav-number">6.2.</span> <span class="nav-text">2. 探针 org_id&#x3D;NULL 的正确性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-%E5%85%A8%E9%87%8F%E5%90%8C%E6%AD%A5%E5%89%AF%E4%BD%9C%E7%94%A8%EF%BC%88%E5%B7%B2%E6%81%A2%E5%A4%8D%EF%BC%89"><span class="nav-number">6.3.</span> <span class="nav-text">3. 全量同步副作用（已恢复）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE%E4%BF%9D%E7%95%99%EF%BC%88%E6%9C%AA%E5%88%A0%EF%BC%89"><span class="nav-number">6.4.</span> <span class="nav-text">4. 测试数据保留（未删）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E4%B8%8D%E5%9C%A8%E6%9C%AC%E6%AC%A1%E8%8C%83%E5%9B%B4"><span class="nav-number">7.</span> <span class="nav-text">五、不在本次范围</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%AD%E3%80%81%E9%9B%86%E6%88%90%E6%B5%8B%E8%AF%95%E6%96%B9%E6%B3%95%E8%AE%BA"><span class="nav-number">8.</span> <span class="nav-text">六、集成测试方法论</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-Mock-%E7%AB%AF%E7%82%B9%E6%98%AF%E9%9A%94%E7%A6%BB%E7%94%9F%E4%BA%A7%E6%95%B0%E6%8D%AE%E7%9A%84%E5%85%B3%E9%94%AE"><span class="nav-number">8.1.</span> <span class="nav-text">1. Mock 端点是隔离生产数据的关键</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-%E5%85%A8%E9%93%BE%E8%B7%AF-vs-%E5%8D%95%E6%9C%8D%E5%8A%A1%E6%B5%8B%E8%AF%95"><span class="nav-number">8.2.</span> <span class="nav-text">2. 全链路 vs 单服务测试</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-%E7%94%A8%E7%9C%9F%E5%AE%9E%E9%83%A8%E9%97%A8-vs-%E6%A8%A1%E6%8B%9F%E6%95%B0%E6%8D%AE"><span class="nav-number">8.3.</span> <span class="nav-text">3. 用真实部门 vs 模拟数据</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-%E5%8F%8D%E9%9D%A2%E6%A1%88%E4%BE%8B%E7%9A%84%E5%8F%91%E7%8E%B0%E4%BB%B7%E5%80%BC"><span class="nav-number">8.4.</span> <span class="nav-text">4. 反面案例的发现价值</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-dist-sync-status-%E5%90%AB%E4%B9%89%E7%9A%84%E5%A4%9A%E5%B1%82%E8%A7%A3%E8%AF%BB"><span class="nav-number">8.5.</span> <span class="nav-text">5. dist_sync_status 含义的多层解读</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-%E8%BD%AF%E5%88%A0%E5%90%8E%E5%BF%85%E9%A1%BB%E5%81%9A%E6%81%A2%E5%A4%8D"><span class="nav-number">8.6.</span> <span class="nav-text">6. 软删后必须做恢复</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%83%E3%80%81%E4%BA%A7%E5%87%BA%E7%89%A9"><span class="nav-number">9.</span> <span class="nav-text">七、产出物</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%8F%E9%AA%8C%E6%80%BB%E7%BB%93"><span class="nav-number">10.</span> <span class="nav-text">经验总结</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%9B%86%E6%88%90%E6%B5%8B%E8%AF%95%E5%8F%91%E7%8E%B0%E7%9A%84-bug-%E6%AF%94%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95%E6%9B%B4%E6%9C%89%E4%BB%B7%E5%80%BC"><span class="nav-number">10.1.</span> <span class="nav-text">集成测试发现的 bug 比单元测试更有价值</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AB%AF%E5%88%B0%E7%AB%AF%E8%A6%81%E7%9C%8B%E6%AF%8F%E4%B8%80%E5%BC%A0%E8%A1%A8"><span class="nav-number">10.2.</span> <span class="nav-text">端到端要看每一张表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BD%AF%E5%88%A0%E6%98%AF%E6%B5%8B%E8%AF%95%E7%9A%84%E2%80%9D%E9%87%91%E6%A0%87%E5%87%86%E2%80%9D"><span class="nav-number">10.3.</span> <span class="nav-text">软删是测试的”金标准”</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E6%8A%A5%E5%91%8A%E7%9A%84%E5%86%99%E4%BD%9C%E7%BA%AA%E5%BE%8B"><span class="nav-number">10.4.</span> <span class="nav-text">测试报告的写作纪律</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%9B%86%E6%88%90%E6%B5%8B%E8%AF%95%E4%B8%8D%E8%83%BD%E8%A6%86%E7%9B%96%E7%9A%84%E4%BA%8B"><span class="nav-number">10.5.</span> <span class="nav-text">集成测试不能覆盖的事</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8B%E4%B8%80%E6%AD%A5"><span class="nav-number">11.</span> <span class="nav-text">下一步</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zhlifeiy35</p>
+  <div class="site-description" itemprop="description">分享编程技术、AI经验、学习笔记</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">51</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">175</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zhdmm35" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zhdmm35" rel="noopener me" target="_blank"><i class="fa fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/2026-06-16-dist-sync-integration-test_001.jpg" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/06/16/2026-06-16-dist-sync-integration-test/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="我的技术博客">
+      <meta itemprop="description" content="分享编程技术、AI经验、学习笔记">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="dist_sync 分支集成测试报告：9 项功能 12 个用例全过 | 我的技术博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          dist_sync 分支集成测试报告：9 项功能 12 个用例全过
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-06-16 13:00:00" itemprop="dateCreated datePublished" datetime="2026-06-16T13:00:00+08:00">2026-06-16</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-06-27 22:12:55" itemprop="dateModified" datetime="2026-06-27T22:12:55+08:00">2026-06-27</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">后端开发</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E5%8D%97%E7%BD%91%E9%A1%B9%E7%9B%AE/" itemprop="url" rel="index"><span itemprop="name">南网项目</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="导读"><a href="#导读" class="headerlink" title="导读"></a>导读</h2><blockquote>
+<p>dist_sync 分支自 6&#x2F;10 起的所有改动（19 个提交 + 6&#x2F;16 未提交的”部门+园区更新”），今天做端到端集成测试。<strong>9 项功能 12 个用例全过，未发现阻断性缺陷</strong>。1 处 <code>dist_sync_status</code> 表现差异已查明为下游消费者正常行为（非 bug）。这篇不是技术深挖，是<strong>测试方法 + DB 证据 + 关键发现的完整记录</strong>，适合需要做类似集成测试的同行参考。</p>
+</blockquote>
+<span id="more"></span>
+
+<div class="audio-player">
+  <div class="audio-section">
+    <h4>🎧 文章导读</h4>
+    <audio controls preload="metadata">
+      <source src="/2026-06-16-dist-sync-integration-test/narration.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+  <div class="audio-section">
+    <h4>🎵 背景音乐</h4>
+    <audio controls loop preload="metadata">
+      <source src="/2026-06-16-dist-sync-integration-test/bgm.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+</div>
+
+<h2 id="测试概览"><a href="#测试概览" class="headerlink" title="测试概览"></a>测试概览</h2><p><strong>测试对象</strong>：<code>dist_sync</code> 分支自 2026-06-10 起 Panyb 的钉钉同步功能线全部改动（19 个提交 + 6&#x2F;16 未提交的”部门+园区更新”）。</p>
+<p><strong>测试方式</strong>：通过 admin <code>/sync/mockDingUserSync</code> 端点造数据 → MCP 查 <code>building_admin</code>&#x2F;<code>building_through</code> 两库校验。</p>
+<p><strong>测试时长</strong>：1.5 小时（含 DB 落库验证、跨服务 Feign 调用跟踪、脏数据恢复）。</p>
+<p><strong>产出物</strong>：<code>E:\nanwang\smart-park-cloud - no jar\docs\integration-test-2026-06-16\</code>（测试清单、执行脚本、mock 数据、HTTP 响应）</p>
+<p><img src="/2026-06-16-dist-sync-integration-test/assets/images/fig1_001.jpg" alt="测试矩阵表"><br><em>图1：测试矩阵表</em></p>
+<h2 id="一、结论"><a href="#一、结论" class="headerlink" title="一、结论"></a>一、结论</h2><p><strong>9 项功能全部通过。</strong> 未发现阻断性缺陷。1 处 <code>dist_sync_status</code> 表现差异已查明为下游消费者正常行为（非 bug）。</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>功能</th>
+<th>提交</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>A</td>
+<td>钉钉新建用户写 sys_user_park</td>
+<td>aa0176 &#x2F; f9f30e &#x2F; 0313f1</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>B</td>
+<td>园区绑定一级公司（companyList + saveCompanyBind + 互斥 + Date OGNL 修复）</td>
+<td>fb1857、00609c、66de7d、84d5c0、4278ba、db42b、f14cd9</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>C</td>
+<td>钉钉同步触发 pass_user 补写（Feign 串联 + 幂等 + 容错）</td>
+<td>083a7c &#x2F; e8b9dd</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>D</td>
+<td>pass_user 多园区 park_id 正确</td>
+<td>935da0 &#x2F; 834fa7 &#x2F; e26e97</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>E</td>
+<td>账号列表 园区名&#x2F;部门名 筛选</td>
+<td>ee6917</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>F</td>
+<td>用户名重复追加随机数</td>
+<td>0eec7bec</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>G</td>
+<td>getCurParkOrgTree 传 parkId 过滤</td>
+<td>f1e59e3bf</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>H</td>
+<td>user&#x2F;page 返回 parkName + orgId</td>
+<td>746740305</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>I</td>
+<td>更新用户重建部门+园区（6&#x2F;16 未提交）+ dirty check</td>
+<td>工作区</td>
+<td>✅</td>
+</tr>
+</tbody></table>
+<h2 id="二、环境"><a href="#二、环境" class="headerlink" title="二、环境"></a>二、环境</h2><ul>
+<li>admin-service(18200)、through-service(18134) 运行中，进程 11:19 启动，紧接 class 编译（11:19），<strong>已加载当前源码（含 6&#x2F;16 未提交改动）</strong>，未重新构建</li>
+<li>直连 admin 无需鉴权 token；curl 用 <code>C:/Windows/System32/curl.exe</code>（Git 自带 curl 共享库损坏）</li>
+<li>warning-service(18131) 未运行，其未提交改动（告警防重逻辑）不在本次范围（用户确认无关）</li>
+</ul>
+<h2 id="三、关键用例与-DB-证据"><a href="#三、关键用例与-DB-证据" class="headerlink" title="三、关键用例与 DB 证据"></a>三、关键用例与 DB 证据</h2><h3 id="T1-新建用户全链路（Feature-A-C-D）"><a href="#T1-新建用户全链路（Feature-A-C-D）" class="headerlink" title="T1 新建用户全链路（Feature A+C+D）"></a>T1 新建用户全链路（Feature A+C+D）</h3><p>mock 用户 MOCK_T1_001：dept&#x3D;59096187（运行服务部）、company&#x3D;59969486（信息通信分公司→番禺基地）</p>
+<table>
+<thead>
+<tr>
+<th>表</th>
+<th>字段</th>
+<th>实际值</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>sys_user</td>
+<td>user_from</td>
+<td>Ding</td>
+</tr>
+<tr>
+<td>sys_user_organization</td>
+<td>org_id</td>
+<td>59096187 运行服务部</td>
+</tr>
+<tr>
+<td>sys_user_park</td>
+<td>org_id &#x2F; park_id</td>
+<td>59969486 &#x2F; 番禺基地</td>
+</tr>
+<tr>
+<td>pass_user</td>
+<td>org_id &#x2F; park_id</td>
+<td>59096187 &#x2F; 番禺基地</td>
+</tr>
+</tbody></table>
+<p>→ <strong>新人四表全写、park_id 与子级部门 org_id 均正确</strong>。</p>
+<h3 id="T3-用户名重复追加随机数（Feature-F）"><a href="#T3-用户名重复追加随机数（Feature-F）" class="headerlink" title="T3 用户名重复追加随机数（Feature F）"></a>T3 用户名重复追加随机数（Feature F）</h3><p>MOCK_T3_001 的 MOBILE&#x3D;13900000099 与探针 user_name 冲突 → <code>sys_user.user_name = 1390000009910</code>（手机号 + 2 位随机”10”）。</p>
+<h3 id="T4-换部门、同公司（Feature-I-重建-sys-user-organization）"><a href="#T4-换部门、同公司（Feature-I-重建-sys-user-organization）" class="headerlink" title="T4 换部门、同公司（Feature I 重建 sys_user_organization）"></a>T4 换部门、同公司（Feature I 重建 sys_user_organization）</h3><p>T4 创建（运行服务部）→ 更新（通信互联部 59096190），公司不变（59969486）：</p>
+<ul>
+<li>sys_user_organization：59096187 → 59096190 ✅（全删全建）</li>
+<li>sys_user_park：公司未变 → <strong>dirty check 跳过</strong>，仍番禺 ✅</li>
+<li>pass_user：org_id → 59096190、dist_sync_status&#x3D;PENDING、update_time &gt; create_time ✅</li>
+</ul>
+<h3 id="T5-跨园区调岗（Feature-I-更新-sys-user-park）"><a href="#T5-跨园区调岗（Feature-I-更新-sys-user-park）" class="headerlink" title="T5 跨园区调岗（Feature I 更新 sys_user_park）"></a>T5 跨园区调岗（Feature I 更新 sys_user_park）</h3><p>T5 创建（番禺&#x2F;59969486）→ 更新（深圳蓄能 62444075 &#x2F; 生产技术部 62368098）：</p>
+<ul>
+<li>sys_user_park：org_id→62444075、park_id 番禺→深蓄电厂 ✅</li>
+<li>sys_user_organization：→62368098 生产技术部 ✅</li>
+<li>pass_user：org_id&#x3D;62368098、park_id&#x3D;深蓄电厂、update_time&gt;create_time ✅</li>
+</ul>
+<h3 id="T6-T8-园区绑定公司（Feature-B）"><a href="#T6-T8-园区绑定公司（Feature-B）" class="headerlink" title="T6-T8 园区绑定公司（Feature B）"></a>T6-T8 园区绑定公司（Feature B）</h3><ul>
+<li>companyList&#x2F;深蓄电厂 → 34 家一级公司，62444075 绑定前 boundParkId&#x3D;null ✅</li>
+<li>saveCompanyBind {深蓄,[62444075]} → success，DB 桥表更新，companyList 复查 boundParkId&#x3D;深蓄电厂 ✅</li>
+<li>互斥：再绑清蓄电厂 → <code>FAIL_OPERATE「深圳蓄能发电有限公司已被深蓄电厂绑定」</code>，DB 不变 ✅</li>
+<li>（f14cd9 的 Date OGNL 修复：saveCompanyBind 调用全程无 500，间接验证）</li>
+</ul>
+<h3 id="T9-账号列表筛选（Feature-E）"><a href="#T9-账号列表筛选（Feature-E）" class="headerlink" title="T9 账号列表筛选（Feature E）"></a>T9 账号列表筛选（Feature E）</h3><ul>
+<li>parkName&#x3D;番禺 + realName&#x3D;T → totalCount&#x3D;4（T1&#x2F;T3&#x2F;T4&#x2F;claudetestA，全番禺）✅</li>
+<li>organizationName&#x3D;通信互联 → totalCount&#x3D;68 ✅</li>
+</ul>
+<h3 id="T10-user-page-返回字段（Feature-H）"><a href="#T10-user-page-返回字段（Feature-H）" class="headerlink" title="T10 user&#x2F;page 返回字段（Feature H）"></a>T10 user&#x2F;page 返回字段（Feature H）</h3><p>查 MOCK_T1_001 → 记录含 <code>orgId=59096187</code>、<code>parkName=番禺基地</code> ✅</p>
+<h3 id="T11-园区部门树过滤（Feature-G）"><a href="#T11-园区部门树过滤（Feature-G）" class="headerlink" title="T11 园区部门树过滤（Feature G）"></a>T11 园区部门树过滤（Feature G）</h3><p>getCurParkOrgTree parkId&#x3D;番禺 → 仅返回番禺绑定的 5 家公司（公司本部&#x2F;园区总部&#x2F;信息通信分公司&#x2F;园区二级部门&#x2F;西部检修试验分公司）✅</p>
+<h3 id="T12-dirty-check（Feature-I）"><a href="#T12-dirty-check（Feature-I）" class="headerlink" title="T12 dirty check（Feature I）"></a>T12 dirty check（Feature I）</h3><p>T4 第 3 次同步（数据不变）：sys_user_organization 仅 1 条、create_time 停在更新时刻（04:13:53），无重建 ✅</p>
+<h2 id="四、观察与说明"><a href="#四、观察与说明" class="headerlink" title="四、观察与说明"></a>四、观察与说明</h2><h3 id="1-dist-sync-status-T4-PENDING-T5-NONE（非-bug）"><a href="#1-dist-sync-status-T4-PENDING-T5-NONE（非-bug）" class="headerlink" title="1. dist_sync_status: T4&#x3D;PENDING &#x2F; T5&#x3D;NONE（非 bug）"></a>1. dist_sync_status: T4&#x3D;PENDING &#x2F; T5&#x3D;NONE（非 bug）</h3><p>UPDATE 分支均设 PENDING（T4 佐证）。T5 的 PENDING 被定时任务 <code>PassDistSyncer</code>（60s&#x2F;90s 轮询）消费：<code>resolveShouldSync(深蓄电厂)</code> 判定”总部数据无需同步”→ 标 NONE。<strong>属下游消费者正常行为，被测功能本身正确</strong>。</p>
+<h3 id="2-探针-org-id-NULL-的正确性"><a href="#2-探针-org-id-NULL-的正确性" class="headerlink" title="2. 探针 org_id&#x3D;NULL 的正确性"></a>2. 探针 org_id&#x3D;NULL 的正确性</h3><p>早期探针 PROBE_001 用 <code>DEPARTMENT=[136602494]</code>（顶级公司）→ pass_user.org_id&#x3D;NULL。<strong>这是设计正确行为</strong>：<code>listByConditionExt</code> 的 org_id 子查询只取 <code>parent_id</code> 非空的子级部门，顶级公司被过滤。</p>
+<p>真实钉钉部门语义：DEPARTMENT&#x3D;子级部门、公司取自 PDEPARTS。后续 T1-T5 改用真实子级部门（如运行服务部 59096187）后 org_id 正确。</p>
+<h3 id="3-全量同步副作用（已恢复）"><a href="#3-全量同步副作用（已恢复）" class="headerlink" title="3. 全量同步副作用（已恢复）"></a>3. 全量同步副作用（已恢复）</h3><p><code>handleDingUserSync</code> 是全量同步：每次 mock 只传部分用户会把其他存量钉钉用户软删（delete_flag&#x3D;1）。测试过程累计软删全部 <strong>5295 个 Ding 用户（含真实员工）</strong>。</p>
+<blockquote>
+<p>[!warning] 软删风险<br><strong>测试后已执行 <code>UPDATE sys_user SET delete_flag=&#39;0&#39; WHERE user_from=&#39;Ding&#39;</code>（Changed 5295），全部恢复。</strong> 软删可逆，关联表数据未丢失。</p>
+<p>但这暴露了一个<strong>全量同步的设计缺陷</strong>——mock 部分用户就会影响其他用户。生产环境如果误用 mock 端点（不带 IP 白名单）会导致<strong>全员软删</strong>。</p>
+</blockquote>
+<h3 id="4-测试数据保留（未删）"><a href="#4-测试数据保留（未删）" class="headerlink" title="4. 测试数据保留（未删）"></a>4. 测试数据保留（未删）</h3><ul>
+<li>sys_user：MOCK_T1&#x2F;T3&#x2F;T4&#x2F;T5_001、探针 PROBE_001</li>
+<li>sys_park_organization：62444075（深圳蓄能）绑定至深蓄电厂</li>
+<li>pass_user：上述用户的便捷通行记录</li>
+</ul>
+<p>按用户要求保留，供复查。</p>
+<h2 id="五、不在本次范围"><a href="#五、不在本次范围" class="headerlink" title="五、不在本次范围"></a>五、不在本次范围</h2><ul>
+<li>warning-service 告警防重逻辑（<code>AlarmingEvenSinkServiceImpl</code>、<code>AlarmingRecordMapper.xml</code>）——与钉钉同步无关，warning 未运行</li>
+<li><code>PassUserGrantServiceImpl</code> grantExecStatus&#x3D;3 同步标记、<code>service-util/pom.xml</code> 注释 jna 依赖——无关功能线</li>
+<li>TODO :251（被删除钉钉用户的关联数据清理）——6&#x2F;16 设计明确标注”本次不做”</li>
+</ul>
+<h2 id="六、集成测试方法论"><a href="#六、集成测试方法论" class="headerlink" title="六、集成测试方法论"></a>六、集成测试方法论</h2><h3 id="1-Mock-端点是隔离生产数据的关键"><a href="#1-Mock-端点是隔离生产数据的关键" class="headerlink" title="1. Mock 端点是隔离生产数据的关键"></a>1. Mock 端点是隔离生产数据的关键</h3><p><img src="/2026-06-16-dist-sync-integration-test/assets/images/fig2_001.jpg" alt="mock 端点调用链"><br><em>图2：mock 端点调用链</em></p>
+<p><code>mockDingUserSync</code> 端点<strong>绕过 iot-middle 直接接收 mock 数据</strong>，真实链路走 Spring 容器 + 真实 MyBatis + 真实 MySQL + 真实事务管理。这样：</p>
+<ul>
+<li>不污染生产数据（IP 白名单）</li>
+<li>不依赖中台（mock 自己造）</li>
+<li>真实环境跑真实代码（不脱裤子放屁）</li>
+</ul>
+<h3 id="2-全链路-vs-单服务测试"><a href="#2-全链路-vs-单服务测试" class="headerlink" title="2. 全链路 vs 单服务测试"></a>2. 全链路 vs 单服务测试</h3><p>这次没有单独测”admin 写 sys_user_park”或”through 写 pass_user”——而是<strong>端到端跑 4 张表的一致性</strong>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">sys_user (admin 写)</span><br><span class="line">sys_user_organization (admin 写)</span><br><span class="line">sys_user_park (admin 写)</span><br><span class="line">pass_user (through Feign 触发写)</span><br></pre></td></tr></table></figure>
+
+<p>单服务测试容易暴露局部 OK 但全局不一致的 bug（如昨天发现的死亡覆盖链）。</p>
+<h3 id="3-用真实部门-vs-模拟数据"><a href="#3-用真实部门-vs-模拟数据" class="headerlink" title="3. 用真实部门 vs 模拟数据"></a>3. 用真实部门 vs 模拟数据</h3><p>早期用 <code>DEPARTMENT=[136602494]</code>（顶级公司）测试，结果 pass_user.org_id&#x3D;NULL。这暴露的不是 bug 而是<strong>设计行为</strong>——org_id 子查询只取子级部门。</p>
+<p><strong>教训</strong>：测试数据要尽量用真实业务数据，不能凭空造”理想值”。</p>
+<h3 id="4-反面案例的发现价值"><a href="#4-反面案例的发现价值" class="headerlink" title="4. 反面案例的发现价值"></a>4. 反面案例的发现价值</h3><p>mock 数据 <code>MOCK_TEST_PASS_001</code> 用 <code>DEPARTMENT=[59096189]</code>（已硬删），导致 pass_user 找不到这个用户。<strong>这一开始被认为是 bug，深入排查才挖出死亡覆盖链</strong>。</p>
+<p><strong>反面案例</strong>比正面案例更有价值——正面案例成功不代表真实业务成功，反面案例的失败往往暴露设计假设。</p>
+<h3 id="5-dist-sync-status-含义的多层解读"><a href="#5-dist-sync-status-含义的多层解读" class="headerlink" title="5. dist_sync_status 含义的多层解读"></a>5. dist_sync_status 含义的多层解读</h3><p>T4&#x3D;PENDING、T5&#x3D;NONE 是下游消费者的不同响应：</p>
+<ul>
+<li>T4：换部门（park 不变）→ 园区侧不需重新下发 → PENDING（备用）</li>
+<li>T5：跨园区 → 总部无需下发到其他园区 → NONE（”总部数据无需同步”）</li>
+</ul>
+<p>不要把 NONE 当成 bug——它是有意义的业务状态。</p>
+<h3 id="6-软删后必须做恢复"><a href="#6-软删后必须做恢复" class="headerlink" title="6. 软删后必须做恢复"></a>6. 软删后必须做恢复</h3><p>全量同步副作用是<strong>已知风险</strong>——mock 部分用户会软删其他用户。<strong>测试前准备好恢复 SQL</strong>：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">UPDATE</span> sys_user <span class="keyword">SET</span> delete_flag<span class="operator">=</span><span class="string">&#x27;0&#x27;</span> <span class="keyword">WHERE</span> user_from<span class="operator">=</span><span class="string">&#x27;Ding&#x27;</span> <span class="keyword">AND</span> delete_flag<span class="operator">=</span><span class="string">&#x27;1&#x27;</span>;</span><br></pre></td></tr></table></figure>
+
+<p>这条 SQL 必须在测试结束后<strong>无条件执行</strong>——避免给生产环境留下脏数据。</p>
+<h2 id="七、产出物"><a href="#七、产出物" class="headerlink" title="七、产出物"></a>七、产出物</h2><table>
+<thead>
+<tr>
+<th>项</th>
+<th>路径</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>测试清单</td>
+<td><code>docs/integration-test-2026-06-16/测试清单.md</code></td>
+</tr>
+<tr>
+<td>执行脚本</td>
+<td><code>docs/integration-test-2026-06-16/run-tests.sh</code></td>
+</tr>
+<tr>
+<td>mock 数据</td>
+<td><code>docs/integration-test-2026-06-16/mock/*.json</code></td>
+</tr>
+<tr>
+<td>接口响应</td>
+<td><code>docs/integration-test-2026-06-16/out/*.resp</code></td>
+</tr>
+<tr>
+<td>本报告</td>
+<td><code>E:\obs\zhishiku\项目\南网项目\dist_sync分支集成测试报告-2026-06-16.md</code></td>
+</tr>
+</tbody></table>
+<p><img src="/2026-06-16-dist-sync-integration-test/assets/images/fig3_001.jpg" alt="DB 落库对比"><br><em>图3：DB 落库对比</em></p>
+<h2 id="经验总结"><a href="#经验总结" class="headerlink" title="经验总结"></a>经验总结</h2><h3 id="集成测试发现的-bug-比单元测试更有价值"><a href="#集成测试发现的-bug-比单元测试更有价值" class="headerlink" title="集成测试发现的 bug 比单元测试更有价值"></a>集成测试发现的 bug 比单元测试更有价值</h3><p>单元测试 mock 一切外部依赖，集成测试直面真实链路。这次 9 项功能里有 2 项是因为集成测试才暴露问题（OGNL Date 坑、死亡覆盖链），单元测试根本抓不到——因为 mock 框架根本不解析 OGNL、也不连真实 DB。</p>
+<h3 id="端到端要看每一张表"><a href="#端到端要看每一张表" class="headerlink" title="端到端要看每一张表"></a>端到端要看每一张表</h3><p>查 <code>pass_user</code> 找不到用户，第一反应”Feign 失败”，但<strong>只看一张表</strong>。后来查 <code>sys_user_park.park_id</code> 才发现 mapper SELECT 漏列——多查一张表就把根因暴露了。</p>
+<h3 id="软删是测试的”金标准”"><a href="#软删是测试的”金标准”" class="headerlink" title="软删是测试的”金标准”"></a>软删是测试的”金标准”</h3><p>mock 数据准备要”端到端验证”：调 mock 端点后，<strong>先去查中间表是不是预期的值</strong>，再去看最终表。这次先查 <code>sys_user_park.park_id</code>，再查 <code>pass_user.park_id</code>，顺藤摸瓜找到 mapper 漏列。</p>
+<h3 id="测试报告的写作纪律"><a href="#测试报告的写作纪律" class="headerlink" title="测试报告的写作纪律"></a>测试报告的写作纪律</h3><p>好的集成测试报告要回答 4 个问题：</p>
+<ol>
+<li><strong>测了什么</strong>：9 项功能 + 12 个用例</li>
+<li><strong>怎么测的</strong>：mock 端点 + DB 落库验证</li>
+<li><strong>结果如何</strong>：全过 + 1 处非阻断差异</li>
+<li><strong>怎么恢复</strong>：5295 条软删数据已恢复</li>
+</ol>
+<h3 id="集成测试不能覆盖的事"><a href="#集成测试不能覆盖的事" class="headerlink" title="集成测试不能覆盖的事"></a>集成测试不能覆盖的事</h3><ul>
+<li>warning-service 告警防重逻辑（warning 未启动）</li>
+<li>被删除钉钉用户的关联数据清理（6&#x2F;16 设计明确不做）</li>
+<li>dist_sync 分支已有的 <code>PassUserGrantServiceImpl</code> grantExecStatus&#x3D;3 同步标记</li>
+</ul>
+<p><strong>这些需要在后续的专项测试里覆盖</strong>——一次集成测试不是万能的。</p>
+<h2 id="下一步"><a href="#下一步" class="headerlink" title="下一步"></a>下一步</h2><p>集成测试通过后，下一步是部署到 dev 环境做真实用户的端到端验证。这次 mock 数据能跑通不代表真实中台数据能跑通——后续需要：</p>
+<ul>
+<li>用真实 Dataphin API 响应样本做测试</li>
+<li>验证 PDEPARTS 废弃后的新格式</li>
+<li>验证头像同步的网络可达性</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E9%9B%86%E6%88%90%E6%B5%8B%E8%AF%95/" rel="tag"># 集成测试</a>
+              <a href="/tags/dist-sync/" rel="tag"># dist_sync</a>
+              <a href="/tags/%E7%AB%AF%E5%88%B0%E7%AB%AF%E6%B5%8B%E8%AF%95/" rel="tag"># 端到端测试</a>
+              <a href="/tags/%E5%A4%9A%E8%A1%A8%E4%B8%80%E8%87%B4%E6%80%A7/" rel="tag"># 多表一致性</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/06/15/2026-06-15-pass-user-fields-and-org-tree/" rel="prev" title="pass_user 字段同步 + 人员列表联动 + 代码审查：折中方案与前端 import 来源踩坑">
+                  <i class="fa fa-angle-left"></i> pass_user 字段同步 + 人员列表联动 + 代码审查：折中方案与前端 import 来源踩坑
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2026/06/22/2026-06-22-pdeparts-offline/" rel="next" title="PDEPARTS 字段下线与钉钉同步真实格式链路测试报告">
+                  PDEPARTS 字段下线与钉钉同步真实格式链路测试报告 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  
+  <div class="comments giscus-container">
+  </div>
+  
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">zhlifeiy35</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/zhdmm35" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"zhdmm35/zhdmm35.github.io","repo_id":"R_kgDOON4bhg","category":"Announcements","category_id":"DIC_kwDOON4bhs4C3dEc","mapping":"pathname","strict":0,"reactions_enabled":1,"emit_metadata":0,"theme":"preferred_color_scheme","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+
+<script>
+document.addEventListener('page:loaded', () => {
+  if (!CONFIG.page.comments) return;
+
+  NexT.utils.loadComments('.giscus-container')
+    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
+      attributes: {
+        async                   : true,
+        crossOrigin             : 'anonymous',
+        'data-repo'             : CONFIG.giscus.repo,
+        'data-repo-id'          : CONFIG.giscus.repo_id,
+        'data-category'         : CONFIG.giscus.category,
+        'data-category-id'      : CONFIG.giscus.category_id,
+        'data-mapping'          : CONFIG.giscus.mapping,
+        'data-strict'           : CONFIG.giscus.strict,
+        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
+        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
+        'data-theme'            : CONFIG.giscus.theme,
+        'data-lang'             : CONFIG.giscus.lang,
+        'data-input-position'   : CONFIG.giscus.input_position,
+        'data-loading'          : CONFIG.giscus.loading
+      },
+      parentNode: document.querySelector('.giscus-container')
+    }));
+});
+</script>
+
+</body>
+</html>
