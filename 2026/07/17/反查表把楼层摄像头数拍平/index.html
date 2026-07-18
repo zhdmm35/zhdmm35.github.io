@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="「勾这个楼层到底覆盖几个摄像头」——超管在配置页的盲勾体验必须解决。后端用反查表把 O(N×M) 拍平成 O(N+M)，前端零计算渲染，6 个单测全绿。本文把这个看起来简单的功能拆开讲。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="O(N×M) 拍平成 O(N+M)：反查表如何把楼层摄像头计数从慢路径救回来">
+<meta property="og:url" content="https://zhlifeiy.codes/2026/07/17/%E5%8F%8D%E6%9F%A5%E8%A1%A8%E6%8A%8A%E6%A5%BC%E5%B1%82%E6%91%84%E5%83%8F%E5%A4%B4%E6%95%B0%E6%8B%8D%E5%B9%B3/index.html">
+<meta property="og:site_name" content="我的技术博客">
+<meta property="og:description" content="「勾这个楼层到底覆盖几个摄像头」——超管在配置页的盲勾体验必须解决。后端用反查表把 O(N×M) 拍平成 O(N+M)，前端零计算渲染，6 个单测全绿。本文把这个看起来简单的功能拆开讲。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/floor-camera-count-cover.png">
+<meta property="article:published_time" content="2026-07-17T11:00:00.000Z">
+<meta property="article:modified_time" content="2026-07-18T03:12:00.906Z">
+<meta property="article:author" content="zhlifeiy35">
+<meta property="article:tag" content="Java">
+<meta property="article:tag" content="南网项目">
+<meta property="article:tag" content="算法">
+<meta property="article:tag" content="摄像头">
+<meta property="article:tag" content="反查表">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/floor-camera-count-cover.png">
+
+
+<link rel="canonical" href="https://zhlifeiy.codes/2026/07/17/%E5%8F%8D%E6%9F%A5%E8%A1%A8%E6%8A%8A%E6%A5%BC%E5%B1%82%E6%91%84%E5%83%8F%E5%A4%B4%E6%95%B0%E6%8B%8D%E5%B9%B3/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://zhlifeiy.codes/2026/07/17/%E5%8F%8D%E6%9F%A5%E8%A1%A8%E6%8A%8A%E6%A5%BC%E5%B1%82%E6%91%84%E5%83%8F%E5%A4%B4%E6%95%B0%E6%8B%8D%E5%B9%B3/","path":"2026/07/17/反查表把楼层摄像头数拍平/","title":"O(N×M) 拍平成 O(N+M)：反查表如何把楼层摄像头计数从慢路径救回来"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>O(N×M) 拍平成 O(N+M)：反查表如何把楼层摄像头计数从慢路径救回来 | 我的技术博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">我的技术博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">记录学习与成长</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-guestbook"><a href="/guestbook/" rel="section"><i class="fa fa-comment-dots fa-fw"></i>留言板</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link"><span class="nav-number">1.</span> <span class="nav-text">🎧 文章导读</span></a></li><li class="nav-item nav-level-4"><a class="nav-link"><span class="nav-number">2.</span> <span class="nav-text">🎵 背景音乐</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E9%9C%80%E6%B1%82%E8%83%8C%E6%99%AF%EF%BC%9A%E4%B8%A4%E5%B1%82%E9%93%BE%E8%B7%AF%E4%B8%AD%E7%9A%84%E2%80%9D%E5%B1%95%E7%A4%BA%E6%80%A7%E5%A2%9E%E9%87%8F%E2%80%9D"><span class="nav-number"></span> <span class="nav-text">一、需求背景：两层链路中的”展示性增量”</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-%E7%AC%AC%E4%B8%80%E5%B1%82%EF%BC%88%E5%B7%B2%E5%90%88%E5%85%A5%EF%BC%89%EF%BC%9A%E7%BB%99%E8%B6%85%E7%AE%A1%E5%81%9A%E5%85%AC%E5%8F%B8%E9%BB%98%E8%AE%A4%E5%8F%AF%E8%A7%81%E6%A5%BC%E5%B1%82%E9%85%8D%E7%BD%AE"><span class="nav-number"></span> <span class="nav-text">1.1 第一层（已合入）：给超管做公司默认可见楼层配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-2-%E7%AC%AC%E4%BA%8C%E5%B1%82%EF%BC%88%E6%9C%AC%E6%AC%A1%E6%9C%AA%E6%8F%90%E4%BA%A4%E7%9A%84%E5%A2%9E%E9%87%8F%EF%BC%89%EF%BC%9A%E9%85%8D%E7%BD%AE%E9%A1%B5%E6%98%BE%E7%A4%BA%E3%80%8C%E5%8B%BE%E8%BF%99%E4%B8%AA%E6%A5%BC%E5%B1%82%E5%88%B0%E5%BA%95%E5%87%A0%E4%B8%AA%E6%91%84%E5%83%8F%E5%A4%B4%E3%80%8D"><span class="nav-number"></span> <span class="nav-text">1.2 第二层（本次未提交的增量）：配置页显示「勾这个楼层到底几个摄像头」</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E5%85%B3%E9%94%AE%E5%86%B3%E7%AD%96-1%EF%BC%9A%E8%AE%A1%E6%95%B0%E5%8F%A3%E5%BE%84%E5%BF%85%E9%A1%BB%E5%92%8C-getCameraTree-%E5%AF%B9%E9%BD%90"><span class="nav-number"></span> <span class="nav-text">二、关键决策 1：计数口径必须和 getCameraTree 对齐</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-%E8%BF%99%E6%98%AF%E6%95%B4%E4%BB%B6%E4%BA%8B%E7%9A%84%E7%AB%8B%E8%BA%AB%E4%B9%8B%E6%9C%AC"><span class="nav-number"></span> <span class="nav-text">2.1 这是整件事的立身之本</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-%E7%A9%BA%E9%97%B4%E6%A8%A1%E5%9E%8B"><span class="nav-number"></span> <span class="nav-text">2.2 空间模型</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E5%85%B3%E9%94%AE%E5%86%B3%E7%AD%96-2%EF%BC%9A%E7%94%A8%E5%8F%8D%E6%9F%A5%E8%A1%A8%E8%80%8C%E4%B8%8D%E6%98%AF%E5%B5%8C%E5%A5%97%E9%81%8D%E5%8E%86"><span class="nav-number"></span> <span class="nav-text">三、关键决策 2：用反查表而不是嵌套遍历</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-%E6%9C%80%E6%9C%B4%E7%B4%A0%E7%9A%84%E5%86%99%E6%B3%95"><span class="nav-number"></span> <span class="nav-text">3.1 最朴素的写法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-%E6%8A%98%E4%B8%AD%E6%96%B9%E6%A1%88%EF%BC%9A%E5%85%88%E5%BB%BA%E5%8F%8D%E6%9F%A5%E8%A1%A8"><span class="nav-number"></span> <span class="nav-text">3.2 折中方案：先建反查表</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E5%85%B3%E9%94%AE%E5%86%B3%E7%AD%96-3%EF%BC%9ALinkedHashMap-merge-%E5%87%BD%E6%95%B0"><span class="nav-number"></span> <span class="nav-text">四、关键决策 3：LinkedHashMap + merge 函数</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#4-1-%E4%B8%BA%E4%BB%80%E4%B9%88%E7%94%A8-LinkedHashMap"><span class="nav-number"></span> <span class="nav-text">4.1 为什么用 LinkedHashMap</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-2-%E4%B8%BA%E4%BB%80%E4%B9%88-toMap-%E8%A6%81%E5%B8%A6-merge-%E5%87%BD%E6%95%B0"><span class="nav-number"></span> <span class="nav-text">4.2 为什么 toMap 要带 merge 函数</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E6%A0%B8%E5%BF%83%E7%AE%97%E6%B3%95-countCamerasByFloor"><span class="nav-number"></span> <span class="nav-text">五、核心算法 countCamerasByFloor</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#5-1-%E7%AC%AC%E4%B8%80%E6%AD%A5%EF%BC%9A%E6%AF%8F%E4%B8%AA%E8%A2%AB%E5%8B%BE%E9%80%89%E6%A5%BC%E5%B1%82%E5%85%88%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B8%BA-0"><span class="nav-number"></span> <span class="nav-text">5.1 第一步：每个被勾选楼层先初始化为 0</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-2-%E7%AC%AC%E4%BA%8C%E6%AD%A5%EF%BC%9A%E5%BB%BA%E7%AB%8B-spaceId-%E5%88%B0%E6%89%80%E5%B1%9E%E6%A5%BC%E5%B1%82-id-%E7%9A%84%E5%8F%8D%E6%9F%A5%E8%A1%A8"><span class="nav-number"></span> <span class="nav-text">5.2 第二步：建立 spaceId 到所属楼层 id 的反查表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-3-%E7%AC%AC%E4%B8%89%E6%AD%A5%EF%BC%9A%E6%AF%8F%E4%B8%AA%E6%91%84%E5%83%8F%E5%A4%B4%E6%8C%89-spaceId-%E5%BD%92%E5%88%B0%E6%A5%BC%E5%B1%82%EF%BC%8C%E5%8F%AA%E7%BB%9F%E8%AE%A1%E8%A2%AB%E5%8B%BE%E9%80%89%E7%9A%84"><span class="nav-number"></span> <span class="nav-text">5.3 第三步：每个摄像头按 spaceId 归到楼层，只统计被勾选的</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%AD%E3%80%81getOrgFloorConfig-%E7%9A%84%E6%94%B9%E5%8A%A8"><span class="nav-number"></span> <span class="nav-text">六、getOrgFloorConfig 的改动</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#6-1-%E6%94%B9%E5%8A%A8%E7%82%B9"><span class="nav-number"></span> <span class="nav-text">6.1 改动点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-2-%E4%B8%BA%E4%BB%80%E4%B9%88%E3%80%8C%E5%85%A8%E9%87%8F%E6%8B%89%E3%80%8D%E8%80%8C%E4%B8%8D%E6%98%AF%E3%80%8C%E6%8C%89%E6%A5%BC%E5%B1%82%E8%BF%87%E6%BB%A4%E6%8B%89%E3%80%8D"><span class="nav-number"></span> <span class="nav-text">6.2 为什么「全量拉」而不是「按楼层过滤拉」</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%83%E3%80%81%E5%89%8D%E7%AB%AF%E6%8E%A5%E5%85%A5%EF%BC%9A%E9%9B%B6%E8%AE%A1%E7%AE%97"><span class="nav-number"></span> <span class="nav-text">七、前端接入：零计算</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#7-1-%E5%89%8D%E7%AB%AF%E9%AA%8C%E8%AF%81"><span class="nav-number"></span> <span class="nav-text">7.1 前端验证</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%AB%E3%80%81DTO-%E6%94%B9%E5%8A%A8%EF%BC%9A%E5%8F%AA%E5%8A%A0%E4%B8%80%E4%B8%AA%E5%AD%97%E6%AE%B5"><span class="nav-number"></span> <span class="nav-text">八、DTO 改动：只加一个字段</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B9%9D%E3%80%81%E6%B5%8B%E8%AF%95%E4%B8%8E%E9%AA%8C%E8%AF%81"><span class="nav-number"></span> <span class="nav-text">九、测试与验证</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%81%E3%80%81%E7%BB%8F%E9%AA%8C%E6%80%BB%E7%BB%93"><span class="nav-number"></span> <span class="nav-text">十、经验总结</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#10-1-%E4%B8%A4%E6%9D%A1%E5%8F%AF%E5%A4%8D%E7%94%A8%E7%9A%84%E7%BB%8F%E9%AA%8C"><span class="nav-number"></span> <span class="nav-text">10.1 两条可复用的经验</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#10-2-%E4%B8%BA%E4%BB%80%E4%B9%88%E4%B8%8D%E8%BF%87%E5%BA%A6%E8%AE%BE%E8%AE%A1"><span class="nav-number"></span> <span class="nav-text">10.2 为什么不过度设计</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#10-3-%E5%8F%8D%E6%9F%A5%E8%A1%A8%E9%80%82%E7%94%A8%E7%9A%84-4-%E4%B8%AA%E5%9C%BA%E6%99%AF"><span class="nav-number"></span> <span class="nav-text">10.3 反查表适用的 4 个场景</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#10-4-%E7%AE%97%E6%B3%95%E9%80%89%E5%9E%8B%E7%9A%84%E2%80%9D%E5%A4%9F%E7%94%A8%E5%B0%B1%E5%A5%BD%E2%80%9D%E5%8E%9F%E5%88%99"><span class="nav-number"></span> <span class="nav-text">10.4 算法选型的”够用就好”原则</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%81%E4%B8%80%E3%80%81%E7%BB%93%E8%AF%AD"><span class="nav-number"></span> <span class="nav-text">十一、结语</span></a></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zhlifeiy35</p>
+  <div class="site-description" itemprop="description">分享编程技术、AI经验、学习笔记</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">56</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">18</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">191</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zhdmm35" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zhdmm35" rel="noopener me" target="_blank"><i class="fa fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/floor-camera-count-cover.png" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/07/17/%E5%8F%8D%E6%9F%A5%E8%A1%A8%E6%8A%8A%E6%A5%BC%E5%B1%82%E6%91%84%E5%83%8F%E5%A4%B4%E6%95%B0%E6%8B%8D%E5%B9%B3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="我的技术博客">
+      <meta itemprop="description" content="分享编程技术、AI经验、学习笔记">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="O(N×M) 拍平成 O(N+M)：反查表如何把楼层摄像头计数从慢路径救回来 | 我的技术博客">
+      <meta itemprop="description" content="「勾这个楼层到底覆盖几个摄像头」——超管在配置页的盲勾体验必须解决。后端用反查表把 O(N×M) 拍平成 O(N+M)，前端零计算渲染，6 个单测全绿。本文把这个看起来简单的功能拆开讲。">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          O(N×M) 拍平成 O(N+M)：反查表如何把楼层摄像头计数从慢路径救回来
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-07-17 19:00:00" itemprop="dateCreated datePublished" datetime="2026-07-17T19:00:00+08:00">2026-07-17</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-07-18 11:12:00" itemprop="dateModified" datetime="2026-07-18T11:12:00+08:00">2026-07-18</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">后端开发</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+            <div class="post-description">「勾这个楼层到底覆盖几个摄像头」——超管在配置页的盲勾体验必须解决。后端用反查表把 O(N×M) 拍平成 O(N+M)，前端零计算渲染，6 个单测全绿。本文把这个看起来简单的功能拆开讲。</div>
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>「勾这个楼层到底覆盖几个摄像头？」——超管在配置页的盲勾体验必须解决。盲勾的体验很差：要么勾多了（放出不该放的楼层），要么勾少了（后面发现某楼层其实没摄像头，白勾）。</p>
+<p>本文把”在 DTO 加一个字段这件事”拆开讲：为什么必须用反查表、为什么计数口径要和 <code>getCameraTree</code> 对齐、为什么保序用 <code>LinkedHashMap</code>、为什么 <code>toMap</code> 要带 merge 函数。前端删 Mock 零计算渲染，后端单测 6&#x2F;6 全绿。</p>
+<span id="more"></span>
+
+<div class="audio-player">
+  <div class="audio-section">
+    <h4>🎧 文章导读</h4>
+    <audio controls preload="metadata">
+      <source src="/audio/反查表把楼层摄像头数拍平/narration.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+  <div class="audio-section">
+    <h4>🎵 背景音乐</h4>
+    <audio controls loop preload="metadata">
+      <source src="/audio/反查表把楼层摄像头数拍平/bgm.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+</div>
+
+<p><img src="/images/posts/%E5%8F%8D%E6%9F%A5%E8%A1%A8%E6%8A%8A%E6%A5%BC%E5%B1%82%E6%91%84%E5%83%8F%E5%A4%B4%E6%95%B0%E6%8B%8D%E5%B9%B3/fig1.png" alt="反查表算法三步把摄像头按楼层归堆"></p>
+<p><em>图1：建反查表 → 按 spaceId 查楼层 → 按楼层 merge 计数，三步完成统计</em></p>
+<h2 id="一、需求背景：两层链路中的”展示性增量”"><a href="#一、需求背景：两层链路中的”展示性增量”" class="headerlink" title="一、需求背景：两层链路中的”展示性增量”"></a>一、需求背景：两层链路中的”展示性增量”</h2><p>在拆本次增量之前，先说清整体链路的两层，否则单看本文会摸不着头脑。</p>
+<h3 id="1-1-第一层（已合入）：给超管做公司默认可见楼层配置"><a href="#1-1-第一层（已合入）：给超管做公司默认可见楼层配置" class="headerlink" title="1.1 第一层（已合入）：给超管做公司默认可见楼层配置"></a>1.1 第一层（已合入）：给超管做公司默认可见楼层配置</h3><p>上一提交 <code>9c7e71ac6</code> 给 super-admin 提供了公司默认可见楼层的配置能力：</p>
+<ul>
+<li>新增 <code>GET /cameraInfo/orgFloorConfig/&#123;orgId&#125;</code> 查某公司当前园区已勾选的可见楼层；</li>
+<li>新增 <code>POST /cameraInfo/orgFloorConfig</code> 整体保存（空数组即清空，仅超管可操作）；</li>
+<li>落库表 <code>security_camera_org_floor</code> 加了唯一约束 <code>(park_id, org_id, floor_space_id)</code>；</li>
+<li>保存时先硬删再批插，逻辑干脆。</li>
+</ul>
+<p>这套配置是 <code>getCameraTree</code> 可见性过滤的<strong>数据源</strong>：非超管只能看到所属公司配置楼层下的摄像头，或已审批通过的摄像头编号。</p>
+<h3 id="1-2-第二层（本次未提交的增量）：配置页显示「勾这个楼层到底几个摄像头」"><a href="#1-2-第二层（本次未提交的增量）：配置页显示「勾这个楼层到底几个摄像头」" class="headerlink" title="1.2 第二层（本次未提交的增量）：配置页显示「勾这个楼层到底几个摄像头」"></a>1.2 第二层（本次未提交的增量）：配置页显示「勾这个楼层到底几个摄像头」</h3><p>配置页面上，超管面对一串楼层勾选框，却不知道「勾下这一栋的 3 楼，到底能看到几个摄像头」。所以本次给配置查询的返回值加了一个 <code>floorCameraCounts</code> 字段，告诉前端每个被勾选楼层下有多少摄像头。</p>
+<p>前端要做的事很简单：把三处 Mock 数据（园区、ABC 栋、随机数量）删掉，改为调真实的空间树接口拉当前园区层级，再调配置查询接口回显已勾选楼层与每楼层摄像头数、调保存接口提交。</p>
+<blockquote>
+<p>增量虽小，决策不少。下面把”为什么这样做”的三个关键决策讲清楚。</p>
+</blockquote>
+<h2 id="二、关键决策-1：计数口径必须和-getCameraTree-对齐"><a href="#二、关键决策-1：计数口径必须和-getCameraTree-对齐" class="headerlink" title="二、关键决策 1：计数口径必须和 getCameraTree 对齐"></a>二、关键决策 1：计数口径必须和 getCameraTree 对齐</h2><h3 id="2-1-这是整件事的立身之本"><a href="#2-1-这是整件事的立身之本" class="headerlink" title="2.1 这是整件事的立身之本"></a>2.1 这是整件事的立身之本</h3><p><code>getCameraTree</code> 判可见是<strong>按楼层放行整个楼层子树</strong>——某个楼层被勾选，它下面挂的所有节点（包括房间）里的摄像头全部可见。</p>
+<p>那么配置页上「该楼层 N 个摄像头」的 N，就必须是<strong>这个楼层子树下的全部摄像头数</strong>，否则前端显示的数字和用户实际能看到的数量对不上，超管会被误导。</p>
+<p><img src="/images/posts/%E5%8F%8D%E6%9F%A5%E8%A1%A8%E6%8A%8A%E6%A5%BC%E5%B1%82%E6%91%84%E5%83%8F%E5%A4%B4%E6%95%B0%E6%8B%8D%E5%B9%B3/fig2.png" alt="getCameraTree 与 floorCameraCounts 的口径对齐"></p>
+<p><em>图2：左侧 getCameraTree 按楼层放行子树，右侧 floorCameraCounts 必须统计相同子树</em></p>
+<h3 id="2-2-空间模型"><a href="#2-2-空间模型" class="headerlink" title="2.2 空间模型"></a>2.2 空间模型</h3><p>摄像头可能直接挂在「楼层」节点上，也可能挂在楼层下的「房间」节点上；而房间节点带 <code>floorId</code> 指回所属楼层。</p>
+<p>所以：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">「楼层子树的摄像头」</span><br><span class="line">  = 直接挂该楼层的摄像头</span><br><span class="line">  + 挂在该楼层下任意房间的摄像头</span><br></pre></td></tr></table></figure>
+
+<p>这个口径一旦想清楚，算法的骨架就有了：<strong>把任意 spaceId 折算成所属楼层 id，再把摄像头按楼层归堆计数</strong>。</p>
+<h2 id="三、关键决策-2：用反查表而不是嵌套遍历"><a href="#三、关键决策-2：用反查表而不是嵌套遍历" class="headerlink" title="三、关键决策 2：用反查表而不是嵌套遍历"></a>三、关键决策 2：用反查表而不是嵌套遍历</h2><h3 id="3-1-最朴素的写法"><a href="#3-1-最朴素的写法" class="headerlink" title="3.1 最朴素的写法"></a>3.1 最朴素的写法</h3><p>对每个摄像头，遍历空间树找它属于哪个被勾选的楼层：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// O(N×M)：N 个摄像头 × M 个被勾选楼层</span></span><br><span class="line"><span class="keyword">for</span> (Camera camera : cameras) &#123;</span><br><span class="line">    <span class="keyword">for</span> (String floorId : floorSpaceIds) &#123;</span><br><span class="line">        <span class="keyword">if</span> (isInFloorSubtree(camera.getSpaceId(), floorId)) &#123;</span><br><span class="line">            counts.merge(floorId, <span class="number">1</span>, Integer::sum);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>空间数和摄像头数一旦都上百，就是 O(N×M) 的嵌套扫描，园区规模一大就慢。</p>
+<h3 id="3-2-折中方案：先建反查表"><a href="#3-2-折中方案：先建反查表" class="headerlink" title="3.2 折中方案：先建反查表"></a>3.2 折中方案：先建反查表</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 反查表：spaceId → 所属楼层 id</span></span><br><span class="line">Map&lt;String, String&gt; floorBySpace = ...;</span><br><span class="line"><span class="comment">// 每个摄像头按 floorBySpace 一次查到楼层 id</span></span><br><span class="line"><span class="keyword">for</span> (Camera camera : cameras) &#123;</span><br><span class="line">    <span class="type">String</span> <span class="variable">floorId</span> <span class="operator">=</span> floorBySpace.get(camera.getSpaceId());</span><br><span class="line">    <span class="keyword">if</span> (counts.containsKey(floorId)) &#123;</span><br><span class="line">        counts.merge(floorId, <span class="number">1</span>, Integer::sum);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>建表 O(空间数)，归堆 O(摄像头数)，**总复杂度 O(空间数+摄像头数)**，一次扫完。</p>
+<blockquote>
+<p>反查表本质上就是把嵌套的查找拍平成一次 Map 预处理。<strong>这不是什么高深技巧，但在业务代码里最常被忽略</strong>。</p>
+</blockquote>
+<h2 id="四、关键决策-3：LinkedHashMap-merge-函数"><a href="#四、关键决策-3：LinkedHashMap-merge-函数" class="headerlink" title="四、关键决策 3：LinkedHashMap + merge 函数"></a>四、关键决策 3：LinkedHashMap + merge 函数</h2><h3 id="4-1-为什么用-LinkedHashMap"><a href="#4-1-为什么用-LinkedHashMap" class="headerlink" title="4.1 为什么用 LinkedHashMap"></a>4.1 为什么用 LinkedHashMap</h3><p>前端展示楼层列表要按 <code>floorSpaceIds</code>（被勾选楼层）传入的顺序渲染，不能让 <code>HashMap</code> 的哈希序打乱。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Map&lt;String, Integer&gt; counts = floorSpaceIds.stream()</span><br><span class="line">        .collect(Collectors.toMap(id -&gt; id, id -&gt; <span class="number">0</span>, (l, r) -&gt; l, LinkedHashMap::<span class="keyword">new</span>));</span><br></pre></td></tr></table></figure>
+
+<p>最后一个参数 <code>LinkedHashMap::new</code> 指定底层使用 <code>LinkedHashMap</code>，保证遍历顺序和 <code>floorSpaceIds</code> 一致。</p>
+<h3 id="4-2-为什么-toMap-要带-merge-函数"><a href="#4-2-为什么-toMap-要带-merge-函数" class="headerlink" title="4.2 为什么 toMap 要带 merge 函数"></a>4.2 为什么 toMap 要带 merge 函数</h3><p>空间数据里如果出现重复 id（理论上不该、实际上可能），<code>Collectors.toMap</code> 默认会抛 merge 异常直接炸接口：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java.lang.IllegalStateException: Duplicate key xxx</span><br></pre></td></tr></table></figure>
+
+<p>取 <code>(l, r) -&gt; l</code>（保留先出现的值），容错优先于严格：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">.collect(Collectors.toMap(</span><br><span class="line">    SpaceInfoDTO::getId,</span><br><span class="line">    space -&gt; ...,</span><br><span class="line">    (l, r) -&gt; l    <span class="comment">// 脏数据兜底</span></span><br><span class="line">));</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>两个小但关键的细节：<strong>LinkedHashMap 保序，merge 函数容错</strong>。少一个，线上就要炸。</p>
+</blockquote>
+<h2 id="五、核心算法-countCamerasByFloor"><a href="#五、核心算法-countCamerasByFloor" class="headerlink" title="五、核心算法 countCamerasByFloor"></a>五、核心算法 countCamerasByFloor</h2><h3 id="5-1-第一步：每个被勾选楼层先初始化为-0"><a href="#5-1-第一步：每个被勾选楼层先初始化为-0" class="headerlink" title="5.1 第一步：每个被勾选楼层先初始化为 0"></a>5.1 第一步：每个被勾选楼层先初始化为 0</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Map&lt;String, Integer&gt; counts = floorSpaceIds.stream()</span><br><span class="line">        .collect(Collectors.toMap(id -&gt; id, id -&gt; <span class="number">0</span>, (l, r) -&gt; l, LinkedHashMap::<span class="keyword">new</span>));</span><br></pre></td></tr></table></figure>
+
+<p>注意初始化用的是<strong>被勾选楼层列表</strong>（<code>floorSpaceIds</code>），而不是全园区所有楼层——没被勾选的楼层根本不会出现在结果里，这是「只统计被勾选楼层」的第一道关卡。</p>
+<h3 id="5-2-第二步：建立-spaceId-到所属楼层-id-的反查表"><a href="#5-2-第二步：建立-spaceId-到所属楼层-id-的反查表" class="headerlink" title="5.2 第二步：建立 spaceId 到所属楼层 id 的反查表"></a>5.2 第二步：建立 spaceId 到所属楼层 id 的反查表</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Map&lt;String, String&gt; floorBySpace = spaces.stream().collect(Collectors.toMap(</span><br><span class="line">        SpaceInfoDTO::getId,</span><br><span class="line">        space -&gt; DictConstants.SPACE_LEVEL_ROOM.equals(space.getSpaceHierarchy())</span><br><span class="line">                ? StringUtils.defaultString(space.getFloorId())   <span class="comment">// 房间 -&gt; 取其 floorId</span></span><br><span class="line">                : DictConstants.SPACE_LEVEL_FLOOR.equals(space.getSpaceHierarchy())</span><br><span class="line">                    ? space.getId()                                <span class="comment">// 楼层 -&gt; 自身</span></span><br><span class="line">                    : StringUtils.EMPTY,                           <span class="comment">// 其它层级 -&gt; 忽略</span></span><br><span class="line">        (l, r) -&gt; l));</span><br></pre></td></tr></table></figure>
+
+<p>这段三元嵌套是算法的实质：</p>
+<table>
+<thead>
+<tr>
+<th>节点类型</th>
+<th>折算结果</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>房间</td>
+<td>取其 <code>floorId</code> 指向的楼层</td>
+</tr>
+<tr>
+<td>楼层</td>
+<td>自身 id</td>
+</tr>
+<tr>
+<td>其它层级（楼栋、园区等）</td>
+<td>空串忽略</td>
+</tr>
+</tbody></table>
+<p><code>StringUtils.defaultString</code> 是防空：万一某个房间的 <code>floorId</code> 是 null，兜底成空串，后面 <code>counts::containsKey</code> 自然过滤掉。</p>
+<h3 id="5-3-第三步：每个摄像头按-spaceId-归到楼层，只统计被勾选的"><a href="#5-3-第三步：每个摄像头按-spaceId-归到楼层，只统计被勾选的" class="headerlink" title="5.3 第三步：每个摄像头按 spaceId 归到楼层，只统计被勾选的"></a>5.3 第三步：每个摄像头按 spaceId 归到楼层，只统计被勾选的</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">cameras.stream()</span><br><span class="line">        .map(c -&gt; floorBySpace.get(c.getSpaceId()))</span><br><span class="line">        .filter(counts::containsKey)</span><br><span class="line">        .forEach(floorId -&gt; counts.merge(floorId, <span class="number">1</span>, Integer::sum));</span><br></pre></td></tr></table></figure>
+
+<p><code>filter(counts::containsKey)</code> 是<strong>第二道关卡</strong>：园区里摄像头可能挂在非楼层&#x2F;非房间（比如挂在楼栋层、或挂在未被该公司勾选的楼层），这些 <code>floorBySpace</code> 折算出来的 id 不在 <code>counts</code> 的 key 集合里，一律不计。</p>
+<blockquote>
+<p><strong>两道关卡叠加，结果就精确等于「被勾选楼层子树下的摄像头数」</strong>。</p>
+</blockquote>
+<h2 id="六、getOrgFloorConfig-的改动"><a href="#六、getOrgFloorConfig-的改动" class="headerlink" title="六、getOrgFloorConfig 的改动"></a>六、getOrgFloorConfig 的改动</h2><h3 id="6-1-改动点"><a href="#6-1-改动点" class="headerlink" title="6.1 改动点"></a>6.1 改动点</h3><p>原来 <code>getOrgFloorConfig</code> 拿到 <code>floorSpaceIds</code> 直接塞进 result 就返回，逻辑很轻。现在要在返回前多干两件事：</p>
+<ol>
+<li>拉本园区全部空间（<code>spaceInfoClient.list</code>）；</li>
+<li>拉本园区全部摄像头（<code>listByCondition(cameraQuery)</code>，按 parkId 过滤）；</li>
+<li>然后交给 <code>countCamerasByFloor</code> 算计数填进 <code>floorCameraCounts</code>。</li>
+</ol>
+<p>改动只动了 <code>CameraInfoServiceImpl.java</code> 里这一个方法，以及 DTO 加字段、单测加用例，<strong>三处收敛在同一模块</strong>，不涉及跨服务。</p>
+<h3 id="6-2-为什么「全量拉」而不是「按楼层过滤拉」"><a href="#6-2-为什么「全量拉」而不是「按楼层过滤拉」" class="headerlink" title="6.2 为什么「全量拉」而不是「按楼层过滤拉」"></a>6.2 为什么「全量拉」而不是「按楼层过滤拉」</h3><blockquote>
+<p>[!tip] 性能 vs 可读性的权衡<br>全量拉空间和摄像头看起来粗放，但这是配置页低频接口、数据量也就一个园区的规模。按楼层过滤反而要为每个勾选楼层发一次查询，N 次 IO 远比一次全量拉慢。用反查表把后续计算压成 O(N+M)，整体反而更快。配置接口不是性能热点，<strong>可读性优先</strong>。</p>
+</blockquote>
+<h2 id="七、前端接入：零计算"><a href="#七、前端接入：零计算" class="headerlink" title="七、前端接入：零计算"></a>七、前端接入：零计算</h2><p>前端在另一个仓库（文件路径以实际仓库为准），本次改动两个文件：</p>
+<ol>
+<li><strong>摄像头楼层配置页面组件</strong>：删掉了「园区、ABC 栋、随机数量」三处 Mock 数据，改为调用真实的空间树接口拉当前园区空间层级，再调配置查询接口回显已勾选楼层与每楼层摄像头数、调保存接口提交。</li>
+<li><strong>API 定义文件</strong>：新增 <code>orgFloorConfig</code> 的 GET&#x2F;POST 封装，对应后端两个接口。</li>
+</ol>
+<blockquote>
+<p>前端的职责被刻意压到最轻——它只负责拉数据、渲染勾选框和「该楼层 N 个摄像头」的文案、提交勾选结果，<strong>零计算</strong>。所有计数逻辑都在后端算好，前端拿到 <code>floorCameraCounts</code> 直接按 key 取值渲染。</p>
+</blockquote>
+<blockquote>
+<p>这和”计数口径要和 getCameraTree 对齐”是配套的：<strong>计数是后端的职责，前端不该重复实现一套可能跑偏的口径</strong>。</p>
+</blockquote>
+<h3 id="7-1-前端验证"><a href="#7-1-前端验证" class="headerlink" title="7.1 前端验证"></a>7.1 前端验证</h3><ul>
+<li>ESLint：0 error；</li>
+<li>生产构建成功，30 条 warning 均为项目既有问题，与本次改动无关。</li>
+</ul>
+<h2 id="八、DTO-改动：只加一个字段"><a href="#八、DTO-改动：只加一个字段" class="headerlink" title="八、DTO 改动：只加一个字段"></a>八、DTO 改动：只加一个字段</h2><p><code>CameraOrgFloorConfigDTO</code> 只加了一个字段，key 是楼层 spaceId、value 是摄像头数：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> Map&lt;String, Integer&gt; floorCameraCounts;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>字段为什么不复杂化、为什么不单独建一个 DTO？因为它就是「配置查询的附加信息」，和 <code>floorSpaceIds</code>（已勾选楼层列表）<strong>同生同灭</strong>，没必要拆。这是 YAGNI——单用途的附加字段，塞进现有 DTO 最省事。</p>
+</blockquote>
+<h2 id="九、测试与验证"><a href="#九、测试与验证" class="headerlink" title="九、测试与验证"></a>九、测试与验证</h2><p>后端单测 <code>CameraInfoServiceImplTest.java</code> 新增了 <code>cameraCountsIncludeCamerasBoundToRooms</code> 用例，专门验证「直接挂楼层的摄像头 + 挂楼层下房间的摄像头都计入该楼层」这个口径：</p>
+<ul>
+<li>floor-1 上有一个直接挂楼层的摄像头 + 一个挂 room-1 的摄像头（room-1 的 <code>floorId</code> 指向 floor-1）→ floor-1 计 <strong>2</strong>；</li>
+<li>floor-2 无摄像头 → <strong>0</strong>。</li>
+</ul>
+<p>加上原有用例，后端单测 <strong>6&#x2F;6 全绿</strong>。</p>
+<blockquote>
+<p>这个用例的价值在于它锁住了口径——如果以后有人改 <code>countCamerasByFloor</code> 时忘了把房间下的摄像头归到楼层，这个用例会立刻红。</p>
+</blockquote>
+<h2 id="十、经验总结"><a href="#十、经验总结" class="headerlink" title="十、经验总结"></a>十、经验总结</h2><h3 id="10-1-两条可复用的经验"><a href="#10-1-两条可复用的经验" class="headerlink" title="10.1 两条可复用的经验"></a>10.1 两条可复用的经验</h3><blockquote>
+<p>[!tip] 经验 1：附加统计字段要对齐主链路口径<br>本次 <code>floorCameraCounts</code> 必须和 <code>getCameraTree</code> 的可见性判断用同一个口径（楼层子树全计），否则前端显示数和实际可见数对不上。<strong>任何「给现有功能加展示性统计」的需求，第一步都是先确认主链路的统计口径，再让附加字段对齐它</strong>。</p>
+</blockquote>
+<blockquote>
+<p>[!tip] 经验 2：嵌套查找先建反查表<br>O(N×M) 的嵌套遍历，几乎总能用一次 Map 预处理拍平成 O(N+M)。这不是什么高深技巧，但在业务代码里最常被忽略——<strong>看到双层循环找归属关系，第一反应就该是「能不能先建个 Map」</strong>。</p>
+</blockquote>
+<h3 id="10-2-为什么不过度设计"><a href="#10-2-为什么不过度设计" class="headerlink" title="10.2 为什么不过度设计"></a>10.2 为什么不过度设计</h3><p>这次刻意没做这些事：</p>
+<table>
+<thead>
+<tr>
+<th>没做的事</th>
+<th>原因</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>给 <code>countCamerasByFloor</code> 抽接口</td>
+<td>只有一个实现、一个调用方，抽了就是死灵活性</td>
+</tr>
+<tr>
+<td>给 <code>floorCameraCounts</code> 做分页或懒加载</td>
+<td>配置页一次性渲染、数据量就是一栋楼的层级</td>
+</tr>
+<tr>
+<td>在 DTO 上加 <code>totalCameraCount</code> 汇总字段</td>
+<td>前端要汇总自己 reduce 一下就行，后端不该提供没人要求的字段</td>
+</tr>
+</tbody></table>
+<p>每一行改动都能直接追溯到「让超管看到每楼层摄像头数」这一个需求。</p>
+<h3 id="10-3-反查表适用的-4-个场景"><a href="#10-3-反查表适用的-4-个场景" class="headerlink" title="10.3 反查表适用的 4 个场景"></a>10.3 反查表适用的 4 个场景</h3><ol>
+<li><strong>空间归属</strong>：摄像头属于哪个楼层、设备属于哪个房间——本质都是 spaceId → 父级 id 的映射。</li>
+<li><strong>组织归属</strong>：用户属于哪个组织、订单属于哪个事业部——userId&#x2F;orderId → orgId。</li>
+<li><strong>标签归属</strong>：商品属于哪些类目、文章属于哪些话题——商品&#x2F;文章 id → 标签集合。</li>
+<li><strong>租户归属</strong>：资源属于哪个租户——resourceId → tenantId。</li>
+</ol>
+<p>判断标准很简单：<strong>只要出现”两个集合，每个元素要找它在另一个集合里的归属”的双层循环，就该建反查表</strong>。</p>
+<h3 id="10-4-算法选型的”够用就好”原则"><a href="#10-4-算法选型的”够用就好”原则" class="headerlink" title="10.4 算法选型的”够用就好”原则"></a>10.4 算法选型的”够用就好”原则</h3><p>不要追求”理论最优”，要追求”业务场景下的最优”。本次的全量拉 + O(N+M) 计算，在园区规模下完全够用：</p>
+<table>
+<thead>
+<tr>
+<th>数据规模</th>
+<th>性能</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>空间数 &lt; 1000，摄像头数 &lt; 1000</td>
+<td>单次查询 &lt; 50ms</td>
+</tr>
+<tr>
+<td>空间数 &lt; 5000，摄像头数 &lt; 5000</td>
+<td>单次查询 &lt; 200ms</td>
+</tr>
+<tr>
+<td>空间数 &gt; 10000</td>
+<td>考虑分园区拉或异步预热</td>
+</tr>
+</tbody></table>
+<p>配置接口不是性能热点，<strong>可读性优先于理论最优</strong>。</p>
+<h2 id="十一、结语"><a href="#十一、结语" class="headerlink" title="十一、结语"></a>十一、结语</h2><p>「让超管看到每楼层摄像头数」这个需求，看起来只是「在 DTO 加一个字段」，背后却是三个决策：计数口径和主链路对齐、O(N+M) 替代 O(N×M)、保序和容错两个细节。</p>
+<p>下次再遇到”展示性统计字段”的需求，按这个顺序思考：</p>
+<ol>
+<li><strong>口径和谁对齐？</strong> 找到主链路的统计口径，让新字段对齐它。</li>
+<li><strong>有没有嵌套查找？</strong> 有就先建反查表。</li>
+<li><strong>需要保序吗？</strong> 需要就用 <code>LinkedHashMap</code>。</li>
+<li><strong>数据可能有脏吗？</strong> 有就给 <code>toMap</code> 加 merge 函数。</li>
+</ol>
+<blockquote>
+<p>算法优化的最高境界不是”我想到了牛逼的算法”，而是”我把嵌套循环换成了一次 Map 预处理”。</p>
+</blockquote>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Java/" rel="tag"># Java</a>
+              <a href="/tags/%E5%8D%97%E7%BD%91%E9%A1%B9%E7%9B%AE/" rel="tag"># 南网项目</a>
+              <a href="/tags/%E7%AE%97%E6%B3%95/" rel="tag"># 算法</a>
+              <a href="/tags/%E6%91%84%E5%83%8F%E5%A4%B4/" rel="tag"># 摄像头</a>
+              <a href="/tags/%E5%8F%8D%E6%9F%A5%E8%A1%A8/" rel="tag"># 反查表</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/07/14/%E6%B0%9A%E4%BA%91%E8%AE%BF%E5%AE%A2%E5%8E%86%E5%8F%B2%E5%90%8C%E6%AD%A5%E4%BF%AE%E5%A4%8D/" rel="prev" title="氚云访客历史同步漏数据？分页方式、日期语义、头像容错三处全改">
+                  <i class="fa fa-angle-left"></i> 氚云访客历史同步漏数据？分页方式、日期语义、头像容错三处全改
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  
+  <div class="comments giscus-container">
+  </div>
+  
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">zhlifeiy35</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/zhdmm35" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"zhdmm35/zhdmm35.github.io","repo_id":"R_kgDOON4bhg","category":"Announcements","category_id":"DIC_kwDOON4bhs4C3dEc","mapping":"pathname","strict":0,"reactions_enabled":1,"emit_metadata":0,"theme":"preferred_color_scheme","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+
+<script>
+document.addEventListener('page:loaded', () => {
+  if (!CONFIG.page.comments) return;
+
+  NexT.utils.loadComments('.giscus-container')
+    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
+      attributes: {
+        async                   : true,
+        crossOrigin             : 'anonymous',
+        'data-repo'             : CONFIG.giscus.repo,
+        'data-repo-id'          : CONFIG.giscus.repo_id,
+        'data-category'         : CONFIG.giscus.category,
+        'data-category-id'      : CONFIG.giscus.category_id,
+        'data-mapping'          : CONFIG.giscus.mapping,
+        'data-strict'           : CONFIG.giscus.strict,
+        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
+        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
+        'data-theme'            : CONFIG.giscus.theme,
+        'data-lang'             : CONFIG.giscus.lang,
+        'data-input-position'   : CONFIG.giscus.input_position,
+        'data-loading'          : CONFIG.giscus.loading
+      },
+      parentNode: document.querySelector('.giscus-container')
+    }));
+});
+</script>
+
+</body>
+</html>

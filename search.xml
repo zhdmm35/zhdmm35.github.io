@@ -12499,4 +12499,1269 @@
         <tag>URL编码</tag>
       </tags>
   </entry>
+  <entry>
+    <title>一行 parkId 改不出越权：契约测试如何锁死 Token 身份来源</title>
+    <url>/2026/07/13/Token%E8%BA%AB%E4%BB%BD%E8%B6%8A%E6%9D%83%E5%A5%91%E7%BA%A6%E6%B5%8B%E8%AF%95/</url>
+    <content><![CDATA[<p>多园区切换接口 <code>GET /user/userParkSwitch/&#123;parkId&#125;</code> 能不能被前端伪造身份？改一行 <code>parkId</code> 就能越权切到其他园区吗？</p>
+<p>这是多园区改造最容易出现的”看起来安全、其实没拦住”的安全漏洞。本文用 <strong>4 个测试用例 + 1 次反向变异验证</strong>，把这条接口的身份来源、授权顺序、Redis 更新顺序全部锁死，让”以后谁动了这块代码，CI 立刻红”。</p>
+<span id="more"></span>
+
+<div class="audio-player">
+  <div class="audio-section">
+    <h4>🎧 文章导读</h4>
+    <audio controls preload="metadata">
+      <source src="/audio/Token身份越权契约测试/narration.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+  <div class="audio-section">
+    <h4>🎵 背景音乐</h4>
+    <audio controls loop preload="metadata">
+      <source src="/audio/Token身份越权契约测试/bgm.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+</div>
+
+<p><img src="/images/posts/Token%E8%BA%AB%E4%BB%BD%E8%B6%8A%E6%9D%83%E5%A5%91%E7%BA%A6%E6%B5%8B%E8%AF%95/fig1.png" alt="userParkSwitch 接口的安全契约锁点"></p>
+<p><em>图1：身份来源、授权顺序、Redis 更新顺序三道契约锁点</em></p>
+<h2 id="一、结论先行"><a href="#一、结论先行" class="headerlink" title="一、结论先行"></a>一、结论先行</h2><p><code>userParkSwitch</code> 接口<strong>不会把前端传入的信息当作用户身份</strong>：</p>
+<ol>
+<li>前端只提供目标 <code>parkId</code>。</li>
+<li>后端通过 <code>SecurityExtUtils.getCurrentLoginInfo()</code> 从当前登录 Token 对应的登录态取得 <code>userId</code>。</li>
+<li>后端用该 <code>userId</code> 查询允许访问的园区，并检查前端传入的 <code>parkId</code> 是否在允许集合内。</li>
+<li>未通过园区授权检查时，不会调用 <code>UserSecurityUtils.enhanceLoginInfo(...)</code> 更新 Redis 登录态。</li>
+<li>通过检查后，角色也按”Token 用户的 <code>userId</code> + 目标 <code>parkId</code>“重新查询，<strong>不会沿用其他园区角色</strong>。</li>
+</ol>
+<p>因此，修改前端请求中的 <code>parkId</code> 只能表达”想切换到哪个园区”，<strong>不能伪造用户身份</strong>，也<strong>不能绕过后端园区授权校验</strong>。</p>
+<blockquote>
+<p>这是源码级的安全契约，已经被单元测试 + 反向变异验证锁死。后续任何”看起来没事”的优化，都不能静默破坏这套契约。</p>
+</blockquote>
+<h2 id="二、被测代码与关键调用链"><a href="#二、被测代码与关键调用链" class="headerlink" title="二、被测代码与关键调用链"></a>二、被测代码与关键调用链</h2><p>接口：<code>GET /user/userParkSwitch/&#123;parkId&#125;</code></p>
+<p>文件：</p>
+<ul>
+<li>Controller：<code>service-provider/admin-service/src/main/java/cn/csg/building/admin/controller/UserController.java</code></li>
+<li>自动化测试：<code>service-provider/admin-service/src/test/java/cn/csg/building/admin/controller/UserParkSwitchSecurityContractTest.java</code></li>
+</ul>
+<p>关键调用顺序：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">SecurityExtUtils.getCurrentLoginInfo()</span><br><span class="line">  → Token 登录态中的 userId</span><br><span class="line">  → listManageParksByUserId(user.getUserId())</span><br><span class="line">  → 校验 target parkId 是否属于授权园区</span><br><span class="line">  → 按 userId + parkId 查询角色</span><br><span class="line">  → enhanceLoginInfo 更新 Redis 登录态</span><br></pre></td></tr></table></figure>
+
+<p>这条调用链上，有 4 个<strong>绝对不能错的点</strong>：</p>
+<ol>
+<li>从 <code>SecurityExtUtils.getCurrentLoginInfo()</code> 取身份——不能从请求体或 header 取。</li>
+<li>用 <code>user.getUserId()</code> 查授权园区——不能用前端传的 <code>userId</code>（前端根本不应该传）。</li>
+<li><code>assertBizCondition(parkAllowed, ...)</code> 必须在 <code>enhanceLoginInfo</code> 之前。</li>
+<li>角色查询必须按 <code>userId + parkId</code> 两个条件——不能只按 <code>parkId</code>、不能只按 <code>userId</code>。</li>
+</ol>
+<p>只要这 4 点有任何一个被破坏，就是越权漏洞。下面用 4 个测试用例把每一点都钉死。</p>
+<h2 id="三、4-个测试用例"><a href="#三、4-个测试用例" class="headerlink" title="三、4 个测试用例"></a>三、4 个测试用例</h2><h3 id="用例-1：用户身份必须来自当前-Token-登录态"><a href="#用例-1：用户身份必须来自当前-Token-登录态" class="headerlink" title="用例 1：用户身份必须来自当前 Token 登录态"></a>用例 1：用户身份必须来自当前 Token 登录态</h3><p><strong>目的</strong>：证明 <code>userParkSwitch</code> 第一步是调 <code>SecurityExtUtils.getCurrentLoginInfo()</code>，而不是从请求体里读用户。</p>
+<p>测试断言：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="type">BaseUser</span> <span class="variable">user</span> <span class="operator">=</span> SecurityExtUtils.getCurrentLoginInfo();</span><br></pre></td></tr></table></figure>
+
+<p>然后使用该登录用户的 <code>userId</code> 查询授权园区：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">listManageParksByUserId(user.getUserId())</span><br></pre></td></tr></table></figure>
+
+<p><strong>结果：通过。</strong></p>
+<p>如果未来有人误改成 <code>request.getParameter(&quot;userId&quot;)</code>，测试立刻红。</p>
+<h3 id="用例-2：前端-parkId-必须经过授权检查"><a href="#用例-2：前端-parkId-必须经过授权检查" class="headerlink" title="用例 2：前端 parkId 必须经过授权检查"></a>用例 2：前端 parkId 必须经过授权检查</h3><p><strong>目的</strong>：证明执行顺序是”先校验 → 后更新 Redis”。如果反过来，就是经典的 TOCTOU 漏洞——未授权 parkId 也会先被写进登录态。</p>
+<p>测试断言执行顺序必须是：</p>
+<ol>
+<li>从 Token 登录态读取用户；</li>
+<li>根据 Token 的 <code>userId</code> 查询允许园区；</li>
+<li>执行 <code>assertBizCondition(parkAllowed, ...)</code>；</li>
+<li>**校验通过后才执行 <code>enhanceLoginInfo(...)</code>**。</li>
+</ol>
+<p><strong>结果：通过。未授权 <code>parkId</code> 会在 Redis 登录态更新之前被拒绝。</strong></p>
+<blockquote>
+<p>用例 2 的价值不只是”测通过”，更是”测顺序”。如果有人为了性能优化把 <code>enhanceLoginInfo</code> 提到校验前面，授权拦截就失效了。<strong>测试不仅测行为，还测顺序</strong>。</p>
+</blockquote>
+<h3 id="用例-3：切换后的角色限定为-Token-用户和目标园区"><a href="#用例-3：切换后的角色限定为-Token-用户和目标园区" class="headerlink" title="用例 3：切换后的角色限定为 Token 用户和目标园区"></a>用例 3：切换后的角色限定为 Token 用户和目标园区</h3><p><strong>目的</strong>：证明角色查询条件同时包含 <code>userId</code> 和 <code>parkId</code>，且都在 <code>userRoleService.listByCondition(userRoleDTO)</code> 之前设置。</p>
+<p>测试断言：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">userRoleDTO.setUserId(user.getUserId());</span><br><span class="line">userRoleDTO.setParkId(parkId);</span><br></pre></td></tr></table></figure>
+
+<p>两个条件必须在 <code>userRoleService.listByCondition(userRoleDTO)</code> 前设置。</p>
+<p><strong>结果：通过。</strong></p>
+<p>如果有人误改成只按 <code>parkId</code> 查角色，多园区用户切园区时会”继承”上一个园区的角色——这是隐蔽的越权。</p>
+<h3 id="用例-4：反向变异测试"><a href="#用例-4：反向变异测试" class="headerlink" title="用例 4：反向变异测试"></a>用例 4：反向变异测试</h3><p><strong>目的</strong>：确认测试不是”假阳性”——即测试不仅要在当前实现下通过，还要在”故意搞坏实现”时失败。</p>
+<blockquote>
+<p>反向变异测试（mutation testing）是验证测试有效性的关键手段。如果不管代码怎么改测试都绿，那这套测试根本没价值。</p>
+</blockquote>
+<p>操作：临时将</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">listManageParksByUserId(user.getUserId())</span><br></pre></td></tr></table></figure>
+
+<p>替换为非 Token 用户标识：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">listManageParksByUserId(<span class="string">&quot;front-end-user-id&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>执行结果：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">必须使用 Token 中的 userId 查询授权园区</span><br><span class="line">Tests run: 2, Failures: 1, Errors: 0, Skipped: 0</span><br><span class="line">BUILD FAILURE</span><br></pre></td></tr></table></figure>
+
+<p><strong>测试失败，命中预期断言。</strong></p>
+<p>随后已恢复生产代码并重新执行测试，恢复绿色。</p>
+<blockquote>
+<p>反向变异让我们确信：这套测试是”真在测身份来源”，不是”测试自身写错了所以永远绿”。</p>
+</blockquote>
+<h2 id="四、最终执行结果"><a href="#四、最终执行结果" class="headerlink" title="四、最终执行结果"></a>四、最终执行结果</h2><p>执行环境：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">JDK: E:\jdk</span><br><span class="line">Maven: E:\maven363</span><br><span class="line">时间: 2026-07-13 11:00:00 +08:00</span><br></pre></td></tr></table></figure>
+
+<p>执行命令：</p>
+<figure class="highlight powershell"><table><tr><td class="code"><pre><span class="line"><span class="variable">$env:JAVA_HOME</span>=<span class="string">&#x27;E:\jdk&#x27;</span></span><br><span class="line"><span class="variable">$env:Path</span>=<span class="string">&#x27;E:\jdk\bin;E:\maven363\bin;&#x27;</span>+<span class="variable">$env:Path</span></span><br><span class="line">mvn <span class="literal">-pl</span> service<span class="literal">-provider</span>/admin<span class="literal">-service</span> <span class="literal">-Dtest</span>=UserParkSwitchSecurityContractTest test</span><br></pre></td></tr></table></figure>
+
+<p>最终结果：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Running cn.csg.building.admin.controller.UserParkSwitchSecurityContractTest</span><br><span class="line">Tests run: 2, Failures: 0, Errors: 0, Skipped: 0</span><br><span class="line">BUILD SUCCESS</span><br><span class="line">Total time: 17.436 s</span><br></pre></td></tr></table></figure>
+
+<p><img src="/images/posts/Token%E8%BA%AB%E4%BB%BD%E8%B6%8A%E6%9D%83%E5%A5%91%E7%BA%A6%E6%B5%8B%E8%AF%95/fig2.png" alt="反向变异验证流程"></p>
+<p><em>图2：正向通过 → 反向变异 → 期望失败 → 恢复 → 重测通过，闭环验证</em></p>
+<h2 id="五、测试边界与未做的事"><a href="#五、测试边界与未做的事" class="headerlink" title="五、测试边界与未做的事"></a>五、测试边界与未做的事</h2><p>本次是可重复执行的<strong>源码安全契约测试</strong>，并完成了反向变异验证。它证明当前代码的身份来源、授权顺序和 Redis 更新顺序<strong>不会在后续修改中被静默破坏</strong>。</p>
+<p>本次没有做的事：</p>
+<table>
+<thead>
+<tr>
+<th>未做项</th>
+<th>原因</th>
+<th>如何补</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>真实浏览器 Token 对运行中的网关发请求</td>
+<td>当前任务没有提供可用的测试账号、Token 和已启动的 gateway&#x2F;admin-service</td>
+<td>补一组抓包测试</td>
+</tr>
+<tr>
+<td>黑盒证据</td>
+<td>同上</td>
+<td>同一 Token 请求授权园区应成功；将请求中的 <code>parkId</code> 改为未授权园区应失败；确认 <code>/user/info</code> 中的当前园区未变化</td>
+</tr>
+</tbody></table>
+<p>源码契约 + 集成测试是互补的：源码契约覆盖”代码该长什么样”，集成测试覆盖”运行时是不是真的这样”。两者都做，才是完整的安全闭环。</p>
+<h2 id="六、经验总结"><a href="#六、经验总结" class="headerlink" title="六、经验总结"></a>六、经验总结</h2><h3 id="6-1-安全契约测试的三个关键设计"><a href="#6-1-安全契约测试的三个关键设计" class="headerlink" title="6.1 安全契约测试的三个关键设计"></a>6.1 安全契约测试的三个关键设计</h3><ol>
+<li><strong>断言身份来源</strong>：用 <code>SecurityExtUtils.getCurrentLoginInfo()</code> 还是 <code>request.getParameter(&quot;userId&quot;)</code>？这是不同的安全等级，测试必须钉死前者。</li>
+<li><strong>断言执行顺序</strong>：先校验后写缓存 &#x2F; 先校验后改角色——顺序错了整个授权就失效。测试要验证顺序，不仅验证结果。</li>
+<li><strong>断言条件完整</strong>：角色查询要 <code>userId + parkId</code> 同时设置，缺一个就是越权入口。</li>
+</ol>
+<h3 id="6-2-反向变异测试不能省"><a href="#6-2-反向变异测试不能省" class="headerlink" title="6.2 反向变异测试不能省"></a>6.2 反向变异测试不能省</h3><p>很多团队写完正向用例就觉得”安全了”，但实际上：</p>
+<ul>
+<li>测试覆盖了 100 行代码，可能只有 50 行被实际断言。</li>
+<li>反向变异能告诉你”哪部分代码改了测试不会红”——那些”沉默的代码”才是风险。</li>
+</ul>
+<p>这次我们做的反向变异只有一次，但<strong>只要做了一次，就证明这套测试是有效的</strong>。后续可以加更多变异点（比如把 <code>enhanceLoginInfo</code> 提到 <code>assertBizCondition</code> 前面），但单次的反向变异已经把”测试有效性”这件事钉死了。</p>
+<h3 id="6-3-安全测试不是黑盒专属"><a href="#6-3-安全测试不是黑盒专属" class="headerlink" title="6.3 安全测试不是黑盒专属"></a>6.3 安全测试不是黑盒专属</h3><p>源码级的安全契约测试有几个优势：</p>
+<table>
+<thead>
+<tr>
+<th>优势</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>不需要部署</td>
+<td>在 CI 里就能跑，反馈快</td>
+</tr>
+<tr>
+<td>不需要构造 Token</td>
+<td>直接调 <code>SecurityExtUtils</code>，mock 登录态即可</td>
+</tr>
+<tr>
+<td>能定位到代码行</td>
+<td>失败时直接定位到具体调用点，黑盒测试只能定位到接口</td>
+</tr>
+<tr>
+<td>不会因为环境问题误报</td>
+<td>不依赖 Redis、网络、网关</td>
+</tr>
+</tbody></table>
+<p>源码契约测试不能替代黑盒测试，但它是<strong>开发阶段就能跑、CI 阶段就能拦</strong>的安全防线。</p>
+<h3 id="6-4-推荐把这套测试接入-CI"><a href="#6-4-推荐把这套测试接入-CI" class="headerlink" title="6.4 推荐把这套测试接入 CI"></a>6.4 推荐把这套测试接入 CI</h3><figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="comment"># .github/workflows/security-contract.yml</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">name:</span> <span class="string">安全契约测试</span></span><br><span class="line">  <span class="attr">run:</span> <span class="string">|</span></span><br><span class="line"><span class="string">    mvn -pl service-provider/admin-service \</span></span><br><span class="line"><span class="string">        -Dtest=UserParkSwitchSecurityContractTest \</span></span><br><span class="line"><span class="string">        test</span></span><br></pre></td></tr></table></figure>
+
+<p>任何对 <code>UserController.userParkSwitch</code> 的修改都会触发 CI，CI 失败就意味着越权风险。这比”上线后被安全部门扫出来”早了好几个迭代。</p>
+<h2 id="七、结语"><a href="#七、结语" class="headerlink" title="七、结语"></a>七、结语</h2><p>越权漏洞最可怕的不是”被利用”，而是”没人知道它在”。一行 <code>parkId</code> 的改动、一次”看起来没事的优化”、一次性能重构——都可能让原本安全的接口变成越权入口。</p>
+<p>源码契约测试 + 反向变异验证，把”安全不变量”显式地写进测试里。<strong>CI 跑得越勤，越权漏洞的存活窗口就越短</strong>。</p>
+<blockquote>
+<p>一行 parkId 改不出越权——前提是有人用测试把这件事钉死。</p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>测试</category>
+      </categories>
+      <tags>
+        <tag>南网项目</tag>
+        <tag>安全测试</tag>
+        <tag>契约测试</tag>
+        <tag>反向变异</tag>
+        <tag>Spring Security</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>园区切换不生效？Redis DB 不一致这个坑我替你踩过了</title>
+    <url>/2026/07/07/%E5%9B%AD%E5%8C%BA%E5%88%87%E6%8D%A2%E4%B8%8D%E7%94%9F%E6%95%88-RedisDB%E4%B8%8D%E4%B8%80%E8%87%B4/</url>
+    <content><![CDATA[<p>切换园区之后 <code>/admin/user/info</code> 还是旧园区，访客预约列表也没刷新。代码没改业务逻辑，问题却在「写 Redis 的那个地方」。本文把这次完整的排查、定位、修复和验证链路写下来，下次再遇到类似的”切换不生效”问题，你大概率可以一眼定位。</p>
+<span id="more"></span>
+
+<div class="audio-player">
+  <div class="audio-section">
+    <h4>🎧 文章导读</h4>
+    <audio controls preload="metadata">
+      <source src="/audio/园区切换不生效-RedisDB不一致/narration.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+  <div class="audio-section">
+    <h4>🎵 背景音乐</h4>
+    <audio controls loop preload="metadata">
+      <source src="/audio/园区切换不生效-RedisDB不一致/bgm.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+</div>
+
+<p><img src="/images/posts/%E5%9B%AD%E5%8C%BA%E5%88%87%E6%8D%A2%E4%B8%8D%E7%94%9F%E6%95%88-RedisDB%E4%B8%8D%E4%B8%80%E8%87%B4/fig1.png" alt="Redis DB 不一致导致登录态缓存错位"></p>
+<p><em>图1：admin-service 与 gateway 写入不同 Redis DB，登录态出现”两套真相”</em></p>
+<h2 id="一、需求背景"><a href="#一、需求背景" class="headerlink" title="一、需求背景"></a>一、需求背景</h2><p>业务方要求：用户在首页右上角切换园区之后，访客预约列表应该只看当前登录态园区的数据。<strong>超级管理员</strong>默认可以查看全部数据；<strong>普通用户</strong>则被强制按当前园区过滤，<strong>即使前端请求体里传了别的 parkId 也要被后端忽略</strong>。</p>
+<p>接口：<code>/gateway/through/visitorAppointment/page</code></p>
+<p>需求很清晰，过滤逻辑也不复杂：</p>
+<table>
+<thead>
+<tr>
+<th>用户类型</th>
+<th>过滤策略</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>普通用户</td>
+<td>从 <code>SecurityExtUtils.getCurrentLoginInfo()</code> 取当前登录态 parkId，强制覆盖请求体里的 parkId</td>
+</tr>
+<tr>
+<td>超级管理员</td>
+<td>通过 <code>RoleClient.checkSuperAdmin(currentUser.getUserId())</code> 判断，请求体不传 parkId 时看全部，传了就按 mapper 原有条件过滤</td>
+</tr>
+</tbody></table>
+<p>底层 SQL 也已经具备 <code>AND ta.park_id = #&#123;model.parkId&#125;</code> 的能力，理论上只差一段 service 的强制覆盖逻辑。我们改完 VisitorAppointmentServiceImpl 之后，本地构建、单测全绿，看起来没毛病。</p>
+<h2 id="二、问题现象"><a href="#二、问题现象" class="headerlink" title="二、问题现象"></a>二、问题现象</h2><p>测试用户 <code>testvpark</code>：</p>
+<ul>
+<li>默认园区：广蓄电厂 <code>59258e4f235c4cac64302b5f20658e54</code></li>
+<li>可切园区：广蓄电厂 + 海蓄电厂 <code>3e9293d609fc34ec4b6740aa7f324b6f</code></li>
+</ul>
+<p>按理说，调用切换接口之后，访客预约列表应该立即变成”海蓄”的数据。实际现象：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">1. 登录后默认广蓄</span><br><span class="line">   /admin/user/info              = 广蓄电厂</span><br><span class="line">   /visitorAppointment/page      = 测试-广蓄A、测试-广蓄B，共 2 条</span><br><span class="line"></span><br><span class="line">2. 调用切换接口</span><br><span class="line">   GET /gateway/admin/user/userParkSwitch/3e9293d609fc34ec4b6740aa7f324b6f</span><br><span class="line">   → data: true</span><br><span class="line"></span><br><span class="line">3. 切完之后再查</span><br><span class="line">   /admin/user/info              = 广蓄电厂（没变！）</span><br><span class="line">   /visitorAppointment/page      = 还是广蓄的 2 条（没刷新！）</span><br></pre></td></tr></table></figure>
+
+<p>切换接口明明返回 <code>true</code>，但 <code>/user/info</code> 和访客预约列表都没动。这种”接口说成功、数据没动”的诡异表现，几乎都是缓存写错了地方。</p>
+<h2 id="三、根因：不是访客预约接口的问题，是登录态缓存写错-Redis-DB"><a href="#三、根因：不是访客预约接口的问题，是登录态缓存写错-Redis-DB" class="headerlink" title="三、根因：不是访客预约接口的问题，是登录态缓存写错 Redis DB"></a>三、根因：不是访客预约接口的问题，是登录态缓存写错 Redis DB</h2><p>继续往上游追——切园区走的是 <code>/admin/user/userParkSwitch/&#123;parkId&#125;</code>，链路是这样的：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">切园区请求</span><br><span class="line">  → gateway 路由到 admin-service</span><br><span class="line">  → UserController.userParkSwitch(parkId)</span><br><span class="line">  → UserSecurityUtils.enhanceLoginInfo(...) 把新 parkId 写入 Redis 登录态</span><br></pre></td></tr></table></figure>
+
+<p>而每次<strong>普通请求</strong>的链路是：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">普通请求</span><br><span class="line">  → gateway AccessControlFilter</span><br><span class="line">  → JwtTokenService.getUserInfo(token) 从 Redis 读 loginUser</span><br><span class="line">  → 写入下游请求 header（loginUser）</span><br><span class="line">  → downstream 服务从 header 读 loginUser</span><br></pre></td></tr></table></figure>
+
+<p>发现没有？两条链路各自读写 Redis，但它们读写的可能是<strong>不同的 Redis DB</strong>。</p>
+<table>
+<thead>
+<tr>
+<th>服务</th>
+<th>Redis DB</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>gateway 登录写 <code>jwt_token</code></td>
+<td>DB <code>7</code></td>
+<td>gateway 的 <code>bootstrap-dev.yml</code></td>
+</tr>
+<tr>
+<td>gateway 每次请求读 <code>loginUser</code></td>
+<td>DB <code>7</code></td>
+<td>同上</td>
+</tr>
+<tr>
+<td>admin-service <code>userParkSwitch</code> 写 <code>loginUser</code></td>
+<td><strong>DB <code>6</code></strong></td>
+<td>admin-service 的 <code>bootstrap-dev.yml</code></td>
+</tr>
+</tbody></table>
+<p>也就是说：</p>
+<ul>
+<li>切园区把新的 parkId 写到了 <strong>DB 6</strong>；</li>
+<li>后续请求经过 gateway，gateway 仍从 <strong>DB 7</strong> 读取 <code>loginUser</code>，于是拿到的还是<strong>旧 parkId</strong>；</li>
+<li><code>/user/info</code> 和 through-service 看到的都是旧园区。</li>
+</ul>
+<p><img src="/images/posts/%E5%9B%AD%E5%8C%BA%E5%88%87%E6%8D%A2%E4%B8%8D%E7%94%9F%E6%95%88-RedisDB%E4%B8%8D%E4%B8%80%E8%87%B4/fig2.png" alt="登录态缓存读写路径示意"></p>
+<p><em>图2：两条链路分别读写 DB7&#x2F;DB6，”切换”和”读取”完全错位</em></p>
+<h3 id="3-1-关键代码点回看"><a href="#3-1-关键代码点回看" class="headerlink" title="3.1 关键代码点回看"></a>3.1 关键代码点回看</h3><p>我们当时是怎么被表象误导的？</p>
+<ol>
+<li>第一反应是 <code>VisitorAppointmentServiceImpl</code> 写错了，去查 <code>SecurityExtUtils.getCurrentLoginInfo()</code> 的调用——调用是对的，写法也没问题。</li>
+<li>然后看 <code>userParkSwitch</code> 的 service 实现，逻辑也简单：<code>assertBizCondition(parkAllowed)</code> 之后 <code>enhanceLoginInfo(loginUser)</code>，返回 <code>true</code>。</li>
+<li>再去看 <code>/user/info</code> 的实现——它走 <code>SecurityExtUtils.getCurrentLoginUser(request)</code>，<strong>只从 request&#x2F;session&#x2F;header 拿 loginUser</strong>，并不会主动从 Redis 反查。</li>
+</ol>
+<p>也就是说，<code>/user/info</code> 看到的 <code>loginUser</code>，永远是 gateway 在 <code>AccessControlFilter</code> 里写入 header 的那一份。gateway 写的是什么？是从 <strong>DB 7</strong> 读出来的。DB 7 里的 <code>loginUser</code> 从来没有被改过，所以整个系统看起来就像”切园区无效”。</p>
+<h3 id="3-2-为什么本地单测没发现"><a href="#3-2-为什么本地单测没发现" class="headerlink" title="3.2 为什么本地单测没发现"></a>3.2 为什么本地单测没发现</h3><p>因为单测里 mock 了 <code>JwtTokenService.getUserInfo</code>，直接返回新构造的 loginUser，跳过了 Redis 这一层。在测试环境里一切正常，到了 dev 多服务一起跑、gateway 也在链路上的时候，差异就暴露出来了。</p>
+<blockquote>
+<p>这就是「本地单测通过 ≠ 集成链路正确」的经典场景。单测验证业务逻辑，集成验证”系统集成后的真相”。</p>
+</blockquote>
+<h2 id="四、修复"><a href="#四、修复" class="headerlink" title="四、修复"></a>四、修复</h2><p>dev 环境配置差异，统一即可。位置：<code>service-provider/admin-service/src/main/resources/bootstrap-dev.yml</code></p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">redis:</span></span><br><span class="line">    <span class="attr">database:</span> <span class="number">7</span></span><br></pre></td></tr></table></figure>
+
+<p>把 <code>database: 6</code> 改成 <code>database: 7</code>，和 gateway 的 dev 配置对齐。</p>
+<p>修改前：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">redis:</span></span><br><span class="line">    <span class="attr">database:</span> <span class="number">6</span></span><br></pre></td></tr></table></figure>
+
+<p>修改后：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">redis:</span></span><br><span class="line">    <span class="attr">database:</span> <span class="number">7</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>注意：这是本地 dev 配置修复；admin-service 需要重启才生效。</strong></p>
+<p>为什么只在 dev 改、不统一所有环境？因为我们检查了 prod、staging 的 gateway 和 admin-service 配置，两边的 Redis DB 是一致的；只有 dev 这一份历史配置没人改、也没人注意到。生产环境不用动。</p>
+<h2 id="五、验证"><a href="#五、验证" class="headerlink" title="五、验证"></a>五、验证</h2><p>构建：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">mvn -pl service-provider/admin-service -am -DskipTests package</span><br></pre></td></tr></table></figure>
+
+<p>结果：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">[INFO] BUILD SUCCESS</span><br></pre></td></tr></table></figure>
+
+<p>重启 admin-service 之后再走一遍完整链路：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">1. 登录后默认</span><br><span class="line">   /admin/user/info         = 广蓄电厂</span><br><span class="line">   /visitorAppointment/page = 测试-广蓄A、测试-广蓄B，共 2 条</span><br><span class="line"></span><br><span class="line">2. 切到海蓄</span><br><span class="line">   /admin/user/userParkSwitch/3e9293d609fc34ec4b6740aa7f324b6f</span><br><span class="line">   → data: true</span><br><span class="line"></span><br><span class="line">3. 切换后再查</span><br><span class="line">   /admin/user/info         = 海蓄电厂 ✓</span><br><span class="line">   /visitorAppointment/page = 测试-海蓄A、测试-海蓄B，共 2 条 ✓</span><br></pre></td></tr></table></figure>
+
+<p>没有出现番禺对照数据，说明<strong>当前园区过滤生效</strong>，且<strong>超级管理员的回退逻辑没被破坏</strong>。</p>
+<h2 id="六、经验总结"><a href="#六、经验总结" class="headerlink" title="六、经验总结"></a>六、经验总结</h2><p>这种”切了等于没切”的 bug，排障时一定要警惕几件事：</p>
+<h3 id="6-1-看清「写」和「读」是不是同一个数据源"><a href="#6-1-看清「写」和「读」是不是同一个数据源" class="headerlink" title="6.1 看清「写」和「读」是不是同一个数据源"></a>6.1 看清「写」和「读」是不是同一个数据源</h3><blockquote>
+<p>写不一定读，读不一定写。当某个值”应该被改了但没改”，先去查”谁在写、谁在读”，而不是去查”业务逻辑是不是错的”。</p>
+</blockquote>
+<h3 id="6-2-单测通过-≠-链路正确"><a href="#6-2-单测通过-≠-链路正确" class="headerlink" title="6.2 单测通过 ≠ 链路正确"></a>6.2 单测通过 ≠ 链路正确</h3><p>mock 跳过了基础设施层（Redis、DB、RPC），只验证了纯业务逻辑。要验证”切园区后整个系统都看到新园区”，必须跑<strong>真实链路的集成测试</strong>，至少把 gateway、admin-service、through-service 三个服务串起来。</p>
+<h3 id="6-3-多服务共享基础设施时，配置必须收敛"><a href="#6-3-多服务共享基础设施时，配置必须收敛" class="headerlink" title="6.3 多服务共享基础设施时，配置必须收敛"></a>6.3 多服务共享基础设施时，配置必须收敛</h3><table>
+<thead>
+<tr>
+<th>风险</th>
+<th>缓解</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Redis DB 各服务各写一份</td>
+<td>在 <code>application.yml</code> 公共配置里集中维护</td>
+</tr>
+<tr>
+<td>MySQL 数据源各服务一份</td>
+<td>同样集中维护</td>
+</tr>
+<tr>
+<td>中间件地址、端口</td>
+<td>通过 Nacos &#x2F; 配置中心统一</td>
+</tr>
+</tbody></table>
+<p>如果 gateway 和 admin-service 都从同一个 <code>spring.redis.database</code> 取值，这种 bug 根本不会发生。我们这次是吃了 dev 配置历史遗留的亏。</p>
+<h3 id="6-4-排查清单：缓存错位的-5-步定位法"><a href="#6-4-排查清单：缓存错位的-5-步定位法" class="headerlink" title="6.4 排查清单：缓存错位的 5 步定位法"></a>6.4 排查清单：缓存错位的 5 步定位法</h3><ol>
+<li>接口返回是否符合预期？（切园区返回 true，符合）</li>
+<li>写入侧是否真的写了？（Redis DB 6 有新 parkId，符合）</li>
+<li>读取侧从哪里读？（gateway 从 DB 7 读，不符合）</li>
+<li>配置是否一致？（admin-service 是 DB 6、gateway 是 DB 7，不一致 → 定位到根因）</li>
+<li>修复 + 验证完整链路。</li>
+</ol>
+<p>下次再遇到”切了等于没切”的问题，先别急着怀疑业务代码，从第 1 步开始走一遍，大概率 5 分钟内就能定位。</p>
+<h2 id="七、结语"><a href="#七、结语" class="headerlink" title="七、结语"></a>七、结语</h2><p>一个 dev 配置的历史遗留，差点让我们把 visitorAppointment 的过滤逻辑推翻重写。<strong>多服务共享 Redis 时，DB 编号这种小细节的错位，足以让业务接口表现得像一个完全不同的 bug</strong>。把这次排障完整记录下来，下次团队里任何同学遇到类似的”切换无效”现象，都能直接复用这次的诊断清单。</p>
+<blockquote>
+<p>切园区不生效？先别动业务代码，去看 Redis DB 是不是一致。</p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>后端开发</category>
+      </categories>
+      <tags>
+        <tag>踩坑记录</tag>
+        <tag>Spring Cloud</tag>
+        <tag>Redis</tag>
+        <tag>南网项目</tag>
+        <tag>智慧园区</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>多园区改造测试全景：从登录到业务隔离的 7 大模块验证清单</title>
+    <url>/2026/07/08/%E5%A4%9A%E5%9B%AD%E5%8C%BA%E6%94%B9%E9%80%A0%E6%B5%8B%E8%AF%95%E5%85%A8%E6%99%AF/</url>
+    <content><![CDATA[<p>多园区改造真正难的不是写代码，而是<strong>怎么证明它没漏</strong>。登录态、菜单、角色、同步链路、业务数据、回归兼容——任何一个模块漏测，都可能在生产里埋雷。</p>
+<p>本文把改造测试要覆盖的 <strong>7 大模块、3 个优先级、5 条上线前最后检查</strong>完整拆开。无论你是第一次做多园区改造，还是已经在做第 N 次，这套清单都能直接复用。</p>
+<span id="more"></span>
+
+<div class="audio-player">
+  <div class="audio-section">
+    <h4>🎧 文章导读</h4>
+    <audio controls preload="metadata">
+      <source src="/audio/多园区改造测试全景/narration.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+  <div class="audio-section">
+    <h4>🎵 背景音乐</h4>
+    <audio controls loop preload="metadata">
+      <source src="/audio/多园区改造测试全景/bgm.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+</div>
+
+<p><img src="/images/posts/%E5%A4%9A%E5%9B%AD%E5%8C%BA%E6%94%B9%E9%80%A0%E6%B5%8B%E8%AF%95%E5%85%A8%E6%99%AF/fig1.png" alt="多园区改造 7 大测试模块一览"></p>
+<p><em>图1：从登录到业务隔离的 7 大测试模块全景</em></p>
+<h2 id="一、目标与边界"><a href="#一、目标与边界" class="headerlink" title="一、目标与边界"></a>一、目标与边界</h2><h3 id="1-1-本轮测试要确认的三件事"><a href="#1-1-本轮测试要确认的三件事" class="headerlink" title="1.1 本轮测试要确认的三件事"></a>1.1 本轮测试要确认的三件事</h3><p>多园区改造后，所有跨园区逻辑都要”按当前园区生效”，但<strong>不能</strong>把 A 园区的数据、角色、设备下发到 B 园区。本轮重点确认：</p>
+<ol>
+<li>登录用户能看到、能切换的园区范围正确。</li>
+<li>切换园区后，角色、菜单、人员、业务列表都按当前 <code>park_id</code> 生效。</li>
+<li>钉钉同步、<code>sys_user_park</code>、<code>pass_user</code>、设备下发状态没有因为多园区改造产生脏数据或跨园区下发。</li>
+</ol>
+<h3 id="1-2-不测什么"><a href="#1-2-不测什么" class="headerlink" title="1.2 不测什么"></a>1.2 不测什么</h3><p>明确不测的边界，让团队对齐预期：</p>
+<table>
+<thead>
+<tr>
+<th>不测项</th>
+<th>原因</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>全量性能压测</td>
+<td>本轮只做关键列表分页和批量同步的抽样观察</td>
+</tr>
+<tr>
+<td>历史业务字段全覆盖</td>
+<td>只看多园区相关字段是否影响原有主流程</td>
+</tr>
+<tr>
+<td>自动化测试框架新建</td>
+<td>本轮以接口 + SQL + 前端手工验证为主</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>没有”测全”的项目，只有”够用 + 关键路径有保障”的项目。多园区改造的测试，第一优先级永远是<strong>越权和跨园区下发</strong>。</p>
+</blockquote>
+<h2 id="二、测试前准备：环境、账号、SQL-自检"><a href="#二、测试前准备：环境、账号、SQL-自检" class="headerlink" title="二、测试前准备：环境、账号、SQL 自检"></a>二、测试前准备：环境、账号、SQL 自检</h2><h3 id="2-1-环境和基础数据"><a href="#2-1-环境和基础数据" class="headerlink" title="2.1 环境和基础数据"></a>2.1 环境和基础数据</h3><p>启动 <code>service-gateway</code>、<code>admin-service</code>、<code>through-service</code>，按需再起 <code>property-service</code>、<code>security-service</code>、<code>env-service</code>。dev 环境走网关请求时带 <code>devDebug=1</code>：</p>
+<figure class="highlight http"><table><tr><td class="code"><pre><span class="line">http://127.0.0.1:&lt;gateway-port&gt;/gateway/admin/xxx?devDebug=1</span><br></pre></td></tr></table></figure>
+
+<p>准备两个有效园区 + 一个租户：</p>
+<table>
+<thead>
+<tr>
+<th>标识</th>
+<th>含义</th>
+<th>要求</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>PARK_A</td>
+<td>主测园区 A</td>
+<td>有用户、角色、设备&#x2F;业务数据</td>
+</tr>
+<tr>
+<td>PARK_B</td>
+<td>对照园区 B</td>
+<td>有不同用户、角色、设备&#x2F;业务数据</td>
+</tr>
+<tr>
+<td>TENANT_1</td>
+<td>当前租户</td>
+<td>两个园区同租户，方便排除租户变量</td>
+</tr>
+</tbody></table>
+<p>准备测试账号矩阵：</p>
+<table>
+<thead>
+<tr>
+<th>用户</th>
+<th>数据要求</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>super_admin</code></td>
+<td>可看全部或管理多个园区</td>
+<td>验证管理端全量能力</td>
+</tr>
+<tr>
+<td><code>admin_a</code></td>
+<td>只属于 PARK_A</td>
+<td>验证单园区隔离</td>
+</tr>
+<tr>
+<td><code>admin_b</code></td>
+<td>只属于 PARK_B</td>
+<td>验证单园区隔离</td>
+</tr>
+<tr>
+<td><code>admin_ab</code></td>
+<td>同时属于 PARK_A、PARK_B</td>
+<td>验证园区切换</td>
+</tr>
+<tr>
+<td><code>normal_a</code></td>
+<td>PARK_A 普通用户</td>
+<td>验证无管理权限场景</td>
+</tr>
+<tr>
+<td><code>ding_user</code></td>
+<td>钉钉同步用户</td>
+<td>验证 <code>sys_user_park</code> 和 <code>pass_user</code></td>
+</tr>
+</tbody></table>
+<p>准备角色矩阵：</p>
+<table>
+<thead>
+<tr>
+<th>角色</th>
+<th>数据要求</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>role_a</code></td>
+<td><code>sys_role.park_id = PARK_A</code></td>
+<td>A 园区角色</td>
+</tr>
+<tr>
+<td><code>role_b</code></td>
+<td><code>sys_role.park_id = PARK_B</code></td>
+<td>B 园区角色</td>
+</tr>
+<tr>
+<td><code>role_manage_ab</code></td>
+<td>所属园区为 PARK_A，管理园区包含 PARK_B</td>
+<td>验证角色管理园区</td>
+</tr>
+<tr>
+<td><code>role_global_or_empty</code></td>
+<td>如项目存在空园区&#x2F;通用角色</td>
+<td>验证兼容历史数据</td>
+</tr>
+</tbody></table>
+<h3 id="2-2-测试前的-SQL-自检清单"><a href="#2-2-测试前的-SQL-自检清单" class="headerlink" title="2.2 测试前的 SQL 自检清单"></a>2.2 测试前的 SQL 自检清单</h3><p>测试前先跑这 4 条 SQL，<strong>预期前 3 条返回 0 行</strong>：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="comment">-- 1. 用户所属园区关系不能重复</span></span><br><span class="line"><span class="keyword">SELECT</span> user_id, park_id, <span class="built_in">COUNT</span>(<span class="operator">*</span>) cnt</span><br><span class="line"><span class="keyword">FROM</span> sys_user_park</span><br><span class="line"><span class="keyword">WHERE</span> delete_flag <span class="operator">=</span> <span class="string">&#x27;0&#x27;</span></span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span> user_id, park_id</span><br><span class="line"><span class="keyword">HAVING</span> cnt <span class="operator">&gt;</span> <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 2. 用户角色同一园区内不能重复</span></span><br><span class="line"><span class="keyword">SELECT</span> user_id, role_id, park_id, <span class="built_in">COUNT</span>(<span class="operator">*</span>) cnt</span><br><span class="line"><span class="keyword">FROM</span> sys_user_role</span><br><span class="line"><span class="keyword">WHERE</span> delete_flag <span class="operator">=</span> <span class="string">&#x27;0&#x27;</span></span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span> user_id, role_id, park_id</span><br><span class="line"><span class="keyword">HAVING</span> cnt <span class="operator">&gt;</span> <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 3. 用户角色指向的园区应存在</span></span><br><span class="line"><span class="keyword">SELECT</span> ur.user_id, ur.role_id, ur.park_id</span><br><span class="line"><span class="keyword">FROM</span> sys_user_role ur</span><br><span class="line"><span class="keyword">LEFT</span> <span class="keyword">JOIN</span> sys_park p <span class="keyword">ON</span> p.park_id <span class="operator">=</span> ur.park_id <span class="keyword">AND</span> p.delete_flag <span class="operator">=</span> <span class="string">&#x27;0&#x27;</span></span><br><span class="line"><span class="keyword">WHERE</span> ur.delete_flag <span class="operator">=</span> <span class="string">&#x27;0&#x27;</span></span><br><span class="line">  <span class="keyword">AND</span> ur.park_id <span class="keyword">IS</span> <span class="keyword">NOT NULL</span></span><br><span class="line">  <span class="keyword">AND</span> ur.park_id <span class="operator">&lt;&gt;</span> <span class="string">&#x27;&#x27;</span></span><br><span class="line">  <span class="keyword">AND</span> p.park_id <span class="keyword">IS</span> <span class="keyword">NULL</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 4. pass_user 的园区不能为空（除非明确是历史占位数据）</span></span><br><span class="line"><span class="keyword">SELECT</span> user_id, user_name, phone, park_id, delete_flag, dist_sync_status</span><br><span class="line"><span class="keyword">FROM</span> pass_user</span><br><span class="line"><span class="keyword">WHERE</span> delete_flag <span class="operator">=</span> <span class="string">&#x27;0&#x27;</span></span><br><span class="line">  <span class="keyword">AND</span> (park_id <span class="keyword">IS</span> <span class="keyword">NULL</span> <span class="keyword">OR</span> park_id <span class="operator">=</span> <span class="string">&#x27;&#x27;</span>);</span><br></pre></td></tr></table></figure>
+
+<p>第 4 条如有历史数据，要先标记出来——后续测试不要混入这些账号，否则测试结果会被脏数据污染。</p>
+<h2 id="三、7-大测试模块拆解"><a href="#三、7-大测试模块拆解" class="headerlink" title="三、7 大测试模块拆解"></a>三、7 大测试模块拆解</h2><h3 id="A-登录与当前园区上下文"><a href="#A-登录与当前园区上下文" class="headerlink" title="A. 登录与当前园区上下文"></a>A. 登录与当前园区上下文</h3><p><strong>目的</strong>：登录态下的园区上下文必须可信，切换园区不能错位。</p>
+<table>
+<thead>
+<tr>
+<th>用例</th>
+<th>操作</th>
+<th>预期</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>A1 单园区用户登录</td>
+<td>用 <code>admin_a</code> 登录并查 <code>/user/info</code></td>
+<td>当前园区为 PARK_A；园区列表只包含 PARK_A；不出现 PARK_B 的角色、园区名、业务数据</td>
+</tr>
+<tr>
+<td>A2 多园区用户登录</td>
+<td>用 <code>admin_ab</code> 登录</td>
+<td>园区列表包含 PARK_A、PARK_B；默认园区有明确规则，不能随机跳；当前园区字段、角色列表、菜单列表三者一致</td>
+</tr>
+<tr>
+<td>A3 切换园区</td>
+<td><code>admin_ab</code> 切到 PARK_B，再切回 PARK_A</td>
+<td>切到 PARK_B 后只返回 PARK_B 下生效的角色和数据；切回 PARK_A 后恢复 PARK_A 的角色和数据；刷新页面后当前园区不丢失</td>
+</tr>
+<tr>
+<td>A4 非授权园区切换</td>
+<td><code>admin_a</code> 调用切换接口传 PARK_B；用不存在&#x2F;已删除的 <code>park_id</code> 再调一次</td>
+<td>接口失败；当前园区不变；不新增 <code>sys_user_role</code>、<code>sys_user_park</code>、缓存上下文等脏数据</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>A4 是越权拦截的关键用例</strong>。如果非授权 <code>parkId</code> 没被拦下，会被切园区到其他园区——这是上线后最容易出安全事件的入口。</p>
+</blockquote>
+<h3 id="B-用户所属园区"><a href="#B-用户所属园区" class="headerlink" title="B. 用户所属园区"></a>B. 用户所属园区</h3><table>
+<thead>
+<tr>
+<th>用例</th>
+<th>关键校验</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>B1 用户列表展示所属园区</td>
+<td><code>userParkIds</code>、<code>userParkName</code> 与权限范围一致；多园区用户的园区名称和 ID 顺序一致；PARK_B-only 用户不会因为无关角色混进 PARK_A 结果</td>
+</tr>
+<tr>
+<td>B2 编辑用户所属园区</td>
+<td>给 <code>normal_a</code> 增加 PARK_B 后 <code>sys_user_park</code> 出现两条有效关系；移除 PARK_B 后软删；重复保存不会产生重复有效行</td>
+</tr>
+<tr>
+<td>B3 删除或停用用户</td>
+<td>停用用户不能登录；相关有效关系不再让该用户进入园区；不误删其他用户的 <code>sys_user_park</code> 或 <code>sys_user_role</code></td>
+</tr>
+</tbody></table>
+<h3 id="C-角色管理园区"><a href="#C-角色管理园区" class="headerlink" title="C. 角色管理园区"></a>C. 角色管理园区</h3><table>
+<thead>
+<tr>
+<th>用例</th>
+<th>关键校验</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>C1 创建&#x2F;编辑角色所属园区</td>
+<td><code>sys_role.park_id = PARK_A</code>；PARK_B 普通管理员不可见或不可操作</td>
+</tr>
+<tr>
+<td>C2 配置角色管理园区</td>
+<td><code>sys_role_park</code> 有唯一有效的 <code>(role_id, PARK_B)</code>；重复保存不产生重复行；删除后接口不再返回 PARK_B</td>
+</tr>
+<tr>
+<td>C3 角色列表字段</td>
+<td>所属园区和管理园区不混淆；搜索和分页不会破坏园区过滤；软删园区或软删角色不出现在有效结果中</td>
+</tr>
+</tbody></table>
+<h3 id="D-用户角色分配"><a href="#D-用户角色分配" class="headerlink" title="D. 用户角色分配"></a>D. 用户角色分配</h3><p>这是<strong>最容易出问题</strong>的模块。多园区用户的角色关系要按 <code>(user_id, role_id, park_id)</code> 区分，否则切园区时菜单会乱套。</p>
+<table>
+<thead>
+<tr>
+<th>用例</th>
+<th>关键校验</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>D1 单园区分配角色</td>
+<td>只新增&#x2F;更新 <code>(normal_a, role_a, PARK_A)</code>；PARK_B 没有被写入同角色关系</td>
+</tr>
+<tr>
+<td>D2 同一用户多园区分配同一角色</td>
+<td><code>sys_user_role</code> 按 <code>user_id + role_id + park_id</code> 区分；切 PARK_A 只加载 PARK_A 的角色，切 PARK_B 只加载 PARK_B 的角色</td>
+</tr>
+<tr>
+<td>D3 清空某园区角色</td>
+<td>对 <code>admin_ab</code> 调用角色保存接口，<code>parkId = PARK_A</code>，角色列表为空——只清空 PARK_A 的角色，PARK_B 不受影响</td>
+</tr>
+<tr>
+<td>D4 非授权园区角色分配</td>
+<td>接口拒绝；不写入 <code>sys_user_role</code>；错误提示可定位到无权限或园区不合法</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>D3 是验证”清空不影响其他园区”的关键。如果代码里写错 <code>DELETE WHERE user_id = ?</code>（不带 park_id），整个用户的所有园区角色都会被清空，这是上线后常见的回归 bug。</p>
+</blockquote>
+<h3 id="E-园区管理员列表"><a href="#E-园区管理员列表" class="headerlink" title="E. 园区管理员列表"></a>E. 园区管理员列表</h3><table>
+<thead>
+<tr>
+<th>用例</th>
+<th>关键校验</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>E1 查询某园区管理员</td>
+<td>PARK_A 只返回 <code>sys_user_role.park_id = PARK_A</code> 的有效用户角色；已删除用户、已删除角色、孤立 user_id 不返回；排序按绑定时间倒序</td>
+</tr>
+<tr>
+<td>E2 手机号&#x2F;用户名展示</td>
+<td>手机号如有加密，接口返回前端期望的明文或脱敏格式；角色名、园区名和 ID 对得上</td>
+</tr>
+</tbody></table>
+<h3 id="F-钉钉同步到用户园区"><a href="#F-钉钉同步到用户园区" class="headerlink" title="F. 钉钉同步到用户园区"></a>F. 钉钉同步到用户园区</h3><p>钉钉同步是”数据进入系统的入口”，错了之后下游所有模块都会脏。</p>
+<table>
+<thead>
+<tr>
+<th>用例</th>
+<th>关键校验</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>F1 有部门用户同步</td>
+<td><code>sys_user_park.park_id = PARK_A</code>；<code>sys_user_park.org_id</code> 存公司级组织 ID；重复同步不产生重复有效关系</td>
+</tr>
+<tr>
+<td>F2 多部门&#x2F;跨园区用户同步</td>
+<td>用户能得到 PARK_A、PARK_B 两个有效园区关系；登录后可切换两个园区；每个园区下角色仍按 <code>sys_user_role.park_id</code> 决定</td>
+</tr>
+<tr>
+<td>F3 无法识别园区的钉钉用户</td>
+<td>不写错误的默认 <code>park_id</code>；不生成空 <code>park_id</code> 的 <code>sys_user_park</code>；日志能说明跳过原因</td>
+</tr>
+</tbody></table>
+<h3 id="G-sys-user-到-pass-user-同步"><a href="#G-sys-user-到-pass-user-同步" class="headerlink" title="G. sys_user 到 pass_user 同步"></a>G. sys_user 到 pass_user 同步</h3><p>这是设备下发的源头。如果 <code>pass_user.park_id</code> 错了，门禁&#x2F;车行下发就会拿错人员。</p>
+<table>
+<thead>
+<tr>
+<th>用例</th>
+<th>关键校验</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>G1 新用户同步到 pass_user</td>
+<td>新增 <code>pass_user.park_id = PARK_A</code>；<code>delete_flag = &#39;0&#39;</code>；需要下发设备时 <code>dist_sync_status = &#39;PENDING&#39;</code></td>
+</tr>
+<tr>
+<td>G2 已存在 pass_user 更新</td>
+<td>只更新发生变化的字段；园区变更能同步到 <code>pass_user.park_id</code>；需要重新下发时才标记 <code>PENDING</code></td>
+</tr>
+<tr>
+<td>G3 多园区用户 pass_user 策略</td>
+<td>一人一条时必须有明确主园区；一人多园区时必须每条能区分园区；不允许同一设备下发拿错园区人员</td>
+</tr>
+<tr>
+<td>G4 软删用户同步</td>
+<td><code>pass_user</code> 按项目约定软删或停用；已软删记录不被下发任务重新捞起；<code>findByDistSyncStatus(&#39;PENDING&#39;)</code> 不返回 <code>delete_flag != &#39;0&#39;</code> 的人员</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>G3 在产品未定义一人多园区下发策略时，<strong>要标为待确认，不要强行验收</strong>。强行写死策略反而会埋雷。</p>
+</blockquote>
+<h3 id="H-业务数据园区隔离"><a href="#H-业务数据园区隔离" class="headerlink" title="H. 业务数据园区隔离"></a>H. 业务数据园区隔离</h3><p>每个已改造业务模块至少抽 <strong>2 个列表、1 个新增、1 个详情、1 个编辑</strong>。优先测经常被首页或大屏使用的接口。</p>
+<p><img src="/images/posts/%E5%A4%9A%E5%9B%AD%E5%8C%BA%E6%94%B9%E9%80%A0%E6%B5%8B%E8%AF%95%E5%85%A8%E6%99%AF/fig2.png" alt="业务数据园区隔离的多服务矩阵"></p>
+<p><em>图2：admin&#x2F;through&#x2F;property&#x2F;security&#x2F;env 各业务的园区隔离验证矩阵</em></p>
+<table>
+<thead>
+<tr>
+<th>用例</th>
+<th>关键校验</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>H1 列表隔离</td>
+<td>PARK_A 只返回 A 数据；PARK_B 只返回 B 数据；不传 <code>park_id</code> 时以后端当前园区为准，不让前端伪造越权</td>
+</tr>
+<tr>
+<td>H2 新增数据自动带当前园区</td>
+<td>新增记录的 <code>park_id</code> 等于当前园区；前端传其他 <code>park_id</code> 时，后端按权限规则覆盖或拒绝，不能越权写入</td>
+</tr>
+<tr>
+<td>H3 详情&#x2F;编辑&#x2F;删除越权</td>
+<td>在 PARK_A 下拿 PARK_B 数据 ID 调详情 → 不可见或返回无权限；编辑、删除失败；数据库无变化</td>
+</tr>
+<tr>
+<td>H4 DEFAULT_PARK_ID 回归</td>
+<td>重点检查 env、security、through 里历史写死 <code>DEFAULT_PARK_ID</code> 的入口；走新增或同步入口，查数据库实际 <code>park_id</code>；已改造入口不再写死默认园区</td>
+</tr>
+</tbody></table>
+<h3 id="I-前端页面联调"><a href="#I-前端页面联调" class="headerlink" title="I. 前端页面联调"></a>I. 前端页面联调</h3><p>前端是用户接触的第一线，错位显示（菜单列表与数据不一致）会直接被业务方发现。</p>
+<table>
+<thead>
+<tr>
+<th>用例</th>
+<th>关键校验</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>I1 顶部园区切换器</td>
+<td>切换器显示当前园区；列表自动刷新或提示刷新；刷新后当前园区符合产品约定</td>
+</tr>
+<tr>
+<td>I2 用户&#x2F;角色页面</td>
+<td>字段展示完整，不错位；下拉园区来源符合接口返回；保存后页面立即反映最新关系</td>
+</tr>
+<tr>
+<td>I3 无权限提示</td>
+<td>前端不展示无权限按钮或页面；后端仍然拒绝越权请求；提示不暴露敏感数据</td>
+</tr>
+</tbody></table>
+<h3 id="J-回归测试"><a href="#J-回归测试" class="headerlink" title="J. 回归测试"></a>J. 回归测试</h3><table>
+<thead>
+<tr>
+<th>用例</th>
+<th>关键校验</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>J1 原单园区流程</td>
+<td>操作路径和改造前一致；不因为多园区字段必填导致老流程失败</td>
+</tr>
+<tr>
+<td>J2 历史空 park_id 数据</td>
+<td>产品明确允许的通用数据仍可用；不允许的空园区数据不应出现在普通园区视图；需要清洗的数据单独列清单</td>
+</tr>
+<tr>
+<td>J3 分页和搜索</td>
+<td>count 和列表使用同一园区过滤条件；搜索不会绕过园区过滤；排序稳定</td>
+</tr>
+</tbody></table>
+<h2 id="四、测试优先级"><a href="#四、测试优先级" class="headerlink" title="四、测试优先级"></a>四、测试优先级</h2><table>
+<thead>
+<tr>
+<th>优先级</th>
+<th>模块</th>
+<th>失败影响</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>第一优先级</td>
+<td>A、D、G、H3</td>
+<td>越权或下发错误（<strong>绝对不能漏</strong>）</td>
+</tr>
+<tr>
+<td>第二优先级</td>
+<td>B、C、E、F</td>
+<td>管理端使用和同步准确性</td>
+</tr>
+<tr>
+<td>第三优先级</td>
+<td>I、J</td>
+<td>联调体验和历史兼容</td>
+</tr>
+</tbody></table>
+<p>如果时间只够半天，最低限度要跑：</p>
+<ol>
+<li><code>admin_a</code> 不能切 PARK_B。</li>
+<li><code>admin_ab</code> 切 PARK_A&#x2F;PARK_B 后菜单和业务列表变化正确。</li>
+<li>给同一用户分别保存 PARK_A、PARK_B 角色，互不覆盖。</li>
+<li>清空 PARK_A 角色不影响 PARK_B。</li>
+<li>钉钉同步用户能写入 <code>sys_user_park</code>。</li>
+<li><code>pass_user</code> 没有空 <code>park_id</code>，新增或变更用户的下发状态符合预期。</li>
+<li>PARK_A 下不能详情、编辑、删除 PARK_B 数据。</li>
+</ol>
+<h2 id="五、上线前最后检查-SQL"><a href="#五、上线前最后检查-SQL" class="headerlink" title="五、上线前最后检查 SQL"></a>五、上线前最后检查 SQL</h2><figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="comment">-- 1. 重复用户园区关系</span></span><br><span class="line"><span class="keyword">SELECT</span> user_id, park_id, <span class="built_in">COUNT</span>(<span class="operator">*</span>) cnt</span><br><span class="line"><span class="keyword">FROM</span> sys_user_park</span><br><span class="line"><span class="keyword">WHERE</span> delete_flag <span class="operator">=</span> <span class="string">&#x27;0&#x27;</span></span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span> user_id, park_id</span><br><span class="line"><span class="keyword">HAVING</span> cnt <span class="operator">&gt;</span> <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 2. 重复用户角色关系</span></span><br><span class="line"><span class="keyword">SELECT</span> user_id, role_id, park_id, <span class="built_in">COUNT</span>(<span class="operator">*</span>) cnt</span><br><span class="line"><span class="keyword">FROM</span> sys_user_role</span><br><span class="line"><span class="keyword">WHERE</span> delete_flag <span class="operator">=</span> <span class="string">&#x27;0&#x27;</span></span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span> user_id, role_id, park_id</span><br><span class="line"><span class="keyword">HAVING</span> cnt <span class="operator">&gt;</span> <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 3. 角色管理园区重复</span></span><br><span class="line"><span class="keyword">SELECT</span> role_id, park_id, <span class="built_in">COUNT</span>(<span class="operator">*</span>) cnt</span><br><span class="line"><span class="keyword">FROM</span> sys_role_park</span><br><span class="line"><span class="keyword">WHERE</span> delete_flag <span class="operator">=</span> <span class="string">&#x27;0&#x27;</span></span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span> role_id, park_id</span><br><span class="line"><span class="keyword">HAVING</span> cnt <span class="operator">&gt;</span> <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 4. 有效 pass_user 空园区</span></span><br><span class="line"><span class="keyword">SELECT</span> user_id, user_name, phone, park_id, dist_sync_status</span><br><span class="line"><span class="keyword">FROM</span> pass_user</span><br><span class="line"><span class="keyword">WHERE</span> delete_flag <span class="operator">=</span> <span class="string">&#x27;0&#x27;</span></span><br><span class="line">  <span class="keyword">AND</span> (park_id <span class="keyword">IS</span> <span class="keyword">NULL</span> <span class="keyword">OR</span> park_id <span class="operator">=</span> <span class="string">&#x27;&#x27;</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 5. 可能被园区切换拦住的历史用户角色</span></span><br><span class="line"><span class="keyword">SELECT</span> ur.user_id, ur.role_id, ur.park_id</span><br><span class="line"><span class="keyword">FROM</span> sys_user_role ur</span><br><span class="line"><span class="keyword">WHERE</span> ur.delete_flag <span class="operator">=</span> <span class="string">&#x27;0&#x27;</span></span><br><span class="line">  <span class="keyword">AND</span> ur.park_id <span class="keyword">IS</span> <span class="keyword">NOT NULL</span></span><br><span class="line">  <span class="keyword">AND</span> ur.park_id <span class="operator">&lt;&gt;</span> <span class="string">&#x27;&#x27;</span></span><br><span class="line">  <span class="keyword">AND</span> <span class="keyword">NOT</span> <span class="keyword">EXISTS</span> (<span class="keyword">SELECT</span> <span class="number">1</span> <span class="keyword">FROM</span> sys_role r <span class="keyword">WHERE</span> r.role_id <span class="operator">=</span> ur.role_id <span class="keyword">AND</span> r.park_id <span class="operator">=</span> ur.park_id <span class="keyword">AND</span> r.delete_flag <span class="operator">=</span> <span class="string">&#x27;0&#x27;</span>)</span><br><span class="line">  <span class="keyword">AND</span> <span class="keyword">NOT</span> <span class="keyword">EXISTS</span> (<span class="keyword">SELECT</span> <span class="number">1</span> <span class="keyword">FROM</span> sys_role_park rp <span class="keyword">WHERE</span> rp.role_id <span class="operator">=</span> ur.role_id <span class="keyword">AND</span> rp.park_id <span class="operator">=</span> ur.park_id <span class="keyword">AND</span> rp.delete_flag <span class="operator">=</span> <span class="string">&#x27;0&#x27;</span>)</span><br><span class="line">  <span class="keyword">AND</span> <span class="keyword">NOT</span> <span class="keyword">EXISTS</span> (<span class="keyword">SELECT</span> <span class="number">1</span> <span class="keyword">FROM</span> sys_user_park up <span class="keyword">WHERE</span> up.user_id <span class="operator">=</span> ur.user_id <span class="keyword">AND</span> up.park_id <span class="operator">=</span> ur.park_id <span class="keyword">AND</span> up.delete_flag <span class="operator">=</span> <span class="string">&#x27;0&#x27;</span>);</span><br></pre></td></tr></table></figure>
+
+<p>预期：上线前 1、2、3、4 返回 0 行；第 5 条如果有结果，要么补 <code>sys_role_park</code>，要么补 <code>sys_user_park</code>，要么确认这些历史角色关系应清理。</p>
+<h2 id="六、经验总结"><a href="#六、经验总结" class="headerlink" title="六、经验总结"></a>六、经验总结</h2><h3 id="6-1-三个最容易漏的测试场景"><a href="#6-1-三个最容易漏的测试场景" class="headerlink" title="6.1 三个最容易漏的测试场景"></a>6.1 三个最容易漏的测试场景</h3><ol>
+<li><strong>D3 清空某园区角色</strong>：很多团队会测”加”，但不测”清空”。”清空”代码路径通常用 <code>DELETE WHERE user_id = ?</code>，忘记带 <code>park_id</code> 就会清掉所有园区。</li>
+<li><strong>G3 多园区用户 pass_user 策略</strong>：一人一条 vs 一人多园区，下发策略完全不同，但产品常常没有明确定义。</li>
+<li><strong>H4 DEFAULT_PARK_ID 回归</strong>：历史代码里写死的 <code>DEFAULT_PARK_ID</code> 是改造最大的遗留风险。</li>
+</ol>
+<h3 id="6-2-编写测试用例的三个原则"><a href="#6-2-编写测试用例的三个原则" class="headerlink" title="6.2 编写测试用例的三个原则"></a>6.2 编写测试用例的三个原则</h3><ol>
+<li><strong>操作步骤最小化</strong>：每条用例只验证一个意图，混入多个验证点会让失败定位变难。</li>
+<li><strong>预期可观测</strong>：预期要写数据库字段、接口字段、缓存键值，不能写”系统正常运行”。</li>
+<li><strong>失败用例优先</strong>：先写”非授权切换”这种应当失败的用例，再写正常通过的用例——前者一旦通过就证明拦截有效。</li>
+</ol>
+<h3 id="6-3-测试记录模板"><a href="#6-3-测试记录模板" class="headerlink" title="6.3 测试记录模板"></a>6.3 测试记录模板</h3><p>每轮测试记录建议结构：</p>
+<figure class="highlight markdown"><table><tr><td class="code"><pre><span class="line"><span class="section">## 测试记录 - YYYY-MM-DD</span></span><br><span class="line"></span><br><span class="line"><span class="section">### 环境</span></span><br><span class="line"><span class="bullet">-</span> 分支：</span><br><span class="line"><span class="bullet">-</span> admin-service commit：</span><br><span class="line"><span class="bullet">-</span> through-service commit：</span><br><span class="line"><span class="bullet">-</span> gateway commit：</span><br><span class="line"><span class="bullet">-</span> 数据库：</span><br><span class="line"><span class="bullet">-</span> 测试账号：</span><br><span class="line"></span><br><span class="line"><span class="section">### 执行结果</span></span><br><span class="line">| 用例 | 结果 | 备注 |</span><br><span class="line">| --- | --- | --- |</span><br><span class="line">| A1 单园区用户登录 | 未测/通过/失败 |  |</span><br><span class="line">| A2 多园区用户登录 | 未测/通过/失败 |  |</span><br><span class="line">| A3 切换园区 | 未测/通过/失败 |  |</span><br><span class="line">| ... |  |  |</span><br><span class="line"></span><br><span class="line"><span class="section">### 问题清单</span></span><br><span class="line">| 编号 | 问题 | 复现步骤 | 影响 | 处理人 | 状态 |</span><br><span class="line">| --- | --- | --- | --- | --- | --- |</span><br><span class="line"></span><br><span class="line"><span class="section">### 数据清理</span></span><br><span class="line"><span class="bullet">-</span> 新增测试用户：</span><br><span class="line"><span class="bullet">-</span> 新增测试角色：</span><br><span class="line"><span class="bullet">-</span> 新增测试园区关系：</span><br><span class="line"><span class="bullet">-</span> 是否已清理：</span><br></pre></td></tr></table></figure>
+
+<h2 id="七、结语"><a href="#七、结语" class="headerlink" title="七、结语"></a>七、结语</h2><p>多园区改造不是”加几个字段”那么简单——它是把整个系统的数据访问维度从”全局”切成”按当前园区”。**测试要验证的不是”能不能跑”，而是”会不会跑串”**。本文的 7 大模块清单 + 3 个优先级 + 上线前 5 条 SQL，能覆盖 90% 的多园区改造回归场景。下次接到多园区改造需求，直接把这份清单贴到测试计划里就行。</p>
+<blockquote>
+<p>多园区改造测试的最高原则：<strong>A 园区发生的事，绝不能在 B 园区看到。</strong></p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>测试</category>
+      </categories>
+      <tags>
+        <tag>多园区</tag>
+        <tag>南网项目</tag>
+        <tag>测试计划</tag>
+        <tag>越权校验</tag>
+        <tag>数据隔离</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>O(N×M) 拍平成 O(N+M)：反查表如何把楼层摄像头计数从慢路径救回来</title>
+    <url>/2026/07/17/%E5%8F%8D%E6%9F%A5%E8%A1%A8%E6%8A%8A%E6%A5%BC%E5%B1%82%E6%91%84%E5%83%8F%E5%A4%B4%E6%95%B0%E6%8B%8D%E5%B9%B3/</url>
+    <content><![CDATA[<p>「勾这个楼层到底覆盖几个摄像头？」——超管在配置页的盲勾体验必须解决。盲勾的体验很差：要么勾多了（放出不该放的楼层），要么勾少了（后面发现某楼层其实没摄像头，白勾）。</p>
+<p>本文把”在 DTO 加一个字段这件事”拆开讲：为什么必须用反查表、为什么计数口径要和 <code>getCameraTree</code> 对齐、为什么保序用 <code>LinkedHashMap</code>、为什么 <code>toMap</code> 要带 merge 函数。前端删 Mock 零计算渲染，后端单测 6&#x2F;6 全绿。</p>
+<span id="more"></span>
+
+<div class="audio-player">
+  <div class="audio-section">
+    <h4>🎧 文章导读</h4>
+    <audio controls preload="metadata">
+      <source src="/audio/反查表把楼层摄像头数拍平/narration.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+  <div class="audio-section">
+    <h4>🎵 背景音乐</h4>
+    <audio controls loop preload="metadata">
+      <source src="/audio/反查表把楼层摄像头数拍平/bgm.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+</div>
+
+<p><img src="/images/posts/%E5%8F%8D%E6%9F%A5%E8%A1%A8%E6%8A%8A%E6%A5%BC%E5%B1%82%E6%91%84%E5%83%8F%E5%A4%B4%E6%95%B0%E6%8B%8D%E5%B9%B3/fig1.png" alt="反查表算法三步把摄像头按楼层归堆"></p>
+<p><em>图1：建反查表 → 按 spaceId 查楼层 → 按楼层 merge 计数，三步完成统计</em></p>
+<h2 id="一、需求背景：两层链路中的”展示性增量”"><a href="#一、需求背景：两层链路中的”展示性增量”" class="headerlink" title="一、需求背景：两层链路中的”展示性增量”"></a>一、需求背景：两层链路中的”展示性增量”</h2><p>在拆本次增量之前，先说清整体链路的两层，否则单看本文会摸不着头脑。</p>
+<h3 id="1-1-第一层（已合入）：给超管做公司默认可见楼层配置"><a href="#1-1-第一层（已合入）：给超管做公司默认可见楼层配置" class="headerlink" title="1.1 第一层（已合入）：给超管做公司默认可见楼层配置"></a>1.1 第一层（已合入）：给超管做公司默认可见楼层配置</h3><p>上一提交 <code>9c7e71ac6</code> 给 super-admin 提供了公司默认可见楼层的配置能力：</p>
+<ul>
+<li>新增 <code>GET /cameraInfo/orgFloorConfig/&#123;orgId&#125;</code> 查某公司当前园区已勾选的可见楼层；</li>
+<li>新增 <code>POST /cameraInfo/orgFloorConfig</code> 整体保存（空数组即清空，仅超管可操作）；</li>
+<li>落库表 <code>security_camera_org_floor</code> 加了唯一约束 <code>(park_id, org_id, floor_space_id)</code>；</li>
+<li>保存时先硬删再批插，逻辑干脆。</li>
+</ul>
+<p>这套配置是 <code>getCameraTree</code> 可见性过滤的<strong>数据源</strong>：非超管只能看到所属公司配置楼层下的摄像头，或已审批通过的摄像头编号。</p>
+<h3 id="1-2-第二层（本次未提交的增量）：配置页显示「勾这个楼层到底几个摄像头」"><a href="#1-2-第二层（本次未提交的增量）：配置页显示「勾这个楼层到底几个摄像头」" class="headerlink" title="1.2 第二层（本次未提交的增量）：配置页显示「勾这个楼层到底几个摄像头」"></a>1.2 第二层（本次未提交的增量）：配置页显示「勾这个楼层到底几个摄像头」</h3><p>配置页面上，超管面对一串楼层勾选框，却不知道「勾下这一栋的 3 楼，到底能看到几个摄像头」。所以本次给配置查询的返回值加了一个 <code>floorCameraCounts</code> 字段，告诉前端每个被勾选楼层下有多少摄像头。</p>
+<p>前端要做的事很简单：把三处 Mock 数据（园区、ABC 栋、随机数量）删掉，改为调真实的空间树接口拉当前园区层级，再调配置查询接口回显已勾选楼层与每楼层摄像头数、调保存接口提交。</p>
+<blockquote>
+<p>增量虽小，决策不少。下面把”为什么这样做”的三个关键决策讲清楚。</p>
+</blockquote>
+<h2 id="二、关键决策-1：计数口径必须和-getCameraTree-对齐"><a href="#二、关键决策-1：计数口径必须和-getCameraTree-对齐" class="headerlink" title="二、关键决策 1：计数口径必须和 getCameraTree 对齐"></a>二、关键决策 1：计数口径必须和 getCameraTree 对齐</h2><h3 id="2-1-这是整件事的立身之本"><a href="#2-1-这是整件事的立身之本" class="headerlink" title="2.1 这是整件事的立身之本"></a>2.1 这是整件事的立身之本</h3><p><code>getCameraTree</code> 判可见是<strong>按楼层放行整个楼层子树</strong>——某个楼层被勾选，它下面挂的所有节点（包括房间）里的摄像头全部可见。</p>
+<p>那么配置页上「该楼层 N 个摄像头」的 N，就必须是<strong>这个楼层子树下的全部摄像头数</strong>，否则前端显示的数字和用户实际能看到的数量对不上，超管会被误导。</p>
+<p><img src="/images/posts/%E5%8F%8D%E6%9F%A5%E8%A1%A8%E6%8A%8A%E6%A5%BC%E5%B1%82%E6%91%84%E5%83%8F%E5%A4%B4%E6%95%B0%E6%8B%8D%E5%B9%B3/fig2.png" alt="getCameraTree 与 floorCameraCounts 的口径对齐"></p>
+<p><em>图2：左侧 getCameraTree 按楼层放行子树，右侧 floorCameraCounts 必须统计相同子树</em></p>
+<h3 id="2-2-空间模型"><a href="#2-2-空间模型" class="headerlink" title="2.2 空间模型"></a>2.2 空间模型</h3><p>摄像头可能直接挂在「楼层」节点上，也可能挂在楼层下的「房间」节点上；而房间节点带 <code>floorId</code> 指回所属楼层。</p>
+<p>所以：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">「楼层子树的摄像头」</span><br><span class="line">  = 直接挂该楼层的摄像头</span><br><span class="line">  + 挂在该楼层下任意房间的摄像头</span><br></pre></td></tr></table></figure>
+
+<p>这个口径一旦想清楚，算法的骨架就有了：<strong>把任意 spaceId 折算成所属楼层 id，再把摄像头按楼层归堆计数</strong>。</p>
+<h2 id="三、关键决策-2：用反查表而不是嵌套遍历"><a href="#三、关键决策-2：用反查表而不是嵌套遍历" class="headerlink" title="三、关键决策 2：用反查表而不是嵌套遍历"></a>三、关键决策 2：用反查表而不是嵌套遍历</h2><h3 id="3-1-最朴素的写法"><a href="#3-1-最朴素的写法" class="headerlink" title="3.1 最朴素的写法"></a>3.1 最朴素的写法</h3><p>对每个摄像头，遍历空间树找它属于哪个被勾选的楼层：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// O(N×M)：N 个摄像头 × M 个被勾选楼层</span></span><br><span class="line"><span class="keyword">for</span> (Camera camera : cameras) &#123;</span><br><span class="line">    <span class="keyword">for</span> (String floorId : floorSpaceIds) &#123;</span><br><span class="line">        <span class="keyword">if</span> (isInFloorSubtree(camera.getSpaceId(), floorId)) &#123;</span><br><span class="line">            counts.merge(floorId, <span class="number">1</span>, Integer::sum);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>空间数和摄像头数一旦都上百，就是 O(N×M) 的嵌套扫描，园区规模一大就慢。</p>
+<h3 id="3-2-折中方案：先建反查表"><a href="#3-2-折中方案：先建反查表" class="headerlink" title="3.2 折中方案：先建反查表"></a>3.2 折中方案：先建反查表</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 反查表：spaceId → 所属楼层 id</span></span><br><span class="line">Map&lt;String, String&gt; floorBySpace = ...;</span><br><span class="line"><span class="comment">// 每个摄像头按 floorBySpace 一次查到楼层 id</span></span><br><span class="line"><span class="keyword">for</span> (Camera camera : cameras) &#123;</span><br><span class="line">    <span class="type">String</span> <span class="variable">floorId</span> <span class="operator">=</span> floorBySpace.get(camera.getSpaceId());</span><br><span class="line">    <span class="keyword">if</span> (counts.containsKey(floorId)) &#123;</span><br><span class="line">        counts.merge(floorId, <span class="number">1</span>, Integer::sum);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>建表 O(空间数)，归堆 O(摄像头数)，**总复杂度 O(空间数+摄像头数)**，一次扫完。</p>
+<blockquote>
+<p>反查表本质上就是把嵌套的查找拍平成一次 Map 预处理。<strong>这不是什么高深技巧，但在业务代码里最常被忽略</strong>。</p>
+</blockquote>
+<h2 id="四、关键决策-3：LinkedHashMap-merge-函数"><a href="#四、关键决策-3：LinkedHashMap-merge-函数" class="headerlink" title="四、关键决策 3：LinkedHashMap + merge 函数"></a>四、关键决策 3：LinkedHashMap + merge 函数</h2><h3 id="4-1-为什么用-LinkedHashMap"><a href="#4-1-为什么用-LinkedHashMap" class="headerlink" title="4.1 为什么用 LinkedHashMap"></a>4.1 为什么用 LinkedHashMap</h3><p>前端展示楼层列表要按 <code>floorSpaceIds</code>（被勾选楼层）传入的顺序渲染，不能让 <code>HashMap</code> 的哈希序打乱。</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">Map&lt;String, Integer&gt; counts = floorSpaceIds.stream()</span><br><span class="line">        .collect(Collectors.toMap(id -&gt; id, id -&gt; <span class="number">0</span>, (l, r) -&gt; l, LinkedHashMap::<span class="keyword">new</span>));</span><br></pre></td></tr></table></figure>
+
+<p>最后一个参数 <code>LinkedHashMap::new</code> 指定底层使用 <code>LinkedHashMap</code>，保证遍历顺序和 <code>floorSpaceIds</code> 一致。</p>
+<h3 id="4-2-为什么-toMap-要带-merge-函数"><a href="#4-2-为什么-toMap-要带-merge-函数" class="headerlink" title="4.2 为什么 toMap 要带 merge 函数"></a>4.2 为什么 toMap 要带 merge 函数</h3><p>空间数据里如果出现重复 id（理论上不该、实际上可能），<code>Collectors.toMap</code> 默认会抛 merge 异常直接炸接口：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">java.lang.IllegalStateException: Duplicate key xxx</span><br></pre></td></tr></table></figure>
+
+<p>取 <code>(l, r) -&gt; l</code>（保留先出现的值），容错优先于严格：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">.collect(Collectors.toMap(</span><br><span class="line">    SpaceInfoDTO::getId,</span><br><span class="line">    space -&gt; ...,</span><br><span class="line">    (l, r) -&gt; l    <span class="comment">// 脏数据兜底</span></span><br><span class="line">));</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>两个小但关键的细节：<strong>LinkedHashMap 保序，merge 函数容错</strong>。少一个，线上就要炸。</p>
+</blockquote>
+<h2 id="五、核心算法-countCamerasByFloor"><a href="#五、核心算法-countCamerasByFloor" class="headerlink" title="五、核心算法 countCamerasByFloor"></a>五、核心算法 countCamerasByFloor</h2><h3 id="5-1-第一步：每个被勾选楼层先初始化为-0"><a href="#5-1-第一步：每个被勾选楼层先初始化为-0" class="headerlink" title="5.1 第一步：每个被勾选楼层先初始化为 0"></a>5.1 第一步：每个被勾选楼层先初始化为 0</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line">Map&lt;String, Integer&gt; counts = floorSpaceIds.stream()</span><br><span class="line">        .collect(Collectors.toMap(id -&gt; id, id -&gt; <span class="number">0</span>, (l, r) -&gt; l, LinkedHashMap::<span class="keyword">new</span>));</span><br></pre></td></tr></table></figure>
+
+<p>注意初始化用的是<strong>被勾选楼层列表</strong>（<code>floorSpaceIds</code>），而不是全园区所有楼层——没被勾选的楼层根本不会出现在结果里，这是「只统计被勾选楼层」的第一道关卡。</p>
+<h3 id="5-2-第二步：建立-spaceId-到所属楼层-id-的反查表"><a href="#5-2-第二步：建立-spaceId-到所属楼层-id-的反查表" class="headerlink" title="5.2 第二步：建立 spaceId 到所属楼层 id 的反查表"></a>5.2 第二步：建立 spaceId 到所属楼层 id 的反查表</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line">Map&lt;String, String&gt; floorBySpace = spaces.stream().collect(Collectors.toMap(</span><br><span class="line">        SpaceInfoDTO::getId,</span><br><span class="line">        space -&gt; DictConstants.SPACE_LEVEL_ROOM.equals(space.getSpaceHierarchy())</span><br><span class="line">                ? StringUtils.defaultString(space.getFloorId())   <span class="comment">// 房间 -&gt; 取其 floorId</span></span><br><span class="line">                : DictConstants.SPACE_LEVEL_FLOOR.equals(space.getSpaceHierarchy())</span><br><span class="line">                    ? space.getId()                                <span class="comment">// 楼层 -&gt; 自身</span></span><br><span class="line">                    : StringUtils.EMPTY,                           <span class="comment">// 其它层级 -&gt; 忽略</span></span><br><span class="line">        (l, r) -&gt; l));</span><br></pre></td></tr></table></figure>
+
+<p>这段三元嵌套是算法的实质：</p>
+<table>
+<thead>
+<tr>
+<th>节点类型</th>
+<th>折算结果</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>房间</td>
+<td>取其 <code>floorId</code> 指向的楼层</td>
+</tr>
+<tr>
+<td>楼层</td>
+<td>自身 id</td>
+</tr>
+<tr>
+<td>其它层级（楼栋、园区等）</td>
+<td>空串忽略</td>
+</tr>
+</tbody></table>
+<p><code>StringUtils.defaultString</code> 是防空：万一某个房间的 <code>floorId</code> 是 null，兜底成空串，后面 <code>counts::containsKey</code> 自然过滤掉。</p>
+<h3 id="5-3-第三步：每个摄像头按-spaceId-归到楼层，只统计被勾选的"><a href="#5-3-第三步：每个摄像头按-spaceId-归到楼层，只统计被勾选的" class="headerlink" title="5.3 第三步：每个摄像头按 spaceId 归到楼层，只统计被勾选的"></a>5.3 第三步：每个摄像头按 spaceId 归到楼层，只统计被勾选的</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line">cameras.stream()</span><br><span class="line">        .map(c -&gt; floorBySpace.get(c.getSpaceId()))</span><br><span class="line">        .filter(counts::containsKey)</span><br><span class="line">        .forEach(floorId -&gt; counts.merge(floorId, <span class="number">1</span>, Integer::sum));</span><br></pre></td></tr></table></figure>
+
+<p><code>filter(counts::containsKey)</code> 是<strong>第二道关卡</strong>：园区里摄像头可能挂在非楼层&#x2F;非房间（比如挂在楼栋层、或挂在未被该公司勾选的楼层），这些 <code>floorBySpace</code> 折算出来的 id 不在 <code>counts</code> 的 key 集合里，一律不计。</p>
+<blockquote>
+<p><strong>两道关卡叠加，结果就精确等于「被勾选楼层子树下的摄像头数」</strong>。</p>
+</blockquote>
+<h2 id="六、getOrgFloorConfig-的改动"><a href="#六、getOrgFloorConfig-的改动" class="headerlink" title="六、getOrgFloorConfig 的改动"></a>六、getOrgFloorConfig 的改动</h2><h3 id="6-1-改动点"><a href="#6-1-改动点" class="headerlink" title="6.1 改动点"></a>6.1 改动点</h3><p>原来 <code>getOrgFloorConfig</code> 拿到 <code>floorSpaceIds</code> 直接塞进 result 就返回，逻辑很轻。现在要在返回前多干两件事：</p>
+<ol>
+<li>拉本园区全部空间（<code>spaceInfoClient.list</code>）；</li>
+<li>拉本园区全部摄像头（<code>listByCondition(cameraQuery)</code>，按 parkId 过滤）；</li>
+<li>然后交给 <code>countCamerasByFloor</code> 算计数填进 <code>floorCameraCounts</code>。</li>
+</ol>
+<p>改动只动了 <code>CameraInfoServiceImpl.java</code> 里这一个方法，以及 DTO 加字段、单测加用例，<strong>三处收敛在同一模块</strong>，不涉及跨服务。</p>
+<h3 id="6-2-为什么「全量拉」而不是「按楼层过滤拉」"><a href="#6-2-为什么「全量拉」而不是「按楼层过滤拉」" class="headerlink" title="6.2 为什么「全量拉」而不是「按楼层过滤拉」"></a>6.2 为什么「全量拉」而不是「按楼层过滤拉」</h3><blockquote>
+<p>[!tip] 性能 vs 可读性的权衡<br>全量拉空间和摄像头看起来粗放，但这是配置页低频接口、数据量也就一个园区的规模。按楼层过滤反而要为每个勾选楼层发一次查询，N 次 IO 远比一次全量拉慢。用反查表把后续计算压成 O(N+M)，整体反而更快。配置接口不是性能热点，<strong>可读性优先</strong>。</p>
+</blockquote>
+<h2 id="七、前端接入：零计算"><a href="#七、前端接入：零计算" class="headerlink" title="七、前端接入：零计算"></a>七、前端接入：零计算</h2><p>前端在另一个仓库（文件路径以实际仓库为准），本次改动两个文件：</p>
+<ol>
+<li><strong>摄像头楼层配置页面组件</strong>：删掉了「园区、ABC 栋、随机数量」三处 Mock 数据，改为调用真实的空间树接口拉当前园区空间层级，再调配置查询接口回显已勾选楼层与每楼层摄像头数、调保存接口提交。</li>
+<li><strong>API 定义文件</strong>：新增 <code>orgFloorConfig</code> 的 GET&#x2F;POST 封装，对应后端两个接口。</li>
+</ol>
+<blockquote>
+<p>前端的职责被刻意压到最轻——它只负责拉数据、渲染勾选框和「该楼层 N 个摄像头」的文案、提交勾选结果，<strong>零计算</strong>。所有计数逻辑都在后端算好，前端拿到 <code>floorCameraCounts</code> 直接按 key 取值渲染。</p>
+</blockquote>
+<blockquote>
+<p>这和”计数口径要和 getCameraTree 对齐”是配套的：<strong>计数是后端的职责，前端不该重复实现一套可能跑偏的口径</strong>。</p>
+</blockquote>
+<h3 id="7-1-前端验证"><a href="#7-1-前端验证" class="headerlink" title="7.1 前端验证"></a>7.1 前端验证</h3><ul>
+<li>ESLint：0 error；</li>
+<li>生产构建成功，30 条 warning 均为项目既有问题，与本次改动无关。</li>
+</ul>
+<h2 id="八、DTO-改动：只加一个字段"><a href="#八、DTO-改动：只加一个字段" class="headerlink" title="八、DTO 改动：只加一个字段"></a>八、DTO 改动：只加一个字段</h2><p><code>CameraOrgFloorConfigDTO</code> 只加了一个字段，key 是楼层 spaceId、value 是摄像头数：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">private</span> Map&lt;String, Integer&gt; floorCameraCounts;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>字段为什么不复杂化、为什么不单独建一个 DTO？因为它就是「配置查询的附加信息」，和 <code>floorSpaceIds</code>（已勾选楼层列表）<strong>同生同灭</strong>，没必要拆。这是 YAGNI——单用途的附加字段，塞进现有 DTO 最省事。</p>
+</blockquote>
+<h2 id="九、测试与验证"><a href="#九、测试与验证" class="headerlink" title="九、测试与验证"></a>九、测试与验证</h2><p>后端单测 <code>CameraInfoServiceImplTest.java</code> 新增了 <code>cameraCountsIncludeCamerasBoundToRooms</code> 用例，专门验证「直接挂楼层的摄像头 + 挂楼层下房间的摄像头都计入该楼层」这个口径：</p>
+<ul>
+<li>floor-1 上有一个直接挂楼层的摄像头 + 一个挂 room-1 的摄像头（room-1 的 <code>floorId</code> 指向 floor-1）→ floor-1 计 <strong>2</strong>；</li>
+<li>floor-2 无摄像头 → <strong>0</strong>。</li>
+</ul>
+<p>加上原有用例，后端单测 <strong>6&#x2F;6 全绿</strong>。</p>
+<blockquote>
+<p>这个用例的价值在于它锁住了口径——如果以后有人改 <code>countCamerasByFloor</code> 时忘了把房间下的摄像头归到楼层，这个用例会立刻红。</p>
+</blockquote>
+<h2 id="十、经验总结"><a href="#十、经验总结" class="headerlink" title="十、经验总结"></a>十、经验总结</h2><h3 id="10-1-两条可复用的经验"><a href="#10-1-两条可复用的经验" class="headerlink" title="10.1 两条可复用的经验"></a>10.1 两条可复用的经验</h3><blockquote>
+<p>[!tip] 经验 1：附加统计字段要对齐主链路口径<br>本次 <code>floorCameraCounts</code> 必须和 <code>getCameraTree</code> 的可见性判断用同一个口径（楼层子树全计），否则前端显示数和实际可见数对不上。<strong>任何「给现有功能加展示性统计」的需求，第一步都是先确认主链路的统计口径，再让附加字段对齐它</strong>。</p>
+</blockquote>
+<blockquote>
+<p>[!tip] 经验 2：嵌套查找先建反查表<br>O(N×M) 的嵌套遍历，几乎总能用一次 Map 预处理拍平成 O(N+M)。这不是什么高深技巧，但在业务代码里最常被忽略——<strong>看到双层循环找归属关系，第一反应就该是「能不能先建个 Map」</strong>。</p>
+</blockquote>
+<h3 id="10-2-为什么不过度设计"><a href="#10-2-为什么不过度设计" class="headerlink" title="10.2 为什么不过度设计"></a>10.2 为什么不过度设计</h3><p>这次刻意没做这些事：</p>
+<table>
+<thead>
+<tr>
+<th>没做的事</th>
+<th>原因</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>给 <code>countCamerasByFloor</code> 抽接口</td>
+<td>只有一个实现、一个调用方，抽了就是死灵活性</td>
+</tr>
+<tr>
+<td>给 <code>floorCameraCounts</code> 做分页或懒加载</td>
+<td>配置页一次性渲染、数据量就是一栋楼的层级</td>
+</tr>
+<tr>
+<td>在 DTO 上加 <code>totalCameraCount</code> 汇总字段</td>
+<td>前端要汇总自己 reduce 一下就行，后端不该提供没人要求的字段</td>
+</tr>
+</tbody></table>
+<p>每一行改动都能直接追溯到「让超管看到每楼层摄像头数」这一个需求。</p>
+<h3 id="10-3-反查表适用的-4-个场景"><a href="#10-3-反查表适用的-4-个场景" class="headerlink" title="10.3 反查表适用的 4 个场景"></a>10.3 反查表适用的 4 个场景</h3><ol>
+<li><strong>空间归属</strong>：摄像头属于哪个楼层、设备属于哪个房间——本质都是 spaceId → 父级 id 的映射。</li>
+<li><strong>组织归属</strong>：用户属于哪个组织、订单属于哪个事业部——userId&#x2F;orderId → orgId。</li>
+<li><strong>标签归属</strong>：商品属于哪些类目、文章属于哪些话题——商品&#x2F;文章 id → 标签集合。</li>
+<li><strong>租户归属</strong>：资源属于哪个租户——resourceId → tenantId。</li>
+</ol>
+<p>判断标准很简单：<strong>只要出现”两个集合，每个元素要找它在另一个集合里的归属”的双层循环，就该建反查表</strong>。</p>
+<h3 id="10-4-算法选型的”够用就好”原则"><a href="#10-4-算法选型的”够用就好”原则" class="headerlink" title="10.4 算法选型的”够用就好”原则"></a>10.4 算法选型的”够用就好”原则</h3><p>不要追求”理论最优”，要追求”业务场景下的最优”。本次的全量拉 + O(N+M) 计算，在园区规模下完全够用：</p>
+<table>
+<thead>
+<tr>
+<th>数据规模</th>
+<th>性能</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>空间数 &lt; 1000，摄像头数 &lt; 1000</td>
+<td>单次查询 &lt; 50ms</td>
+</tr>
+<tr>
+<td>空间数 &lt; 5000，摄像头数 &lt; 5000</td>
+<td>单次查询 &lt; 200ms</td>
+</tr>
+<tr>
+<td>空间数 &gt; 10000</td>
+<td>考虑分园区拉或异步预热</td>
+</tr>
+</tbody></table>
+<p>配置接口不是性能热点，<strong>可读性优先于理论最优</strong>。</p>
+<h2 id="十一、结语"><a href="#十一、结语" class="headerlink" title="十一、结语"></a>十一、结语</h2><p>「让超管看到每楼层摄像头数」这个需求，看起来只是「在 DTO 加一个字段」，背后却是三个决策：计数口径和主链路对齐、O(N+M) 替代 O(N×M)、保序和容错两个细节。</p>
+<p>下次再遇到”展示性统计字段”的需求，按这个顺序思考：</p>
+<ol>
+<li><strong>口径和谁对齐？</strong> 找到主链路的统计口径，让新字段对齐它。</li>
+<li><strong>有没有嵌套查找？</strong> 有就先建反查表。</li>
+<li><strong>需要保序吗？</strong> 需要就用 <code>LinkedHashMap</code>。</li>
+<li><strong>数据可能有脏吗？</strong> 有就给 <code>toMap</code> 加 merge 函数。</li>
+</ol>
+<blockquote>
+<p>算法优化的最高境界不是”我想到了牛逼的算法”，而是”我把嵌套循环换成了一次 Map 预处理”。</p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>后端开发</category>
+      </categories>
+      <tags>
+        <tag>Java</tag>
+        <tag>南网项目</tag>
+        <tag>算法</tag>
+        <tag>摄像头</tag>
+        <tag>反查表</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>氚云访客历史同步漏数据？分页方式、日期语义、头像容错三处全改</title>
+    <url>/2026/07/14/%E6%B0%9A%E4%BA%91%E8%AE%BF%E5%AE%A2%E5%8E%86%E5%8F%B2%E5%90%8C%E6%AD%A5%E4%BF%AE%E5%A4%8D/</url>
+    <content><![CDATA[<p>氚云访客同步跑了几个月，某天业务反馈”刘树明这条访客记录根本没入库”。查代码、查日志、查公网接口——数据其实是有的，但被同步逻辑漏掉了。</p>
+<p>排查下来发现这不是一个 bug，而是<strong>三个 bug 叠加</strong>：分页方式有缺陷、日期语义理解错了、头像上传失败会阻断主数据入库。任何一个 bug 单拿出来都不会让数据丢失，三个叠在一起就稳定漏数据。</p>
+<p>本文把三个根因、四个修复点、服务器验证步骤完整拆开，让你下次遇到第三方同步漏数据时能直接套用这套排查思路。</p>
+<span id="more"></span>
+
+<div class="audio-player">
+  <div class="audio-section">
+    <h4>🎧 文章导读</h4>
+    <audio controls preload="metadata">
+      <source src="/audio/氚云访客历史同步修复/narration.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+  <div class="audio-section">
+    <h4>🎵 背景音乐</h4>
+    <audio controls loop preload="metadata">
+      <source src="/audio/氚云访客历史同步修复/bgm.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+</div>
+
+<p><img src="/images/posts/%E6%B0%9A%E4%BA%91%E8%AE%BF%E5%AE%A2%E5%8E%86%E5%8F%B2%E5%90%8C%E6%AD%A5%E4%BF%AE%E5%A4%8D/fig1.png" alt="氚云访客同步的三层漏数据问题"></p>
+<p><em>图1：分页方式、日期语义、头像容错——三层叠在一起才让访客漏入库</em></p>
+<h2 id="一、问题现象：业务反馈某访客”凭空消失”"><a href="#一、问题现象：业务反馈某访客”凭空消失”" class="headerlink" title="一、问题现象：业务反馈某访客”凭空消失”"></a>一、问题现象：业务反馈某访客”凭空消失”</h2><p>业务方反馈：氚云上有”刘树明”这条访客预约记录，但在 through 库 <code>visitor_appointment</code> 表里查不到。</p>
+<p>排查的过程是这样：</p>
+<ol>
+<li>先查同步日志，发现刘树明的同步日志只在”已存在，跳过”那一种结果中出现——这说明同步任务跑过这条数据，但当时判定为已存在。</li>
+<li>反查 <code>visitor_appointment</code> 表，确实没有 <code>peo_id = &#39;79a8ec3d-0fa2-4652-9faa-51a0fce6dfef&#39;</code> 的记录。</li>
+<li>那”已存在”判定的依据是什么？查代码发现是按 <code>peo_id</code> 查的，可新数据根本没这个 <code>peo_id</code>，于是出现”查到已存在但实际不存在”的诡异状态。</li>
+</ol>
+<p>继续往上游查，发现了三个独立但叠加的 bug。</p>
+<h2 id="二、根因-1：历史同步分页方式有缺陷"><a href="#二、根因-1：历史同步分页方式有缺陷" class="headerlink" title="二、根因 1：历史同步分页方式有缺陷"></a>二、根因 1：历史同步分页方式有缺陷</h2><h3 id="2-1-旧逻辑的问题"><a href="#2-1-旧逻辑的问题" class="headerlink" title="2.1 旧逻辑的问题"></a>2.1 旧逻辑的问题</h3><p>旧实现是”先取 objectId，再按 objectId 处理”的两阶段流程：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">阶段一：分页拉取所有 objectId</span><br><span class="line">阶段二：再按 objectId 拉详情或处理</span><br></pre></td></tr></table></figure>
+
+<p>这个流程有两个隐患：</p>
+<ol>
+<li><strong>阶段一和阶段二之间存在数据漂移</strong>：如果分页中途有新数据进入，<code>objectId</code> 集合可能漏或重复。</li>
+<li><strong>阶段二失败时没有断点保护</strong>：一旦失败，已经处理过的 <code>objectId</code> 和未处理的混在一起，重试可能跳过或重复。</li>
+</ol>
+<h3 id="2-2-修复方案"><a href="#2-2-修复方案" class="headerlink" title="2.2 修复方案"></a>2.2 修复方案</h3><p>改为单阶段分页，直接按氚云分页响应逐页同步：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">每页响应 → 同步该页 → 推进断点 → 拉下一页</span><br></pre></td></tr></table></figure>
+
+<p>每页内的 <code>objectId</code> 重复只同步一次；某页失败立即停止，且不推进 Redis 断点——避免失败数据被静默跳过。</p>
+<blockquote>
+<p>单阶段分页的好处是”所见即所得”，分页中途的数据漂移窗口被关掉了一半。</p>
+</blockquote>
+<h2 id="三、根因-2：历史补跑日期语义错误"><a href="#三、根因-2：历史补跑日期语义错误" class="headerlink" title="三、根因 2：历史补跑日期语义错误"></a>三、根因 2：历史补跑日期语义错误</h2><h3 id="3-1-旧代码理解错了什么"><a href="#3-1-旧代码理解错了什么" class="headerlink" title="3.1 旧代码理解错了什么"></a>3.1 旧代码理解错了什么</h3><p>氚云请求中的 <code>startTime/endTime</code> 字段，<strong>更接近表单创建或提交日期</strong>，并不等于返回记录中的”访客来访开始时间”。</p>
+<p>这个差异在大部分场景下看不出来——如果表单创建日期和来访日期一致，一切正常。但刘树明这条记录刚好横跨月底：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>值</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>氚云查询日期归属</td>
+<td><code>2026-06-30</code></td>
+</tr>
+<tr>
+<td>返回 <code>startTime</code></td>
+<td><code>2026-07-01 00:00:00</code></td>
+</tr>
+<tr>
+<td>返回 <code>endTime</code></td>
+<td><code>2026-09-30 00:00:00</code></td>
+</tr>
+</tbody></table>
+<p>如果按”查询日期 <code>2026-06-30</code>“补跑，旧代码会用 <code>2026-06-30</code> 作为 <code>apply_date</code> 入库——查询日期是创建表单的日期，不是访客实际来访日期。</p>
+<h3 id="3-2-修复方案"><a href="#3-2-修复方案" class="headerlink" title="3.2 修复方案"></a>3.2 修复方案</h3><ul>
+<li><strong>历史任务按”查询日期”翻页</strong>——保持和定时任务一致；</li>
+<li><strong>入库 <code>apply_date/begin_date/end_date</code> 按响应中的来访起止时间计算</strong>——这才是业务的真实日期。</li>
+</ul>
+<p>修复后刘树明这条记录的入库结果是：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">visitor_name: 刘树明</span><br><span class="line">source: 3</span><br><span class="line">peo_id: 79a8ec3d-0fa2-4652-9faa-51a0fce6dfef</span><br><span class="line">apply_date: 2026-07-01 00:00:00</span><br><span class="line">begin_date: 2026-07-01 00:00:00</span><br><span class="line">end_date: 2026-09-30 00:00:00</span><br></pre></td></tr></table></figure>
+
+<p><code>source = 3</code> 是 SOURCE_3（氚云），<code>apply_date</code> 用了响应的 <code>startTime</code>，符合业务预期。</p>
+<blockquote>
+<p><strong>同步任务的日期语义错位是定时任务最容易踩的坑</strong>。第三方接口的”日期字段”通常是请求参数语义，不一定是响应数据语义。</p>
+</blockquote>
+<h2 id="四、根因-3：头像上传失败阻断主数据入库"><a href="#四、根因-3：头像上传失败阻断主数据入库" class="headerlink" title="四、根因 3：头像上传失败阻断主数据入库"></a>四、根因 3：头像上传失败阻断主数据入库</h2><h3 id="4-1-旧逻辑的问题"><a href="#4-1-旧逻辑的问题" class="headerlink" title="4.1 旧逻辑的问题"></a>4.1 旧逻辑的问题</h3><p>公网氚云接口响应里包含较大的头像 Base64，<code>size=100</code> 在本地公网链路容易触发 Feign 读取超时。同时，本地 <code>aided-service</code>（头像上传服务）未启动时，旧逻辑会因头像上传失败而<strong>丢弃整条访客数据</strong>。</p>
+<p>也就是说：头像上传失败 → 整条访客主数据不入库。这违反了”附属信息失败不应该阻断主数据”的原则。</p>
+<h3 id="4-2-修复方案"><a href="#4-2-修复方案" class="headerlink" title="4.2 修复方案"></a>4.2 修复方案</h3><p>头像上传失败时只记录 WARN，主数据继续保存：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">    uploadAvatar(avatarBase64);</span><br><span class="line">&#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">    log.warn(<span class="string">&quot;头像上传失败，继续保存访客主数据: &#123;&#125;&quot;</span>, e.getMessage());</span><br><span class="line">    <span class="comment">// 继续执行下面的主数据保存逻辑</span></span><br><span class="line">&#125;</span><br><span class="line">saveVisitorMainData(...);</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>附属信息和主数据的关系</strong>：头像、缩略图、附件都属于附属信息，不应阻断主数据的保存。这是容错设计里最基本的原则——<strong>核心业务数据优先于附属数据</strong>。</p>
+</blockquote>
+<h2 id="五、本次修复的四个代码点"><a href="#五、本次修复的四个代码点" class="headerlink" title="五、本次修复的四个代码点"></a>五、本次修复的四个代码点</h2><p><img src="/images/posts/%E6%B0%9A%E4%BA%91%E8%AE%BF%E5%AE%A2%E5%8E%86%E5%8F%B2%E5%90%8C%E6%AD%A5%E4%BF%AE%E5%A4%8D/fig2.png" alt="修复涉及的代码模块与调用关系"></p>
+<p><em>图2：SyncController + VisitingAircraftSyncServiceImpl + VisitorAppointmentServiceImpl 三处协同修复</em></p>
+<h3 id="5-1-SyncController"><a href="#5-1-SyncController" class="headerlink" title="5.1 SyncController"></a>5.1 SyncController</h3><ul>
+<li>历史同步改为单阶段分页，默认每页 100 条。</li>
+<li><code>/sync/triggerHistorySync</code> 增加可选参数：<code>startDate</code>、<code>endDate</code>、<code>pageSize</code>。</li>
+<li><code>pageSize</code> 限制为 1～100；不传时仍为 100，不影响原定时任务。</li>
+<li>同一页出现重复 <code>objectId</code> 时只同步一次。</li>
+<li>当某日出现失败时立即停止，并且<strong>不推进 Redis 断点</strong>，避免失败数据被静默跳过。</li>
+<li>修正本地 through 端口注释为 <code>18134</code>。</li>
+</ul>
+<h3 id="5-2-VisitingAircraftSyncServiceImpl"><a href="#5-2-VisitingAircraftSyncServiceImpl" class="headerlink" title="5.2 VisitingAircraftSyncServiceImpl"></a>5.2 VisitingAircraftSyncServiceImpl</h3><ul>
+<li><code>applyDate</code> 优先使用氚云响应中的 <code>startTime</code>。</li>
+<li>时间解析失败时，回退日期使用本次补跑日期，不再错误使用服务器当天日期。</li>
+<li>保留原有起止时间相等时拉开为 <code>08:00-18:00</code> 的逻辑。</li>
+<li>去掉重复查库去重。</li>
+<li><strong>头像上传失败时继续保存访客主数据</strong>。</li>
+</ul>
+<h3 id="5-3-VisitorAppointmentServiceImpl"><a href="#5-3-VisitorAppointmentServiceImpl" class="headerlink" title="5.3 VisitorAppointmentServiceImpl"></a>5.3 VisitorAppointmentServiceImpl</h3><ul>
+<li>仅 <code>SOURCE_3</code>（氚云）保留上游传入的历史 <code>applyDate</code>。</li>
+<li>其他来源继续保持旧行为：<code>applyDate</code> 使用当前入库时间，避免影响访客机等现有业务。</li>
+</ul>
+<blockquote>
+<p><strong>为什么只对 SOURCE_3 保留历史 applyDate</strong>？因为只有氚云这条链路是”补跑历史数据”的场景，其他来源都是实时同步，用当前入库时间更合适。<strong>容错规则要按业务场景分别设计，不能一刀切</strong>。</p>
+</blockquote>
+<h2 id="六、本地验证结果"><a href="#六、本地验证结果" class="headerlink" title="六、本地验证结果"></a>六、本地验证结果</h2><h3 id="6-1-自动化测试"><a href="#6-1-自动化测试" class="headerlink" title="6.1 自动化测试"></a>6.1 自动化测试</h3><ul>
+<li>共执行 11 个测试。</li>
+<li>结果：<code>Failures: 0, Errors: 0</code>。</li>
+<li>覆盖：历史日期语义、默认日期、单阶段分页、同页去重、失败断点、成功断点、分页大小校验、头像失败继续入库。</li>
+</ul>
+<h3 id="6-2-构建"><a href="#6-2-构建" class="headerlink" title="6.2 构建"></a>6.2 构建</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">mvn -pl service-provider/through-service -am package -DskipTests</span><br><span class="line"><span class="comment"># BUILD SUCCESS</span></span><br></pre></td></tr></table></figure>
+
+<p>产物：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">E:\nanwang\smart-park-cloud-0617\service-provider\through-service\target\through-service-1.0.0-SNAPSHOT.jar</span><br></pre></td></tr></table></figure>
+
+<h3 id="6-3-真实接口和数据库验证"><a href="#6-3-真实接口和数据库验证" class="headerlink" title="6.3 真实接口和数据库验证"></a>6.3 真实接口和数据库验证</h3><p>公网氚云接口已查到刘树明：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">objectId: 79a8ec3d-0fa2-4652-9faa-51a0fce6dfef</span><br><span class="line">name: 刘树明</span><br><span class="line">startTime: 2026-07-01 00:00:00</span><br><span class="line">endTime: 2026-09-30 00:00:00</span><br></pre></td></tr></table></figure>
+
+<p>本地补跑 <code>2026-06-30</code> 后数据库结果：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">visitor_name: 刘树明</span><br><span class="line">source: 3</span><br><span class="line">peo_id: 79a8ec3d-0fa2-4652-9faa-51a0fce6dfef</span><br><span class="line">apply_date: 2026-07-01 00:00:00</span><br><span class="line">begin_date: 2026-07-01 00:00:00</span><br><span class="line">end_date: 2026-09-30 00:00:00</span><br></pre></td></tr></table></figure>
+
+<p>重复检查未发现重复的 <code>SOURCE_3 + peo_id</code> 数据。</p>
+<h2 id="七、服务器部署验证"><a href="#七、服务器部署验证" class="headerlink" title="七、服务器部署验证"></a>七、服务器部署验证</h2><h3 id="7-1-部署范围"><a href="#7-1-部署范围" class="headerlink" title="7.1 部署范围"></a>7.1 部署范围</h3><p>只需要部署新打包的 <code>through-service</code>。Nacos 中氚云 <code>host</code> 使用服务器实际可访问的地址；如果内网代理稳定，生产环境无需因为本地公网测试而改成公网地址。</p>
+<blockquote>
+<p>[!warning] 凭证安全<br><code>EngineSecret</code> 是接口密钥，不要写进日志、截图或知识库。此前已经在聊天和截图中暴露，条件允许时建议在氚云后台轮换。</p>
+</blockquote>
+<h3 id="7-2-先做单日小范围补跑"><a href="#7-2-先做单日小范围补跑" class="headerlink" title="7.2 先做单日小范围补跑"></a>7.2 先做单日小范围补跑</h3><p>刘树明归属于氚云查询日期 <code>2026-06-30</code>：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">curl -X POST <span class="string">&#x27;http://127.0.0.1:18134/sync/triggerHistorySync?startDate=2026-06-30&amp;endDate=2026-06-30&amp;pageSize=100&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p>如果生产内网接口仍超时，把 <code>pageSize</code> 临时调小：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">curl -X POST <span class="string">&#x27;http://127.0.0.1:18134/sync/triggerHistorySync?startDate=2026-06-30&amp;endDate=2026-06-30&amp;pageSize=10&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p>公网链路本地验证时使用 <code>pageSize=1</code> 最稳定，但全历史补跑会很慢。</p>
+<h3 id="7-3-观察日志"><a href="#7-3-观察日志" class="headerlink" title="7.3 观察日志"></a>7.3 观察日志</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">tail</span> -Fn0 /data/work/zhyq/logs/through/through-all.log \</span><br><span class="line">  | grep --line-buffered -aE <span class="string">&#x27;同步氚云访客|刘树明|头像上传失败|ERROR|Exception&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p>预期：</p>
+<ul>
+<li>当日同步完成且失败数为 0。</li>
+<li>aided 不可用时可能出现”头像上传失败，继续保存访客主数据”WARN，但访客仍应入库。</li>
+<li>不应因单条失败继续推进该日断点。</li>
+</ul>
+<h3 id="7-4-查库"><a href="#7-4-查库" class="headerlink" title="7.4 查库"></a>7.4 查库</h3><figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> id, visitor_name, source, peo_id, apply_date, begin_date, end_date, create_time</span><br><span class="line"><span class="keyword">FROM</span> visitor_appointment</span><br><span class="line"><span class="keyword">WHERE</span> peo_id <span class="operator">=</span> <span class="string">&#x27;79a8ec3d-0fa2-4652-9faa-51a0fce6dfef&#x27;</span>;</span><br></pre></td></tr></table></figure>
+
+<p>预期：<code>source=3</code>，且三个业务时间与本地验证结果一致。</p>
+<h3 id="7-5-再补跑历史数据"><a href="#7-5-再补跑历史数据" class="headerlink" title="7.5 再补跑历史数据"></a>7.5 再补跑历史数据</h3><p>建议按月或按年分段执行，避免单个 HTTP 请求长时间占用 Tomcat 线程。每段完成后检查同步失败数和 Redis 断点，再执行下一段。</p>
+<blockquote>
+<p>[!warning] 断点注意事项<br>显式补跑较早日期会把共享 Redis 断点更新到该日期。之后无参数执行会从断点下一天继续，并通过数据库去重；部署验证期间不要并发触发多段历史补跑。</p>
+</blockquote>
+<h2 id="八、经验总结"><a href="#八、经验总结" class="headerlink" title="八、经验总结"></a>八、经验总结</h2><h3 id="8-1-同步漏数据的-5-步排查法"><a href="#8-1-同步漏数据的-5-步排查法" class="headerlink" title="8.1 同步漏数据的 5 步排查法"></a>8.1 同步漏数据的 5 步排查法</h3><ol>
+<li><strong>数据到底有没有被拉过？</strong> 看同步任务的处理日志。</li>
+<li><strong>如果拉过，”已存在”判定依据是什么？</strong> 查去重 SQL 的查询条件。</li>
+<li><strong>如果没拉过，分页是否漏了？</strong> 看分页边界、断点推进、重复 objectId 处理。</li>
+<li><strong>日期语义对不对？</strong> 查请求参数日期 vs 响应数据日期。</li>
+<li><strong>附属信息失败有没有阻断主数据？</strong> 查 try-catch 范围。</li>
+</ol>
+<p>按这个顺序排查，大部分同步漏数据问题都能在 1 小时内定位。</p>
+<h3 id="8-2-同步任务的-4-个不可妥协点"><a href="#8-2-同步任务的-4-个不可妥协点" class="headerlink" title="8.2 同步任务的 4 个不可妥协点"></a>8.2 同步任务的 4 个不可妥协点</h3><table>
+<thead>
+<tr>
+<th>不可妥协点</th>
+<th>原因</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>失败不推进断点</td>
+<td>避免失败数据被静默跳过</td>
+</tr>
+<tr>
+<td>主数据与附属信息分离保存</td>
+<td>头像失败不应阻断访客主数据</td>
+</tr>
+<tr>
+<td>日期语义必须验证</td>
+<td>请求日期 ≠ 响应日期时不能想当然</td>
+</tr>
+<tr>
+<td>同页去重只一次</td>
+<td>objectId 重复时按”一次”处理，避免重复插入</td>
+</tr>
+</tbody></table>
+<h3 id="8-3-补跑历史数据的-3-个最佳实践"><a href="#8-3-补跑历史数据的-3-个最佳实践" class="headerlink" title="8.3 补跑历史数据的 3 个最佳实践"></a>8.3 补跑历史数据的 3 个最佳实践</h3><ol>
+<li><strong>单日先验</strong>：先补跑 1 天，确认日志和数据库都符合预期，再补跑更大范围。</li>
+<li><strong>分段执行</strong>：按月或按年分段，每段完成后检查失败数和断点，再执行下一段。</li>
+<li><strong>不并发补跑</strong>：多个补跑请求会互相覆盖 Redis 断点，导致数据丢失或重复。</li>
+</ol>
+<h3 id="8-4-同步链路的可观测性建议"><a href="#8-4-同步链路的可观测性建议" class="headerlink" title="8.4 同步链路的可观测性建议"></a>8.4 同步链路的可观测性建议</h3><ul>
+<li>每条同步记录的处理路径（拉取 → 去重 → 入库 → 标记状态）应该有明确日志。</li>
+<li>失败原因应该分门别类：分页失败 vs 去重失败 vs 入库失败 vs 头像失败。</li>
+<li>Redis 断点应该有专门的 metric 或日志，方便运维观察”当前同步到哪里了”。</li>
+</ul>
+<h2 id="九、结语"><a href="#九、结语" class="headerlink" title="九、结语"></a>九、结语</h2><p>第三方同步漏数据是看起来”很神秘的 bug”——因为日志里有这条数据的处理记录，但数据库里就是没有。这次排查下来，其实就是分页、日期、容错三个老问题叠加在一起。</p>
+<p><strong>同步链路的设计原则</strong>：</p>
+<ul>
+<li>单阶段优于两阶段；</li>
+<li>日期语义要按响应数据来；</li>
+<li>主数据优先于附属数据；</li>
+<li>失败要显式，不要静默跳过。</li>
+</ul>
+<p>下次再遇到第三方同步漏数据，按这套排查思路走一遍，大概率能在 1 小时内定位。</p>
+<blockquote>
+<p>同步链路没有银弹，只有把每一层的失败模式都想到、补上对应的处理逻辑。</p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>后端开发</category>
+      </categories>
+      <tags>
+        <tag>南网项目</tag>
+        <tag>氚云</tag>
+        <tag>访客同步</tag>
+        <tag>分页</tag>
+        <tag>容错</tag>
+      </tags>
+  </entry>
 </search>

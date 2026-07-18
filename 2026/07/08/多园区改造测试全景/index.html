@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="多园区改造不是改几个字段那么简单。登录态、菜单、角色、同步链路、业务数据、回归兼容——任何一个模块漏测，都可能在生产里埋雷。本文把改造测试要覆盖的 7 大模块完整拆开。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="多园区改造测试全景：从登录到业务隔离的 7 大模块验证清单">
+<meta property="og:url" content="https://zhlifeiy.codes/2026/07/08/%E5%A4%9A%E5%9B%AD%E5%8C%BA%E6%94%B9%E9%80%A0%E6%B5%8B%E8%AF%95%E5%85%A8%E6%99%AF/index.html">
+<meta property="og:site_name" content="我的技术博客">
+<meta property="og:description" content="多园区改造不是改几个字段那么简单。登录态、菜单、角色、同步链路、业务数据、回归兼容——任何一个模块漏测，都可能在生产里埋雷。本文把改造测试要覆盖的 7 大模块完整拆开。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/multi-park-test-cover.png">
+<meta property="article:published_time" content="2026-07-08T09:15:00.000Z">
+<meta property="article:modified_time" content="2026-07-18T03:07:08.310Z">
+<meta property="article:author" content="zhlifeiy35">
+<meta property="article:tag" content="多园区">
+<meta property="article:tag" content="南网项目">
+<meta property="article:tag" content="测试计划">
+<meta property="article:tag" content="越权校验">
+<meta property="article:tag" content="数据隔离">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/multi-park-test-cover.png">
+
+
+<link rel="canonical" href="https://zhlifeiy.codes/2026/07/08/%E5%A4%9A%E5%9B%AD%E5%8C%BA%E6%94%B9%E9%80%A0%E6%B5%8B%E8%AF%95%E5%85%A8%E6%99%AF/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://zhlifeiy.codes/2026/07/08/%E5%A4%9A%E5%9B%AD%E5%8C%BA%E6%94%B9%E9%80%A0%E6%B5%8B%E8%AF%95%E5%85%A8%E6%99%AF/","path":"2026/07/08/多园区改造测试全景/","title":"多园区改造测试全景：从登录到业务隔离的 7 大模块验证清单"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>多园区改造测试全景：从登录到业务隔离的 7 大模块验证清单 | 我的技术博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">我的技术博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">记录学习与成长</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-guestbook"><a href="/guestbook/" rel="section"><i class="fa fa-comment-dots fa-fw"></i>留言板</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link"><span class="nav-number">1.</span> <span class="nav-text">🎧 文章导读</span></a></li><li class="nav-item nav-level-4"><a class="nav-link"><span class="nav-number">2.</span> <span class="nav-text">🎵 背景音乐</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E7%9B%AE%E6%A0%87%E4%B8%8E%E8%BE%B9%E7%95%8C"><span class="nav-number"></span> <span class="nav-text">一、目标与边界</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-%E6%9C%AC%E8%BD%AE%E6%B5%8B%E8%AF%95%E8%A6%81%E7%A1%AE%E8%AE%A4%E7%9A%84%E4%B8%89%E4%BB%B6%E4%BA%8B"><span class="nav-number"></span> <span class="nav-text">1.1 本轮测试要确认的三件事</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-2-%E4%B8%8D%E6%B5%8B%E4%BB%80%E4%B9%88"><span class="nav-number"></span> <span class="nav-text">1.2 不测什么</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E6%B5%8B%E8%AF%95%E5%89%8D%E5%87%86%E5%A4%87%EF%BC%9A%E7%8E%AF%E5%A2%83%E3%80%81%E8%B4%A6%E5%8F%B7%E3%80%81SQL-%E8%87%AA%E6%A3%80"><span class="nav-number"></span> <span class="nav-text">二、测试前准备：环境、账号、SQL 自检</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-%E7%8E%AF%E5%A2%83%E5%92%8C%E5%9F%BA%E7%A1%80%E6%95%B0%E6%8D%AE"><span class="nav-number"></span> <span class="nav-text">2.1 环境和基础数据</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-%E6%B5%8B%E8%AF%95%E5%89%8D%E7%9A%84-SQL-%E8%87%AA%E6%A3%80%E6%B8%85%E5%8D%95"><span class="nav-number"></span> <span class="nav-text">2.2 测试前的 SQL 自检清单</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%817-%E5%A4%A7%E6%B5%8B%E8%AF%95%E6%A8%A1%E5%9D%97%E6%8B%86%E8%A7%A3"><span class="nav-number"></span> <span class="nav-text">三、7 大测试模块拆解</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#A-%E7%99%BB%E5%BD%95%E4%B8%8E%E5%BD%93%E5%89%8D%E5%9B%AD%E5%8C%BA%E4%B8%8A%E4%B8%8B%E6%96%87"><span class="nav-number"></span> <span class="nav-text">A. 登录与当前园区上下文</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#B-%E7%94%A8%E6%88%B7%E6%89%80%E5%B1%9E%E5%9B%AD%E5%8C%BA"><span class="nav-number"></span> <span class="nav-text">B. 用户所属园区</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#C-%E8%A7%92%E8%89%B2%E7%AE%A1%E7%90%86%E5%9B%AD%E5%8C%BA"><span class="nav-number"></span> <span class="nav-text">C. 角色管理园区</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#D-%E7%94%A8%E6%88%B7%E8%A7%92%E8%89%B2%E5%88%86%E9%85%8D"><span class="nav-number"></span> <span class="nav-text">D. 用户角色分配</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#E-%E5%9B%AD%E5%8C%BA%E7%AE%A1%E7%90%86%E5%91%98%E5%88%97%E8%A1%A8"><span class="nav-number"></span> <span class="nav-text">E. 园区管理员列表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#F-%E9%92%89%E9%92%89%E5%90%8C%E6%AD%A5%E5%88%B0%E7%94%A8%E6%88%B7%E5%9B%AD%E5%8C%BA"><span class="nav-number"></span> <span class="nav-text">F. 钉钉同步到用户园区</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#G-sys-user-%E5%88%B0-pass-user-%E5%90%8C%E6%AD%A5"><span class="nav-number"></span> <span class="nav-text">G. sys_user 到 pass_user 同步</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#H-%E4%B8%9A%E5%8A%A1%E6%95%B0%E6%8D%AE%E5%9B%AD%E5%8C%BA%E9%9A%94%E7%A6%BB"><span class="nav-number"></span> <span class="nav-text">H. 业务数据园区隔离</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#I-%E5%89%8D%E7%AB%AF%E9%A1%B5%E9%9D%A2%E8%81%94%E8%B0%83"><span class="nav-number"></span> <span class="nav-text">I. 前端页面联调</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#J-%E5%9B%9E%E5%BD%92%E6%B5%8B%E8%AF%95"><span class="nav-number"></span> <span class="nav-text">J. 回归测试</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E6%B5%8B%E8%AF%95%E4%BC%98%E5%85%88%E7%BA%A7"><span class="nav-number"></span> <span class="nav-text">四、测试优先级</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E4%B8%8A%E7%BA%BF%E5%89%8D%E6%9C%80%E5%90%8E%E6%A3%80%E6%9F%A5-SQL"><span class="nav-number"></span> <span class="nav-text">五、上线前最后检查 SQL</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%AD%E3%80%81%E7%BB%8F%E9%AA%8C%E6%80%BB%E7%BB%93"><span class="nav-number"></span> <span class="nav-text">六、经验总结</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#6-1-%E4%B8%89%E4%B8%AA%E6%9C%80%E5%AE%B9%E6%98%93%E6%BC%8F%E7%9A%84%E6%B5%8B%E8%AF%95%E5%9C%BA%E6%99%AF"><span class="nav-number"></span> <span class="nav-text">6.1 三个最容易漏的测试场景</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-2-%E7%BC%96%E5%86%99%E6%B5%8B%E8%AF%95%E7%94%A8%E4%BE%8B%E7%9A%84%E4%B8%89%E4%B8%AA%E5%8E%9F%E5%88%99"><span class="nav-number"></span> <span class="nav-text">6.2 编写测试用例的三个原则</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-3-%E6%B5%8B%E8%AF%95%E8%AE%B0%E5%BD%95%E6%A8%A1%E6%9D%BF"><span class="nav-number"></span> <span class="nav-text">6.3 测试记录模板</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%83%E3%80%81%E7%BB%93%E8%AF%AD"><span class="nav-number"></span> <span class="nav-text">七、结语</span></a></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zhlifeiy35</p>
+  <div class="site-description" itemprop="description">分享编程技术、AI经验、学习笔记</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">56</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">18</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">191</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zhdmm35" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zhdmm35" rel="noopener me" target="_blank"><i class="fa fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/multi-park-test-cover.png" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/07/08/%E5%A4%9A%E5%9B%AD%E5%8C%BA%E6%94%B9%E9%80%A0%E6%B5%8B%E8%AF%95%E5%85%A8%E6%99%AF/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="我的技术博客">
+      <meta itemprop="description" content="分享编程技术、AI经验、学习笔记">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="多园区改造测试全景：从登录到业务隔离的 7 大模块验证清单 | 我的技术博客">
+      <meta itemprop="description" content="多园区改造不是改几个字段那么简单。登录态、菜单、角色、同步链路、业务数据、回归兼容——任何一个模块漏测，都可能在生产里埋雷。本文把改造测试要覆盖的 7 大模块完整拆开。">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          多园区改造测试全景：从登录到业务隔离的 7 大模块验证清单
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-07-08 17:15:00" itemprop="dateCreated datePublished" datetime="2026-07-08T17:15:00+08:00">2026-07-08</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-07-18 11:07:08" itemprop="dateModified" datetime="2026-07-18T11:07:08+08:00">2026-07-18</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%B5%8B%E8%AF%95/" itemprop="url" rel="index"><span itemprop="name">测试</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+            <div class="post-description">多园区改造不是改几个字段那么简单。登录态、菜单、角色、同步链路、业务数据、回归兼容——任何一个模块漏测，都可能在生产里埋雷。本文把改造测试要覆盖的 7 大模块完整拆开。</div>
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>多园区改造真正难的不是写代码，而是<strong>怎么证明它没漏</strong>。登录态、菜单、角色、同步链路、业务数据、回归兼容——任何一个模块漏测，都可能在生产里埋雷。</p>
+<p>本文把改造测试要覆盖的 <strong>7 大模块、3 个优先级、5 条上线前最后检查</strong>完整拆开。无论你是第一次做多园区改造，还是已经在做第 N 次，这套清单都能直接复用。</p>
+<span id="more"></span>
+
+<div class="audio-player">
+  <div class="audio-section">
+    <h4>🎧 文章导读</h4>
+    <audio controls preload="metadata">
+      <source src="/audio/多园区改造测试全景/narration.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+  <div class="audio-section">
+    <h4>🎵 背景音乐</h4>
+    <audio controls loop preload="metadata">
+      <source src="/audio/多园区改造测试全景/bgm.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+</div>
+
+<p><img src="/images/posts/%E5%A4%9A%E5%9B%AD%E5%8C%BA%E6%94%B9%E9%80%A0%E6%B5%8B%E8%AF%95%E5%85%A8%E6%99%AF/fig1.png" alt="多园区改造 7 大测试模块一览"></p>
+<p><em>图1：从登录到业务隔离的 7 大测试模块全景</em></p>
+<h2 id="一、目标与边界"><a href="#一、目标与边界" class="headerlink" title="一、目标与边界"></a>一、目标与边界</h2><h3 id="1-1-本轮测试要确认的三件事"><a href="#1-1-本轮测试要确认的三件事" class="headerlink" title="1.1 本轮测试要确认的三件事"></a>1.1 本轮测试要确认的三件事</h3><p>多园区改造后，所有跨园区逻辑都要”按当前园区生效”，但<strong>不能</strong>把 A 园区的数据、角色、设备下发到 B 园区。本轮重点确认：</p>
+<ol>
+<li>登录用户能看到、能切换的园区范围正确。</li>
+<li>切换园区后，角色、菜单、人员、业务列表都按当前 <code>park_id</code> 生效。</li>
+<li>钉钉同步、<code>sys_user_park</code>、<code>pass_user</code>、设备下发状态没有因为多园区改造产生脏数据或跨园区下发。</li>
+</ol>
+<h3 id="1-2-不测什么"><a href="#1-2-不测什么" class="headerlink" title="1.2 不测什么"></a>1.2 不测什么</h3><p>明确不测的边界，让团队对齐预期：</p>
+<table>
+<thead>
+<tr>
+<th>不测项</th>
+<th>原因</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>全量性能压测</td>
+<td>本轮只做关键列表分页和批量同步的抽样观察</td>
+</tr>
+<tr>
+<td>历史业务字段全覆盖</td>
+<td>只看多园区相关字段是否影响原有主流程</td>
+</tr>
+<tr>
+<td>自动化测试框架新建</td>
+<td>本轮以接口 + SQL + 前端手工验证为主</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>没有”测全”的项目，只有”够用 + 关键路径有保障”的项目。多园区改造的测试，第一优先级永远是<strong>越权和跨园区下发</strong>。</p>
+</blockquote>
+<h2 id="二、测试前准备：环境、账号、SQL-自检"><a href="#二、测试前准备：环境、账号、SQL-自检" class="headerlink" title="二、测试前准备：环境、账号、SQL 自检"></a>二、测试前准备：环境、账号、SQL 自检</h2><h3 id="2-1-环境和基础数据"><a href="#2-1-环境和基础数据" class="headerlink" title="2.1 环境和基础数据"></a>2.1 环境和基础数据</h3><p>启动 <code>service-gateway</code>、<code>admin-service</code>、<code>through-service</code>，按需再起 <code>property-service</code>、<code>security-service</code>、<code>env-service</code>。dev 环境走网关请求时带 <code>devDebug=1</code>：</p>
+<figure class="highlight http"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://127.0.0.1:&lt;gateway-port&gt;/gateway/admin/xxx?devDebug=1</span><br></pre></td></tr></table></figure>
+
+<p>准备两个有效园区 + 一个租户：</p>
+<table>
+<thead>
+<tr>
+<th>标识</th>
+<th>含义</th>
+<th>要求</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>PARK_A</td>
+<td>主测园区 A</td>
+<td>有用户、角色、设备&#x2F;业务数据</td>
+</tr>
+<tr>
+<td>PARK_B</td>
+<td>对照园区 B</td>
+<td>有不同用户、角色、设备&#x2F;业务数据</td>
+</tr>
+<tr>
+<td>TENANT_1</td>
+<td>当前租户</td>
+<td>两个园区同租户，方便排除租户变量</td>
+</tr>
+</tbody></table>
+<p>准备测试账号矩阵：</p>
+<table>
+<thead>
+<tr>
+<th>用户</th>
+<th>数据要求</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>super_admin</code></td>
+<td>可看全部或管理多个园区</td>
+<td>验证管理端全量能力</td>
+</tr>
+<tr>
+<td><code>admin_a</code></td>
+<td>只属于 PARK_A</td>
+<td>验证单园区隔离</td>
+</tr>
+<tr>
+<td><code>admin_b</code></td>
+<td>只属于 PARK_B</td>
+<td>验证单园区隔离</td>
+</tr>
+<tr>
+<td><code>admin_ab</code></td>
+<td>同时属于 PARK_A、PARK_B</td>
+<td>验证园区切换</td>
+</tr>
+<tr>
+<td><code>normal_a</code></td>
+<td>PARK_A 普通用户</td>
+<td>验证无管理权限场景</td>
+</tr>
+<tr>
+<td><code>ding_user</code></td>
+<td>钉钉同步用户</td>
+<td>验证 <code>sys_user_park</code> 和 <code>pass_user</code></td>
+</tr>
+</tbody></table>
+<p>准备角色矩阵：</p>
+<table>
+<thead>
+<tr>
+<th>角色</th>
+<th>数据要求</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>role_a</code></td>
+<td><code>sys_role.park_id = PARK_A</code></td>
+<td>A 园区角色</td>
+</tr>
+<tr>
+<td><code>role_b</code></td>
+<td><code>sys_role.park_id = PARK_B</code></td>
+<td>B 园区角色</td>
+</tr>
+<tr>
+<td><code>role_manage_ab</code></td>
+<td>所属园区为 PARK_A，管理园区包含 PARK_B</td>
+<td>验证角色管理园区</td>
+</tr>
+<tr>
+<td><code>role_global_or_empty</code></td>
+<td>如项目存在空园区&#x2F;通用角色</td>
+<td>验证兼容历史数据</td>
+</tr>
+</tbody></table>
+<h3 id="2-2-测试前的-SQL-自检清单"><a href="#2-2-测试前的-SQL-自检清单" class="headerlink" title="2.2 测试前的 SQL 自检清单"></a>2.2 测试前的 SQL 自检清单</h3><p>测试前先跑这 4 条 SQL，<strong>预期前 3 条返回 0 行</strong>：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 1. 用户所属园区关系不能重复</span></span><br><span class="line"><span class="keyword">SELECT</span> user_id, park_id, <span class="built_in">COUNT</span>(<span class="operator">*</span>) cnt</span><br><span class="line"><span class="keyword">FROM</span> sys_user_park</span><br><span class="line"><span class="keyword">WHERE</span> delete_flag <span class="operator">=</span> <span class="string">&#x27;0&#x27;</span></span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span> user_id, park_id</span><br><span class="line"><span class="keyword">HAVING</span> cnt <span class="operator">&gt;</span> <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 2. 用户角色同一园区内不能重复</span></span><br><span class="line"><span class="keyword">SELECT</span> user_id, role_id, park_id, <span class="built_in">COUNT</span>(<span class="operator">*</span>) cnt</span><br><span class="line"><span class="keyword">FROM</span> sys_user_role</span><br><span class="line"><span class="keyword">WHERE</span> delete_flag <span class="operator">=</span> <span class="string">&#x27;0&#x27;</span></span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span> user_id, role_id, park_id</span><br><span class="line"><span class="keyword">HAVING</span> cnt <span class="operator">&gt;</span> <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 3. 用户角色指向的园区应存在</span></span><br><span class="line"><span class="keyword">SELECT</span> ur.user_id, ur.role_id, ur.park_id</span><br><span class="line"><span class="keyword">FROM</span> sys_user_role ur</span><br><span class="line"><span class="keyword">LEFT</span> <span class="keyword">JOIN</span> sys_park p <span class="keyword">ON</span> p.park_id <span class="operator">=</span> ur.park_id <span class="keyword">AND</span> p.delete_flag <span class="operator">=</span> <span class="string">&#x27;0&#x27;</span></span><br><span class="line"><span class="keyword">WHERE</span> ur.delete_flag <span class="operator">=</span> <span class="string">&#x27;0&#x27;</span></span><br><span class="line">  <span class="keyword">AND</span> ur.park_id <span class="keyword">IS</span> <span class="keyword">NOT NULL</span></span><br><span class="line">  <span class="keyword">AND</span> ur.park_id <span class="operator">&lt;&gt;</span> <span class="string">&#x27;&#x27;</span></span><br><span class="line">  <span class="keyword">AND</span> p.park_id <span class="keyword">IS</span> <span class="keyword">NULL</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 4. pass_user 的园区不能为空（除非明确是历史占位数据）</span></span><br><span class="line"><span class="keyword">SELECT</span> user_id, user_name, phone, park_id, delete_flag, dist_sync_status</span><br><span class="line"><span class="keyword">FROM</span> pass_user</span><br><span class="line"><span class="keyword">WHERE</span> delete_flag <span class="operator">=</span> <span class="string">&#x27;0&#x27;</span></span><br><span class="line">  <span class="keyword">AND</span> (park_id <span class="keyword">IS</span> <span class="keyword">NULL</span> <span class="keyword">OR</span> park_id <span class="operator">=</span> <span class="string">&#x27;&#x27;</span>);</span><br></pre></td></tr></table></figure>
+
+<p>第 4 条如有历史数据，要先标记出来——后续测试不要混入这些账号，否则测试结果会被脏数据污染。</p>
+<h2 id="三、7-大测试模块拆解"><a href="#三、7-大测试模块拆解" class="headerlink" title="三、7 大测试模块拆解"></a>三、7 大测试模块拆解</h2><h3 id="A-登录与当前园区上下文"><a href="#A-登录与当前园区上下文" class="headerlink" title="A. 登录与当前园区上下文"></a>A. 登录与当前园区上下文</h3><p><strong>目的</strong>：登录态下的园区上下文必须可信，切换园区不能错位。</p>
+<table>
+<thead>
+<tr>
+<th>用例</th>
+<th>操作</th>
+<th>预期</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>A1 单园区用户登录</td>
+<td>用 <code>admin_a</code> 登录并查 <code>/user/info</code></td>
+<td>当前园区为 PARK_A；园区列表只包含 PARK_A；不出现 PARK_B 的角色、园区名、业务数据</td>
+</tr>
+<tr>
+<td>A2 多园区用户登录</td>
+<td>用 <code>admin_ab</code> 登录</td>
+<td>园区列表包含 PARK_A、PARK_B；默认园区有明确规则，不能随机跳；当前园区字段、角色列表、菜单列表三者一致</td>
+</tr>
+<tr>
+<td>A3 切换园区</td>
+<td><code>admin_ab</code> 切到 PARK_B，再切回 PARK_A</td>
+<td>切到 PARK_B 后只返回 PARK_B 下生效的角色和数据；切回 PARK_A 后恢复 PARK_A 的角色和数据；刷新页面后当前园区不丢失</td>
+</tr>
+<tr>
+<td>A4 非授权园区切换</td>
+<td><code>admin_a</code> 调用切换接口传 PARK_B；用不存在&#x2F;已删除的 <code>park_id</code> 再调一次</td>
+<td>接口失败；当前园区不变；不新增 <code>sys_user_role</code>、<code>sys_user_park</code>、缓存上下文等脏数据</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>A4 是越权拦截的关键用例</strong>。如果非授权 <code>parkId</code> 没被拦下，会被切园区到其他园区——这是上线后最容易出安全事件的入口。</p>
+</blockquote>
+<h3 id="B-用户所属园区"><a href="#B-用户所属园区" class="headerlink" title="B. 用户所属园区"></a>B. 用户所属园区</h3><table>
+<thead>
+<tr>
+<th>用例</th>
+<th>关键校验</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>B1 用户列表展示所属园区</td>
+<td><code>userParkIds</code>、<code>userParkName</code> 与权限范围一致；多园区用户的园区名称和 ID 顺序一致；PARK_B-only 用户不会因为无关角色混进 PARK_A 结果</td>
+</tr>
+<tr>
+<td>B2 编辑用户所属园区</td>
+<td>给 <code>normal_a</code> 增加 PARK_B 后 <code>sys_user_park</code> 出现两条有效关系；移除 PARK_B 后软删；重复保存不会产生重复有效行</td>
+</tr>
+<tr>
+<td>B3 删除或停用用户</td>
+<td>停用用户不能登录；相关有效关系不再让该用户进入园区；不误删其他用户的 <code>sys_user_park</code> 或 <code>sys_user_role</code></td>
+</tr>
+</tbody></table>
+<h3 id="C-角色管理园区"><a href="#C-角色管理园区" class="headerlink" title="C. 角色管理园区"></a>C. 角色管理园区</h3><table>
+<thead>
+<tr>
+<th>用例</th>
+<th>关键校验</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>C1 创建&#x2F;编辑角色所属园区</td>
+<td><code>sys_role.park_id = PARK_A</code>；PARK_B 普通管理员不可见或不可操作</td>
+</tr>
+<tr>
+<td>C2 配置角色管理园区</td>
+<td><code>sys_role_park</code> 有唯一有效的 <code>(role_id, PARK_B)</code>；重复保存不产生重复行；删除后接口不再返回 PARK_B</td>
+</tr>
+<tr>
+<td>C3 角色列表字段</td>
+<td>所属园区和管理园区不混淆；搜索和分页不会破坏园区过滤；软删园区或软删角色不出现在有效结果中</td>
+</tr>
+</tbody></table>
+<h3 id="D-用户角色分配"><a href="#D-用户角色分配" class="headerlink" title="D. 用户角色分配"></a>D. 用户角色分配</h3><p>这是<strong>最容易出问题</strong>的模块。多园区用户的角色关系要按 <code>(user_id, role_id, park_id)</code> 区分，否则切园区时菜单会乱套。</p>
+<table>
+<thead>
+<tr>
+<th>用例</th>
+<th>关键校验</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>D1 单园区分配角色</td>
+<td>只新增&#x2F;更新 <code>(normal_a, role_a, PARK_A)</code>；PARK_B 没有被写入同角色关系</td>
+</tr>
+<tr>
+<td>D2 同一用户多园区分配同一角色</td>
+<td><code>sys_user_role</code> 按 <code>user_id + role_id + park_id</code> 区分；切 PARK_A 只加载 PARK_A 的角色，切 PARK_B 只加载 PARK_B 的角色</td>
+</tr>
+<tr>
+<td>D3 清空某园区角色</td>
+<td>对 <code>admin_ab</code> 调用角色保存接口，<code>parkId = PARK_A</code>，角色列表为空——只清空 PARK_A 的角色，PARK_B 不受影响</td>
+</tr>
+<tr>
+<td>D4 非授权园区角色分配</td>
+<td>接口拒绝；不写入 <code>sys_user_role</code>；错误提示可定位到无权限或园区不合法</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>D3 是验证”清空不影响其他园区”的关键。如果代码里写错 <code>DELETE WHERE user_id = ?</code>（不带 park_id），整个用户的所有园区角色都会被清空，这是上线后常见的回归 bug。</p>
+</blockquote>
+<h3 id="E-园区管理员列表"><a href="#E-园区管理员列表" class="headerlink" title="E. 园区管理员列表"></a>E. 园区管理员列表</h3><table>
+<thead>
+<tr>
+<th>用例</th>
+<th>关键校验</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>E1 查询某园区管理员</td>
+<td>PARK_A 只返回 <code>sys_user_role.park_id = PARK_A</code> 的有效用户角色；已删除用户、已删除角色、孤立 user_id 不返回；排序按绑定时间倒序</td>
+</tr>
+<tr>
+<td>E2 手机号&#x2F;用户名展示</td>
+<td>手机号如有加密，接口返回前端期望的明文或脱敏格式；角色名、园区名和 ID 对得上</td>
+</tr>
+</tbody></table>
+<h3 id="F-钉钉同步到用户园区"><a href="#F-钉钉同步到用户园区" class="headerlink" title="F. 钉钉同步到用户园区"></a>F. 钉钉同步到用户园区</h3><p>钉钉同步是”数据进入系统的入口”，错了之后下游所有模块都会脏。</p>
+<table>
+<thead>
+<tr>
+<th>用例</th>
+<th>关键校验</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>F1 有部门用户同步</td>
+<td><code>sys_user_park.park_id = PARK_A</code>；<code>sys_user_park.org_id</code> 存公司级组织 ID；重复同步不产生重复有效关系</td>
+</tr>
+<tr>
+<td>F2 多部门&#x2F;跨园区用户同步</td>
+<td>用户能得到 PARK_A、PARK_B 两个有效园区关系；登录后可切换两个园区；每个园区下角色仍按 <code>sys_user_role.park_id</code> 决定</td>
+</tr>
+<tr>
+<td>F3 无法识别园区的钉钉用户</td>
+<td>不写错误的默认 <code>park_id</code>；不生成空 <code>park_id</code> 的 <code>sys_user_park</code>；日志能说明跳过原因</td>
+</tr>
+</tbody></table>
+<h3 id="G-sys-user-到-pass-user-同步"><a href="#G-sys-user-到-pass-user-同步" class="headerlink" title="G. sys_user 到 pass_user 同步"></a>G. sys_user 到 pass_user 同步</h3><p>这是设备下发的源头。如果 <code>pass_user.park_id</code> 错了，门禁&#x2F;车行下发就会拿错人员。</p>
+<table>
+<thead>
+<tr>
+<th>用例</th>
+<th>关键校验</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>G1 新用户同步到 pass_user</td>
+<td>新增 <code>pass_user.park_id = PARK_A</code>；<code>delete_flag = &#39;0&#39;</code>；需要下发设备时 <code>dist_sync_status = &#39;PENDING&#39;</code></td>
+</tr>
+<tr>
+<td>G2 已存在 pass_user 更新</td>
+<td>只更新发生变化的字段；园区变更能同步到 <code>pass_user.park_id</code>；需要重新下发时才标记 <code>PENDING</code></td>
+</tr>
+<tr>
+<td>G3 多园区用户 pass_user 策略</td>
+<td>一人一条时必须有明确主园区；一人多园区时必须每条能区分园区；不允许同一设备下发拿错园区人员</td>
+</tr>
+<tr>
+<td>G4 软删用户同步</td>
+<td><code>pass_user</code> 按项目约定软删或停用；已软删记录不被下发任务重新捞起；<code>findByDistSyncStatus(&#39;PENDING&#39;)</code> 不返回 <code>delete_flag != &#39;0&#39;</code> 的人员</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>G3 在产品未定义一人多园区下发策略时，<strong>要标为待确认，不要强行验收</strong>。强行写死策略反而会埋雷。</p>
+</blockquote>
+<h3 id="H-业务数据园区隔离"><a href="#H-业务数据园区隔离" class="headerlink" title="H. 业务数据园区隔离"></a>H. 业务数据园区隔离</h3><p>每个已改造业务模块至少抽 <strong>2 个列表、1 个新增、1 个详情、1 个编辑</strong>。优先测经常被首页或大屏使用的接口。</p>
+<p><img src="/images/posts/%E5%A4%9A%E5%9B%AD%E5%8C%BA%E6%94%B9%E9%80%A0%E6%B5%8B%E8%AF%95%E5%85%A8%E6%99%AF/fig2.png" alt="业务数据园区隔离的多服务矩阵"></p>
+<p><em>图2：admin&#x2F;through&#x2F;property&#x2F;security&#x2F;env 各业务的园区隔离验证矩阵</em></p>
+<table>
+<thead>
+<tr>
+<th>用例</th>
+<th>关键校验</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>H1 列表隔离</td>
+<td>PARK_A 只返回 A 数据；PARK_B 只返回 B 数据；不传 <code>park_id</code> 时以后端当前园区为准，不让前端伪造越权</td>
+</tr>
+<tr>
+<td>H2 新增数据自动带当前园区</td>
+<td>新增记录的 <code>park_id</code> 等于当前园区；前端传其他 <code>park_id</code> 时，后端按权限规则覆盖或拒绝，不能越权写入</td>
+</tr>
+<tr>
+<td>H3 详情&#x2F;编辑&#x2F;删除越权</td>
+<td>在 PARK_A 下拿 PARK_B 数据 ID 调详情 → 不可见或返回无权限；编辑、删除失败；数据库无变化</td>
+</tr>
+<tr>
+<td>H4 DEFAULT_PARK_ID 回归</td>
+<td>重点检查 env、security、through 里历史写死 <code>DEFAULT_PARK_ID</code> 的入口；走新增或同步入口，查数据库实际 <code>park_id</code>；已改造入口不再写死默认园区</td>
+</tr>
+</tbody></table>
+<h3 id="I-前端页面联调"><a href="#I-前端页面联调" class="headerlink" title="I. 前端页面联调"></a>I. 前端页面联调</h3><p>前端是用户接触的第一线，错位显示（菜单列表与数据不一致）会直接被业务方发现。</p>
+<table>
+<thead>
+<tr>
+<th>用例</th>
+<th>关键校验</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>I1 顶部园区切换器</td>
+<td>切换器显示当前园区；列表自动刷新或提示刷新；刷新后当前园区符合产品约定</td>
+</tr>
+<tr>
+<td>I2 用户&#x2F;角色页面</td>
+<td>字段展示完整，不错位；下拉园区来源符合接口返回；保存后页面立即反映最新关系</td>
+</tr>
+<tr>
+<td>I3 无权限提示</td>
+<td>前端不展示无权限按钮或页面；后端仍然拒绝越权请求；提示不暴露敏感数据</td>
+</tr>
+</tbody></table>
+<h3 id="J-回归测试"><a href="#J-回归测试" class="headerlink" title="J. 回归测试"></a>J. 回归测试</h3><table>
+<thead>
+<tr>
+<th>用例</th>
+<th>关键校验</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>J1 原单园区流程</td>
+<td>操作路径和改造前一致；不因为多园区字段必填导致老流程失败</td>
+</tr>
+<tr>
+<td>J2 历史空 park_id 数据</td>
+<td>产品明确允许的通用数据仍可用；不允许的空园区数据不应出现在普通园区视图；需要清洗的数据单独列清单</td>
+</tr>
+<tr>
+<td>J3 分页和搜索</td>
+<td>count 和列表使用同一园区过滤条件；搜索不会绕过园区过滤；排序稳定</td>
+</tr>
+</tbody></table>
+<h2 id="四、测试优先级"><a href="#四、测试优先级" class="headerlink" title="四、测试优先级"></a>四、测试优先级</h2><table>
+<thead>
+<tr>
+<th>优先级</th>
+<th>模块</th>
+<th>失败影响</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>第一优先级</td>
+<td>A、D、G、H3</td>
+<td>越权或下发错误（<strong>绝对不能漏</strong>）</td>
+</tr>
+<tr>
+<td>第二优先级</td>
+<td>B、C、E、F</td>
+<td>管理端使用和同步准确性</td>
+</tr>
+<tr>
+<td>第三优先级</td>
+<td>I、J</td>
+<td>联调体验和历史兼容</td>
+</tr>
+</tbody></table>
+<p>如果时间只够半天，最低限度要跑：</p>
+<ol>
+<li><code>admin_a</code> 不能切 PARK_B。</li>
+<li><code>admin_ab</code> 切 PARK_A&#x2F;PARK_B 后菜单和业务列表变化正确。</li>
+<li>给同一用户分别保存 PARK_A、PARK_B 角色，互不覆盖。</li>
+<li>清空 PARK_A 角色不影响 PARK_B。</li>
+<li>钉钉同步用户能写入 <code>sys_user_park</code>。</li>
+<li><code>pass_user</code> 没有空 <code>park_id</code>，新增或变更用户的下发状态符合预期。</li>
+<li>PARK_A 下不能详情、编辑、删除 PARK_B 数据。</li>
+</ol>
+<h2 id="五、上线前最后检查-SQL"><a href="#五、上线前最后检查-SQL" class="headerlink" title="五、上线前最后检查 SQL"></a>五、上线前最后检查 SQL</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 1. 重复用户园区关系</span></span><br><span class="line"><span class="keyword">SELECT</span> user_id, park_id, <span class="built_in">COUNT</span>(<span class="operator">*</span>) cnt</span><br><span class="line"><span class="keyword">FROM</span> sys_user_park</span><br><span class="line"><span class="keyword">WHERE</span> delete_flag <span class="operator">=</span> <span class="string">&#x27;0&#x27;</span></span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span> user_id, park_id</span><br><span class="line"><span class="keyword">HAVING</span> cnt <span class="operator">&gt;</span> <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 2. 重复用户角色关系</span></span><br><span class="line"><span class="keyword">SELECT</span> user_id, role_id, park_id, <span class="built_in">COUNT</span>(<span class="operator">*</span>) cnt</span><br><span class="line"><span class="keyword">FROM</span> sys_user_role</span><br><span class="line"><span class="keyword">WHERE</span> delete_flag <span class="operator">=</span> <span class="string">&#x27;0&#x27;</span></span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span> user_id, role_id, park_id</span><br><span class="line"><span class="keyword">HAVING</span> cnt <span class="operator">&gt;</span> <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 3. 角色管理园区重复</span></span><br><span class="line"><span class="keyword">SELECT</span> role_id, park_id, <span class="built_in">COUNT</span>(<span class="operator">*</span>) cnt</span><br><span class="line"><span class="keyword">FROM</span> sys_role_park</span><br><span class="line"><span class="keyword">WHERE</span> delete_flag <span class="operator">=</span> <span class="string">&#x27;0&#x27;</span></span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span> role_id, park_id</span><br><span class="line"><span class="keyword">HAVING</span> cnt <span class="operator">&gt;</span> <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 4. 有效 pass_user 空园区</span></span><br><span class="line"><span class="keyword">SELECT</span> user_id, user_name, phone, park_id, dist_sync_status</span><br><span class="line"><span class="keyword">FROM</span> pass_user</span><br><span class="line"><span class="keyword">WHERE</span> delete_flag <span class="operator">=</span> <span class="string">&#x27;0&#x27;</span></span><br><span class="line">  <span class="keyword">AND</span> (park_id <span class="keyword">IS</span> <span class="keyword">NULL</span> <span class="keyword">OR</span> park_id <span class="operator">=</span> <span class="string">&#x27;&#x27;</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 5. 可能被园区切换拦住的历史用户角色</span></span><br><span class="line"><span class="keyword">SELECT</span> ur.user_id, ur.role_id, ur.park_id</span><br><span class="line"><span class="keyword">FROM</span> sys_user_role ur</span><br><span class="line"><span class="keyword">WHERE</span> ur.delete_flag <span class="operator">=</span> <span class="string">&#x27;0&#x27;</span></span><br><span class="line">  <span class="keyword">AND</span> ur.park_id <span class="keyword">IS</span> <span class="keyword">NOT NULL</span></span><br><span class="line">  <span class="keyword">AND</span> ur.park_id <span class="operator">&lt;&gt;</span> <span class="string">&#x27;&#x27;</span></span><br><span class="line">  <span class="keyword">AND</span> <span class="keyword">NOT</span> <span class="keyword">EXISTS</span> (<span class="keyword">SELECT</span> <span class="number">1</span> <span class="keyword">FROM</span> sys_role r <span class="keyword">WHERE</span> r.role_id <span class="operator">=</span> ur.role_id <span class="keyword">AND</span> r.park_id <span class="operator">=</span> ur.park_id <span class="keyword">AND</span> r.delete_flag <span class="operator">=</span> <span class="string">&#x27;0&#x27;</span>)</span><br><span class="line">  <span class="keyword">AND</span> <span class="keyword">NOT</span> <span class="keyword">EXISTS</span> (<span class="keyword">SELECT</span> <span class="number">1</span> <span class="keyword">FROM</span> sys_role_park rp <span class="keyword">WHERE</span> rp.role_id <span class="operator">=</span> ur.role_id <span class="keyword">AND</span> rp.park_id <span class="operator">=</span> ur.park_id <span class="keyword">AND</span> rp.delete_flag <span class="operator">=</span> <span class="string">&#x27;0&#x27;</span>)</span><br><span class="line">  <span class="keyword">AND</span> <span class="keyword">NOT</span> <span class="keyword">EXISTS</span> (<span class="keyword">SELECT</span> <span class="number">1</span> <span class="keyword">FROM</span> sys_user_park up <span class="keyword">WHERE</span> up.user_id <span class="operator">=</span> ur.user_id <span class="keyword">AND</span> up.park_id <span class="operator">=</span> ur.park_id <span class="keyword">AND</span> up.delete_flag <span class="operator">=</span> <span class="string">&#x27;0&#x27;</span>);</span><br></pre></td></tr></table></figure>
+
+<p>预期：上线前 1、2、3、4 返回 0 行；第 5 条如果有结果，要么补 <code>sys_role_park</code>，要么补 <code>sys_user_park</code>，要么确认这些历史角色关系应清理。</p>
+<h2 id="六、经验总结"><a href="#六、经验总结" class="headerlink" title="六、经验总结"></a>六、经验总结</h2><h3 id="6-1-三个最容易漏的测试场景"><a href="#6-1-三个最容易漏的测试场景" class="headerlink" title="6.1 三个最容易漏的测试场景"></a>6.1 三个最容易漏的测试场景</h3><ol>
+<li><strong>D3 清空某园区角色</strong>：很多团队会测”加”，但不测”清空”。”清空”代码路径通常用 <code>DELETE WHERE user_id = ?</code>，忘记带 <code>park_id</code> 就会清掉所有园区。</li>
+<li><strong>G3 多园区用户 pass_user 策略</strong>：一人一条 vs 一人多园区，下发策略完全不同，但产品常常没有明确定义。</li>
+<li><strong>H4 DEFAULT_PARK_ID 回归</strong>：历史代码里写死的 <code>DEFAULT_PARK_ID</code> 是改造最大的遗留风险。</li>
+</ol>
+<h3 id="6-2-编写测试用例的三个原则"><a href="#6-2-编写测试用例的三个原则" class="headerlink" title="6.2 编写测试用例的三个原则"></a>6.2 编写测试用例的三个原则</h3><ol>
+<li><strong>操作步骤最小化</strong>：每条用例只验证一个意图，混入多个验证点会让失败定位变难。</li>
+<li><strong>预期可观测</strong>：预期要写数据库字段、接口字段、缓存键值，不能写”系统正常运行”。</li>
+<li><strong>失败用例优先</strong>：先写”非授权切换”这种应当失败的用例，再写正常通过的用例——前者一旦通过就证明拦截有效。</li>
+</ol>
+<h3 id="6-3-测试记录模板"><a href="#6-3-测试记录模板" class="headerlink" title="6.3 测试记录模板"></a>6.3 测试记录模板</h3><p>每轮测试记录建议结构：</p>
+<figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">## 测试记录 - YYYY-MM-DD</span></span><br><span class="line"></span><br><span class="line"><span class="section">### 环境</span></span><br><span class="line"><span class="bullet">-</span> 分支：</span><br><span class="line"><span class="bullet">-</span> admin-service commit：</span><br><span class="line"><span class="bullet">-</span> through-service commit：</span><br><span class="line"><span class="bullet">-</span> gateway commit：</span><br><span class="line"><span class="bullet">-</span> 数据库：</span><br><span class="line"><span class="bullet">-</span> 测试账号：</span><br><span class="line"></span><br><span class="line"><span class="section">### 执行结果</span></span><br><span class="line">| 用例 | 结果 | 备注 |</span><br><span class="line">| --- | --- | --- |</span><br><span class="line">| A1 单园区用户登录 | 未测/通过/失败 |  |</span><br><span class="line">| A2 多园区用户登录 | 未测/通过/失败 |  |</span><br><span class="line">| A3 切换园区 | 未测/通过/失败 |  |</span><br><span class="line">| ... |  |  |</span><br><span class="line"></span><br><span class="line"><span class="section">### 问题清单</span></span><br><span class="line">| 编号 | 问题 | 复现步骤 | 影响 | 处理人 | 状态 |</span><br><span class="line">| --- | --- | --- | --- | --- | --- |</span><br><span class="line"></span><br><span class="line"><span class="section">### 数据清理</span></span><br><span class="line"><span class="bullet">-</span> 新增测试用户：</span><br><span class="line"><span class="bullet">-</span> 新增测试角色：</span><br><span class="line"><span class="bullet">-</span> 新增测试园区关系：</span><br><span class="line"><span class="bullet">-</span> 是否已清理：</span><br></pre></td></tr></table></figure>
+
+<h2 id="七、结语"><a href="#七、结语" class="headerlink" title="七、结语"></a>七、结语</h2><p>多园区改造不是”加几个字段”那么简单——它是把整个系统的数据访问维度从”全局”切成”按当前园区”。**测试要验证的不是”能不能跑”，而是”会不会跑串”**。本文的 7 大模块清单 + 3 个优先级 + 上线前 5 条 SQL，能覆盖 90% 的多园区改造回归场景。下次接到多园区改造需求，直接把这份清单贴到测试计划里就行。</p>
+<blockquote>
+<p>多园区改造测试的最高原则：<strong>A 园区发生的事，绝不能在 B 园区看到。</strong></p>
+</blockquote>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%A4%9A%E5%9B%AD%E5%8C%BA/" rel="tag"># 多园区</a>
+              <a href="/tags/%E5%8D%97%E7%BD%91%E9%A1%B9%E7%9B%AE/" rel="tag"># 南网项目</a>
+              <a href="/tags/%E6%B5%8B%E8%AF%95%E8%AE%A1%E5%88%92/" rel="tag"># 测试计划</a>
+              <a href="/tags/%E8%B6%8A%E6%9D%83%E6%A0%A1%E9%AA%8C/" rel="tag"># 越权校验</a>
+              <a href="/tags/%E6%95%B0%E6%8D%AE%E9%9A%94%E7%A6%BB/" rel="tag"># 数据隔离</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/07/07/%E5%9B%AD%E5%8C%BA%E5%88%87%E6%8D%A2%E4%B8%8D%E7%94%9F%E6%95%88-RedisDB%E4%B8%8D%E4%B8%80%E8%87%B4/" rel="prev" title="园区切换不生效？Redis DB 不一致这个坑我替你踩过了">
+                  <i class="fa fa-angle-left"></i> 园区切换不生效？Redis DB 不一致这个坑我替你踩过了
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2026/07/13/Token%E8%BA%AB%E4%BB%BD%E8%B6%8A%E6%9D%83%E5%A5%91%E7%BA%A6%E6%B5%8B%E8%AF%95/" rel="next" title="一行 parkId 改不出越权：契约测试如何锁死 Token 身份来源">
+                  一行 parkId 改不出越权：契约测试如何锁死 Token 身份来源 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  
+  <div class="comments giscus-container">
+  </div>
+  
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">zhlifeiy35</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/zhdmm35" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"zhdmm35/zhdmm35.github.io","repo_id":"R_kgDOON4bhg","category":"Announcements","category_id":"DIC_kwDOON4bhs4C3dEc","mapping":"pathname","strict":0,"reactions_enabled":1,"emit_metadata":0,"theme":"preferred_color_scheme","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+
+<script>
+document.addEventListener('page:loaded', () => {
+  if (!CONFIG.page.comments) return;
+
+  NexT.utils.loadComments('.giscus-container')
+    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
+      attributes: {
+        async                   : true,
+        crossOrigin             : 'anonymous',
+        'data-repo'             : CONFIG.giscus.repo,
+        'data-repo-id'          : CONFIG.giscus.repo_id,
+        'data-category'         : CONFIG.giscus.category,
+        'data-category-id'      : CONFIG.giscus.category_id,
+        'data-mapping'          : CONFIG.giscus.mapping,
+        'data-strict'           : CONFIG.giscus.strict,
+        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
+        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
+        'data-theme'            : CONFIG.giscus.theme,
+        'data-lang'             : CONFIG.giscus.lang,
+        'data-input-position'   : CONFIG.giscus.input_position,
+        'data-loading'          : CONFIG.giscus.loading
+      },
+      parentNode: document.querySelector('.giscus-container')
+    }));
+});
+</script>
+
+</body>
+</html>
