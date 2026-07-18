@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="公司默认可见楼层配置（&#x2F;orgFloorConfig&#x2F;&#123;orgId&#125; 查询、POST &#x2F;orgFloorConfig 保存）最初的语义是「限当前园区」——超管在 A 园区，只能给 A 内的公司配 A 的楼层。本次把它放宽为「跨园区绑定」：一个公司可以同时绑多个园区的楼层。改动只动 6 个文件 +70&#x2F;-23，但牵住了查询、保存、校验三个「按当前园区」硬编码点的同步改造">
+<meta property="og:type" content="article">
+<meta property="og:title" content="一次干净的「放宽约束」重构：让公司楼层配置跨园区">
+<meta property="og:url" content="https://zhlifeiy.codes/2026/07/18/%E6%91%84%E5%83%8F%E5%A4%B4%E5%85%AC%E5%8F%B8%E6%A5%BC%E5%B1%82%E9%85%8D%E7%BD%AE%E8%B7%A8%E5%9B%AD%E5%8C%BA%E7%BB%91%E5%AE%9A/index.html">
+<meta property="og:site_name" content="我的技术博客">
+<meta property="og:description" content="公司默认可见楼层配置（&#x2F;orgFloorConfig&#x2F;&#123;orgId&#125; 查询、POST &#x2F;orgFloorConfig 保存）最初的语义是「限当前园区」——超管在 A 园区，只能给 A 内的公司配 A 的楼层。本次把它放宽为「跨园区绑定」：一个公司可以同时绑多个园区的楼层。改动只动 6 个文件 +70&#x2F;-23，但牵住了查询、保存、校验三个「按当前园区」硬编码点的同步改造">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/cross-park-floor-config.jpg">
+<meta property="article:published_time" content="2026-07-18T13:30:00.000Z">
+<meta property="article:modified_time" content="2026-07-18T13:18:28.134Z">
+<meta property="article:author" content="zhlifeiy35">
+<meta property="article:tag" content="Spring Cloud">
+<meta property="article:tag" content="重构">
+<meta property="article:tag" content="Java">
+<meta property="article:tag" content="跨服务聚合">
+<meta property="article:tag" content="园区隔离">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/cross-park-floor-config.jpg">
+
+
+<link rel="canonical" href="https://zhlifeiy.codes/2026/07/18/%E6%91%84%E5%83%8F%E5%A4%B4%E5%85%AC%E5%8F%B8%E6%A5%BC%E5%B1%82%E9%85%8D%E7%BD%AE%E8%B7%A8%E5%9B%AD%E5%8C%BA%E7%BB%91%E5%AE%9A/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://zhlifeiy.codes/2026/07/18/%E6%91%84%E5%83%8F%E5%A4%B4%E5%85%AC%E5%8F%B8%E6%A5%BC%E5%B1%82%E9%85%8D%E7%BD%AE%E8%B7%A8%E5%9B%AD%E5%8C%BA%E7%BB%91%E5%AE%9A/","path":"2026/07/18/摄像头公司楼层配置跨园区绑定/","title":"一次干净的「放宽约束」重构：让公司楼层配置跨园区"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>一次干净的「放宽约束」重构：让公司楼层配置跨园区 | 我的技术博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">我的技术博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">记录学习与成长</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-guestbook"><a href="/guestbook/" rel="section"><i class="fa fa-comment-dots fa-fw"></i>留言板</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link"><span class="nav-number">1.</span> <span class="nav-text">🎧 文章导读</span></a></li><li class="nav-item nav-level-4"><a class="nav-link"><span class="nav-number">2.</span> <span class="nav-text">🎵 背景音乐</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E9%9C%80%E6%B1%82%E8%83%8C%E6%99%AF%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88%E8%BF%99%E6%9D%A1%E7%BA%BF%E7%8E%B0%E5%9C%A8%E6%89%8D%E5%8A%A8"><span class="nav-number"></span> <span class="nav-text">一、需求背景：为什么这条线现在才动</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E5%85%B3%E9%94%AE%E5%86%B3%E7%AD%96%EF%BC%9A%E6%80%8E%E4%B9%88%E6%8A%8A%E5%8D%95%E5%9B%AD%E5%8C%BA%E8%AF%AD%E4%B9%89%E6%9D%BE%E7%BB%91%E5%88%B0%E8%B7%A8%E5%9B%AD%E5%8C%BA"><span class="nav-number"></span> <span class="nav-text">二、关键决策：怎么把单园区语义松绑到跨园区</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E8%B7%A8%E6%9C%8D%E5%8A%A1%E6%95%B0%E6%8D%AE%E8%81%9A%E5%90%88%EF%BC%9A%E6%8C%89%E6%95%B0%E6%8D%AE%E8%87%AA%E5%B8%A6%E7%9A%84-parkId-%E5%88%86%E7%BB%84"><span class="nav-number"></span> <span class="nav-text">三、跨服务数据聚合：按数据自带的 parkId 分组</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E5%AE%9E%E7%8E%B0%EF%BC%9A6-%E4%B8%AA%E6%96%87%E4%BB%B6%EF%BC%8C%E4%B8%89%E5%A4%84%E6%A0%B8%E5%BF%83%E6%94%B9%E5%8A%A8"><span class="nav-number"></span> <span class="nav-text">四、实现：6 个文件，三处核心改动</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E6%9F%A5%E8%AF%A2%EF%BC%9AgetOrgFloorConfig"><span class="nav-number"></span> <span class="nav-text">1. 查询：getOrgFloorConfig</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-%E4%BF%9D%E5%AD%98%EF%BC%9AsaveOrgFloorConfig"><span class="nav-number"></span> <span class="nav-text">2. 保存：saveOrgFloorConfig</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-%E6%A0%A1%E9%AA%8C%EF%BC%9AassertFloorsBelongToPark-%E2%86%92-getFloors"><span class="nav-number"></span> <span class="nav-text">3. 校验：assertFloorsBelongToPark → getFloors</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E5%A5%97%E6%94%B9%E5%8A%A8%EF%BC%884-%E4%B8%AA%E6%96%87%E4%BB%B6%EF%BC%89"><span class="nav-number"></span> <span class="nav-text">配套改动（4 个文件）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9D%83%E9%99%90%E5%AE%88%E5%8D%AB%EF%BC%88%E6%9C%AA%E5%8F%98%EF%BC%8C%E4%BD%86%E5%85%B3%E9%94%AE%EF%BC%89"><span class="nav-number"></span> <span class="nav-text">权限守卫（未变，但关键）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E7%BB%8F%E9%AA%8C%E6%80%BB%E7%BB%93"><span class="nav-number"></span> <span class="nav-text">五、经验总结</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E6%94%BE%E5%AE%BD%E7%BA%A6%E6%9D%9F%E7%B1%BB%E9%87%8D%E6%9E%84%E7%9A%84-checklist"><span class="nav-number"></span> <span class="nav-text">1. 放宽约束类重构的 checklist</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-%E8%B7%A8%E6%9C%8D%E5%8A%A1%E6%95%B0%E6%8D%AE%E8%81%9A%E5%90%88%E7%9A%84%E9%80%9A%E7%94%A8%E6%A8%A1%E5%BC%8F"><span class="nav-number"></span> <span class="nav-text">2. 跨服务数据聚合的通用模式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-%E6%AD%BB%E4%BB%A3%E7%A0%81%E7%9A%84-surgical-%E5%A4%84%E7%90%86"><span class="nav-number"></span> <span class="nav-text">3. 死代码的 surgical 处理</span></a></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zhlifeiy35</p>
+  <div class="site-description" itemprop="description">分享编程技术、AI经验、学习笔记</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">58</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">18</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">201</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zhdmm35" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zhdmm35" rel="noopener me" target="_blank"><i class="fa fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/cross-park-floor-config.jpg" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/07/18/%E6%91%84%E5%83%8F%E5%A4%B4%E5%85%AC%E5%8F%B8%E6%A5%BC%E5%B1%82%E9%85%8D%E7%BD%AE%E8%B7%A8%E5%9B%AD%E5%8C%BA%E7%BB%91%E5%AE%9A/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="我的技术博客">
+      <meta itemprop="description" content="分享编程技术、AI经验、学习笔记">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="一次干净的「放宽约束」重构：让公司楼层配置跨园区 | 我的技术博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          一次干净的「放宽约束」重构：让公司楼层配置跨园区
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2026-07-18 21:30:00 / 修改时间：21:18:28" itemprop="dateCreated datePublished" datetime="2026-07-18T21:30:00+08:00">2026-07-18</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">后端开发</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>公司默认可见楼层配置（<code>/orgFloorConfig/&#123;orgId&#125;</code> 查询、<code>POST /orgFloorConfig</code> 保存）最初的语义是「限当前园区」——超管在 A 园区，只能给 A 内的公司配 A 的楼层。本次把它放宽为「跨园区绑定」：一个公司可以同时绑多个园区的楼层。改动只动 6 个文件 +70&#x2F;-23，但牵住了查询、保存、校验三个「按当前园区」硬编码点的同步改造，是放宽约束类重构的一个干净样本。</p>
+<span id="more"></span>
+
+<div class="audio-player">
+  <div class="audio-section">
+    <h4>🎧 文章导读</h4>
+    <audio controls preload="metadata">
+      <source src="/audio/摄像头公司楼层配置跨园区绑定/narration.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+  <div class="audio-section">
+    <h4>🎵 背景音乐</h4>
+    <audio controls loop preload="metadata">
+      <source src="/audio/摄像头公司楼层配置跨园区绑定/bgm.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+</div>
+
+<h2 id="一、需求背景：为什么这条线现在才动"><a href="#一、需求背景：为什么这条线现在才动" class="headerlink" title="一、需求背景：为什么这条线现在才动"></a>一、需求背景：为什么这条线现在才动</h2><p>这条线一共四个 commit，本次是收尾：</p>
+<table>
+<thead>
+<tr>
+<th>commit</th>
+<th>主题</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>8e0bd588d</code></td>
+<td>按公司隔离摄像头可见范围：建 <code>security_camera_org_floor</code> 表，<code>getCameraTree</code> 加可见性过滤</td>
+</tr>
+<tr>
+<td><code>9c7e71ac6</code></td>
+<td>新增公司默认可见楼层配置查询&#x2F;保存接口</td>
+</tr>
+<tr>
+<td><code>657502014</code></td>
+<td>楼层配置返回每楼层摄像头数（<code>floorCameraCounts</code>）</td>
+</tr>
+<tr>
+<td><code>334cd811d</code></td>
+<td><strong>支持跨园区绑定（本次）</strong></td>
+</tr>
+</tbody></table>
+<p>前三个 commit 把「按公司 + 按楼层」的可见性闭环跑通了，但落表和查询都隐含一个假设：「公司所在园区 &#x3D; 楼层所在园区」，代码里这个假设被硬编码成 <code>baseUser.getParkId()</code>。</p>
+<p>业务侧的真实场景把假设戳破了：集团超管管着多个园区，一家安保公司可能驻扎在 A 园区，但需要看到 B 园区某栋楼的摄像头（典型的集团统管安保指挥场景）。原来的配置页对这类需求直接瘫痪——超管切到 A 园区，找不到 B 的楼层可勾；切到 B 园区，又没法给 A 的公司改归属。</p>
+<p>所以本次改动的本质，不是「加新功能」，而是「把一个写死的隐含假设显式化、然后放开」。</p>
+<p><img src="/images/posts/%E6%91%84%E5%83%8F%E5%A4%B4%E5%85%AC%E5%8F%B8%E6%A5%BC%E5%B1%82%E9%85%8D%E7%BD%AE%E8%B7%A8%E5%9B%AD%E5%8C%BA%E7%BB%91%E5%AE%9A/scenario.jpg" alt="跨园区楼层配置业务场景示意"><br><em>图 1：超管在 A 园区，给属于 A 的公司 X 配置 B 园区的楼层</em></p>
+<h2 id="二、关键决策：怎么把单园区语义松绑到跨园区"><a href="#二、关键决策：怎么把单园区语义松绑到跨园区" class="headerlink" title="二、关键决策：怎么把单园区语义松绑到跨园区"></a>二、关键决策：怎么把单园区语义松绑到跨园区</h2><p>放宽语义最容易踩的坑不是「想不到新方案」，而是「漏改硬编码点」。一个「按当前园区」约束在三个地方都有硬编码：查询、保存、校验。任何一处没跟着松绑，就会出现「能查不能存」或「能存不能查」的不一致——这类 bug 在多园区系统里最难发现，因为只有跨园区配置时才暴露，单园区回归测试全绿。</p>
+<p>本次的设计不是「想一个新方案」，而是「把现有的三处约束对齐到同一个新语义」。新语义是：</p>
+<blockquote>
+<p><strong>公司仍必须属于当前园区（超管在 A 只能配 A 的公司），但楼层可以来自任意园区。</strong></p>
+</blockquote>
+<p>这种「公司单园区 + 楼层跨园区」的非对称是有意保留的——公司归属是组织架构决定的，不该被超管随手改；楼层是可见范围配置，本就该灵活。</p>
+<p><img src="/images/posts/%E6%91%84%E5%83%8F%E5%A4%B4%E5%85%AC%E5%8F%B8%E6%A5%BC%E5%B1%82%E9%85%8D%E7%BD%AE%E8%B7%A8%E5%9B%AD%E5%8C%BA%E7%BB%91%E5%AE%9A/asymmetry.jpg" alt="公司单园区 + 楼层跨园区 的非对称语义"><br><em>图 2：公司归属约束保留，楼层绑定放开</em></p>
+<blockquote>
+<p>[!WARNING]<br>这条非对称需要产品最终确认。「超管在 A 园区给属于 A 的公司 X 绑定 B 园区的楼层」目前是允许的。如果后续产品要求「公司归属园区必须和楼层园区一致」，那现在这套逻辑要回退。代码上两种走向都容易改，但语义要先定死。</p>
+</blockquote>
+<h2 id="三、跨服务数据聚合：按数据自带的-parkId-分组"><a href="#三、跨服务数据聚合：按数据自带的-parkId-分组" class="headerlink" title="三、跨服务数据聚合：按数据自带的 parkId 分组"></a>三、跨服务数据聚合：按数据自带的 parkId 分组</h2><p>一旦楼层跨园区，就面临「要拉多个园区的空间和摄像头」这个跨服务聚合问题。楼层存在 admin 库的 <code>space_info</code>，摄像头在 security 库。</p>
+<p>最朴素的方案是跨库 JOIN——直接被否定，admin 和 security 是两个独立的微服务库，这套架构里就没有跨库 JOIN 的先例。</p>
+<p>采用的方案是<strong>按数据自带的维度分组，循环调用单园区接口，合并结果</strong>。<code>SpaceInfoDTO</code> 本身就带 <code>parkId</code> 字段，先拿到本次要绑定的所有楼层，按 <code>parkId</code> 分组，对每个园区分别调 <code>spaceInfoClient.getSpaceInfo(parkId)</code> 拉空间、调 <code>baseMapper.listByCondition(cameraQuery)</code> 拉摄像头，最后合并：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 按楼层自带的 parkId 分组（LinkedHashMap 保序）</span></span><br><span class="line">Map&lt;String, List&lt;String&gt;&gt; floorIdsByPark = groupFloorIdsByPark(floors);</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> (String parkId : floorIdsByPark.keySet()) &#123;</span><br><span class="line">    <span class="comment">// 每个园区分别拉空间</span></span><br><span class="line">    BaseResult&lt;List&lt;SpaceInfoDTO&gt;&gt; spaceResult = spaceInfoClient.getSpaceInfo(parkId);</span><br><span class="line">    spaces.addAll(spaceResult.getData());</span><br><span class="line">    <span class="comment">// 每个园区分别拉摄像头</span></span><br><span class="line">    <span class="type">CameraInfoDTO</span> <span class="variable">cameraQuery</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">CameraInfoDTO</span>();</span><br><span class="line">    cameraQuery.setParkId(parkId);</span><br><span class="line">    cameraQuery.setDeleteFlag(DictConstants.DEL_FLAG_NO);</span><br><span class="line">    cameras.addAll(baseMapper.listByCondition(cameraQuery));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这避开了跨库 JOIN，代价是多次 RPC——但配置页是低频接口，一个公司绑定的园区数也就个位数，完全可以接受。<code>LinkedHashMap</code> 在分组时保序，保证园区渲染顺序稳定，不被 <code>HashMap</code> 的哈希序打乱。</p>
+<h2 id="四、实现：6-个文件，三处核心改动"><a href="#四、实现：6-个文件，三处核心改动" class="headerlink" title="四、实现：6 个文件，三处核心改动"></a>四、实现：6 个文件，三处核心改动</h2><p>核心文件 <code>service-provider/security-service/.../service/impl/CameraInfoServiceImpl.java</code>，三处改动必须对齐：</p>
+<h3 id="1-查询：getOrgFloorConfig"><a href="#1-查询：getOrgFloorConfig" class="headerlink" title="1. 查询：getOrgFloorConfig"></a>1. 查询：getOrgFloorConfig</h3><p>旧逻辑里查询、统计都绑死当前园区。新逻辑的关键转变是<strong>不再假设所有楼层同园区</strong>——先按 orgId 跨园区查所有绑定楼层，再按每个楼层自带的 parkId 分组：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 旧：查/统计都绑死当前园区</span></span><br><span class="line">List&lt;String&gt; floorSpaceIds = baseMapper.getFloorSpaceIds(</span><br><span class="line">        baseUser.getParkId(), Collections.singleton(orgId));</span><br><span class="line"></span><br><span class="line"><span class="comment">// 新：只按 orgId 查（跨园区），再分园区统计</span></span><br><span class="line">List&lt;String&gt; floorSpaceIds = baseMapper.getOrgFloorSpaceIds(orgId);</span><br><span class="line">List&lt;SpaceInfoDTO&gt; floors = getFloors(floorSpaceIds);</span><br><span class="line">List&lt;SpaceInfoDTO&gt; spaces = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">List&lt;CameraInfoDTO&gt; cameras = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line"><span class="keyword">for</span> (String parkId : groupFloorIdsByPark(floors).keySet()) &#123;</span><br><span class="line">    BaseResult&lt;List&lt;SpaceInfoDTO&gt;&gt; spaceResult = spaceInfoClient.getSpaceInfo(parkId);</span><br><span class="line">    <span class="comment">// ... 分园区累加 spaces / cameras</span></span><br><span class="line">&#125;</span><br><span class="line">result.setFloorCameraCounts(countCamerasByFloor(cameras, spaces, floorSpaceIds));</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-保存：saveOrgFloorConfig"><a href="#2-保存：saveOrgFloorConfig" class="headerlink" title="2. 保存：saveOrgFloorConfig"></a>2. 保存：saveOrgFloorConfig</h3><p>旧：删除&#x2F;插入都带 parkId，强制楼层属于当前园区。新：按 orgId 跨园区全删 + 按园区分组分别插入：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 旧：单园区删 + 单园区插</span></span><br><span class="line">assertFloorsBelongToPark(floorSpaceIds, baseUser.getParkId());</span><br><span class="line">baseMapper.deleteOrgFloors(baseUser.getParkId(), model.getOrgId());</span><br><span class="line">baseMapper.batchInsertOrgFloors(baseUser.getParkId(), model.getOrgId(), floorSpaceIds, ...);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 新：跨园区删 + 分园区插</span></span><br><span class="line">Map&lt;String, List&lt;String&gt;&gt; floorIdsByPark = groupFloorIdsByPark(getFloors(floorSpaceIds));</span><br><span class="line">baseMapper.deleteAllOrgFloors(model.getOrgId());  <span class="comment">// 跨园区全删（只按 orgId）</span></span><br><span class="line"><span class="keyword">for</span> (Map.Entry&lt;String, List&lt;String&gt;&gt; entry : floorIdsByPark.entrySet()) &#123;</span><br><span class="line">    baseMapper.batchInsertOrgFloors(entry.getKey(), model.getOrgId(), entry.getValue(), ...);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-校验：assertFloorsBelongToPark-→-getFloors"><a href="#3-校验：assertFloorsBelongToPark-→-getFloors" class="headerlink" title="3. 校验：assertFloorsBelongToPark → getFloors"></a>3. 校验：assertFloorsBelongToPark → getFloors</h3><p>校验语义从「楼层必须属于当前园区」放宽为「楼层有效 + 必须带 parkId」：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 旧：强制属于当前园区</span></span><br><span class="line">Assert.isTrue(validFloorIds.containsAll(floorSpaceIds), <span class="string">&quot;包含不属于当前园区的楼层&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 新：只校验有效性和园区信息完整性，不再限制哪个园区</span></span><br><span class="line">Assert.isTrue(validFloorIds.containsAll(floorSpaceIds), <span class="string">&quot;包含无效楼层&quot;</span>);</span><br><span class="line">Assert.isTrue(floors.stream().allMatch(space -&gt; StringUtils.isNotBlank(space.getParkId())),</span><br><span class="line">        <span class="string">&quot;楼层缺少园区信息&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<h3 id="配套改动（4-个文件）"><a href="#配套改动（4-个文件）" class="headerlink" title="配套改动（4 个文件）"></a>配套改动（4 个文件）</h3><ul>
+<li><code>SpaceInfoClient</code>（admin-api）：新增 Feign <code>GET /getSpaceInfo/&#123;parkId&#125;</code>，供 security 侧分园区拉空间</li>
+<li><code>SpaceInfoServiceImpl.selectSpaceInfoByIds</code>：加 <code>deleteFlag=DEL_FLAG_NO</code> 过滤软删空间，并改调 <code>baseMapper.listByCondition</code>（让 deleteFlag 生效）</li>
+<li><code>CameraInfoMapper</code> + <code>CameraInfoMapperExt.xml</code>：新增 <code>getOrgFloorSpaceIds(orgId)</code>、<code>deleteAllOrgFloors(orgId)</code>，分别只按 orgId 查 &#x2F; 删</li>
+<li><code>CameraInfoServiceImplTest</code>：新增 <code>floorConfigGroupsFloorsByTheirOwnPark</code> 验证按 parkId 正确分组；mapper 契约测试加 <code>deleteAllOrgFloors</code> 断言</li>
+</ul>
+<h3 id="权限守卫（未变，但关键）"><a href="#权限守卫（未变，但关键）" class="headerlink" title="权限守卫（未变，但关键）"></a>权限守卫（未变，但关键）</h3><p>两个入口共用 <code>getConfigAdmin()</code>，强制超管才能操作：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Assert.isTrue(isSuperAdmin(baseUser.getUserId()), <span class="string">&quot;无权限管理公司摄像头楼层配置&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<p>controller 层无 <code>@PreAuthorize</code>，权限完全靠这一行 service 守卫——这意味着放开到非超管时只需改这一行。</p>
+<h2 id="五、经验总结"><a href="#五、经验总结" class="headerlink" title="五、经验总结"></a>五、经验总结</h2><h3 id="1-放宽约束类重构的-checklist"><a href="#1-放宽约束类重构的-checklist" class="headerlink" title="1. 放宽约束类重构的 checklist"></a>1. 放宽约束类重构的 checklist</h3><p>碰到「从 X 放宽到非 X」的改动，按这个 checklist 走：</p>
+<ol>
+<li><strong>找出所有「X 假设」的硬编码点</strong>——grep 当前模块里所有写死的位置，本次查出查询、删除、校验三处</li>
+<li><strong>逐一定义新语义</strong>——每个硬编码点放宽后的新约束是什么？必须显式写出来，不能模糊</li>
+<li><strong>同步改、一起提</strong>——不要拆成多个 PR，部分放宽会留下「能 X 不能 Y」的不一致</li>
+<li><strong>非对称语义要产品确认</strong>——本次「公司单园区 + 楼层跨园区」的不对称是设计选择，不是 bug</li>
+</ol>
+<h3 id="2-跨服务数据聚合的通用模式"><a href="#2-跨服务数据聚合的通用模式" class="headerlink" title="2. 跨服务数据聚合的通用模式"></a>2. 跨服务数据聚合的通用模式</h3><p>当需要跨多个同构子域聚合数据，而下游接口只支持单子域查询时，通用做法是：</p>
+<blockquote>
+<p>按数据自带的子域维度分组 → 循环调用单子域接口 → 合并结果。</p>
+</blockquote>
+<p>这避开了跨库 JOIN，代价是多次 RPC。低频接口（N 个子域个位数）完全可接受；高频接口要重新评估，可考虑预聚合或 ES 反查。</p>
+<h3 id="3-死代码的-surgical-处理"><a href="#3-死代码的-surgical-处理" class="headerlink" title="3. 死代码的 surgical 处理"></a>3. 死代码的 surgical 处理</h3><p>旧的 <code>getFloorSpaceIds(parkId, ...)</code>、<code>deleteOrgFloors(parkId, ...)</code> 两个 mapper 方法在本次改动后已无调用方。按 surgical 原则<strong>没删</strong>，只记录——它们离本次改动很近，删之前要确认所有调用方（mapper 方法可能被 service 反射调用、或后续 commit 引用）。后续若连续 2-3 个 sprint 仍无引用，再删不迟。</p>
+<hr>
+<blockquote>
+<p>本次改动落地 6 个文件 +70&#x2F;-23，单测覆盖新增分组逻辑，mapper 契约测试加 <code>deleteAllOrgFloors</code> 断言。无跨服务侵入、无表结构变更、无 API 路径变更，向后兼容。</p>
+</blockquote>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Spring-Cloud/" rel="tag"># Spring Cloud</a>
+              <a href="/tags/%E9%87%8D%E6%9E%84/" rel="tag"># 重构</a>
+              <a href="/tags/Java/" rel="tag"># Java</a>
+              <a href="/tags/%E8%B7%A8%E6%9C%8D%E5%8A%A1%E8%81%9A%E5%90%88/" rel="tag"># 跨服务聚合</a>
+              <a href="/tags/%E5%9B%AD%E5%8C%BA%E9%9A%94%E7%A6%BB/" rel="tag"># 园区隔离</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/07/17/%E5%8F%8D%E6%9F%A5%E8%A1%A8%E6%8A%8A%E6%A5%BC%E5%B1%82%E6%91%84%E5%83%8F%E5%A4%B4%E6%95%B0%E6%8B%8D%E5%B9%B3/" rel="prev" title="O(N×M) 拍平成 O(N+M)：反查表如何把楼层摄像头计数从慢路径救回来">
+                  <i class="fa fa-angle-left"></i> O(N×M) 拍平成 O(N+M)：反查表如何把楼层摄像头计数从慢路径救回来
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2026/07/18/shopkeeper-agent-troubleshooting/" rel="next" title="在 16G 内存的 Windows 本机跑通 shopkeeper-agent：13 个坑的完整排障笔记">
+                  在 16G 内存的 Windows 本机跑通 shopkeeper-agent：13 个坑的完整排障笔记 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  
+  <div class="comments giscus-container">
+  </div>
+  
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">zhlifeiy35</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/zhdmm35" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"zhdmm35/zhdmm35.github.io","repo_id":"R_kgDOON4bhg","category":"Announcements","category_id":"DIC_kwDOON4bhs4C3dEc","mapping":"pathname","strict":0,"reactions_enabled":1,"emit_metadata":0,"theme":"preferred_color_scheme","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+
+<script>
+document.addEventListener('page:loaded', () => {
+  if (!CONFIG.page.comments) return;
+
+  NexT.utils.loadComments('.giscus-container')
+    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
+      attributes: {
+        async                   : true,
+        crossOrigin             : 'anonymous',
+        'data-repo'             : CONFIG.giscus.repo,
+        'data-repo-id'          : CONFIG.giscus.repo_id,
+        'data-category'         : CONFIG.giscus.category,
+        'data-category-id'      : CONFIG.giscus.category_id,
+        'data-mapping'          : CONFIG.giscus.mapping,
+        'data-strict'           : CONFIG.giscus.strict,
+        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
+        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
+        'data-theme'            : CONFIG.giscus.theme,
+        'data-lang'             : CONFIG.giscus.lang,
+        'data-input-position'   : CONFIG.giscus.input_position,
+        'data-loading'          : CONFIG.giscus.loading
+      },
+      parentNode: document.querySelector('.giscus-container')
+    }));
+});
+</script>
+
+</body>
+</html>
