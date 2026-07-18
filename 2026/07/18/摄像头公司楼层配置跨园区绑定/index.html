@@ -29,7 +29,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://zhlifeiy.codes/images/covers/cross-park-floor-config.jpg">
 <meta property="article:published_time" content="2026-07-18T13:30:00.000Z">
-<meta property="article:modified_time" content="2026-07-18T13:18:28.134Z">
+<meta property="article:modified_time" content="2026-07-18T13:41:27.569Z">
 <meta property="article:author" content="zhlifeiy35">
 <meta property="article:tag" content="Spring Cloud">
 <meta property="article:tag" content="重构">
@@ -256,7 +256,7 @@
       <span class="post-meta-item-text">发表于</span>
       
 
-      <time title="创建时间：2026-07-18 21:30:00 / 修改时间：21:18:28" itemprop="dateCreated datePublished" datetime="2026-07-18T21:30:00+08:00">2026-07-18</time>
+      <time title="创建时间：2026-07-18 21:30:00 / 修改时间：21:41:27" itemprop="dateCreated datePublished" datetime="2026-07-18T21:30:00+08:00">2026-07-18</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -323,14 +323,55 @@
 <p>前三个 commit 把「按公司 + 按楼层」的可见性闭环跑通了，但落表和查询都隐含一个假设：「公司所在园区 &#x3D; 楼层所在园区」，代码里这个假设被硬编码成 <code>baseUser.getParkId()</code>。</p>
 <p>业务侧的真实场景把假设戳破了：集团超管管着多个园区，一家安保公司可能驻扎在 A 园区，但需要看到 B 园区某栋楼的摄像头（典型的集团统管安保指挥场景）。原来的配置页对这类需求直接瘫痪——超管切到 A 园区，找不到 B 的楼层可勾；切到 B 园区，又没法给 A 的公司改归属。</p>
 <p>所以本次改动的本质，不是「加新功能」，而是「把一个写死的隐含假设显式化、然后放开」。</p>
-<p><img src="/images/posts/%E6%91%84%E5%83%8F%E5%A4%B4%E5%85%AC%E5%8F%B8%E6%A5%BC%E5%B1%82%E9%85%8D%E7%BD%AE%E8%B7%A8%E5%9B%AD%E5%8C%BA%E7%BB%91%E5%AE%9A/scenario.jpg" alt="跨园区楼层配置业务场景示意"><br><em>图 1：超管在 A 园区，给属于 A 的公司 X 配置 B 园区的楼层</em></p>
+
+<div class="mermaid">
+flowchart LR
+    subgraph "园区 A"
+        Co["公司 X<br/>（归属园区 A）"]
+    end
+    subgraph "园区 B"
+        F1["楼层 1"]
+        F2["楼层 2"]
+        F3["楼层 3"]
+    end
+    Co -.超管在 A 配置.-> F1
+    Co -.超管在 A 配置.-> F2
+    Co -.超管在 A 配置.-> F3
+    style Co fill:#fff4e1,stroke:#e6a23c,stroke-width:2px
+    style F1 fill:#e1f5ff,stroke:#3a8fb7
+    style F2 fill:#e1f5ff,stroke:#3a8fb7
+    style F3 fill:#e1f5ff,stroke:#3a8fb7
+</div>
+
+
+<p><em>图 1：超管在 A 园区，给属于 A 的公司 X 配置 B 园区的楼层</em></p>
 <h2 id="二、关键决策：怎么把单园区语义松绑到跨园区"><a href="#二、关键决策：怎么把单园区语义松绑到跨园区" class="headerlink" title="二、关键决策：怎么把单园区语义松绑到跨园区"></a>二、关键决策：怎么把单园区语义松绑到跨园区</h2><p>放宽语义最容易踩的坑不是「想不到新方案」，而是「漏改硬编码点」。一个「按当前园区」约束在三个地方都有硬编码：查询、保存、校验。任何一处没跟着松绑，就会出现「能查不能存」或「能存不能查」的不一致——这类 bug 在多园区系统里最难发现，因为只有跨园区配置时才暴露，单园区回归测试全绿。</p>
 <p>本次的设计不是「想一个新方案」，而是「把现有的三处约束对齐到同一个新语义」。新语义是：</p>
 <blockquote>
 <p><strong>公司仍必须属于当前园区（超管在 A 只能配 A 的公司），但楼层可以来自任意园区。</strong></p>
 </blockquote>
 <p>这种「公司单园区 + 楼层跨园区」的非对称是有意保留的——公司归属是组织架构决定的，不该被超管随手改；楼层是可见范围配置，本就该灵活。</p>
-<p><img src="/images/posts/%E6%91%84%E5%83%8F%E5%A4%B4%E5%85%AC%E5%8F%B8%E6%A5%BC%E5%B1%82%E9%85%8D%E7%BD%AE%E8%B7%A8%E5%9B%AD%E5%8C%BA%E7%BB%91%E5%AE%9A/asymmetry.jpg" alt="公司单园区 + 楼层跨园区 的非对称语义"><br><em>图 2：公司归属约束保留，楼层绑定放开</em></p>
+
+<div class="mermaid">
+flowchart TB
+    Org["公司归属<br/>单园区"]
+    Park["当前园区"]
+    F1["本园区楼层"]
+    F2["园区 B 楼层"]
+    F3["园区 C 楼层"]
+    Org === Park
+    Park --- F1
+    Park -.跨园区配置.-> F2
+    Park -.跨园区配置.-> F3
+    style Org fill:#ffeaa7,stroke:#d63031,stroke-width:2px
+    style Park fill:#ffeaa7,stroke:#d63031,stroke-width:2px
+    style F1 fill:#dfe6e9,stroke:#636e72,stroke-width:2px
+    style F2 fill:#74b9ff,stroke:#0984e3,color:#fff
+    style F3 fill:#74b9ff,stroke:#0984e3,color:#fff
+</div>
+
+
+<p><em>图 2：公司归属约束保留，楼层绑定放开</em></p>
 <blockquote>
 <p>[!WARNING]<br>这条非对称需要产品最终确认。「超管在 A 园区给属于 A 的公司 X 绑定 B 园区的楼层」目前是允许的。如果后续产品要求「公司归属园区必须和楼层园区一致」，那现在这套逻辑要回退。代码上两种走向都容易改，但语义要先定死。</p>
 </blockquote>
@@ -377,6 +418,13 @@
 <blockquote>
 <p>本次改动落地 6 个文件 +70&#x2F;-23，单测覆盖新增分组逻辑，mapper 契约测试加 <code>deleteAllOrgFloors</code> 断言。无跨服务侵入、无表结构变更、无 API 路径变更，向后兼容。</p>
 </blockquote>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+<script>
+if (typeof mermaid !== 'undefined') {
+  mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose', flowchart: { useMaxWidth: true } });
+}
+</script>
 
     </div>
 
