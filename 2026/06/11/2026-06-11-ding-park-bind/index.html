@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.28.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
 
     <meta name="description" content="导读 今天一口气做了 2 个 feature + 1 个构建命令摸清：钉钉同步补 sys_user_park 占位记录、园区绑定一级公司（顶级 org + 互斥）、admin-service 打包 fat jar。feature 走的是 spec-first + subagent-driven，3 轮 spec review + 3 轮 code review。但 06-11 集成测试第一次就跑出">
 <meta property="og:type" content="article">
@@ -29,7 +29,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://zhlifeiy.codes/images/covers/2026-06-11-ding-park-bind_001.jpg">
 <meta property="article:published_time" content="2026-06-11T12:00:00.000Z">
-<meta property="article:modified_time" content="2026-06-27T14:12:55.003Z">
+<meta property="article:modified_time" content="2026-07-25T16:55:25.166Z">
 <meta property="article:author" content="zhlifeiy35">
 <meta property="article:tag" content="MyBatis">
 <meta property="article:tag" content="Spring Cloud">
@@ -59,6 +59,7 @@
 
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
 <script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
@@ -79,6 +80,7 @@
   <noscript>
     <link rel="stylesheet" href="/css/noscript.css">
   </noscript>
+<link rel="alternate" href="/atom.xml" title="我的技术博客" type="application/atom+xml">
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
@@ -263,7 +265,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-06-27 22:12:55" itemprop="dateModified" datetime="2026-06-27T22:12:55+08:00">2026-06-27</time>
+      <time title="修改时间：2026-07-26 00:55:25" itemprop="dateModified" datetime="2026-07-26T00:55:25+08:00">2026-07-26</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -297,20 +299,20 @@
   <div class="audio-section">
     <h4>🎧 文章导读</h4>
     <audio controls preload="metadata">
-      <source src="/2026-06-11-ding-park-bind/narration.mp3" type="audio/mpeg">
+      <source src="/audio/2026-06-11-ding-park-bind/narration.mp3" type="audio/mpeg">
     </audio>
   </div>
   <div class="audio-section">
     <h4>🎵 背景音乐</h4>
     <audio controls loop preload="metadata">
-      <source src="/2026-06-11-ding-park-bind/bgm.mp3" type="audio/mpeg">
+      <source src="/audio/2026-06-11-ding-park-bind/bgm.mp3" type="audio/mpeg">
     </audio>
   </div>
 </div>
 
 <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>业务方反馈”钉钉同步过来的用户进不了门”——门禁&#x2F;人脸下发找不到匹配的用户归属。<code>handleDingUserSync()</code> 写 <code>sys_user</code> 和 <code>sys_user_organization</code> 没问题，但<strong>没写 <code>sys_user_park</code>（用户-园区关系）</strong>。同时 <code>sys_park_organization</code> 桥表历史脏数据严重（顶级公司 + 子部门混着绑），业务方要求<strong>只配一级公司</strong>且<strong>一个公司只能被一个园区绑</strong>。</p>
 <p>两个 feature 同根问题，一起做完刚好闭环。spec 提前写好（<code>docs/superpowers/specs/2026-06-10-ding-user-sync-user-park-design.md</code>、<code>docs/superpowers/specs/2026-06-11-park-company-bind-design.md</code>），3 轮 spec review 把模糊地带全聊清楚，再交给 subagent 执行。</p>
-<p><img src="/2026-06-11-ding-park-bind/assets/images/fig1_001.jpg" alt="人-部门-公司-园区关系图"><br><em>图1：南网权限模型四级关系</em></p>
+<p><img data-src="/images/posts/2026-06-11-ding-park-bind/fig1_001.jpg" alt="人-部门-公司-园区关系图"><br><em>图1：南网权限模型四级关系</em></p>
 <h2 id="Feature-1：钉钉同步写-sys-user-park"><a href="#Feature-1：钉钉同步写-sys-user-park" class="headerlink" title="Feature 1：钉钉同步写 sys_user_park"></a>Feature 1：钉钉同步写 sys_user_park</h2><h3 id="业务背景"><a href="#业务背景" class="headerlink" title="业务背景"></a>业务背景</h3><p>南网项目的权限模型：用户 → <code>sys_user_park</code> 关联 → 园区 → 一级公司 → 子部门 → 数据权限。</p>
 <p>钉钉是中台用户来源的主渠道。<code>UserSyncServiceImpl.handleDingUserSync()</code> 每天定时把钉钉通讯录里的员工同步进 <code>sys_user</code> 和 <code>sys_user_organization</code>，但**一直没有写 <code>sys_user_park</code>**。结果：</p>
 <ul>
@@ -360,7 +362,7 @@
 <blockquote>
 <p>[!warning] R6 filter 漂移<br>Map filter 和 <code>toAddUsers</code> filter 必须同步改，否则静默少写 <code>sys_user_park</code>。当前靠 code review 人工对照，建议提取公共 filter 方法。</p>
 </blockquote>
-<p><img src="/2026-06-11-ding-park-bind/assets/images/fig2_001.jpg" alt="sys_user_park 写入流程"><br><em>图2：钉钉同步写 sys_user_park</em></p>
+<p><img data-src="/images/posts/2026-06-11-ding-park-bind/fig2_001.jpg" alt="sys_user_park 写入流程"><br><em>图2：钉钉同步写 sys_user_park</em></p>
 <h2 id="Feature-2：园区绑定一级公司"><a href="#Feature-2：园区绑定一级公司" class="headerlink" title="Feature 2：园区绑定一级公司"></a>Feature 2：园区绑定一级公司</h2><h3 id="业务背景-1"><a href="#业务背景-1" class="headerlink" title="业务背景"></a>业务背景</h3><p>南网项目权限模型的中间一环”园区↔组织”绑得乱七八糟：</p>
 <ul>
 <li>园区 <code>番禺基地</code> 绑了 5 个 org，其中 3 个是二级公司（钉钉同步过来的子部门）</li>
@@ -448,7 +450,7 @@
 <td>✅ 通过</td>
 </tr>
 </tbody></table>
-<p><img src="/2026-06-11-ding-park-bind/assets/images/fig3_001.jpg" alt="MyBatis OGNL Date 报错堆栈"><br><em>图3：saveCompanyBind 集成测试 500</em></p>
+<p><img data-src="/images/posts/2026-06-11-ding-park-bind/fig3_001.jpg" alt="MyBatis OGNL Date 报错堆栈"><br><em>图3：saveCompanyBind 集成测试 500</em></p>
 <h2 id="构建命令：JDK-8-Maven-am"><a href="#构建命令：JDK-8-Maven-am" class="headerlink" title="构建命令：JDK 8 + Maven -am"></a>构建命令：JDK 8 + Maven -am</h2><h3 id="最终命令（可直接复制）"><a href="#最终命令（可直接复制）" class="headerlink" title="最终命令（可直接复制）"></a>最终命令（可直接复制）</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> <span class="string">&quot;/e/nanwang/smart-park-cloud - no jar&quot;</span></span><br><span class="line"><span class="built_in">export</span> JAVA_HOME=/e/jdk</span><br><span class="line"><span class="built_in">export</span> PATH=<span class="variable">$JAVA_HOME</span>/bin:<span class="variable">$PATH</span></span><br><span class="line">mvn -pl service-provider/admin-service -am clean package -DskipTests</span><br></pre></td></tr></table></figure>
 
 <h3 id="为什么必须用-JDK-8"><a href="#为什么必须用-JDK-8" class="headerlink" title="为什么必须用 JDK 8"></a>为什么必须用 JDK 8</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[ERROR] /E:/nanwang/smart-park-cloud - no jar/service-util/src/main/java/cn/csg/building/admin/utils/QrCodeByIdTypeUtils.java:[12,16] 找不到符号</span><br><span class="line">[ERROR]   符号:   类 BASE64Encoder</span><br><span class="line">[ERROR]   位置: 程序包 sun.misc</span><br></pre></td></tr></table></figure>

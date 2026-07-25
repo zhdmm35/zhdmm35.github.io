@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.28.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
 
     <meta name="description" content="导读 dist_sync 分支自 6&#x2F;10 起的所有改动（19 个提交 + 6&#x2F;16 未提交的”部门+园区更新”），今天做端到端集成测试。9 项功能 12 个用例全过，未发现阻断性缺陷。1 处 dist_sync_status 表现差异已查明为下游消费者正常行为（非 bug）。这篇不是技术深挖，是测试方法 + DB 证据 + 关键发现的完整记录，适合需要做类似集成测试的同行参考">
 <meta property="og:type" content="article">
@@ -29,7 +29,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://zhlifeiy.codes/images/covers/2026-06-16-dist-sync-integration-test_001.jpg">
 <meta property="article:published_time" content="2026-06-16T05:00:00.000Z">
-<meta property="article:modified_time" content="2026-06-27T14:12:55.271Z">
+<meta property="article:modified_time" content="2026-07-25T16:56:01.051Z">
 <meta property="article:author" content="zhlifeiy35">
 <meta property="article:tag" content="集成测试">
 <meta property="article:tag" content="dist_sync">
@@ -57,6 +57,7 @@
 
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
 <script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
@@ -77,6 +78,7 @@
   <noscript>
     <link rel="stylesheet" href="/css/noscript.css">
   </noscript>
+<link rel="alternate" href="/atom.xml" title="我的技术博客" type="application/atom+xml">
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
@@ -261,7 +263,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-06-27 22:12:55" itemprop="dateModified" datetime="2026-06-27T22:12:55+08:00">2026-06-27</time>
+      <time title="修改时间：2026-07-26 00:56:01" itemprop="dateModified" datetime="2026-07-26T00:56:01+08:00">2026-07-26</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -295,13 +297,13 @@
   <div class="audio-section">
     <h4>🎧 文章导读</h4>
     <audio controls preload="metadata">
-      <source src="/2026-06-16-dist-sync-integration-test/narration.mp3" type="audio/mpeg">
+      <source src="/audio/2026-06-16-dist-sync-integration-test/narration.mp3" type="audio/mpeg">
     </audio>
   </div>
   <div class="audio-section">
     <h4>🎵 背景音乐</h4>
     <audio controls loop preload="metadata">
-      <source src="/2026-06-16-dist-sync-integration-test/bgm.mp3" type="audio/mpeg">
+      <source src="/audio/2026-06-16-dist-sync-integration-test/bgm.mp3" type="audio/mpeg">
     </audio>
   </div>
 </div>
@@ -310,7 +312,7 @@
 <p><strong>测试方式</strong>：通过 admin <code>/sync/mockDingUserSync</code> 端点造数据 → MCP 查 <code>building_admin</code>&#x2F;<code>building_through</code> 两库校验。</p>
 <p><strong>测试时长</strong>：1.5 小时（含 DB 落库验证、跨服务 Feign 调用跟踪、脏数据恢复）。</p>
 <p><strong>产出物</strong>：<code>E:\nanwang\smart-park-cloud - no jar\docs\integration-test-2026-06-16\</code>（测试清单、执行脚本、mock 数据、HTTP 响应）</p>
-<p><img src="/2026-06-16-dist-sync-integration-test/assets/images/fig1_001.jpg" alt="测试矩阵表"><br><em>图1：测试矩阵表</em></p>
+<p><img data-src="/images/posts/2026-06-16-dist-sync-integration-test/fig1_001.jpg" alt="测试矩阵表"><br><em>图1：测试矩阵表</em></p>
 <h2 id="一、结论"><a href="#一、结论" class="headerlink" title="一、结论"></a>一、结论</h2><p><strong>9 项功能全部通过。</strong> 未发现阻断性缺陷。1 处 <code>dist_sync_status</code> 表现差异已查明为下游消费者正常行为（非 bug）。</p>
 <table>
 <thead>
@@ -457,7 +459,7 @@
 <li><code>PassUserGrantServiceImpl</code> grantExecStatus&#x3D;3 同步标记、<code>service-util/pom.xml</code> 注释 jna 依赖——无关功能线</li>
 <li>TODO :251（被删除钉钉用户的关联数据清理）——6&#x2F;16 设计明确标注”本次不做”</li>
 </ul>
-<h2 id="六、集成测试方法论"><a href="#六、集成测试方法论" class="headerlink" title="六、集成测试方法论"></a>六、集成测试方法论</h2><h3 id="1-Mock-端点是隔离生产数据的关键"><a href="#1-Mock-端点是隔离生产数据的关键" class="headerlink" title="1. Mock 端点是隔离生产数据的关键"></a>1. Mock 端点是隔离生产数据的关键</h3><p><img src="/2026-06-16-dist-sync-integration-test/assets/images/fig2_001.jpg" alt="mock 端点调用链"><br><em>图2：mock 端点调用链</em></p>
+<h2 id="六、集成测试方法论"><a href="#六、集成测试方法论" class="headerlink" title="六、集成测试方法论"></a>六、集成测试方法论</h2><h3 id="1-Mock-端点是隔离生产数据的关键"><a href="#1-Mock-端点是隔离生产数据的关键" class="headerlink" title="1. Mock 端点是隔离生产数据的关键"></a>1. Mock 端点是隔离生产数据的关键</h3><p><img data-src="/images/posts/2026-06-16-dist-sync-integration-test/fig2_001.jpg" alt="mock 端点调用链"><br><em>图2：mock 端点调用链</em></p>
 <p><code>mockDingUserSync</code> 端点<strong>绕过 iot-middle 直接接收 mock 数据</strong>，真实链路走 Spring 容器 + 真实 MyBatis + 真实 MySQL + 真实事务管理。这样：</p>
 <ul>
 <li>不污染生产数据（IP 白名单）</li>
@@ -510,7 +512,7 @@
 <td><code>E:\obs\zhishiku\项目\南网项目\dist_sync分支集成测试报告-2026-06-16.md</code></td>
 </tr>
 </tbody></table>
-<p><img src="/2026-06-16-dist-sync-integration-test/assets/images/fig3_001.jpg" alt="DB 落库对比"><br><em>图3：DB 落库对比</em></p>
+<p><img data-src="/images/posts/2026-06-16-dist-sync-integration-test/fig3_001.jpg" alt="DB 落库对比"><br><em>图3：DB 落库对比</em></p>
 <h2 id="经验总结"><a href="#经验总结" class="headerlink" title="经验总结"></a>经验总结</h2><h3 id="集成测试发现的-bug-比单元测试更有价值"><a href="#集成测试发现的-bug-比单元测试更有价值" class="headerlink" title="集成测试发现的 bug 比单元测试更有价值"></a>集成测试发现的 bug 比单元测试更有价值</h3><p>单元测试 mock 一切外部依赖，集成测试直面真实链路。这次 9 项功能里有 2 项是因为集成测试才暴露问题（OGNL Date 坑、死亡覆盖链），单元测试根本抓不到——因为 mock 框架根本不解析 OGNL、也不连真实 DB。</p>
 <h3 id="端到端要看每一张表"><a href="#端到端要看每一张表" class="headerlink" title="端到端要看每一张表"></a>端到端要看每一张表</h3><p>查 <code>pass_user</code> 找不到用户，第一反应”Feign 失败”，但<strong>只看一张表</strong>。后来查 <code>sys_user_park.park_id</code> 才发现 mapper SELECT 漏列——多查一张表就把根因暴露了。</p>
 <h3 id="软删是测试的”金标准”"><a href="#软删是测试的”金标准”" class="headerlink" title="软删是测试的”金标准”"></a>软删是测试的”金标准”</h3><p>mock 数据准备要”端到端验证”：调 mock 端点后，<strong>先去查中间表是不是预期的值</strong>，再去看最终表。这次先查 <code>sys_user_park.park_id</code>，再查 <code>pass_user.park_id</code>，顺藤摸瓜找到 mapper 漏列。</p>

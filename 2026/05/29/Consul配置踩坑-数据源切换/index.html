@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.28.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
 
     <meta name="description" content="数字孪生模块从 local profile 切换到 Consul 配置后，视频巡查接口全部报 500：Table &#39;gdsw.bs_sw_cy_dh_video_inspection&#39; doesn&#39;t exist。本地库有这张表，MCP 工具能查到，但服务连不上。本文记录了这个坑的根因、排查思路和解决方案。         🎧 文章导读">
 <meta property="og:type" content="article">
@@ -58,6 +58,7 @@
 
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
 <script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
@@ -78,6 +79,7 @@
   <noscript>
     <link rel="stylesheet" href="/css/noscript.css">
   </noscript>
+<link rel="alternate" href="/atom.xml" title="我的技术博客" type="application/atom+xml">
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
@@ -331,12 +333,12 @@
 
 <h3 id="2-数据库配置改了必须重启"><a href="#2-数据库配置改了必须重启" class="headerlink" title="2. 数据库配置改了必须重启"></a>2. 数据库配置改了必须重启</h3><p><code>@RefreshScope</code> 热更新不了连接池。数据库连接池在应用启动时初始化，运行时修改配置不会生效。</p>
 <h3 id="3-普通业务配置可以热更新"><a href="#3-普通业务配置可以热更新" class="headerlink" title="3. 普通业务配置可以热更新"></a>3. 普通业务配置可以热更新</h3><p>开关、URL、TTL 等普通业务配置可以通过 <code>@RefreshScope</code> 热更新，不用重启。</p>
-<h2 id="Consul-配置结构理解"><a href="#Consul-配置结构理解" class="headerlink" title="Consul 配置结构理解"></a>Consul 配置结构理解</h2><p><img src="/images/posts/Consul%E9%85%8D%E7%BD%AE%E8%B8%A9%E5%9D%91-%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2/fig1.png" alt="配置层级图"><br><em>图1：Consul 配置的三层结构</em></p>
+<h2 id="Consul-配置结构理解"><a href="#Consul-配置结构理解" class="headerlink" title="Consul 配置结构理解"></a>Consul 配置结构理解</h2><p><img data-src="/images/posts/Consul%E9%85%8D%E7%BD%AE%E8%B8%A9%E5%9D%91-%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2/fig1.png" alt="配置层级图"><br><em>图1：Consul 配置的三层结构</em></p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Consul 配置中心</span><br><span class="line">├── 通用模板（gdsw-common-config）</span><br><span class="line">│   └── 定义所有模块共享的默认配置</span><br><span class="line">├── 数据归集模块（gdsw-data-collection-config）</span><br><span class="line">│   └── 覆盖数据归集模块的专属配置</span><br><span class="line">├── 数字孪生模块（gdsw-digital-twin-config）</span><br><span class="line">│   └── 覆盖数字孪生模块的专属配置</span><br><span class="line">└── 其他模块...</span><br></pre></td></tr></table></figure>
 
 <p><strong>覆盖规则</strong>：模块级配置 &gt; 通用模板 &gt; 本地配置文件</p>
 <p><strong>关键点</strong>：只有同名属性才会被覆盖。自定义配置项（如 <code>targetdatabase.url</code>）不会影响 Spring 的标准配置项（如 <code>spring.datasource.url</code>）。</p>
-<h2 id="排查思路总结"><a href="#排查思路总结" class="headerlink" title="排查思路总结"></a>排查思路总结</h2><p><img src="/images/posts/Consul%E9%85%8D%E7%BD%AE%E8%B8%A9%E5%9D%91-%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2/fig2.png" alt="排查流程图"><br><em>图2：问题排查的五步流程</em></p>
+<h2 id="排查思路总结"><a href="#排查思路总结" class="headerlink" title="排查思路总结"></a>排查思路总结</h2><p><img data-src="/images/posts/Consul%E9%85%8D%E7%BD%AE%E8%B8%A9%E5%9D%91-%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2/fig2.png" alt="排查流程图"><br><em>图2：问题排查的五步流程</em></p>
 <ol>
 <li>报 <code>Table doesn&#39;t exist</code> → 先确认表是否真的不存在</li>
 <li>MCP 能查到但服务报错 → 服务连的不是同一个数据库</li>

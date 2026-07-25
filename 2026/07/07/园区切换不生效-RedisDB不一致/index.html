@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.28.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
 
     <meta name="description" content="dev 环境切园区后 &#x2F;user&#x2F;info 仍是旧园区，访客预约列表也不刷新。问题不在业务代码，而在 admin-service 和 gateway 写入了不同 Redis DB——这次把排障链路完整记录下来。">
 <meta property="og:type" content="article">
@@ -27,9 +27,9 @@
 <meta property="og:site_name" content="我的技术博客">
 <meta property="og:description" content="dev 环境切园区后 &#x2F;user&#x2F;info 仍是旧园区，访客预约列表也不刷新。问题不在业务代码，而在 admin-service 和 gateway 写入了不同 Redis DB——这次把排障链路完整记录下来。">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://zhlifeiy.codes/images/covers/redis-db-mismatch-cover.png">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/redis-db-mismatch-cover.webp">
 <meta property="article:published_time" content="2026-07-07T01:50:00.000Z">
-<meta property="article:modified_time" content="2026-07-18T03:06:28.848Z">
+<meta property="article:modified_time" content="2026-07-25T16:57:46.926Z">
 <meta property="article:author" content="zhlifeiy35">
 <meta property="article:tag" content="踩坑记录">
 <meta property="article:tag" content="Spring Cloud">
@@ -37,7 +37,7 @@
 <meta property="article:tag" content="智慧园区">
 <meta property="article:tag" content="Redis">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/redis-db-mismatch-cover.png">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/redis-db-mismatch-cover.webp">
 
 
 <link rel="canonical" href="https://zhlifeiy.codes/2026/07/07/%E5%9B%AD%E5%8C%BA%E5%88%87%E6%8D%A2%E4%B8%8D%E7%94%9F%E6%95%88-RedisDB%E4%B8%8D%E4%B8%80%E8%87%B4/">
@@ -58,6 +58,7 @@
 
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
 <script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
@@ -78,6 +79,7 @@
   <noscript>
     <link rel="stylesheet" href="/css/noscript.css">
   </noscript>
+<link rel="alternate" href="/atom.xml" title="我的技术博客" type="application/atom+xml">
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
@@ -221,7 +223,7 @@
   <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
     
     <div class="post-gallery-image">
-      <img src="/images/covers/redis-db-mismatch-cover.png" itemprop="contentUrl">
+      <img src="/images/covers/redis-db-mismatch-cover.webp" itemprop="contentUrl">
     </div>
     </div>
 
@@ -262,7 +264,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-07-18 11:06:28" itemprop="dateModified" datetime="2026-07-18T11:06:28+08:00">2026-07-18</time>
+      <time title="修改时间：2026-07-26 00:57:46" itemprop="dateModified" datetime="2026-07-26T00:57:46+08:00">2026-07-26</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -302,7 +304,7 @@
   </div>
 </div>
 
-<p><img src="/images/posts/%E5%9B%AD%E5%8C%BA%E5%88%87%E6%8D%A2%E4%B8%8D%E7%94%9F%E6%95%88-RedisDB%E4%B8%8D%E4%B8%80%E8%87%B4/fig1.png" alt="Redis DB 不一致导致登录态缓存错位"></p>
+<p><img data-src="/images/posts/%E5%9B%AD%E5%8C%BA%E5%88%87%E6%8D%A2%E4%B8%8D%E7%94%9F%E6%95%88-RedisDB%E4%B8%8D%E4%B8%80%E8%87%B4/fig1.png" alt="Redis DB 不一致导致登录态缓存错位"></p>
 <p><em>图1：admin-service 与 gateway 写入不同 Redis DB，登录态出现”两套真相”</em></p>
 <h2 id="一、需求背景"><a href="#一、需求背景" class="headerlink" title="一、需求背景"></a>一、需求背景</h2><p>业务方要求：用户在首页右上角切换园区之后，访客预约列表应该只看当前登录态园区的数据。<strong>超级管理员</strong>默认可以查看全部数据；<strong>普通用户</strong>则被强制按当前园区过滤，<strong>即使前端请求体里传了别的 parkId 也要被后端忽略</strong>。</p>
 <p>接口：<code>/gateway/through/visitorAppointment/page</code></p>
@@ -370,7 +372,7 @@
 <li>后续请求经过 gateway，gateway 仍从 <strong>DB 7</strong> 读取 <code>loginUser</code>，于是拿到的还是<strong>旧 parkId</strong>；</li>
 <li><code>/user/info</code> 和 through-service 看到的都是旧园区。</li>
 </ul>
-<p><img src="/images/posts/%E5%9B%AD%E5%8C%BA%E5%88%87%E6%8D%A2%E4%B8%8D%E7%94%9F%E6%95%88-RedisDB%E4%B8%8D%E4%B8%80%E8%87%B4/fig2.png" alt="登录态缓存读写路径示意"></p>
+<p><img data-src="/images/posts/%E5%9B%AD%E5%8C%BA%E5%88%87%E6%8D%A2%E4%B8%8D%E7%94%9F%E6%95%88-RedisDB%E4%B8%8D%E4%B8%80%E8%87%B4/fig2.png" alt="登录态缓存读写路径示意"></p>
 <p><em>图2：两条链路分别读写 DB7&#x2F;DB6，”切换”和”读取”完全错位</em></p>
 <h3 id="3-1-关键代码点回看"><a href="#3-1-关键代码点回看" class="headerlink" title="3.1 关键代码点回看"></a>3.1 关键代码点回看</h3><p>我们当时是怎么被表象误导的？</p>
 <ol>

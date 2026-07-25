@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.28.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
 
     <meta name="description" content="在一次工具迁移过程中，我遇到了一个经典的 API 兼容性问题：原工具使用 DuckMail（需付费 Token），我将其改为免费的 Mail.tm API 后，验证码邮件始终收不到。本文记录了完整的排查过程，以及如何通过”诊断增强”而非”绕过”的思路解决问题。">
 <meta property="og:type" content="article">
@@ -58,6 +58,7 @@
 
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
 <script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
@@ -78,6 +79,7 @@
   <noscript>
     <link rel="stylesheet" href="/css/noscript.css">
   </noscript>
+<link rel="alternate" href="/atom.xml" title="我的技术博客" type="application/atom+xml">
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
@@ -379,7 +381,7 @@
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">_fetch_emails_mail</span>(<span class="params">mail_token: <span class="built_in">str</span>, ...</span>):</span><br><span class="line">    <span class="comment"># ...</span></span><br><span class="line">    <span class="keyword">if</span> res.status_code == <span class="number">200</span>:</span><br><span class="line">        data = res.json()</span><br><span class="line">        <span class="comment"># 关键修复：先判断是否为列表</span></span><br><span class="line">        <span class="keyword">if</span> <span class="built_in">isinstance</span>(data, <span class="built_in">list</span>):</span><br><span class="line">            messages = data</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            messages = data.get(<span class="string">&quot;hydra:member&quot;</span>) <span class="keyword">or</span> data.get(<span class="string">&quot;member&quot;</span>) <span class="keyword">or</span> []</span><br><span class="line">        <span class="comment"># ...</span></span><br></pre></td></tr></table></figure>
 
 <h2 id="最终结果"><a href="#最终结果" class="headerlink" title="最终结果"></a>最终结果</h2><p>修复后重新运行测试：</p>
-<p><img src="/images/posts/mail-tm-success.png" alt="注册成功截图"></p>
+<p><img data-src="/images/posts/mail-tm-success.png" alt="注册成功截图"></p>
 <p>成功注册 6 个账号，平均速度 30 秒&#x2F;个。</p>
 <table>
 <thead>
@@ -391,32 +393,32 @@
 </thead>
 <tbody><tr>
 <td>1</td>
-<td><a href="mailto:&#x6d;&#116;&#x66;&#x36;&#99;&#x6d;&#102;&#99;&#64;&#x64;&#111;&#x6c;&#x6c;&#x69;&#99;&#111;&#110;&#x73;&#x2e;&#x63;&#x6f;&#x6d;">&#x6d;&#116;&#x66;&#x36;&#99;&#x6d;&#102;&#99;&#64;&#x64;&#111;&#x6c;&#x6c;&#x69;&#99;&#111;&#110;&#x73;&#x2e;&#x63;&#x6f;&#x6d;</a></td>
+<td><a href="mailto:&#x6d;&#x74;&#102;&#x36;&#99;&#x6d;&#x66;&#x63;&#x40;&#100;&#x6f;&#x6c;&#108;&#105;&#x63;&#111;&#x6e;&#x73;&#46;&#x63;&#111;&#109;">&#x6d;&#x74;&#102;&#x36;&#99;&#x6d;&#x66;&#x63;&#x40;&#100;&#x6f;&#x6c;&#108;&#105;&#x63;&#111;&#x6e;&#x73;&#46;&#x63;&#111;&#109;</a></td>
 <td>✅</td>
 </tr>
 <tr>
 <td>2</td>
-<td><a href="mailto:&#119;&#x7a;&#x77;&#x76;&#x6f;&#x75;&#106;&#x6d;&#x66;&#54;&#x6f;&#105;&#55;&#64;&#100;&#x6f;&#108;&#x6c;&#x69;&#99;&#x6f;&#110;&#x73;&#x2e;&#x63;&#111;&#x6d;">&#119;&#x7a;&#x77;&#x76;&#x6f;&#x75;&#106;&#x6d;&#x66;&#54;&#x6f;&#105;&#55;&#64;&#100;&#x6f;&#108;&#x6c;&#x69;&#99;&#x6f;&#110;&#x73;&#x2e;&#x63;&#111;&#x6d;</a></td>
+<td><a href="mailto:&#x77;&#x7a;&#119;&#x76;&#111;&#x75;&#x6a;&#x6d;&#102;&#x36;&#111;&#x69;&#55;&#x40;&#x64;&#x6f;&#108;&#108;&#105;&#x63;&#111;&#x6e;&#115;&#x2e;&#99;&#x6f;&#109;">&#x77;&#x7a;&#119;&#x76;&#111;&#x75;&#x6a;&#x6d;&#102;&#x36;&#111;&#x69;&#55;&#x40;&#x64;&#x6f;&#108;&#108;&#105;&#x63;&#111;&#x6e;&#115;&#x2e;&#99;&#x6f;&#109;</a></td>
 <td>✅</td>
 </tr>
 <tr>
 <td>3</td>
-<td><a href="mailto:&#x68;&#48;&#x62;&#103;&#117;&#x72;&#x32;&#120;&#x40;&#100;&#x6f;&#x6c;&#108;&#105;&#x63;&#111;&#x6e;&#x73;&#46;&#x63;&#x6f;&#109;">&#x68;&#48;&#x62;&#103;&#117;&#x72;&#x32;&#120;&#x40;&#100;&#x6f;&#x6c;&#108;&#105;&#x63;&#111;&#x6e;&#x73;&#46;&#x63;&#x6f;&#109;</a></td>
+<td><a href="mailto:&#104;&#x30;&#98;&#x67;&#117;&#x72;&#50;&#120;&#x40;&#x64;&#x6f;&#108;&#108;&#x69;&#x63;&#x6f;&#110;&#115;&#46;&#x63;&#x6f;&#109;">&#104;&#x30;&#98;&#x67;&#117;&#x72;&#50;&#120;&#x40;&#x64;&#x6f;&#108;&#108;&#x69;&#x63;&#x6f;&#110;&#115;&#46;&#x63;&#x6f;&#109;</a></td>
 <td>✅</td>
 </tr>
 <tr>
 <td>4</td>
-<td><a href="mailto:&#x36;&#112;&#x72;&#107;&#102;&#55;&#x6e;&#x36;&#x31;&#64;&#100;&#111;&#108;&#x6c;&#x69;&#99;&#x6f;&#110;&#115;&#x2e;&#x63;&#111;&#109;">&#x36;&#112;&#x72;&#107;&#102;&#55;&#x6e;&#x36;&#x31;&#64;&#100;&#111;&#108;&#x6c;&#x69;&#99;&#x6f;&#110;&#115;&#x2e;&#x63;&#111;&#109;</a></td>
+<td><a href="mailto:&#54;&#112;&#114;&#107;&#102;&#x37;&#110;&#x36;&#49;&#x40;&#100;&#111;&#108;&#108;&#105;&#99;&#x6f;&#110;&#115;&#x2e;&#x63;&#111;&#x6d;">&#54;&#112;&#114;&#107;&#102;&#x37;&#110;&#x36;&#49;&#x40;&#100;&#111;&#108;&#108;&#105;&#99;&#x6f;&#110;&#115;&#x2e;&#x63;&#111;&#x6d;</a></td>
 <td>✅</td>
 </tr>
 <tr>
 <td>5</td>
-<td><a href="mailto:&#119;&#110;&#x61;&#x31;&#x38;&#104;&#108;&#x6f;&#x38;&#x6d;&#103;&#64;&#100;&#111;&#108;&#108;&#x69;&#x63;&#111;&#x6e;&#x73;&#x2e;&#99;&#111;&#109;">&#119;&#110;&#x61;&#x31;&#x38;&#104;&#108;&#x6f;&#x38;&#x6d;&#103;&#64;&#100;&#111;&#108;&#108;&#x69;&#x63;&#111;&#x6e;&#x73;&#x2e;&#99;&#111;&#109;</a></td>
+<td><a href="mailto:&#119;&#110;&#x61;&#x31;&#x38;&#104;&#x6c;&#x6f;&#56;&#109;&#x67;&#x40;&#100;&#x6f;&#x6c;&#108;&#105;&#x63;&#111;&#110;&#115;&#x2e;&#x63;&#111;&#x6d;">&#119;&#110;&#x61;&#x31;&#x38;&#104;&#x6c;&#x6f;&#56;&#109;&#x67;&#x40;&#100;&#x6f;&#x6c;&#108;&#105;&#x63;&#111;&#110;&#115;&#x2e;&#x63;&#111;&#x6d;</a></td>
 <td>✅</td>
 </tr>
 <tr>
 <td>6</td>
-<td><a href="mailto:&#x67;&#108;&#x61;&#x79;&#51;&#x6b;&#x68;&#53;&#x71;&#x6a;&#x40;&#100;&#111;&#x6c;&#108;&#x69;&#99;&#111;&#110;&#115;&#46;&#x63;&#111;&#109;">&#x67;&#108;&#x61;&#x79;&#51;&#x6b;&#x68;&#53;&#x71;&#x6a;&#x40;&#100;&#111;&#x6c;&#108;&#x69;&#99;&#111;&#110;&#115;&#46;&#x63;&#111;&#109;</a></td>
+<td><a href="mailto:&#x67;&#108;&#x61;&#x79;&#x33;&#107;&#x68;&#53;&#113;&#106;&#64;&#100;&#x6f;&#108;&#108;&#105;&#x63;&#x6f;&#x6e;&#115;&#46;&#99;&#x6f;&#109;">&#x67;&#108;&#x61;&#x79;&#x33;&#107;&#x68;&#53;&#113;&#106;&#64;&#100;&#x6f;&#108;&#108;&#105;&#x63;&#x6f;&#x6e;&#115;&#46;&#99;&#x6f;&#109;</a></td>
 <td>✅</td>
 </tr>
 </tbody></table>

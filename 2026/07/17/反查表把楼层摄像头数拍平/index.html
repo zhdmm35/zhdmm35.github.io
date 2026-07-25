@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.28.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
 
     <meta name="description" content="「勾这个楼层到底覆盖几个摄像头」——超管在配置页的盲勾体验必须解决。后端用反查表把 O(N×M) 拍平成 O(N+M)，前端零计算渲染，6 个单测全绿。本文把这个看起来简单的功能拆开讲。">
 <meta property="og:type" content="article">
@@ -27,9 +27,9 @@
 <meta property="og:site_name" content="我的技术博客">
 <meta property="og:description" content="「勾这个楼层到底覆盖几个摄像头」——超管在配置页的盲勾体验必须解决。后端用反查表把 O(N×M) 拍平成 O(N+M)，前端零计算渲染，6 个单测全绿。本文把这个看起来简单的功能拆开讲。">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://zhlifeiy.codes/images/covers/floor-camera-count-cover.png">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/floor-camera-count-cover.webp">
 <meta property="article:published_time" content="2026-07-17T11:00:00.000Z">
-<meta property="article:modified_time" content="2026-07-18T03:12:00.906Z">
+<meta property="article:modified_time" content="2026-07-25T16:57:46.922Z">
 <meta property="article:author" content="zhlifeiy35">
 <meta property="article:tag" content="Java">
 <meta property="article:tag" content="南网项目">
@@ -37,7 +37,7 @@
 <meta property="article:tag" content="摄像头">
 <meta property="article:tag" content="反查表">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/floor-camera-count-cover.png">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/floor-camera-count-cover.webp">
 
 
 <link rel="canonical" href="https://zhlifeiy.codes/2026/07/17/%E5%8F%8D%E6%9F%A5%E8%A1%A8%E6%8A%8A%E6%A5%BC%E5%B1%82%E6%91%84%E5%83%8F%E5%A4%B4%E6%95%B0%E6%8B%8D%E5%B9%B3/">
@@ -58,6 +58,7 @@
 
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
 <script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
@@ -78,6 +79,7 @@
   <noscript>
     <link rel="stylesheet" href="/css/noscript.css">
   </noscript>
+<link rel="alternate" href="/atom.xml" title="我的技术博客" type="application/atom+xml">
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
@@ -221,7 +223,7 @@
   <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
     
     <div class="post-gallery-image">
-      <img src="/images/covers/floor-camera-count-cover.png" itemprop="contentUrl">
+      <img src="/images/covers/floor-camera-count-cover.webp" itemprop="contentUrl">
     </div>
     </div>
 
@@ -262,7 +264,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-07-18 11:12:00" itemprop="dateModified" datetime="2026-07-18T11:12:00+08:00">2026-07-18</time>
+      <time title="修改时间：2026-07-26 00:57:46" itemprop="dateModified" datetime="2026-07-26T00:57:46+08:00">2026-07-26</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -303,7 +305,7 @@
   </div>
 </div>
 
-<p><img src="/images/posts/%E5%8F%8D%E6%9F%A5%E8%A1%A8%E6%8A%8A%E6%A5%BC%E5%B1%82%E6%91%84%E5%83%8F%E5%A4%B4%E6%95%B0%E6%8B%8D%E5%B9%B3/fig1.png" alt="反查表算法三步把摄像头按楼层归堆"></p>
+<p><img data-src="/images/posts/%E5%8F%8D%E6%9F%A5%E8%A1%A8%E6%8A%8A%E6%A5%BC%E5%B1%82%E6%91%84%E5%83%8F%E5%A4%B4%E6%95%B0%E6%8B%8D%E5%B9%B3/fig1.png" alt="反查表算法三步把摄像头按楼层归堆"></p>
 <p><em>图1：建反查表 → 按 spaceId 查楼层 → 按楼层 merge 计数，三步完成统计</em></p>
 <h2 id="一、需求背景：两层链路中的”展示性增量”"><a href="#一、需求背景：两层链路中的”展示性增量”" class="headerlink" title="一、需求背景：两层链路中的”展示性增量”"></a>一、需求背景：两层链路中的”展示性增量”</h2><p>在拆本次增量之前，先说清整体链路的两层，否则单看本文会摸不着头脑。</p>
 <h3 id="1-1-第一层（已合入）：给超管做公司默认可见楼层配置"><a href="#1-1-第一层（已合入）：给超管做公司默认可见楼层配置" class="headerlink" title="1.1 第一层（已合入）：给超管做公司默认可见楼层配置"></a>1.1 第一层（已合入）：给超管做公司默认可见楼层配置</h3><p>上一提交 <code>9c7e71ac6</code> 给 super-admin 提供了公司默认可见楼层的配置能力：</p>
@@ -321,7 +323,7 @@
 </blockquote>
 <h2 id="二、关键决策-1：计数口径必须和-getCameraTree-对齐"><a href="#二、关键决策-1：计数口径必须和-getCameraTree-对齐" class="headerlink" title="二、关键决策 1：计数口径必须和 getCameraTree 对齐"></a>二、关键决策 1：计数口径必须和 getCameraTree 对齐</h2><h3 id="2-1-这是整件事的立身之本"><a href="#2-1-这是整件事的立身之本" class="headerlink" title="2.1 这是整件事的立身之本"></a>2.1 这是整件事的立身之本</h3><p><code>getCameraTree</code> 判可见是<strong>按楼层放行整个楼层子树</strong>——某个楼层被勾选，它下面挂的所有节点（包括房间）里的摄像头全部可见。</p>
 <p>那么配置页上「该楼层 N 个摄像头」的 N，就必须是<strong>这个楼层子树下的全部摄像头数</strong>，否则前端显示的数字和用户实际能看到的数量对不上，超管会被误导。</p>
-<p><img src="/images/posts/%E5%8F%8D%E6%9F%A5%E8%A1%A8%E6%8A%8A%E6%A5%BC%E5%B1%82%E6%91%84%E5%83%8F%E5%A4%B4%E6%95%B0%E6%8B%8D%E5%B9%B3/fig2.png" alt="getCameraTree 与 floorCameraCounts 的口径对齐"></p>
+<p><img data-src="/images/posts/%E5%8F%8D%E6%9F%A5%E8%A1%A8%E6%8A%8A%E6%A5%BC%E5%B1%82%E6%91%84%E5%83%8F%E5%A4%B4%E6%95%B0%E6%8B%8D%E5%B9%B3/fig2.png" alt="getCameraTree 与 floorCameraCounts 的口径对齐"></p>
 <p><em>图2：左侧 getCameraTree 按楼层放行子树，右侧 floorCameraCounts 必须统计相同子树</em></p>
 <h3 id="2-2-空间模型"><a href="#2-2-空间模型" class="headerlink" title="2.2 空间模型"></a>2.2 空间模型</h3><p>摄像头可能直接挂在「楼层」节点上，也可能挂在楼层下的「房间」节点上；而房间节点带 <code>floorId</code> 指回所属楼层。</p>
 <p>所以：</p>

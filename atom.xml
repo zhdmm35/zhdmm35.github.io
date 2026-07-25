@@ -1,0 +1,649 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>我的技术博客</title>
+  
+  <subtitle>记录学习与成长</subtitle>
+  <link href="https://zhlifeiy.codes/atom.xml" rel="self"/>
+  
+  <link href="https://zhlifeiy.codes/"/>
+  <updated>2026-07-25T16:57:46.919Z</updated>
+  <id>https://zhlifeiy.codes/</id>
+  
+  <author>
+    <name>zhlifeiy35</name>
+    
+  </author>
+  
+  <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>在 16G 内存的 Windows 本机跑通 shopkeeper-agent：13 个坑的完整排障笔记</title>
+    <link href="https://zhlifeiy.codes/2026/07/18/shopkeeper-agent-troubleshooting/"/>
+    <id>https://zhlifeiy.codes/2026/07/18/shopkeeper-agent-troubleshooting/</id>
+    <published>2026-07-18T13:30:00.000Z</published>
+    <updated>2026-07-25T16:57:46.919Z</updated>
+    
+    
+    <summary type="html">从零在 Windows 11 + 16G 内存下跑通电商问数项目 shopkeeper-agent 的完整排障笔记，覆盖 Python 环境、LLM 接入、Embedding、Docker、中间件、后端启动六大环节共 13 个真实坑。</summary>
+    
+    
+    
+    <category term="AI经验" scheme="https://zhlifeiy.codes/categories/AI%E7%BB%8F%E9%AA%8C/"/>
+    
+    
+    <category term="shopkeeper-agent" scheme="https://zhlifeiy.codes/tags/shopkeeper-agent/"/>
+    
+    <category term="AI问数" scheme="https://zhlifeiy.codes/tags/AI%E9%97%AE%E6%95%B0/"/>
+    
+    <category term="排障记录" scheme="https://zhlifeiy.codes/tags/%E6%8E%92%E9%9A%9C%E8%AE%B0%E5%BD%95/"/>
+    
+    <category term="MiniMax" scheme="https://zhlifeiy.codes/tags/MiniMax/"/>
+    
+    <category term="Docker" scheme="https://zhlifeiy.codes/tags/Docker/"/>
+    
+    <category term="FastAPI" scheme="https://zhlifeiy.codes/tags/FastAPI/"/>
+    
+    <category term="uv" scheme="https://zhlifeiy.codes/tags/uv/"/>
+    
+    <category term="Python3.14" scheme="https://zhlifeiy.codes/tags/Python3-14/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>一次干净的「放宽约束」重构：让公司楼层配置跨园区</title>
+    <link href="https://zhlifeiy.codes/2026/07/18/%E6%91%84%E5%83%8F%E5%A4%B4%E5%85%AC%E5%8F%B8%E6%A5%BC%E5%B1%82%E9%85%8D%E7%BD%AE%E8%B7%A8%E5%9B%AD%E5%8C%BA%E7%BB%91%E5%AE%9A/"/>
+    <id>https://zhlifeiy.codes/2026/07/18/%E6%91%84%E5%83%8F%E5%A4%B4%E5%85%AC%E5%8F%B8%E6%A5%BC%E5%B1%82%E9%85%8D%E7%BD%AE%E8%B7%A8%E5%9B%AD%E5%8C%BA%E7%BB%91%E5%AE%9A/</id>
+    <published>2026-07-18T13:30:00.000Z</published>
+    <updated>2026-07-25T16:57:46.920Z</updated>
+    
+    
+    <summary type="html">&lt;p&gt;公司默认可见楼层配置（&lt;code&gt;/orgFloorConfig/&amp;#123;orgId&amp;#125;&lt;/code&gt; 查询、&lt;code&gt;POST /orgFloorConfig&lt;/code&gt; 保存）最初的语义是「限当前园区」——超管在 A 园区，只能给 A 内的公司配 A 的楼层。本次把它放宽为「跨园区绑定」：一个公司可以同时绑多个园区的楼层。改动只动 6 个文件 +70&amp;#x2F;-23，但牵住了查询、保存、校验三个「按当前园区」硬编码点的同步改造，是放宽约束类重构的一个干净样本。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="后端开发" scheme="https://zhlifeiy.codes/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"/>
+    
+    
+    <category term="Spring Cloud" scheme="https://zhlifeiy.codes/tags/Spring-Cloud/"/>
+    
+    <category term="重构" scheme="https://zhlifeiy.codes/tags/%E9%87%8D%E6%9E%84/"/>
+    
+    <category term="Java" scheme="https://zhlifeiy.codes/tags/Java/"/>
+    
+    <category term="跨服务聚合" scheme="https://zhlifeiy.codes/tags/%E8%B7%A8%E6%9C%8D%E5%8A%A1%E8%81%9A%E5%90%88/"/>
+    
+    <category term="园区隔离" scheme="https://zhlifeiy.codes/tags/%E5%9B%AD%E5%8C%BA%E9%9A%94%E7%A6%BB/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>O(N×M) 拍平成 O(N+M)：反查表如何把楼层摄像头计数从慢路径救回来</title>
+    <link href="https://zhlifeiy.codes/2026/07/17/%E5%8F%8D%E6%9F%A5%E8%A1%A8%E6%8A%8A%E6%A5%BC%E5%B1%82%E6%91%84%E5%83%8F%E5%A4%B4%E6%95%B0%E6%8B%8D%E5%B9%B3/"/>
+    <id>https://zhlifeiy.codes/2026/07/17/%E5%8F%8D%E6%9F%A5%E8%A1%A8%E6%8A%8A%E6%A5%BC%E5%B1%82%E6%91%84%E5%83%8F%E5%A4%B4%E6%95%B0%E6%8B%8D%E5%B9%B3/</id>
+    <published>2026-07-17T11:00:00.000Z</published>
+    <updated>2026-07-25T16:57:46.922Z</updated>
+    
+    
+    <summary type="html">「勾这个楼层到底覆盖几个摄像头」——超管在配置页的盲勾体验必须解决。后端用反查表把 O(N×M) 拍平成 O(N+M)，前端零计算渲染，6 个单测全绿。本文把这个看起来简单的功能拆开讲。</summary>
+    
+    
+    
+    <category term="后端开发" scheme="https://zhlifeiy.codes/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"/>
+    
+    
+    <category term="Java" scheme="https://zhlifeiy.codes/tags/Java/"/>
+    
+    <category term="南网项目" scheme="https://zhlifeiy.codes/tags/%E5%8D%97%E7%BD%91%E9%A1%B9%E7%9B%AE/"/>
+    
+    <category term="算法" scheme="https://zhlifeiy.codes/tags/%E7%AE%97%E6%B3%95/"/>
+    
+    <category term="摄像头" scheme="https://zhlifeiy.codes/tags/%E6%91%84%E5%83%8F%E5%A4%B4/"/>
+    
+    <category term="反查表" scheme="https://zhlifeiy.codes/tags/%E5%8F%8D%E6%9F%A5%E8%A1%A8/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>氚云访客历史同步漏数据？分页方式、日期语义、头像容错三处全改</title>
+    <link href="https://zhlifeiy.codes/2026/07/14/%E6%B0%9A%E4%BA%91%E8%AE%BF%E5%AE%A2%E5%8E%86%E5%8F%B2%E5%90%8C%E6%AD%A5%E4%BF%AE%E5%A4%8D/"/>
+    <id>https://zhlifeiy.codes/2026/07/14/%E6%B0%9A%E4%BA%91%E8%AE%BF%E5%AE%A2%E5%8E%86%E5%8F%B2%E5%90%8C%E6%AD%A5%E4%BF%AE%E5%A4%8D/</id>
+    <published>2026-07-14T12:44:00.000Z</published>
+    <updated>2026-07-25T16:57:46.923Z</updated>
+    
+    
+    <summary type="html">氚云访客历史同步漏数据不是网络问题，而是分页方式、日期语义、头像容错三处都写错了。本文把三个根因、四个修复点、服务器验证步骤完整拆开，让你下次遇到第三方同步漏数据时能直接套用排查思路。</summary>
+    
+    
+    
+    <category term="后端开发" scheme="https://zhlifeiy.codes/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"/>
+    
+    
+    <category term="南网项目" scheme="https://zhlifeiy.codes/tags/%E5%8D%97%E7%BD%91%E9%A1%B9%E7%9B%AE/"/>
+    
+    <category term="氚云" scheme="https://zhlifeiy.codes/tags/%E6%B0%9A%E4%BA%91/"/>
+    
+    <category term="访客同步" scheme="https://zhlifeiy.codes/tags/%E8%AE%BF%E5%AE%A2%E5%90%8C%E6%AD%A5/"/>
+    
+    <category term="分页" scheme="https://zhlifeiy.codes/tags/%E5%88%86%E9%A1%B5/"/>
+    
+    <category term="容错" scheme="https://zhlifeiy.codes/tags/%E5%AE%B9%E9%94%99/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>一行 parkId 改不出越权：契约测试如何锁死 Token 身份来源</title>
+    <link href="https://zhlifeiy.codes/2026/07/13/Token%E8%BA%AB%E4%BB%BD%E8%B6%8A%E6%9D%83%E5%A5%91%E7%BA%A6%E6%B5%8B%E8%AF%95/"/>
+    <id>https://zhlifeiy.codes/2026/07/13/Token%E8%BA%AB%E4%BB%BD%E8%B6%8A%E6%9D%83%E5%A5%91%E7%BA%A6%E6%B5%8B%E8%AF%95/</id>
+    <published>2026-07-13T03:00:00.000Z</published>
+    <updated>2026-07-25T16:57:46.924Z</updated>
+    
+    
+    <summary type="html">多园区切换接口能不能被前端伪造身份？改一行 parkId 就能越权吗？本文用 4 个测试用例 + 1 次反向变异验证，证明 userParkSwitch 的身份来源、授权顺序、Redis 更新顺序已被源码契约测试锁死。</summary>
+    
+    
+    
+    <category term="测试" scheme="https://zhlifeiy.codes/categories/%E6%B5%8B%E8%AF%95/"/>
+    
+    
+    <category term="南网项目" scheme="https://zhlifeiy.codes/tags/%E5%8D%97%E7%BD%91%E9%A1%B9%E7%9B%AE/"/>
+    
+    <category term="安全测试" scheme="https://zhlifeiy.codes/tags/%E5%AE%89%E5%85%A8%E6%B5%8B%E8%AF%95/"/>
+    
+    <category term="契约测试" scheme="https://zhlifeiy.codes/tags/%E5%A5%91%E7%BA%A6%E6%B5%8B%E8%AF%95/"/>
+    
+    <category term="反向变异" scheme="https://zhlifeiy.codes/tags/%E5%8F%8D%E5%90%91%E5%8F%98%E5%BC%82/"/>
+    
+    <category term="Spring Security" scheme="https://zhlifeiy.codes/tags/Spring-Security/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>多园区改造测试全景：从登录到业务隔离的 7 大模块验证清单</title>
+    <link href="https://zhlifeiy.codes/2026/07/08/%E5%A4%9A%E5%9B%AD%E5%8C%BA%E6%94%B9%E9%80%A0%E6%B5%8B%E8%AF%95%E5%85%A8%E6%99%AF/"/>
+    <id>https://zhlifeiy.codes/2026/07/08/%E5%A4%9A%E5%9B%AD%E5%8C%BA%E6%94%B9%E9%80%A0%E6%B5%8B%E8%AF%95%E5%85%A8%E6%99%AF/</id>
+    <published>2026-07-08T09:15:00.000Z</published>
+    <updated>2026-07-25T16:57:46.925Z</updated>
+    
+    
+    <summary type="html">多园区改造不是改几个字段那么简单。登录态、菜单、角色、同步链路、业务数据、回归兼容——任何一个模块漏测，都可能在生产里埋雷。本文把改造测试要覆盖的 7 大模块完整拆开。</summary>
+    
+    
+    
+    <category term="测试" scheme="https://zhlifeiy.codes/categories/%E6%B5%8B%E8%AF%95/"/>
+    
+    
+    <category term="多园区" scheme="https://zhlifeiy.codes/tags/%E5%A4%9A%E5%9B%AD%E5%8C%BA/"/>
+    
+    <category term="南网项目" scheme="https://zhlifeiy.codes/tags/%E5%8D%97%E7%BD%91%E9%A1%B9%E7%9B%AE/"/>
+    
+    <category term="测试计划" scheme="https://zhlifeiy.codes/tags/%E6%B5%8B%E8%AF%95%E8%AE%A1%E5%88%92/"/>
+    
+    <category term="越权校验" scheme="https://zhlifeiy.codes/tags/%E8%B6%8A%E6%9D%83%E6%A0%A1%E9%AA%8C/"/>
+    
+    <category term="数据隔离" scheme="https://zhlifeiy.codes/tags/%E6%95%B0%E6%8D%AE%E9%9A%94%E7%A6%BB/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>园区切换不生效？Redis DB 不一致这个坑我替你踩过了</title>
+    <link href="https://zhlifeiy.codes/2026/07/07/%E5%9B%AD%E5%8C%BA%E5%88%87%E6%8D%A2%E4%B8%8D%E7%94%9F%E6%95%88-RedisDB%E4%B8%8D%E4%B8%80%E8%87%B4/"/>
+    <id>https://zhlifeiy.codes/2026/07/07/%E5%9B%AD%E5%8C%BA%E5%88%87%E6%8D%A2%E4%B8%8D%E7%94%9F%E6%95%88-RedisDB%E4%B8%8D%E4%B8%80%E8%87%B4/</id>
+    <published>2026-07-07T01:50:00.000Z</published>
+    <updated>2026-07-25T16:57:46.926Z</updated>
+    
+    
+    <summary type="html">dev 环境切园区后 /user/info 仍是旧园区，访客预约列表也不刷新。问题不在业务代码，而在 admin-service 和 gateway 写入了不同 Redis DB——这次把排障链路完整记录下来。</summary>
+    
+    
+    
+    <category term="后端开发" scheme="https://zhlifeiy.codes/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"/>
+    
+    
+    <category term="踩坑记录" scheme="https://zhlifeiy.codes/tags/%E8%B8%A9%E5%9D%91%E8%AE%B0%E5%BD%95/"/>
+    
+    <category term="Spring Cloud" scheme="https://zhlifeiy.codes/tags/Spring-Cloud/"/>
+    
+    <category term="南网项目" scheme="https://zhlifeiy.codes/tags/%E5%8D%97%E7%BD%91%E9%A1%B9%E7%9B%AE/"/>
+    
+    <category term="智慧园区" scheme="https://zhlifeiy.codes/tags/%E6%99%BA%E6%85%A7%E5%9B%AD%E5%8C%BA/"/>
+    
+    <category term="Redis" scheme="https://zhlifeiy.codes/tags/Redis/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>钉钉同步性能优化（异步化+批量化）+ 头像回填 CDN 解析失败</title>
+    <link href="https://zhlifeiy.codes/2026/06/25/2026-06-25-perf-avatar-backfill/"/>
+    <id>https://zhlifeiy.codes/2026/06/25/2026-06-25-perf-avatar-backfill/</id>
+    <published>2026-06-25T10:00:00.000Z</published>
+    <updated>2026-07-25T16:57:46.929Z</updated>
+    
+    
+    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;blockquote&gt;
+&lt;p&gt;钉钉同步两个故事：(1) 15000+ 用户同步时 HTTP 超时——根因是 &lt;code&gt;toUpdateUsers&lt;/code&gt; 循环内 3 次 DB 查询每人 &amp;#x3D; 46000 次 SQL round-trip 在一个事务内串行执行，&lt;strong&gt;两步优化&lt;/strong&gt;：异步化（HTTP 立即返回”已受理”，后台静默执行）+ 批量化（循环前 IN 批量预加载到 Map，循环内 O(1) 查 Map），计划阶段就识别出 4 个潜在 bug（路径双重前缀、BaseResultMap 错映射、dirty-check 破坏恢复语义、peek 污染原始 DB 状态）。(2) 头像回填接口返回 200 但成功数始终为 0——admin 服务器在内网，DNS 无法解析钉钉 CDN 域名 &lt;code&gt;static-legacy.dingtalk.com&lt;/code&gt;，所有用户全部被静默跳过。&lt;/p&gt;
+&lt;/blockquote&gt;</summary>
+    
+    
+    
+    <category term="后端开发" scheme="https://zhlifeiy.codes/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"/>
+    
+    <category term="南网项目" scheme="https://zhlifeiy.codes/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E5%8D%97%E7%BD%91%E9%A1%B9%E7%9B%AE/"/>
+    
+    
+    <category term="性能优化" scheme="https://zhlifeiy.codes/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/"/>
+    
+    <category term="异步化" scheme="https://zhlifeiy.codes/tags/%E5%BC%82%E6%AD%A5%E5%8C%96/"/>
+    
+    <category term="批量化查询" scheme="https://zhlifeiy.codes/tags/%E6%89%B9%E9%87%8F%E5%8C%96%E6%9F%A5%E8%AF%A2/"/>
+    
+    <category term="CDN解析" scheme="https://zhlifeiy.codes/tags/CDN%E8%A7%A3%E6%9E%90/"/>
+    
+    <category term="N+1" scheme="https://zhlifeiy.codes/tags/N-1/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>PDEPARTS 废弃 + 头像同步修复 + 用户查询回归：递归 CTE 上溯</title>
+    <link href="https://zhlifeiy.codes/2026/06/23/2026-06-23-pdeparts-deprecated/"/>
+    <id>https://zhlifeiy.codes/2026/06/23/2026-06-23-pdeparts-deprecated/</id>
+    <published>2026-06-23T10:00:00.000Z</published>
+    <updated>2026-07-25T16:57:46.930Z</updated>
+    
+    
+    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;blockquote&gt;
+&lt;p&gt;6&amp;#x2F;22 暴露的 PDEPARTS 下线问题，今天给出完整修复：废弃所有依赖 PDEPARTS 的解析，改用部门 UUID 沿 &lt;code&gt;sys_organization.parent_id&lt;/code&gt; 递归上溯查 &lt;code&gt;sys_park_organization&lt;/code&gt; 桥表（MySQL 8 CTE）。一个 commit 改了 8 个文件、+167&amp;#x2F;-33，把昨天识别出的 4 个 Bug 全部修完。同时顺手把头像同步 bug（&lt;code&gt;setFacePic&lt;/code&gt; 误写为 &lt;code&gt;setFacePicAuditStatus&lt;/code&gt;）修了，并补充 &lt;code&gt;face_pic=&amp;#39;2&amp;#39;&lt;/code&gt; 历史脏数据的处理策略。&lt;/p&gt;
+&lt;/blockquote&gt;</summary>
+    
+    
+    
+    <category term="后端开发" scheme="https://zhlifeiy.codes/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"/>
+    
+    <category term="南网项目" scheme="https://zhlifeiy.codes/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E5%8D%97%E7%BD%91%E9%A1%B9%E7%9B%AE/"/>
+    
+    
+    <category term="PDEPARTS废弃" scheme="https://zhlifeiy.codes/tags/PDEPARTS%E5%BA%9F%E5%BC%83/"/>
+    
+    <category term="递归CTE" scheme="https://zhlifeiy.codes/tags/%E9%80%92%E5%BD%92CTE/"/>
+    
+    <category term="头像同步" scheme="https://zhlifeiy.codes/tags/%E5%A4%B4%E5%83%8F%E5%90%8C%E6%AD%A5/"/>
+    
+    <category term="回归修复" scheme="https://zhlifeiy.codes/tags/%E5%9B%9E%E5%BD%92%E4%BF%AE%E5%A4%8D/"/>
+    
+    <category term="BaseResultMap" scheme="https://zhlifeiy.codes/tags/BaseResultMap/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>PDEPARTS 字段下线与钉钉同步真实格式链路测试报告</title>
+    <link href="https://zhlifeiy.codes/2026/06/22/2026-06-22-pdeparts-offline/"/>
+    <id>https://zhlifeiy.codes/2026/06/22/2026-06-22-pdeparts-offline/</id>
+    <published>2026-06-22T11:00:00.000Z</published>
+    <updated>2026-07-25T16:57:46.931Z</updated>
+    
+    
+    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;blockquote&gt;
+&lt;p&gt;今天捅了两个马蜂窝：&lt;strong&gt;中台 Dataphin 下线了 PDEPARTS 字段&lt;/strong&gt;，导致所有依赖该字段解析公司归属的 Java 逻辑静默失效（&lt;code&gt;getCompanyIdFromPDeparts&lt;/code&gt; &amp;#x2F; &lt;code&gt;getDepartmentAsList&lt;/code&gt; 返回 null），1542 个 Ding 用户 100% 缺 sys_user_park；&lt;strong&gt;用真实格式跑 12 个端到端测试用例&lt;/strong&gt;，又挖出 4 个新 bug（增量更新取消删除标记失效、园区链路仍依赖 PDEPARTS、pass_user 链路同样依赖 PDEPARTS、部门 vs 公司数据源不一致）。修复方案是改用部门 UUID 沿 parent_id 递归上溯查桥表（CTE），以及补回 synSysUserToPassUser ADD 分支漏设的 distSyncStatus。&lt;/p&gt;
+&lt;/blockquote&gt;</summary>
+    
+    
+    
+    <category term="后端开发" scheme="https://zhlifeiy.codes/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"/>
+    
+    <category term="南网项目" scheme="https://zhlifeiy.codes/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E5%8D%97%E7%BD%91%E9%A1%B9%E7%9B%AE/"/>
+    
+    
+    <category term="集成测试" scheme="https://zhlifeiy.codes/tags/%E9%9B%86%E6%88%90%E6%B5%8B%E8%AF%95/"/>
+    
+    <category term="PDEPARTS下线" scheme="https://zhlifeiy.codes/tags/PDEPARTS%E4%B8%8B%E7%BA%BF/"/>
+    
+    <category term="数据模型变更" scheme="https://zhlifeiy.codes/tags/%E6%95%B0%E6%8D%AE%E6%A8%A1%E5%9E%8B%E5%8F%98%E6%9B%B4/"/>
+    
+    <category term="Dataphin" scheme="https://zhlifeiy.codes/tags/Dataphin/"/>
+    
+    <category term="真实格式" scheme="https://zhlifeiy.codes/tags/%E7%9C%9F%E5%AE%9E%E6%A0%BC%E5%BC%8F/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>dist_sync 分支集成测试报告：9 项功能 12 个用例全过</title>
+    <link href="https://zhlifeiy.codes/2026/06/16/2026-06-16-dist-sync-integration-test/"/>
+    <id>https://zhlifeiy.codes/2026/06/16/2026-06-16-dist-sync-integration-test/</id>
+    <published>2026-06-16T05:00:00.000Z</published>
+    <updated>2026-07-25T16:56:01.051Z</updated>
+    
+    
+    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;blockquote&gt;
+&lt;p&gt;dist_sync 分支自 6&amp;#x2F;10 起的所有改动（19 个提交 + 6&amp;#x2F;16 未提交的”部门+园区更新”），今天做端到端集成测试。&lt;strong&gt;9 项功能 12 个用例全过，未发现阻断性缺陷&lt;/strong&gt;。1 处 &lt;code&gt;dist_sync_status&lt;/code&gt; 表现差异已查明为下游消费者正常行为（非 bug）。这篇不是技术深挖，是&lt;strong&gt;测试方法 + DB 证据 + 关键发现的完整记录&lt;/strong&gt;，适合需要做类似集成测试的同行参考。&lt;/p&gt;
+&lt;/blockquote&gt;</summary>
+    
+    
+    
+    <category term="后端开发" scheme="https://zhlifeiy.codes/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"/>
+    
+    <category term="南网项目" scheme="https://zhlifeiy.codes/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E5%8D%97%E7%BD%91%E9%A1%B9%E7%9B%AE/"/>
+    
+    
+    <category term="集成测试" scheme="https://zhlifeiy.codes/tags/%E9%9B%86%E6%88%90%E6%B5%8B%E8%AF%95/"/>
+    
+    <category term="dist_sync" scheme="https://zhlifeiy.codes/tags/dist-sync/"/>
+    
+    <category term="端到端测试" scheme="https://zhlifeiy.codes/tags/%E7%AB%AF%E5%88%B0%E7%AB%AF%E6%B5%8B%E8%AF%95/"/>
+    
+    <category term="多表一致性" scheme="https://zhlifeiy.codes/tags/%E5%A4%9A%E8%A1%A8%E4%B8%80%E8%87%B4%E6%80%A7/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>pass_user 字段同步 + 人员列表联动 + 代码审查：折中方案与前端 import 来源踩坑</title>
+    <link href="https://zhlifeiy.codes/2026/06/15/2026-06-15-pass-user-fields-and-org-tree/"/>
+    <id>https://zhlifeiy.codes/2026/06/15/2026-06-15-pass-user-fields-and-org-tree/</id>
+    <published>2026-06-15T08:00:00.000Z</published>
+    <updated>2026-07-25T16:56:01.049Z</updated>
+    
+    
+    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;blockquote&gt;
+&lt;p&gt;今天三个主题：钉钉同步补 pass_user 的手机号和部门（折中方案）、人员列表页面部门下拉按园区联动（前端 import 来源同名坑）、代码审查记录（已合并改动）。其中&lt;strong&gt;最值得记录的是折中方案的取舍&lt;/strong&gt;——为什么”换部门同步”主动放弃，以及&lt;strong&gt;前端 import 同名函数指向不同后端接口&lt;/strong&gt;这种隐蔽问题。&lt;/p&gt;
+&lt;/blockquote&gt;</summary>
+    
+    
+    
+    <category term="后端开发" scheme="https://zhlifeiy.codes/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"/>
+    
+    <category term="南网项目" scheme="https://zhlifeiy.codes/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E5%8D%97%E7%BD%91%E9%A1%B9%E7%9B%AE/"/>
+    
+    
+    <category term="钉钉同步" scheme="https://zhlifeiy.codes/tags/%E9%92%89%E9%92%89%E5%90%8C%E6%AD%A5/"/>
+    
+    <category term="折中方案" scheme="https://zhlifeiy.codes/tags/%E6%8A%98%E4%B8%AD%E6%96%B9%E6%A1%88/"/>
+    
+    <category term="Vue" scheme="https://zhlifeiy.codes/tags/Vue/"/>
+    
+    <category term="代码审查" scheme="https://zhlifeiy.codes/tags/%E4%BB%A3%E7%A0%81%E5%AE%A1%E6%9F%A5/"/>
+    
+    <category term="部门联动" scheme="https://zhlifeiy.codes/tags/%E9%83%A8%E9%97%A8%E8%81%94%E5%8A%A8/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>pass_user 死亡覆盖链与 spec 错误判断：从集成测试挖出 421 条脏数据</title>
+    <link href="https://zhlifeiy.codes/2026/06/12/2026-06-12-pass-user-death-chain/"/>
+    <id>https://zhlifeiy.codes/2026/06/12/2026-06-12-pass-user-death-chain/</id>
+    <published>2026-06-12T10:00:00.000Z</published>
+    <updated>2026-07-25T16:55:25.167Z</updated>
+    
+    
+    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;blockquote&gt;
+&lt;p&gt;6&amp;#x2F;11 实现的”钉钉同步触发 pass_user 同步”功能本身端到端跑通，但暴露出 6&amp;#x2F;11 spec 文档第 46 行的一个&lt;strong&gt;事实错误判断&lt;/strong&gt;：把 &lt;code&gt;PassUserServiceImpl.synSysUserToPassUser()&lt;/code&gt; 里的 &lt;code&gt;setParkId(DEFAULT_PARK_ID)&lt;/code&gt; 误判为”无效死代码”。&lt;strong&gt;实际是有效过滤&lt;/strong&gt;。更糟的是下午挖出了真正的死亡覆盖链：admin 端 &lt;code&gt;UserMapperExt.xml&lt;/code&gt; 的 &lt;code&gt;listByConditionExt&lt;/code&gt; SQL &lt;strong&gt;没 select &lt;code&gt;urp.park_id&lt;/code&gt; 列&lt;/strong&gt;，导致 &lt;code&gt;user.getParkId()&lt;/code&gt; 永远是 NULL，421 条 &lt;code&gt;pass_user.park_id&lt;/code&gt; 全被污染成 NULL。&lt;/p&gt;
+&lt;/blockquote&gt;</summary>
+    
+    
+    
+    <category term="后端开发" scheme="https://zhlifeiy.codes/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"/>
+    
+    <category term="南网项目" scheme="https://zhlifeiy.codes/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E5%8D%97%E7%BD%91%E9%A1%B9%E7%9B%AE/"/>
+    
+    
+    <category term="MyBatis" scheme="https://zhlifeiy.codes/tags/MyBatis/"/>
+    
+    <category term="集成测试" scheme="https://zhlifeiy.codes/tags/%E9%9B%86%E6%88%90%E6%B5%8B%E8%AF%95/"/>
+    
+    <category term="多园区" scheme="https://zhlifeiy.codes/tags/%E5%A4%9A%E5%9B%AD%E5%8C%BA/"/>
+    
+    <category term="死亡覆盖链" scheme="https://zhlifeiy.codes/tags/%E6%AD%BB%E4%BA%A1%E8%A6%86%E7%9B%96%E9%93%BE/"/>
+    
+    <category term="Bug修复" scheme="https://zhlifeiy.codes/tags/Bug%E4%BF%AE%E5%A4%8D/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>钉钉同步写 sys_user_park + 园区绑定一级公司：从功能到 OGNL 经典踩坑</title>
+    <link href="https://zhlifeiy.codes/2026/06/11/2026-06-11-ding-park-bind/"/>
+    <id>https://zhlifeiy.codes/2026/06/11/2026-06-11-ding-park-bind/</id>
+    <published>2026-06-11T12:00:00.000Z</published>
+    <updated>2026-07-25T16:55:25.166Z</updated>
+    
+    
+    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;blockquote&gt;
+&lt;p&gt;今天一口气做了 2 个 feature + 1 个构建命令摸清：钉钉同步补 &lt;code&gt;sys_user_park&lt;/code&gt; 占位记录、园区绑定一级公司（顶级 org + 互斥）、admin-service 打包 fat jar。feature 走的是 spec-first + subagent-driven，3 轮 spec review + 3 轮 code review。但 06-11 集成测试&lt;strong&gt;第一次就跑出 500&lt;/strong&gt;——&lt;code&gt;saveCompanyBind&lt;/code&gt; 调 &lt;code&gt;updateParkOrganization&lt;/code&gt; 时，generic mapper 对 Date 字段 OGNL 求值崩了。**1 行 fix：删掉多余的 &lt;code&gt;WebExtUtils.iniCreate(model);&lt;/code&gt;**。这条经验已经写进全局 CLAUDE.md。&lt;/p&gt;
+&lt;/blockquote&gt;</summary>
+    
+    
+    
+    <category term="后端开发" scheme="https://zhlifeiy.codes/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"/>
+    
+    <category term="南网项目" scheme="https://zhlifeiy.codes/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E5%8D%97%E7%BD%91%E9%A1%B9%E7%9B%AE/"/>
+    
+    
+    <category term="MyBatis" scheme="https://zhlifeiy.codes/tags/MyBatis/"/>
+    
+    <category term="Spring Cloud" scheme="https://zhlifeiy.codes/tags/Spring-Cloud/"/>
+    
+    <category term="钉钉同步" scheme="https://zhlifeiy.codes/tags/%E9%92%89%E9%92%89%E5%90%8C%E6%AD%A5/"/>
+    
+    <category term="OGNL" scheme="https://zhlifeiy.codes/tags/OGNL/"/>
+    
+    <category term="园区绑定" scheme="https://zhlifeiy.codes/tags/%E5%9B%AD%E5%8C%BA%E7%BB%91%E5%AE%9A/"/>
+    
+    <category term="互斥校验" scheme="https://zhlifeiy.codes/tags/%E4%BA%92%E6%96%A5%E6%A0%A1%E9%AA%8C/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>登录 token 补齐与项目改动全量汇总</title>
+    <link href="https://zhlifeiy.codes/2026/06/10/2026-06-10-login-token-and-summary/"/>
+    <id>https://zhlifeiy.codes/2026/06/10/2026-06-10-login-token-and-summary/</id>
+    <published>2026-06-10T04:00:00.000Z</published>
+    <updated>2026-07-25T16:55:25.164Z</updated>
+    
+    
+    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;blockquote&gt;
+&lt;p&gt;链路通了，admin 也起来了，但登录返回的响应没有 token——因为 token 是 Gateway 加的，不是 admin 加的。本篇解决：登录 token 补齐 + Nacos 分组统一 + admin 注册 Nacos + 980.sql 数据导入，以及一份完整的项目改动清单（5 个我们改的代码文件 + 3 个 dist_sync 分支已有的改动）。&lt;/p&gt;
+&lt;/blockquote&gt;</summary>
+    
+    
+    
+    <category term="后端开发" scheme="https://zhlifeiy.codes/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"/>
+    
+    <category term="南网项目" scheme="https://zhlifeiy.codes/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E5%8D%97%E7%BD%91%E9%A1%B9%E7%9B%AE/"/>
+    
+    
+    <category term="JWT" scheme="https://zhlifeiy.codes/tags/JWT/"/>
+    
+    <category term="Nacos分组" scheme="https://zhlifeiy.codes/tags/Nacos%E5%88%86%E7%BB%84/"/>
+    
+    <category term="数据导入" scheme="https://zhlifeiy.codes/tags/%E6%95%B0%E6%8D%AE%E5%AF%BC%E5%85%A5/"/>
+    
+    <category term="改动汇总" scheme="https://zhlifeiy.codes/tags/%E6%94%B9%E5%8A%A8%E6%B1%87%E6%80%BB/"/>
+    
+    <category term="Git" scheme="https://zhlifeiy.codes/tags/Git/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>6 个启动连环坑：从 MySQL 用户到前端 401 的完整链路打通</title>
+    <link href="https://zhlifeiy.codes/2026/06/09/2026-06-09-six-fixes/"/>
+    <id>https://zhlifeiy.codes/2026/06/09/2026-06-09-six-fixes/</id>
+    <published>2026-06-09T14:00:00.000Z</published>
+    <updated>2026-07-25T16:55:25.160Z</updated>
+    
+    
+    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;blockquote&gt;
+&lt;p&gt;编译跑绿后，启动链路又冒出 6 个连环坑：MySQL 没 &lt;code&gt;building_*&lt;/code&gt; 用户、property-service 写死内网 IP、admin 种子用户密码是 SHA512×2、&lt;code&gt;is_enable=1&lt;/code&gt; 居然是禁用、gateway 报 JWT NPE、前端访问报 401。本篇一次性梳理这 6 个坑的根因、修复方案、排查顺序，以及哪些是”反直觉的项目约定”。&lt;/p&gt;
+&lt;/blockquote&gt;</summary>
+    
+    
+    
+    <category term="后端开发" scheme="https://zhlifeiy.codes/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"/>
+    
+    <category term="南网项目" scheme="https://zhlifeiy.codes/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E5%8D%97%E7%BD%91%E9%A1%B9%E7%9B%AE/"/>
+    
+    
+    <category term="Spring Cloud" scheme="https://zhlifeiy.codes/tags/Spring-Cloud/"/>
+    
+    <category term="Gateway" scheme="https://zhlifeiy.codes/tags/Gateway/"/>
+    
+    <category term="Feign" scheme="https://zhlifeiy.codes/tags/Feign/"/>
+    
+    <category term="JWT" scheme="https://zhlifeiy.codes/tags/JWT/"/>
+    
+    <category term="Nacos" scheme="https://zhlifeiy.codes/tags/Nacos/"/>
+    
+    <category term="启动修复" scheme="https://zhlifeiy.codes/tags/%E5%90%AF%E5%8A%A8%E4%BF%AE%E5%A4%8D/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>接手烂尾的 Spring Cloud 微服务项目：从零搭建 26 模块编译环境</title>
+    <link href="https://zhlifeiy.codes/2026/06/09/2026-06-09-spring-cloud-env-setup/"/>
+    <id>https://zhlifeiy.codes/2026/06/09/2026-06-09-spring-cloud-env-setup/</id>
+    <published>2026-06-09T10:00:00.000Z</published>
+    <updated>2026-07-25T16:55:25.162Z</updated>
+    
+    
+    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;blockquote&gt;
+&lt;p&gt;接手一个停更 2 年的 Spring Cloud Alibaba 微服务项目，13 个业务服务、11 个独立数据库、26 个 Maven 模块，本地 Maven 仓库空空如也，&lt;code&gt;mvn compile&lt;/code&gt; 一跑就是红海一片。这篇记录我从零搭建编译环境的完整过程，包括 Maven 配置重写、私有依赖安装、22 个 SNAPSHOT jar 的手工恢复，以及最终 26 模块 BUILD SUCCESS 的关键命令。&lt;/p&gt;
+&lt;/blockquote&gt;</summary>
+    
+    
+    
+    <category term="后端开发" scheme="https://zhlifeiy.codes/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"/>
+    
+    <category term="南网项目" scheme="https://zhlifeiy.codes/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E5%8D%97%E7%BD%91%E9%A1%B9%E7%9B%AE/"/>
+    
+    
+    <category term="Spring Cloud" scheme="https://zhlifeiy.codes/tags/Spring-Cloud/"/>
+    
+    <category term="微服务" scheme="https://zhlifeiy.codes/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/"/>
+    
+    <category term="Maven" scheme="https://zhlifeiy.codes/tags/Maven/"/>
+    
+    <category term="环境搭建" scheme="https://zhlifeiy.codes/tags/%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA/"/>
+    
+    <category term="编译踩坑" scheme="https://zhlifeiy.codes/tags/%E7%BC%96%E8%AF%91%E8%B8%A9%E5%9D%91/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>数据归集 6 月探查实录：三天三件事，把树形接口、数据脏坑、跨源机制全部扒一遍</title>
+    <link href="https://zhlifeiy.codes/2026/06/03/%E6%95%B0%E6%8D%AE%E5%BD%92%E9%9B%866%E6%9C%88%E6%8E%A2%E6%9F%A5%E5%AE%9E%E5%BD%95-%E4%B8%89%E5%A4%A9%E4%B8%89%E4%BB%B6%E4%BA%8B/"/>
+    <id>https://zhlifeiy.codes/2026/06/03/%E6%95%B0%E6%8D%AE%E5%BD%92%E9%9B%866%E6%9C%88%E6%8E%A2%E6%9F%A5%E5%AE%9E%E5%BD%95-%E4%B8%89%E5%A4%A9%E4%B8%89%E4%BB%B6%E4%BA%8B/</id>
+    <published>2026-06-03T14:00:00.000Z</published>
+    <updated>2026-07-25T16:59:54.299Z</updated>
+    
+    
+    <summary type="html">三天里把数据归集系统的 6 个 tree 接口、148 个孤儿设备、5 个数据地雷全部扒了一遍，附完整证据链和修复指南</summary>
+    
+    
+    
+    <category term="后端开发" scheme="https://zhlifeiy.codes/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"/>
+    
+    <category term="水文项目" scheme="https://zhlifeiy.codes/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E6%B0%B4%E6%96%87%E9%A1%B9%E7%9B%AE/"/>
+    
+    
+    <category term="Spring Boot" scheme="https://zhlifeiy.codes/tags/Spring-Boot/"/>
+    
+    <category term="多数据源" scheme="https://zhlifeiy.codes/tags/%E5%A4%9A%E6%95%B0%E6%8D%AE%E6%BA%90/"/>
+    
+    <category term="数据归集" scheme="https://zhlifeiy.codes/tags/%E6%95%B0%E6%8D%AE%E5%BD%92%E9%9B%86/"/>
+    
+    <category term="树选择器" scheme="https://zhlifeiy.codes/tags/%E6%A0%91%E9%80%89%E6%8B%A9%E5%99%A8/"/>
+    
+    <category term="baomidou-dynamic-datasource" scheme="https://zhlifeiy.codes/tags/baomidou-dynamic-datasource/"/>
+    
+    <category term="MySQL" scheme="https://zhlifeiy.codes/tags/MySQL/"/>
+    
+    <category term="数据治理" scheme="https://zhlifeiy.codes/tags/%E6%95%B0%E6%8D%AE%E6%B2%BB%E7%90%86/"/>
+    
+    <category term="Bug排查" scheme="https://zhlifeiy.codes/tags/Bug%E6%8E%92%E6%9F%A5/"/>
+    
+    <category term="接口改造" scheme="https://zhlifeiy.codes/tags/%E6%8E%A5%E5%8F%A3%E6%94%B9%E9%80%A0/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Consul 配置踩坑：数据源切换的陷阱与排查</title>
+    <link href="https://zhlifeiy.codes/2026/05/29/Consul%E9%85%8D%E7%BD%AE%E8%B8%A9%E5%9D%91-%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2/"/>
+    <id>https://zhlifeiy.codes/2026/05/29/Consul%E9%85%8D%E7%BD%AE%E8%B8%A9%E5%9D%91-%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2/</id>
+    <published>2026-05-29T02:00:00.000Z</published>
+    <updated>2026-05-31T07:47:59.150Z</updated>
+    
+    
+    <summary type="html">&lt;p&gt;数字孪生模块从 local profile 切换到 Consul 配置后，视频巡查接口全部报 500：&lt;code&gt;Table &amp;#39;gdsw.bs_sw_cy_dh_video_inspection&amp;#39; doesn&amp;#39;t exist&lt;/code&gt;。本地库有这张表，MCP 工具能查到，但服务连不上。本文记录了这个坑的根因、排查思路和解决方案。&lt;/p&gt;
+&lt;div class=&quot;audio-player&quot;&gt;
+  &lt;div class=&quot;audio-section&quot;&gt;
+    &lt;h4&gt;🎧 文章导读&lt;/h4&gt;
+    &lt;audio controls preload=&quot;metadata&quot;&gt;
+      &lt;source src=&quot;/audio/Consul配置踩坑-数据源切换/narration.mp3&quot; type=&quot;audio/mpeg&quot;&gt;
+      您的浏览器不支持音频播放。
+    &lt;/audio&gt;
+  &lt;/div&gt;
+  &lt;div class=&quot;audio-section&quot;&gt;
+    &lt;h4&gt;🎵 背景音乐&lt;/h4&gt;
+    &lt;audio controls loop preload=&quot;metadata&quot;&gt;
+      &lt;source src=&quot;/audio/Consul配置踩坑-数据源切换/bgm.mp3&quot; type=&quot;audio/mpeg&quot;&gt;
+      您的浏览器不支持音频播放。
+    &lt;/audio&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</summary>
+    
+    
+    
+    <category term="后端开发" scheme="https://zhlifeiy.codes/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"/>
+    
+    
+    <category term="Spring Boot" scheme="https://zhlifeiy.codes/tags/Spring-Boot/"/>
+    
+    <category term="Consul" scheme="https://zhlifeiy.codes/tags/Consul/"/>
+    
+    <category term="配置中心" scheme="https://zhlifeiy.codes/tags/%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83/"/>
+    
+    <category term="数据源" scheme="https://zhlifeiy.codes/tags/%E6%95%B0%E6%8D%AE%E6%BA%90/"/>
+    
+    <category term="踩坑" scheme="https://zhlifeiy.codes/tags/%E8%B8%A9%E5%9D%91/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>跨数据源查询：VD 设备列表的改造实践</title>
+    <link href="https://zhlifeiy.codes/2026/05/28/%E8%B7%A8%E6%95%B0%E6%8D%AE%E6%BA%90%E6%9F%A5%E8%AF%A2-VD%E8%AE%BE%E5%A4%87%E5%88%97%E8%A1%A8%E6%94%B9%E9%80%A0/"/>
+    <id>https://zhlifeiy.codes/2026/05/28/%E8%B7%A8%E6%95%B0%E6%8D%AE%E6%BA%90%E6%9F%A5%E8%AF%A2-VD%E8%AE%BE%E5%A4%87%E5%88%97%E8%A1%A8%E6%94%B9%E9%80%A0/</id>
+    <published>2026-05-28T02:00:00.000Z</published>
+    <updated>2026-05-31T07:47:44.767Z</updated>
+    
+    
+    <summary type="html">&lt;p&gt;前端视频巡查任务配置页需要展示”有视频设备的测站列表 + 每个测站下的设备”。但设备表在主库，测站表在 slave 库，无法一条 SQL JOIN。本文记录了使用 &lt;code&gt;@DS&lt;/code&gt; 注解 + Java 内存组装的跨数据源查询方案。&lt;/p&gt;
+&lt;div class=&quot;audio-player&quot;&gt;
+  &lt;div class=&quot;audio-section&quot;&gt;
+    &lt;h4&gt;🎧 文章导读&lt;/h4&gt;
+    &lt;audio controls preload=&quot;metadata&quot;&gt;
+      &lt;source src=&quot;/audio/跨数据源查询-VD设备列表改造/narration.mp3&quot; type=&quot;audio/mpeg&quot;&gt;
+      您的浏览器不支持音频播放。
+    &lt;/audio&gt;
+  &lt;/div&gt;
+  &lt;div class=&quot;audio-section&quot;&gt;
+    &lt;h4&gt;🎵 背景音乐&lt;/h4&gt;
+    &lt;audio controls loop preload=&quot;metadata&quot;&gt;
+      &lt;source src=&quot;/audio/跨数据源查询-VD设备列表改造/bgm.mp3&quot; type=&quot;audio/mpeg&quot;&gt;
+      您的浏览器不支持音频播放。
+    &lt;/audio&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</summary>
+    
+    
+    
+    <category term="后端开发" scheme="https://zhlifeiy.codes/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"/>
+    
+    
+    <category term="Spring Boot" scheme="https://zhlifeiy.codes/tags/Spring-Boot/"/>
+    
+    <category term="多数据源" scheme="https://zhlifeiy.codes/tags/%E5%A4%9A%E6%95%B0%E6%8D%AE%E6%BA%90/"/>
+    
+    <category term="MyBatis-Plus" scheme="https://zhlifeiy.codes/tags/MyBatis-Plus/"/>
+    
+    <category term="动态数据源" scheme="https://zhlifeiy.codes/tags/%E5%8A%A8%E6%80%81%E6%95%B0%E6%8D%AE%E6%BA%90/"/>
+    
+    <category term="跨库查询" scheme="https://zhlifeiy.codes/tags/%E8%B7%A8%E5%BA%93%E6%9F%A5%E8%AF%A2/"/>
+    
+  </entry>
+  
+</feed>

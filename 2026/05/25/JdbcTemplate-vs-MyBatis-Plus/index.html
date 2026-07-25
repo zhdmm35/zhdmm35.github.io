@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.28.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
 
     <meta name="description" content="在数据归集系统的 TreeSelectorServiceImpl 中，大部分查询使用 MyBatis-Plus，但有 6 处使用了原生 JdbcTemplate。本文分析这 6 种场景，总结何时应该”退回”原生 SQL，以及如何在两者之间做出合理选择。         🎧 文章导读                   您的浏览器不支持音频播放。                🎵 背景音乐">
 <meta property="og:type" content="article">
@@ -58,6 +58,7 @@
 
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
 <script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
@@ -78,6 +79,7 @@
   <noscript>
     <link rel="stylesheet" href="/css/noscript.css">
   </noscript>
+<link rel="alternate" href="/atom.xml" title="我的技术博客" type="application/atom+xml">
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
@@ -352,7 +354,7 @@
 <td>被 1、3 调用的辅助方法</td>
 </tr>
 </tbody></table>
-<h2 id="三类核心原因"><a href="#三类核心原因" class="headerlink" title="三类核心原因"></a>三类核心原因</h2><p><img src="/images/posts/JdbcTemplate-vs-MyBatis-Plus/fig1.png" alt="三种场景对比图"><br><em>图1：聚合查询、跨表关联、动态表名三种场景对比</em></p>
+<h2 id="三类核心原因"><a href="#三类核心原因" class="headerlink" title="三类核心原因"></a>三类核心原因</h2><p><img data-src="/images/posts/JdbcTemplate-vs-MyBatis-Plus/fig1.png" alt="三种场景对比图"><br><em>图1：聚合查询、跨表关联、动态表名三种场景对比</em></p>
 <h3 id="原因一：聚合-分组"><a href="#原因一：聚合-分组" class="headerlink" title="原因一：聚合 + 分组"></a>原因一：聚合 + 分组</h3><p>MBP 的 <code>QueryWrapper</code> 不支持 <code>GROUP BY</code> + 聚合函数 + 子查询的组合。</p>
 <p>典型场景：取每个设备的最新一条记录。这需要子查询先按设备分组取最大时间戳，再关联回主表取完整记录：</p>
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 典型模式：取每个设备的最新一条记录</span></span><br><span class="line"><span class="keyword">SELECT</span> t1.<span class="operator">*</span> <span class="keyword">FROM</span> <span class="keyword">table</span> t1</span><br><span class="line"><span class="keyword">INNER</span> <span class="keyword">JOIN</span> (</span><br><span class="line">    <span class="keyword">SELECT</span> EQID, <span class="built_in">MAX</span>(TM) <span class="keyword">AS</span> MAX_TM</span><br><span class="line">    <span class="keyword">FROM</span> <span class="keyword">table</span> <span class="keyword">WHERE</span> EQID <span class="keyword">IN</span> (?, ?, ?)</span><br><span class="line">    <span class="keyword">GROUP</span> <span class="keyword">BY</span> EQID</span><br><span class="line">) t2 <span class="keyword">ON</span> t1.EQID <span class="operator">=</span> t2.EQID <span class="keyword">AND</span> t1.TM <span class="operator">=</span> t2.MAX_TM</span><br></pre></td></tr></table></figure>
@@ -400,7 +402,7 @@
 <blockquote>
 <p>当前方案功能正确，优化优先级不高。若后续维护成本增加（如 SQL 拼接出错难排查），可考虑迁移到 XML Mapper。</p>
 </blockquote>
-<h2 id="选择指南"><a href="#选择指南" class="headerlink" title="选择指南"></a>选择指南</h2><p><img src="/images/posts/JdbcTemplate-vs-MyBatis-Plus/fig2.png" alt="选择指南决策树"><br><em>图2：何时用 MyBatis-Plus、何时用 JdbcTemplate 的决策树</em></p>
+<h2 id="选择指南"><a href="#选择指南" class="headerlink" title="选择指南"></a>选择指南</h2><p><img data-src="/images/posts/JdbcTemplate-vs-MyBatis-Plus/fig2.png" alt="选择指南决策树"><br><em>图2：何时用 MyBatis-Plus、何时用 JdbcTemplate 的决策树</em></p>
 <p>总结一下何时用 MBP、何时用 JdbcTemplate：</p>
 <p><strong>用 MyBatis-Plus 的场景</strong>：</p>
 <ul>

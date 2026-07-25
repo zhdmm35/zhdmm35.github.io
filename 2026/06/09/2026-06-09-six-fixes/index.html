@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.28.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
 
     <meta name="description" content="导读 编译跑绿后，启动链路又冒出 6 个连环坑：MySQL 没 building_* 用户、property-service 写死内网 IP、admin 种子用户密码是 SHA512×2、is_enable&#x3D;1 居然是禁用、gateway 报 JWT NPE、前端访问报 401。本篇一次性梳理这 6 个坑的根因、修复方案、排查顺序，以及哪些是”反直觉的项目约定”。">
 <meta property="og:type" content="article">
@@ -29,7 +29,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://zhlifeiy.codes/images/covers/2026-06-09-six-fixes_001.jpg">
 <meta property="article:published_time" content="2026-06-09T14:00:00.000Z">
-<meta property="article:modified_time" content="2026-06-27T14:12:54.739Z">
+<meta property="article:modified_time" content="2026-07-25T16:55:25.160Z">
 <meta property="article:author" content="zhlifeiy35">
 <meta property="article:tag" content="Spring Cloud">
 <meta property="article:tag" content="Gateway">
@@ -59,6 +59,7 @@
 
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
 <script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
@@ -79,6 +80,7 @@
   <noscript>
     <link rel="stylesheet" href="/css/noscript.css">
   </noscript>
+<link rel="alternate" href="/atom.xml" title="我的技术博客" type="application/atom+xml">
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
@@ -263,7 +265,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-06-27 22:12:54" itemprop="dateModified" datetime="2026-06-27T22:12:54+08:00">2026-06-27</time>
+      <time title="修改时间：2026-07-26 00:55:25" itemprop="dateModified" datetime="2026-07-26T00:55:25+08:00">2026-07-26</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -297,20 +299,20 @@
   <div class="audio-section">
     <h4>🎧 文章导读</h4>
     <audio controls preload="metadata">
-      <source src="/2026-06-09-six-fixes/narration.mp3" type="audio/mpeg">
+      <source src="/audio/2026-06-09-six-fixes/narration.mp3" type="audio/mpeg">
     </audio>
   </div>
   <div class="audio-section">
     <h4>🎵 背景音乐</h4>
     <audio controls loop preload="metadata">
-      <source src="/2026-06-09-six-fixes/bgm.mp3" type="audio/mpeg">
+      <source src="/audio/2026-06-09-six-fixes/bgm.mp3" type="audio/mpeg">
     </audio>
   </div>
 </div>
 
 <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>环境编译通过只是开始。真正启动 admin-service 时，才发现问题像洋葱一样一层层剥开：连不上 MySQL → admin 用户密码哈希算法不对 → <code>is_enable</code> 字段语义反过来 → 启动后 NPE → 前端 401。</p>
 <p>这一篇把 6 个修复合并在一起，因为它们是一条链上的——前一个修不完后一个根本看不到。</p>
-<p><img src="/2026-06-09-six-fixes/assets/images/fig1_001.jpg" alt="6 个连环坑链路示意"><br><em>图1：从 MySQL 到 401 的启动链路</em></p>
+<p><img data-src="/images/posts/2026-06-09-six-fixes/fig1_001.jpg" alt="6 个连环坑链路示意"><br><em>图1：从 MySQL 到 401 的启动链路</em></p>
 <h2 id="坑-1：MySQL-没有-building-用户"><a href="#坑-1：MySQL-没有-building-用户" class="headerlink" title="坑 1：MySQL 没有 building_* 用户"></a>坑 1：MySQL 没有 <code>building_*</code> 用户</h2><h3 id="现象"><a href="#现象" class="headerlink" title="现象"></a>现象</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">CannotGetJdbcConnectionException: Failed to obtain JDBC Connection; </span><br><span class="line">nested exception is java.sql.SQLException: </span><br><span class="line">Access denied for user &#x27;building_admin&#x27;@&#x27;localhost&#x27; (using password: YES)</span><br></pre></td></tr></table></figure>
 
 <h3 id="根因"><a href="#根因" class="headerlink" title="根因"></a>根因</h3><p><code>bootstrap-dev.yml</code> 写死了 <code>username: building_admin / password: building_admin@123</code>，但 MySQL 里<strong>只有 root、travel、系统用户</strong>——从来没人建过 <code>building_*</code> 系列用户。</p>
@@ -356,7 +358,7 @@
 </tr>
 </tbody></table>
 <p>估计是某次开发连堡垒机调测忘了改回来。<strong>其他服务都是 <code>127.0.0.1</code>，唯独 property 是内网</strong>。</p>
-<p><img src="/2026-06-09-six-fixes/assets/images/fig2_001.jpg" alt="property 内网 IP 残留配置"><br><em>图2：property 写死内网 IP</em></p>
+<p><img data-src="/images/posts/2026-06-09-six-fixes/fig2_001.jpg" alt="property 内网 IP 残留配置"><br><em>图2：property 写死内网 IP</em></p>
 <h2 id="坑-3：admin-种子用户密码算法"><a href="#坑-3：admin-种子用户密码算法" class="headerlink" title="坑 3：admin 种子用户密码算法"></a>坑 3：admin 种子用户密码算法</h2><p>admin 起来后登录报 <code>用户名或密码错误</code>。一开始以为是 hash 算法不对——确实不对，但不是 BCrypt，是 <strong>SHA512 × 2 次 + 盐</strong>。</p>
 <h3 id="加密逻辑（service-util-LoginPwdCryptoUtil-java）"><a href="#加密逻辑（service-util-LoginPwdCryptoUtil-java）" class="headerlink" title="加密逻辑（service-util/.../LoginPwdCryptoUtil.java）"></a>加密逻辑（<code>service-util/.../LoginPwdCryptoUtil.java</code>）</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">int</span> <span class="variable">HASH_INTERATIONS</span> <span class="operator">=</span> <span class="number">2</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> String <span class="title function_">enCryptPassword</span><span class="params">(String password, String salt)</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> Hex.encodeHexString(</span><br><span class="line">        hash(StringUtils.getBytesUtf8(password), StringUtils.getBytesUtf8(salt), HASH_INTERATIONS));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
@@ -396,7 +398,7 @@
 <blockquote>
 <p>[!warning] 锁定陷阱<br>密码错 5 次自动设 <code>is_enable = &quot;1&quot;</code> 锁定。<strong>调试期不要乱试密码</strong>——一旦锁了，要直接 SQL 改 <code>is_enable=0</code>，不然怎么试都”已被锁定”。</p>
 </blockquote>
-<p><img src="/2026-06-09-six-fixes/assets/images/fig3_001.jpg" alt="is_enable 反向语义示意"><br><em>图3：is_enable&#x3D;1 居然是禁用</em></p>
+<p><img data-src="/images/posts/2026-06-09-six-fixes/fig3_001.jpg" alt="is_enable 反向语义示意"><br><em>图3：is_enable&#x3D;1 居然是禁用</em></p>
 <h2 id="坑-5：gateway-启动-3-个-NPE"><a href="#坑-5：gateway-启动-3-个-NPE" class="headerlink" title="坑 5：gateway 启动 3 个 NPE"></a>坑 5：gateway 启动 3 个 NPE</h2><h3 id="现象-1"><a href="#现象-1" class="headerlink" title="现象"></a>现象</h3><table>
 <thead>
 <tr>

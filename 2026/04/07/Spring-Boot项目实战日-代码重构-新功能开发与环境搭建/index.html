@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.28.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
 
     <meta name="description" content="一篇记录同一天内三个 Spring Boot 项目的实战工作：图书管理系统的 Controller 层重构与分支合并策略、毕业设计图书评分评论功能的全流程开发，以及物联网项目本地 Nacos + TDengine 环境的搭建验证。">
 <meta property="og:type" content="article">
@@ -58,6 +58,7 @@
 
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
 <script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
@@ -78,6 +79,7 @@
   <noscript>
     <link rel="stylesheet" href="/css/noscript.css">
   </noscript>
+<link rel="alternate" href="/atom.xml" title="我的技术博客" type="application/atom+xml">
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
@@ -309,7 +311,7 @@
 </tr>
 </tbody></table>
 <p>关键设计决策：<strong>只动读接口，不动写路径</strong>。这样把风险控制在最小范围，写路径的收口留给后续迭代。</p>
-<p><img src="/images/posts/Spring-Boot%E9%A1%B9%E7%9B%AE%E5%AE%9E%E6%88%98%E6%97%A5-%E4%BB%A3%E7%A0%81%E9%87%8D%E6%9E%84-%E6%96%B0%E5%8A%9F%E8%83%BD%E5%BC%80%E5%8F%91%E4%B8%8E%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA/fig1.png" alt="Controller 重构分层架构"><br><em>图 1：Controller 层重构——公共服务下沉与鉴权横切</em></p>
+<p><img data-src="/images/posts/Spring-Boot%E9%A1%B9%E7%9B%AE%E5%AE%9E%E6%88%98%E6%97%A5-%E4%BB%A3%E7%A0%81%E9%87%8D%E6%9E%84-%E6%96%B0%E5%8A%9F%E8%83%BD%E5%BC%80%E5%8F%91%E4%B8%8E%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA/fig1.png" alt="Controller 重构分层架构"><br><em>图 1：Controller 层重构——公共服务下沉与鉴权横切</em></p>
 <h3 id="1-3-分支合并策略"><a href="#1-3-分支合并策略" class="headerlink" title="1.3 分支合并策略"></a>1.3 分支合并策略</h3><p>这里有个值得记录的决策过程。当时手头有两个分支：</p>
 <ul>
 <li><code>代码分析和优化</code>：用户明确要求合并的分支</li>
@@ -385,7 +387,7 @@
 <blockquote>
 <p>这两轮审查修复说明：<strong>新功能开发完成后，安全和性能审查不可省略</strong>。尤其是鉴权和数据聚合，很容易在”先跑通”阶段被忽略。</p>
 </blockquote>
-<p><img src="/images/posts/Spring-Boot%E9%A1%B9%E7%9B%AE%E5%AE%9E%E6%88%98%E6%97%A5-%E4%BB%A3%E7%A0%81%E9%87%8D%E6%9E%84-%E6%96%B0%E5%8A%9F%E8%83%BD%E5%BC%80%E5%8F%91%E4%B8%8E%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA/fig2.png" alt="图书评分评论功能流程"><br><em>图 2：图书评分评论功能——从还书到统计的完整流程</em></p>
+<p><img data-src="/images/posts/Spring-Boot%E9%A1%B9%E7%9B%AE%E5%AE%9E%E6%88%98%E6%97%A5-%E4%BB%A3%E7%A0%81%E9%87%8D%E6%9E%84-%E6%96%B0%E5%8A%9F%E8%83%BD%E5%BC%80%E5%8F%91%E4%B8%8E%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA/fig2.png" alt="图书评分评论功能流程"><br><em>图 2：图书评分评论功能——从还书到统计的完整流程</em></p>
 <h2 id="三、物联网项目：本地环境搭建"><a href="#三、物联网项目：本地环境搭建" class="headerlink" title="三、物联网项目：本地环境搭建"></a>三、物联网项目：本地环境搭建</h2><h3 id="3-1-与-BladeX-Links-的关系"><a href="#3-1-与-BladeX-Links-的关系" class="headerlink" title="3.1 与 BladeX-Links 的关系"></a>3.1 与 BladeX-Links 的关系</h3><p>这套物联网项目的本地启动方案并非从零搭建，而是在已有的 BladeX-Links 本机启动清单基础上增加 Nacos：</p>
 <figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">BladeX-Links 本机启动清单 + 本地 Nacos = 当前物联网项目本机启动链路</span><br></pre></td></tr></table></figure>
 
@@ -441,7 +443,7 @@
 <h3 id="3-4-推荐启动顺序"><a href="#3-4-推荐启动顺序" class="headerlink" title="3.4 推荐启动顺序"></a>3.4 推荐启动顺序</h3><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">1. MySQL    → 数据源</span><br><span class="line">2. Redis    → 缓存</span><br><span class="line">3. TDengine → 时序库</span><br><span class="line">4. Nacos    → 配置中心 + 注册中心</span><br><span class="line">5. 业务服务 → 最后启动</span><br></pre></td></tr></table></figure>
 
 <p>按这个顺序，每个服务启动时它依赖的基础设施都已就绪，避免因连接超时导致启动失败。</p>
-<p><img src="/images/posts/Spring-Boot%E9%A1%B9%E7%9B%AE%E5%AE%9E%E6%88%98%E6%97%A5-%E4%BB%A3%E7%A0%81%E9%87%8D%E6%9E%84-%E6%96%B0%E5%8A%9F%E8%83%BD%E5%BC%80%E5%8F%91%E4%B8%8E%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA/fig3.png" alt="本地环境启动依赖链"><br><em>图 3：物联网项目本地启动依赖链——Nacos 是新增项</em></p>
+<p><img data-src="/images/posts/Spring-Boot%E9%A1%B9%E7%9B%AE%E5%AE%9E%E6%88%98%E6%97%A5-%E4%BB%A3%E7%A0%81%E9%87%8D%E6%9E%84-%E6%96%B0%E5%8A%9F%E8%83%BD%E5%BC%80%E5%8F%91%E4%B8%8E%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA/fig3.png" alt="本地环境启动依赖链"><br><em>图 3：物联网项目本地启动依赖链——Nacos 是新增项</em></p>
 <h2 id="经验总结"><a href="#经验总结" class="headerlink" title="经验总结"></a>经验总结</h2><p>回顾这三件事，提炼几个共通的要点：</p>
 <ul>
 <li><strong>隔离开发降低风险</strong>：Controller cleanup 在 worktree 中进行，不影响主分支，验证通过后再考虑合入</li>

@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.28.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
 
     <meta name="description" content="导读 接手一个停更 2 年的 Spring Cloud Alibaba 微服务项目，13 个业务服务、11 个独立数据库、26 个 Maven 模块，本地 Maven 仓库空空如也，mvn compile 一跑就是红海一片。这篇记录我从零搭建编译环境的完整过程，包括 Maven 配置重写、私有依赖安装、22 个 SNAPSHOT jar 的手工恢复，以及最终 26 模块 BUILD SUCCESS">
 <meta property="og:type" content="article">
@@ -29,7 +29,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://zhlifeiy.codes/images/covers/2026-06-09-spring-cloud-env-setup_001.jpg">
 <meta property="article:published_time" content="2026-06-09T10:00:00.000Z">
-<meta property="article:modified_time" content="2026-06-27T14:12:54.824Z">
+<meta property="article:modified_time" content="2026-07-25T16:55:25.162Z">
 <meta property="article:author" content="zhlifeiy35">
 <meta property="article:tag" content="Spring Cloud">
 <meta property="article:tag" content="微服务">
@@ -58,6 +58,7 @@
 
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
 <script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
@@ -78,6 +79,7 @@
   <noscript>
     <link rel="stylesheet" href="/css/noscript.css">
   </noscript>
+<link rel="alternate" href="/atom.xml" title="我的技术博客" type="application/atom+xml">
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
@@ -262,7 +264,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-06-27 22:12:54" itemprop="dateModified" datetime="2026-06-27T22:12:54+08:00">2026-06-27</time>
+      <time title="修改时间：2026-07-26 00:55:25" itemprop="dateModified" datetime="2026-07-26T00:55:25+08:00">2026-07-26</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -296,20 +298,20 @@
   <div class="audio-section">
     <h4>🎧 文章导读</h4>
     <audio controls preload="metadata">
-      <source src="/2026-06-09-spring-cloud-env-setup/narration.mp3" type="audio/mpeg">
+      <source src="/audio/2026-06-09-spring-cloud-env-setup/narration.mp3" type="audio/mpeg">
     </audio>
   </div>
   <div class="audio-section">
     <h4>🎵 背景音乐</h4>
     <audio controls loop preload="metadata">
-      <source src="/2026-06-09-spring-cloud-env-setup/bgm.mp3" type="audio/mpeg">
+      <source src="/audio/2026-06-09-spring-cloud-env-setup/bgm.mp3" type="audio/mpeg">
     </audio>
   </div>
 </div>
 
 <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>智慧园区云平台（smart-park-cloud），项目 GroupId <code>cn.csg.building</code>，主干停留在 2023-12-27，<code>dist_sync</code> 分支最后提交 2025-07-30。JDK 1.8 + Spring Boot 2.5.7 + Spring Cloud 2020.0.5 + Spring Cloud Alibaba 2021.1——这一套组合在 2024 年都算”老古董”了，更别说还有私有的 <code>com.xxkj</code> 框架、Elastic-Job 1.x、Oracle JDBC 12c 这些早已不在公共仓库里的依赖。</p>
 <p>最初的工作预期是”拉下来就能跑”，结果 <code>mvn compile</code> 报 <code>Could not find artifact com.xxkj:xxkj-framework:2.6.0-SNAPSHOT</code>——本地仓库没有，连这个 jar 在 Maven Central 上根本搜不到。本文记录怎么从这种”四无”状态（无文档、无私服账号、无原开发、无新提交）一步步把编译跑绿。</p>
-<p><img src="/2026-06-09-spring-cloud-env-setup/assets/images/fig1_001.jpg" alt="项目模块依赖结构图"><br><em>图1：26 个 Maven 模块依赖关系</em></p>
+<p><img data-src="/images/posts/2026-06-09-spring-cloud-env-setup/fig1_001.jpg" alt="项目模块依赖结构图"><br><em>图1：26 个 Maven 模块依赖关系</em></p>
 <h2 id="项目概况"><a href="#项目概况" class="headerlink" title="项目概况"></a>项目概况</h2><table>
 <thead>
 <tr>
@@ -354,7 +356,7 @@
 <blockquote>
 <p>[!warning] 看似简单的项目结构<br>13 个服务看着不多，但 <code>through-service</code> 一项就引用 7 个其他服务（admin、aided、security、smart、property、env、warning），所有跨服务调用都通过 OpenFeign 走 Nacos 服务发现。任何一环缺依赖，整链都编译不过。</p>
 </blockquote>
-<p><img src="/2026-06-09-spring-cloud-env-setup/assets/images/fig2_001.jpg" alt="编译报错场景"><br><em>图2：mvn compile 报错信息</em></p>
+<p><img data-src="/images/posts/2026-06-09-spring-cloud-env-setup/fig2_001.jpg" alt="编译报错场景"><br><em>图2：mvn compile 报错信息</em></p>
 <h2 id="问题背景"><a href="#问题背景" class="headerlink" title="问题背景"></a>问题背景</h2><p>接到项目后第一件事是 <code>mvn clean compile</code>，结果：</p>
 <ol>
 <li><strong>内网 Maven 私服超时</strong>：默认配置指向 <code>10.219.23.13:8081</code>，本机根本连不上，每次依赖解析都要等 30 秒 timeout</li>
@@ -404,7 +406,7 @@
 <figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.sun.jna<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>examples<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">version</span>&gt;</span>1.0.0<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
 
 <p><code>com.sun.jna:examples:1.0.0</code> 在全球公共 Maven 仓库均不存在（<strong>1.0.0 版本就没发布过 examples</strong>），而且项目代码里没有任何 <code>import com.sun.jna.example</code>。直接注释掉。</p>
-<p><img src="/2026-06-09-spring-cloud-env-setup/assets/images/fig3_001.jpg" alt="模块编译状态汇总"><br><em>图3：26 模块编译成功状态</em></p>
+<p><img data-src="/images/posts/2026-06-09-spring-cloud-env-setup/fig3_001.jpg" alt="模块编译状态汇总"><br><em>图3：26 模块编译成功状态</em></p>
 <h2 id="编译验证"><a href="#编译验证" class="headerlink" title="编译验证"></a>编译验证</h2><p>最终命令：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> <span class="string">&quot;/e/nanwang/smart-park-cloud - no jar&quot;</span></span><br><span class="line"><span class="built_in">export</span> JAVA_HOME=/e/jdk</span><br><span class="line"><span class="built_in">export</span> PATH=<span class="variable">$JAVA_HOME</span>/bin:<span class="variable">$PATH</span></span><br><span class="line">mvn compile -U -T 4</span><br></pre></td></tr></table></figure>
 
@@ -509,6 +511,7 @@
 <p>环境编译只是万里长征第一步，真正的考验是从空数据库到第一个 HTTP 接口调通——这个下一篇讲。</p>
 <h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>接手停更 2 年的微服务项目，环境搭建往往是最消耗心力的一步。<strong>耐心分析、增量修复、保留备份</strong>是核心心法。下一步就是把 11 个数据库的 214 个 Flyway 迁移脚本跑起来，让服务真的能连上 DB。</p>
 <!-- 下一篇预告：《6 个启动连环坑：MySQL 用户、property IP、admin 种子、前端 401》 -->
+
     </div>
 
     

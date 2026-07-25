@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.28.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
 
     <meta name="description" content="导读 今天捅了两个马蜂窝：中台 Dataphin 下线了 PDEPARTS 字段，导致所有依赖该字段解析公司归属的 Java 逻辑静默失效（getCompanyIdFromPDeparts &#x2F; getDepartmentAsList 返回 null），1542 个 Ding 用户 100% 缺 sys_user_park；用真实格式跑 12 个端到端测试用例，又挖出 4 个新 bug（增">
 <meta property="og:type" content="article">
@@ -27,9 +27,9 @@
 <meta property="og:site_name" content="我的技术博客">
 <meta property="og:description" content="导读 今天捅了两个马蜂窝：中台 Dataphin 下线了 PDEPARTS 字段，导致所有依赖该字段解析公司归属的 Java 逻辑静默失效（getCompanyIdFromPDeparts &#x2F; getDepartmentAsList 返回 null），1542 个 Ding 用户 100% 缺 sys_user_park；用真实格式跑 12 个端到端测试用例，又挖出 4 个新 bug（增">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://zhlifeiy.codes/images/covers/2026-06-22-pdeparts-offline_001.jpg">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/2026-06-22-pdeparts-offline_001.webp">
 <meta property="article:published_time" content="2026-06-22T11:00:00.000Z">
-<meta property="article:modified_time" content="2026-06-27T14:12:55.363Z">
+<meta property="article:modified_time" content="2026-07-25T16:57:46.931Z">
 <meta property="article:author" content="zhlifeiy35">
 <meta property="article:tag" content="集成测试">
 <meta property="article:tag" content="PDEPARTS下线">
@@ -37,7 +37,7 @@
 <meta property="article:tag" content="Dataphin">
 <meta property="article:tag" content="真实格式">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/2026-06-22-pdeparts-offline_001.jpg">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/2026-06-22-pdeparts-offline_001.webp">
 
 
 <link rel="canonical" href="https://zhlifeiy.codes/2026/06/22/2026-06-22-pdeparts-offline/">
@@ -58,6 +58,7 @@
 
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
 <script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
@@ -78,6 +79,7 @@
   <noscript>
     <link rel="stylesheet" href="/css/noscript.css">
   </noscript>
+<link rel="alternate" href="/atom.xml" title="我的技术博客" type="application/atom+xml">
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
@@ -221,7 +223,7 @@
   <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
     
     <div class="post-gallery-image">
-      <img src="/images/covers/2026-06-22-pdeparts-offline_001.jpg" itemprop="contentUrl">
+      <img src="/images/covers/2026-06-22-pdeparts-offline_001.webp" itemprop="contentUrl">
     </div>
     </div>
 
@@ -262,7 +264,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-06-27 22:12:55" itemprop="dateModified" datetime="2026-06-27T22:12:55+08:00">2026-06-27</time>
+      <time title="修改时间：2026-07-26 00:57:46" itemprop="dateModified" datetime="2026-07-26T00:57:46+08:00">2026-07-26</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -296,13 +298,13 @@
   <div class="audio-section">
     <h4>🎧 文章导读</h4>
     <audio controls preload="metadata">
-      <source src="/2026-06-22-pdeparts-offline/narration.mp3" type="audio/mpeg">
+      <source src="/audio/2026-06-22-pdeparts-offline/narration.mp3" type="audio/mpeg">
     </audio>
   </div>
   <div class="audio-section">
     <h4>🎵 背景音乐</h4>
     <audio controls loop preload="metadata">
-      <source src="/2026-06-22-pdeparts-offline/bgm.mp3" type="audio/mpeg">
+      <source src="/audio/2026-06-22-pdeparts-offline/bgm.mp3" type="audio/mpeg">
     </audio>
   </div>
 </div>
@@ -314,10 +316,10 @@
 
 <p>这条链路上任一环节数据缺失，下游就会拿到空值，最终表现为”园区收不到人员”。</p>
 <p>本次问题正是链路最上游的数据模型发生了变更——中台 Dataphin 的 <code>h_user</code> 表下线了 <code>PDEPARTS</code> 字段，同时 <code>department</code> 字段从数字 JSON 数组格式（如 <code>[494216765]</code>）变成了 UUID 字符串（如 <code>e6a63c82-80bc-4a75-8d71-67675cfcf5ec</code>）。</p>
-<p><img src="/2026-06-22-pdeparts-offline/assets/images/fig1_001.jpg" alt="Dataphin 数据流断链"><br><em>图1：Dataphin 数据流断链</em></p>
+<p><img data-src="/images/posts/2026-06-22-pdeparts-offline/fig1_001.jpg" alt="Dataphin 数据流断链"><br><em>图1：Dataphin 数据流断链</em></p>
 <h2 id="排查思路"><a href="#排查思路" class="headerlink" title="排查思路"></a>排查思路</h2><h3 id="从现象入手：trace-整条同步链路"><a href="#从现象入手：trace-整条同步链路" class="headerlink" title="从现象入手：trace 整条同步链路"></a>从现象入手：trace 整条同步链路</h3><p>用户最初报告的现象是”园区写不进 pass_user”。从终端往回追溯，pass_user 是 through 服务写的，入口是 <code>PassUserClient.synSysUserToPassUser()</code> 这个 Feign 调用。</p>
 <p><strong>关键教训</strong>：本地 mock 数据的 PDEPARTS 是手工构造的、格式正确，所以本地测试看起来都正常——这埋下了后面一个重要教训。</p>
-<h3 id="查真实库找证据：dist-sync-status-分布异常"><a href="#查真实库找证据：dist-sync-status-分布异常" class="headerlink" title="查真实库找证据：dist_sync_status 分布异常"></a>查真实库找证据：dist_sync_status 分布异常</h3><p><img src="/2026-06-22-pdeparts-offline/assets/images/fig2_001.jpg" alt="dist_sync_status 分布"><br><em>图2：dist_sync_status 分布</em></p>
+<h3 id="查真实库找证据：dist-sync-status-分布异常"><a href="#查真实库找证据：dist-sync-status-分布异常" class="headerlink" title="查真实库找证据：dist_sync_status 分布异常"></a>查真实库找证据：dist_sync_status 分布异常</h3><p><img data-src="/images/posts/2026-06-22-pdeparts-offline/fig2_001.jpg" alt="dist_sync_status 分布"><br><em>图2：dist_sync_status 分布</em></p>
 <p>用 MCP 查 building_through 库的 pass_user 表，按 <code>dist_sync_status</code> 分组统计：</p>
 <ul>
 <li><strong>NONE 454 条</strong>（标记为”总部数据无需同步”，正常）</li>
@@ -538,7 +540,7 @@
 <td>❌ <strong>Bug#3</strong></td>
 </tr>
 </tbody></table>
-<p><img src="/2026-06-22-pdeparts-offline/assets/images/fig3_001.jpg" alt="4 个 Bug 表格"><br><em>图3：4 个 Bug 表格</em></p>
+<p><img data-src="/images/posts/2026-06-22-pdeparts-offline/fig3_001.jpg" alt="4 个 Bug 表格"><br><em>图3：4 个 Bug 表格</em></p>
 <h2 id="4-个新-Bug"><a href="#4-个新-Bug" class="headerlink" title="4 个新 Bug"></a>4 个新 Bug</h2><h3 id="Bug-1：增量更新取消删除标记失效"><a href="#Bug-1：增量更新取消删除标记失效" class="headerlink" title="Bug#1：增量更新取消删除标记失效"></a>Bug#1：增量更新取消删除标记失效</h3><ul>
 <li><strong>位置</strong>：<code>UserSyncServiceImpl.java:146-180</code>（<code>toUpdateUsers</code> stream 内的 map 块）</li>
 <li><strong>症状</strong>：本次同步后所有已存在用户被软删（<code>delete_flag=1</code>），T9&#x2F;T10 查询 <code>totalCount=0</code></li>

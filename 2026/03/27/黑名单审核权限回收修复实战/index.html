@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.28.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
 
     <meta name="description" content="在物联网门禁系统的黑名单审核流程中，我们发现了一个”审核未通过就删权”的严重 Bug。本文记录了从问题定位到完整修复的全过程，包括两次迭代：第一次解决”时机错误”，第二次解决”删权不完整”。">
 <meta property="og:type" content="article">
@@ -58,6 +58,7 @@
 
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
 <script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
@@ -78,6 +79,7 @@
   <noscript>
     <link rel="stylesheet" href="/css/noscript.css">
   </noscript>
+<link rel="alternate" href="/atom.xml" title="我的技术博客" type="application/atom+xml">
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
@@ -324,7 +326,7 @@
 <li><strong>数据不一致</strong>：审核通过后部分权限残留，黑名单用户仍可通过二维码&#x2F;人脸进出</li>
 <li><strong>审核失败</strong>：历史脏数据导致空指针，审核接口返回 <code>400 + msg:null</code></li>
 </ul>
-<p><img src="/images/posts/%E9%BB%91%E5%90%8D%E5%8D%95%E5%AE%A1%E6%A0%B8%E6%9D%83%E9%99%90%E5%9B%9E%E6%94%B6%E4%BF%AE%E5%A4%8D%E5%AE%9E%E6%88%98/fig3-root-cause.png" alt="Bug根因分析图"><br><em>图1：Bug 根因分析 - 时机错误、空指针、删权不完整</em></p>
+<p><img data-src="/images/posts/%E9%BB%91%E5%90%8D%E5%8D%95%E5%AE%A1%E6%A0%B8%E6%9D%83%E9%99%90%E5%9B%9E%E6%94%B6%E4%BF%AE%E5%A4%8D%E5%AE%9E%E6%88%98/fig3-root-cause.png" alt="Bug根因分析图"><br><em>图1：Bug 根因分析 - 时机错误、空指针、删权不完整</em></p>
 <h2 id="第一轮修复：解决”时机错误”"><a href="#第一轮修复：解决”时机错误”" class="headerlink" title="第一轮修复：解决”时机错误”"></a>第一轮修复：解决”时机错误”</h2><h3 id="问题定位"><a href="#问题定位" class="headerlink" title="问题定位"></a>问题定位</h3><h4 id="1-拉黑申请阶段提前下发权限删除"><a href="#1-拉黑申请阶段提前下发权限删除" class="headerlink" title="1. 拉黑申请阶段提前下发权限删除"></a>1. 拉黑申请阶段提前下发权限删除</h4><p>排查 <code>EmployeeInfoController.pullBlack()</code> 发现：</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 原代码逻辑（问题）</span></span><br><span class="line"><span class="meta">@PostMapping(&quot;/pull-black&quot;)</span></span><br><span class="line"><span class="keyword">public</span> Result <span class="title function_">pullBlack</span><span class="params">(<span class="meta">@RequestBody</span> BlackListDTO dto)</span> &#123;</span><br><span class="line">    <span class="comment">// 1. 更新人员状态为&quot;拉黑审核中&quot;</span></span><br><span class="line">    employeeInfoService.updateStatus(employeeId, <span class="number">7</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 2. ❌ 立即创建权限删除下发任务</span></span><br><span class="line">    privilegeDeployService.deploy(employeeId, Arrays.asList(<span class="number">5</span>, <span class="number">9</span>, <span class="number">14</span>, <span class="number">18</span>));</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 3. 写入待审核记录</span></span><br><span class="line">    blackListService.save(blackListEntity);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
@@ -431,7 +433,7 @@
 </ul>
 <h2 id="关键代码对比"><a href="#关键代码对比" class="headerlink" title="关键代码对比"></a>关键代码对比</h2><h3 id="修复前后流程对比"><a href="#修复前后流程对比" class="headerlink" title="修复前后流程对比"></a>修复前后流程对比</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">修复前：</span><br><span class="line">pull-black ──→ 改状态(7) ──→ 立即下发(5/9/14/18) ──→ 写入待审核记录</span><br><span class="line">                                              ↓</span><br><span class="line">black-audit ──→ 审核通过 ──→ 下发空操作 ──→ 结束</span><br><span class="line"></span><br><span class="line">修复后：</span><br><span class="line">pull-black ──→ 改状态(7) ──→ 写入待审核记录（带 companyId）</span><br><span class="line">                                              ↓</span><br><span class="line">black-audit ──→ 审核通过 ──→ 下发(5/15/16/9) ──→ 清理关系 ──→ 下发(14+18) ──→ 结束</span><br></pre></td></tr></table></figure>
 
-<p><img src="/images/posts/%E9%BB%91%E5%90%8D%E5%8D%95%E5%AE%A1%E6%A0%B8%E6%9D%83%E9%99%90%E5%9B%9E%E6%94%B6%E4%BF%AE%E5%A4%8D%E5%AE%9E%E6%88%98/fig1-flow-comparison.png" alt="修复前后流程对比"><br><em>图2：修复前后流程对比 - 从”提前下发”到”审核后完整回收”</em></p>
+<p><img data-src="/images/posts/%E9%BB%91%E5%90%8D%E5%8D%95%E5%AE%A1%E6%A0%B8%E6%9D%83%E9%99%90%E5%9B%9E%E6%94%B6%E4%BF%AE%E5%A4%8D%E5%AE%9E%E6%88%98/fig1-flow-comparison.png" alt="修复前后流程对比"><br><em>图2：修复前后流程对比 - 从”提前下发”到”审核后完整回收”</em></p>
 <h3 id="权限回收覆盖对比"><a href="#权限回收覆盖对比" class="headerlink" title="权限回收覆盖对比"></a>权限回收覆盖对比</h3><table>
 <thead>
 <tr>
@@ -481,7 +483,7 @@
 <td><strong>✓</strong></td>
 </tr>
 </tbody></table>
-<p><img src="/images/posts/%E9%BB%91%E5%90%8D%E5%8D%95%E5%AE%A1%E6%A0%B8%E6%9D%83%E9%99%90%E5%9B%9E%E6%94%B6%E4%BF%AE%E5%A4%8D%E5%AE%9E%E6%88%98/fig2-permission-coverage.png" alt="权限维度覆盖对比"><br><em>图3：权限维度覆盖对比 - 修复后完整覆盖 8 个维度</em></p>
+<p><img data-src="/images/posts/%E9%BB%91%E5%90%8D%E5%8D%95%E5%AE%A1%E6%A0%B8%E6%9D%83%E9%99%90%E5%9B%9E%E6%94%B6%E4%BF%AE%E5%A4%8D%E5%AE%9E%E6%88%98/fig2-permission-coverage.png" alt="权限维度覆盖对比"><br><em>图3：权限维度覆盖对比 - 修复后完整覆盖 8 个维度</em></p>
 <h2 id="经验总结"><a href="#经验总结" class="headerlink" title="经验总结"></a>经验总结</h2><h3 id="1-时机把控是权限流程的核心"><a href="#1-时机把控是权限流程的核心" class="headerlink" title="1. 时机把控是权限流程的核心"></a>1. 时机把控是权限流程的核心</h3><p>权限操作必须严格对齐业务状态流转，任何”提前”或”延迟”都可能导致严重的安全隐患。</p>
 <h3 id="2-完整的权限维度清单"><a href="#2-完整的权限维度清单" class="headerlink" title="2. 完整的权限维度清单"></a>2. 完整的权限维度清单</h3><p>在设计权限回收功能时，必须有一份完整的”权限维度清单”：</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">物理凭证：卡、二维码、人脸</span><br><span class="line">权限记录：黑名单、白名单、临时权限</span><br><span class="line">设备维度：门禁、梯控、停车场</span><br><span class="line">关系数据：权限组关系、临时权限关系</span><br></pre></td></tr></table></figure>

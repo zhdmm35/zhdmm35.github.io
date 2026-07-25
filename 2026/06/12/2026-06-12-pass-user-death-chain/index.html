@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.28.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
 
     <meta name="description" content="导读 6&#x2F;11 实现的”钉钉同步触发 pass_user 同步”功能本身端到端跑通，但暴露出 6&#x2F;11 spec 文档第 46 行的一个事实错误判断：把 PassUserServiceImpl.synSysUserToPassUser() 里的 setParkId(DEFAULT_PARK_ID) 误判为”无效死代码”。实际是有效过滤。更糟的是下午挖出了真正的死亡覆盖链：adm">
 <meta property="og:type" content="article">
@@ -29,7 +29,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://zhlifeiy.codes/images/covers/2026-06-12-pass-user-death-chain_001.jpg">
 <meta property="article:published_time" content="2026-06-12T10:00:00.000Z">
-<meta property="article:modified_time" content="2026-06-27T14:12:55.096Z">
+<meta property="article:modified_time" content="2026-07-25T16:55:25.167Z">
 <meta property="article:author" content="zhlifeiy35">
 <meta property="article:tag" content="MyBatis">
 <meta property="article:tag" content="集成测试">
@@ -58,6 +58,7 @@
 
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
 <script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
@@ -78,6 +79,7 @@
   <noscript>
     <link rel="stylesheet" href="/css/noscript.css">
   </noscript>
+<link rel="alternate" href="/atom.xml" title="我的技术博客" type="application/atom+xml">
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
@@ -262,7 +264,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-06-27 22:12:55" itemprop="dateModified" datetime="2026-06-27T22:12:55+08:00">2026-06-27</time>
+      <time title="修改时间：2026-07-26 00:55:25" itemprop="dateModified" datetime="2026-07-26T00:55:25+08:00">2026-07-26</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -296,13 +298,13 @@
   <div class="audio-section">
     <h4>🎧 文章导读</h4>
     <audio controls preload="metadata">
-      <source src="/2026-06-12-pass-user-death-chain/narration.mp3" type="audio/mpeg">
+      <source src="/audio/2026-06-12-pass-user-death-chain/narration.mp3" type="audio/mpeg">
     </audio>
   </div>
   <div class="audio-section">
     <h4>🎵 背景音乐</h4>
     <audio controls loop preload="metadata">
-      <source src="/2026-06-12-pass-user-death-chain/bgm.mp3" type="audio/mpeg">
+      <source src="/audio/2026-06-12-pass-user-death-chain/bgm.mp3" type="audio/mpeg">
     </audio>
   </div>
 </div>
@@ -314,7 +316,7 @@
 <li>421 条历史脏数据（其中 322 条本应是番禺基地用户）</li>
 </ol>
 <p>整个过程是一个标准的”反向归因”案例：表象和根因完全相反。</p>
-<p><img src="/2026-06-12-pass-user-death-chain/assets/images/fig1_001.jpg" alt="死亡覆盖链路流程图"><br><em>图1：pass_user.park_id 死亡覆盖链</em></p>
+<p><img data-src="/images/posts/2026-06-12-pass-user-death-chain/fig1_001.jpg" alt="死亡覆盖链路流程图"><br><em>图1：pass_user.park_id 死亡覆盖链</em></p>
 <h2 id="第一阶段：集成测试-spec-错误判断"><a href="#第一阶段：集成测试-spec-错误判断" class="headerlink" title="第一阶段：集成测试 + spec 错误判断"></a>第一阶段：集成测试 + spec 错误判断</h2><h3 id="测试场景-T1：mock-用户没进-pass-user"><a href="#测试场景-T1：mock-用户没进-pass-user" class="headerlink" title="测试场景 T1：mock 用户没进 pass_user"></a>测试场景 T1：mock 用户没进 pass_user</h3><p>我准备了一个 mock 用户 <code>MOCK_TEST_PASS_001</code>，<code>USERID</code>、<code>DEPARTMENT</code>、<code>PDEPARTS</code> 三个字段都填了，调用 <code>POST /sync/mockDingUserSync</code> 后去查 <code>building_through.pass_user</code> 表，发现<strong>没有这个用户</strong>。</p>
 <p>第一反应：”Feign 调用失败了” 或 “through-service 那边有 bug”。</p>
 <p>但先用 <code>OpenFeign</code> 的日志和 <code>triggerPassUserSync</code> 的返回值（返回的是 affected rows 数）确认了一个关键事实：返回值是 <code>335</code>，<strong>不是 0</strong>。这意味着 <code>synSysUserToPassUser</code> 确实跑了，而且<strong>写了 335 个用户</strong>——只是没写我的 mock 用户。</p>
@@ -347,7 +349,7 @@
 <figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;USERID&quot;</span><span class="punctuation">:</span> <span class="string">&quot;MOCK_TEST_PASS_001&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;DEPARTMENT&quot;</span><span class="punctuation">:</span> <span class="string">&quot;[59096189]&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;PDEPARTS&quot;</span><span class="punctuation">:</span> <span class="string">&quot;[[1, 59096189, 1]]&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
 
 <p><code>59096189</code> 不在桥表（之前测试硬删了）→ <code>sys_user_park.park_id = NULL</code> → <strong>被过滤</strong>。</p>
-<p><img src="/2026-06-12-pass-user-death-chain/assets/images/fig2_001.jpg" alt="421 条脏数据分布"><br><em>图2：421 条 NULL park_id 量化结果</em></p>
+<p><img data-src="/images/posts/2026-06-12-pass-user-death-chain/fig2_001.jpg" alt="421 条脏数据分布"><br><em>图2：421 条 NULL park_id 量化结果</em></p>
 <h2 id="第二阶段：死亡覆盖链的真正根因"><a href="#第二阶段：死亡覆盖链的真正根因" class="headerlink" title="第二阶段：死亡覆盖链的真正根因"></a>第二阶段：死亡覆盖链的真正根因</h2><h3 id="现象升级"><a href="#现象升级" class="headerlink" title="现象升级"></a>现象升级</h3><p>上午只判断了”setParkId(DEFAULT_PARK_ID) 是有效过滤”（事实纠正），下午继续深挖发现真正致命的是 admin 端 mapper 漏 SELECT 列表。</p>
 <p><code>pass_user.page</code> 接口（<code>POST /gateway/through/passUser/page</code>）按 parkId 过滤时，几乎所有数据都查不到（即使不是 NULL 的，parkId 也是错的）。</p>
 <h3 id="死亡覆盖链"><a href="#死亡覆盖链" class="headerlink" title="死亡覆盖链"></a>死亡覆盖链</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">sys_user 行 → UserMapperExt.xml listByConditionExt</span><br><span class="line">              → LEFT JOIN sys_user_park urp on u.user_id = urp.user_id</span><br><span class="line">              → SELECT u.user_id, u.user_name, ...  (漏了 urp.park_id!)</span><br><span class="line">              → UserDTO.parkId = null  (BaseResultMap 映射的字段没数据)</span><br><span class="line">              → line 478 passUserDTO.setParkId(user.getParkId())  →  null</span><br><span class="line">              → pass_user.park_id = NULL</span><br></pre></td></tr></table></figure>
@@ -365,7 +367,7 @@
 <h3 id="量化脏数据"><a href="#量化脏数据" class="headerlink" title="量化脏数据"></a>量化脏数据</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> pu.real_name, pu.park_id, urp.park_id <span class="keyword">as</span> expected</span><br><span class="line"><span class="keyword">FROM</span> building_through.pass_user pu</span><br><span class="line"><span class="keyword">JOIN</span> building_admin.sys_user u <span class="keyword">ON</span> pu.sys_user_id <span class="operator">=</span> u.user_id</span><br><span class="line"><span class="keyword">JOIN</span> building_admin.sys_user_park urp <span class="keyword">ON</span> u.user_id <span class="operator">=</span> urp.user_id <span class="keyword">AND</span> urp.delete_flag <span class="operator">=</span> <span class="number">0</span></span><br><span class="line"><span class="keyword">WHERE</span> pu.park_id <span class="keyword">IS</span> <span class="keyword">NULL</span> <span class="keyword">OR</span> pu.park_id <span class="operator">!=</span> urp.park_id;</span><br><span class="line"><span class="comment">-- 命中 421 条，全是 pu.park_id = NULL</span></span><br></pre></td></tr></table></figure>
 
 <p>**421 条 <code>pass_user.park_id IS NULL</code>**，其中 <strong>322 条本应是番禺基地用户</strong>（park_id &#x3D; 284cd757…）。</p>
-<p><img src="/2026-06-12-pass-user-death-chain/assets/images/fig3_001.jpg" alt="UserMapperExt SQL 修复对比"><br><em>图3：UserMapperExt 漏 SELECT 列修复</em></p>
+<p><img data-src="/images/posts/2026-06-12-pass-user-death-chain/fig3_001.jpg" alt="UserMapperExt SQL 修复对比"><br><em>图3：UserMapperExt 漏 SELECT 列修复</em></p>
 <h2 id="修复方案"><a href="#修复方案" class="headerlink" title="修复方案"></a>修复方案</h2><h3 id="修复-1：让新-sync-的-pass-user-写入正确的-park-id"><a href="#修复-1：让新-sync-的-pass-user-写入正确的-park-id" class="headerlink" title="修复 1：让新 sync 的 pass_user 写入正确的 park_id"></a>修复 1：让新 sync 的 pass_user 写入正确的 park_id</h3><p><strong>改动文件 1</strong>：<code>UserMapperExt.xml</code></p>
 <p>SELECT 加 <code>,urp.park_id</code>，JOIN 改为子查询解决多园区用户重复问题：</p>
 <figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">&lt;!-- 修改前 --&gt;</span></span><br><span class="line">SELECT DISTINCT u.user_id, u.user_name, ...</span><br><span class="line">FROM sys_user u</span><br><span class="line">LEFT JOIN sys_user_park urp on u.user_id = urp.user_id</span><br><span class="line"></span><br><span class="line"><span class="comment">&lt;!-- 修改后 --&gt;</span></span><br><span class="line">SELECT DISTINCT u.user_id, u.user_name, ..., urp.park_id</span><br><span class="line">FROM sys_user u</span><br><span class="line">LEFT JOIN (</span><br><span class="line">    SELECT user_id, MIN(park_id) as park_id</span><br><span class="line">    FROM sys_user_park</span><br><span class="line">    GROUP BY user_id</span><br><span class="line">) urp on u.user_id = urp.user_id</span><br></pre></td></tr></table></figure>

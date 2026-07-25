@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.28.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
 
     <meta name="description" content="一次图书管理系统的全面优化，涵盖安全漏洞修复、N+1 查询优化、凭证管理强化以及数据库索引调优。从踩坑到解决，完整还原优化全过程。">
 <meta property="og:type" content="article">
@@ -58,6 +58,7 @@
 
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
 <script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
@@ -78,6 +79,7 @@
   <noscript>
     <link rel="stylesheet" href="/css/noscript.css">
   </noscript>
+<link rel="alternate" href="/atom.xml" title="我的技术博客" type="application/atom+xml">
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
@@ -342,7 +344,7 @@
 </tbody></table>
 <p>四个问题分为两类：<strong>安全加固</strong>和<strong>性能提升</strong>。安全问题是底线，性能问题影响体验，两者都不能忽视。</p>
 <hr>
-<h2 id="二、密码泄露危机：User-password-的-JsonIgnore-修复"><a href="#二、密码泄露危机：User-password-的-JsonIgnore-修复" class="headerlink" title="二、密码泄露危机：User.password 的 JsonIgnore 修复"></a>二、密码泄露危机：User.password 的 JsonIgnore 修复</h2><p><img src="/images/posts/%E4%BB%8E%E8%B4%A6%E5%8F%B7%E6%B3%84%E9%9C%B2%E5%88%B0N+1%E4%BC%98%E5%8C%96/fig1.png" alt="密码泄露问题示意"><br><em>图1：密码泄露问题示意</em></p>
+<h2 id="二、密码泄露危机：User-password-的-JsonIgnore-修复"><a href="#二、密码泄露危机：User-password-的-JsonIgnore-修复" class="headerlink" title="二、密码泄露危机：User.password 的 JsonIgnore 修复"></a>二、密码泄露危机：User.password 的 JsonIgnore 修复</h2><p><img data-src="/images/posts/%E4%BB%8E%E8%B4%A6%E5%8F%B7%E6%B3%84%E9%9C%B2%E5%88%B0N+1%E4%BC%98%E5%8C%96/fig1.png" alt="密码泄露问题示意"><br><em>图1：密码泄露问题示意</em></p>
 <h3 id="2-1-问题是怎么被发现的"><a href="#2-1-问题是怎么被发现的" class="headerlink" title="2.1 问题是怎么被发现的"></a>2.1 问题是怎么被发现的</h3><p>在做登录功能测试时，我随手打了一个 <code>console.log(user)</code>，结果在控制台看到了这个：</p>
 <figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;id&quot;</span><span class="punctuation">:</span> <span class="number">1</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;username&quot;</span><span class="punctuation">:</span> <span class="string">&quot;admin&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;password&quot;</span><span class="punctuation">:</span> <span class="string">&quot;123456&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;nickName&quot;</span><span class="punctuation">:</span> <span class="string">&quot;管理员&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;role&quot;</span><span class="punctuation">:</span> <span class="string">&quot;ADMIN&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
 
@@ -373,7 +375,7 @@
 <li><strong>先找影响范围再动手</strong>：修复安全问题时，最好先梳理清楚所有依赖点，避免”修复一个 bug 引入三个新 bug”。</li>
 </ul>
 <hr>
-<h2 id="三、N-1-查询噩梦：BookAudit-审核页面的性能陷阱"><a href="#三、N-1-查询噩梦：BookAudit-审核页面的性能陷阱" class="headerlink" title="三、N+1 查询噩梦：BookAudit 审核页面的性能陷阱"></a>三、N+1 查询噩梦：BookAudit 审核页面的性能陷阱</h2><p><img src="/images/posts/%E4%BB%8E%E8%B4%A6%E5%8F%B7%E6%B3%84%E9%9C%B2%E5%88%B0N+1%E4%BC%98%E5%8C%96/fig2.png" alt="N+1查询优化对比"><br><em>图2：N+1 查询优化前后对比</em></p>
+<h2 id="三、N-1-查询噩梦：BookAudit-审核页面的性能陷阱"><a href="#三、N-1-查询噩梦：BookAudit-审核页面的性能陷阱" class="headerlink" title="三、N+1 查询噩梦：BookAudit 审核页面的性能陷阱"></a>三、N+1 查询噩梦：BookAudit 审核页面的性能陷阱</h2><p><img data-src="/images/posts/%E4%BB%8E%E8%B4%A6%E5%8F%B7%E6%B3%84%E9%9C%B2%E5%88%B0N+1%E4%BC%98%E5%8C%96/fig2.png" alt="N+1查询优化对比"><br><em>图2：N+1 查询优化前后对比</em></p>
 <h3 id="3-1-问题现象"><a href="#3-1-问题现象" class="headerlink" title="3.1 问题现象"></a>3.1 问题现象</h3><p>打开图书审核页面，加载 20 本待审核的图书，需要大约 <strong>5-6 秒</strong>。这个速度对于一个内部管理系统来说实在太慢了。</p>
 <p>通过浏览器的 Network 面板分析请求，发现了问题：主请求只有 1 个，但 <code>/user/&#123;id&#125;</code> 请求有 20 个！每显示一本书，都要单独请求一次上传者的用户名。</p>
 <p>这就是经典的 <strong>N+1 查询问题</strong>：1 次主查询 + N 次关联查询。</p>
@@ -424,7 +426,7 @@
 <li><strong><code>@TableField(exist = false)</code> 的妙用</strong>：用于接收 JOIN 查询的衍生字段，不影响原有数据库结构。</li>
 </ul>
 <hr>
-<h2 id="四、凭证裸奔：OSS-和-API-Key-的硬编码危机"><a href="#四、凭证裸奔：OSS-和-API-Key-的硬编码危机" class="headerlink" title="四、凭证裸奔：OSS 和 API Key 的硬编码危机"></a>四、凭证裸奔：OSS 和 API Key 的硬编码危机</h2><p><img src="/images/posts/%E4%BB%8E%E8%B4%A6%E5%8F%B7%E6%B3%84%E9%9C%B2%E5%88%B0N+1%E4%BC%98%E5%8C%96/fig3.png" alt="凭证环境变量管理"><br><em>图3：凭证安全管理的关键——环境变量注入</em></p>
+<h2 id="四、凭证裸奔：OSS-和-API-Key-的硬编码危机"><a href="#四、凭证裸奔：OSS-和-API-Key-的硬编码危机" class="headerlink" title="四、凭证裸奔：OSS 和 API Key 的硬编码危机"></a>四、凭证裸奔：OSS 和 API Key 的硬编码危机</h2><p><img data-src="/images/posts/%E4%BB%8E%E8%B4%A6%E5%8F%B7%E6%B3%84%E9%9C%B2%E5%88%B0N+1%E4%BC%98%E5%8C%96/fig3.png" alt="凭证环境变量管理"><br><em>图3：凭证安全管理的关键——环境变量注入</em></p>
 <h3 id="4-1-问题有多严重"><a href="#4-1-问题有多严重" class="headerlink" title="4.1 问题有多严重"></a>4.1 问题有多严重</h3><p>检查代码时发现，<code>OssConfig.java</code> 里写着：</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="title function_">OssConfig</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="built_in">this</span>.accessKeyId = <span class="string">&quot;LTAI4xxxxxxxxxxxxxx&quot;</span>;</span><br><span class="line">    <span class="built_in">this</span>.accessKeySecret = <span class="string">&quot;Abcdefxxxxxxxxxxxxxx&quot;</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
@@ -450,7 +452,7 @@
 <li><strong>定期轮换凭证</strong>：即使泄露了，及时轮换也能降低损失。</li>
 </ul>
 <hr>
-<h2 id="五、数据库索引优化：让查询飞起来"><a href="#五、数据库索引优化：让查询飞起来" class="headerlink" title="五、数据库索引优化：让查询飞起来"></a>五、数据库索引优化：让查询飞起来</h2><p><img src="/images/posts/%E4%BB%8E%E8%B4%A6%E5%8F%B7%E6%B3%84%E9%9C%B2%E5%88%B0N+1%E4%BC%98%E5%8C%96/fig4.png" alt="数据库索引优化"><br><em>图4：索引优化让数据库查询效率大幅提升</em></p>
+<h2 id="五、数据库索引优化：让查询飞起来"><a href="#五、数据库索引优化：让查询飞起来" class="headerlink" title="五、数据库索引优化：让查询飞起来"></a>五、数据库索引优化：让查询飞起来</h2><p><img data-src="/images/posts/%E4%BB%8E%E8%B4%A6%E5%8F%B7%E6%B3%84%E9%9C%B2%E5%88%B0N+1%E4%BC%98%E5%8C%96/fig4.png" alt="数据库索引优化"><br><em>图4：索引优化让数据库查询效率大幅提升</em></p>
 <h3 id="5-1-为什么需要索引优化"><a href="#5-1-为什么需要索引优化" class="headerlink" title="5.1 为什么需要索引优化"></a>5.1 为什么需要索引优化</h3><p>项目跑了一段时间后，一些高频查询开始变慢。排查发现，部分热点查询缺少索引，导致数据库进行全表扫描。举个例子，用户登录时按用户名查询：</p>
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span> <span class="keyword">FROM</span> <span class="keyword">user</span> <span class="keyword">WHERE</span> username <span class="operator">=</span> <span class="string">&#x27;admin&#x27;</span>;</span><br></pre></td></tr></table></figure>
 

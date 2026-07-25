@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.28.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
 
     <meta name="description" content="本文记录了使用多 Agent 团队协作开发一个 Android Demo 应用的全过程，从团队组建、工作流程、代码实现到最终打包，完整展示了如何通过多个 AI Agent 分工配合完成一个真实的移动端项目。">
 <meta property="og:type" content="article">
@@ -58,6 +58,7 @@
 
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
 <script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
@@ -78,6 +79,7 @@
   <noscript>
     <link rel="stylesheet" href="/css/noscript.css">
   </noscript>
+<link rel="alternate" href="/atom.xml" title="我的技术博客" type="application/atom+xml">
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
@@ -341,7 +343,7 @@
 <p>[!tip] 关键设计<br>每个 Agent 都有明确的职责边界，通过结构化的交付物进行协作，这模拟了真实软件团队的工作方式。</p>
 </blockquote>
 <h2 id="工作流程：线性依赖与并行优化"><a href="#工作流程：线性依赖与并行优化" class="headerlink" title="工作流程：线性依赖与并行优化"></a>工作流程：线性依赖与并行优化</h2><p>多 Agent 协作的核心挑战是<strong>任务依赖关系</strong>。通过分析，我们设计了以下工作流程：</p>
-<p><img src="/images/posts/%E5%A4%9AAgent%E5%8D%8F%E4%BD%9C%E5%BC%80%E5%8F%91Android%E5%BA%94%E7%94%A8%E5%AE%9E%E6%88%98%E6%80%BB%E7%BB%93/workflow.png" alt="团队协作流程图"><br><em>图1：多Agent协作工作流程</em></p>
+<p><img data-src="/images/posts/%E5%A4%9AAgent%E5%8D%8F%E4%BD%9C%E5%BC%80%E5%8F%91Android%E5%BA%94%E7%94%A8%E5%AE%9E%E6%88%98%E6%80%BB%E7%BB%93/workflow.png" alt="团队协作流程图"><br><em>图1：多Agent协作工作流程</em></p>
 <h3 id="主依赖链"><a href="#主依赖链" class="headerlink" title="主依赖链"></a>主依赖链</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">PM Agent → Android Architect → Android Dev → Reviewer</span><br></pre></td></tr></table></figure>
 
 <p>PM Agent 输出需求文档后，Architect 才能设计架构，Dev 才能基于架构实现代码，最后由 Reviewer 审查质量。</p>
@@ -420,7 +422,7 @@
 <h2 id="架构设计：Android-Architect-输出"><a href="#架构设计：Android-Architect-输出" class="headerlink" title="架构设计：Android Architect 输出"></a>架构设计：Android Architect 输出</h2><p>基于 PM 的需求文档，Android Architect 输出了完整的技术方案：</p>
 <h3 id="技术选型"><a href="#技术选型" class="headerlink" title="技术选型"></a>技术选型</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Kotlin 1.9.x + Jetpack Compose + Material 3 + MVVM + Clean Architecture</span><br></pre></td></tr></table></figure>
 
-<h3 id="Clean-Architecture-分层"><a href="#Clean-Architecture-分层" class="headerlink" title="Clean Architecture 分层"></a>Clean Architecture 分层</h3><p><img src="/images/posts/%E5%A4%9AAgent%E5%8D%8F%E4%BD%9C%E5%BC%80%E5%8F%91Android%E5%BA%94%E7%94%A8%E5%AE%9E%E6%88%98%E6%80%BB%E7%BB%93/architecture.png" alt="Clean Architecture架构图"><br><em>图2：Clean Architecture 分层架构</em></p>
+<h3 id="Clean-Architecture-分层"><a href="#Clean-Architecture-分层" class="headerlink" title="Clean Architecture 分层"></a>Clean Architecture 分层</h3><p><img data-src="/images/posts/%E5%A4%9AAgent%E5%8D%8F%E4%BD%9C%E5%BC%80%E5%8F%91Android%E5%BA%94%E7%94%A8%E5%AE%9E%E6%88%98%E6%80%BB%E7%BB%93/architecture.png" alt="Clean Architecture架构图"><br><em>图2：Clean Architecture 分层架构</em></p>
 <figure class="highlight kotlin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">com.agentteam.lab/</span><br><span class="line">├── core/          <span class="comment">// 导航、主题、工具类</span></span><br><span class="line">├── domain/        <span class="comment">// 模型、Repository 接口、UseCase</span></span><br><span class="line">├── <span class="keyword">data</span>/          <span class="comment">// Mock 数据源、Repository 实现</span></span><br><span class="line">├── ui/            <span class="comment">// 各页面 (Screen + ViewModel + components)</span></span><br><span class="line">└── di/            <span class="comment">// 依赖注入</span></span><br></pre></td></tr></table></figure>
 
 <h3 id="依赖策略"><a href="#依赖策略" class="headerlink" title="依赖策略"></a>依赖策略</h3><ul>
@@ -585,7 +587,7 @@
 <li><code>drawable/ic_launcher_foreground.xml</code></li>
 <li><code>values/colors.xml</code></li>
 </ul>
-<h2 id="最终产物"><a href="#最终产物" class="headerlink" title="最终产物"></a>最终产物</h2><p><img src="/images/posts/%E5%A4%9AAgent%E5%8D%8F%E4%BD%9C%E5%BC%80%E5%8F%91Android%E5%BA%94%E7%94%A8%E5%AE%9E%E6%88%98%E6%80%BB%E7%BB%93/app-preview.png" alt="App界面预览"><br><em>图3：Agent Team Lab 应用界面</em></p>
+<h2 id="最终产物"><a href="#最终产物" class="headerlink" title="最终产物"></a>最终产物</h2><p><img data-src="/images/posts/%E5%A4%9AAgent%E5%8D%8F%E4%BD%9C%E5%BC%80%E5%8F%91Android%E5%BA%94%E7%94%A8%E5%AE%9E%E6%88%98%E6%80%BB%E7%BB%93/app-preview.png" alt="App界面预览"><br><em>图3：Agent Team Lab 应用界面</em></p>
 <table>
 <thead>
 <tr>

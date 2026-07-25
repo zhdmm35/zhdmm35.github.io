@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.28.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
 
     <meta name="description" content="导读 钉钉同步两个故事：(1) 15000+ 用户同步时 HTTP 超时——根因是 toUpdateUsers 循环内 3 次 DB 查询每人 &#x3D; 46000 次 SQL round-trip 在一个事务内串行执行，两步优化：异步化（HTTP 立即返回”已受理”，后台静默执行）+ 批量化（循环前 IN 批量预加载到 Map，循环内 O(1) 查 Map），计划阶段就识别出 4 个潜在 b">
 <meta property="og:type" content="article">
@@ -27,9 +27,9 @@
 <meta property="og:site_name" content="我的技术博客">
 <meta property="og:description" content="导读 钉钉同步两个故事：(1) 15000+ 用户同步时 HTTP 超时——根因是 toUpdateUsers 循环内 3 次 DB 查询每人 &#x3D; 46000 次 SQL round-trip 在一个事务内串行执行，两步优化：异步化（HTTP 立即返回”已受理”，后台静默执行）+ 批量化（循环前 IN 批量预加载到 Map，循环内 O(1) 查 Map），计划阶段就识别出 4 个潜在 b">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://zhlifeiy.codes/images/covers/2026-06-25-perf-avatar-backfill_001.jpg">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/2026-06-25-perf-avatar-backfill_001.webp">
 <meta property="article:published_time" content="2026-06-25T10:00:00.000Z">
-<meta property="article:modified_time" content="2026-06-27T14:12:55.541Z">
+<meta property="article:modified_time" content="2026-07-25T16:57:46.929Z">
 <meta property="article:author" content="zhlifeiy35">
 <meta property="article:tag" content="性能优化">
 <meta property="article:tag" content="异步化">
@@ -37,7 +37,7 @@
 <meta property="article:tag" content="CDN解析">
 <meta property="article:tag" content="N+1">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/2026-06-25-perf-avatar-backfill_001.jpg">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/2026-06-25-perf-avatar-backfill_001.webp">
 
 
 <link rel="canonical" href="https://zhlifeiy.codes/2026/06/25/2026-06-25-perf-avatar-backfill/">
@@ -58,6 +58,7 @@
 
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
 <script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
@@ -78,6 +79,7 @@
   <noscript>
     <link rel="stylesheet" href="/css/noscript.css">
   </noscript>
+<link rel="alternate" href="/atom.xml" title="我的技术博客" type="application/atom+xml">
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
@@ -221,7 +223,7 @@
   <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
     
     <div class="post-gallery-image">
-      <img src="/images/covers/2026-06-25-perf-avatar-backfill_001.jpg" itemprop="contentUrl">
+      <img src="/images/covers/2026-06-25-perf-avatar-backfill_001.webp" itemprop="contentUrl">
     </div>
     </div>
 
@@ -262,7 +264,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-06-27 22:12:55" itemprop="dateModified" datetime="2026-06-27T22:12:55+08:00">2026-06-27</time>
+      <time title="修改时间：2026-07-26 00:57:46" itemprop="dateModified" datetime="2026-07-26T00:57:46+08:00">2026-07-26</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -296,20 +298,20 @@
   <div class="audio-section">
     <h4>🎧 文章导读</h4>
     <audio controls preload="metadata">
-      <source src="/2026-06-25-perf-avatar-backfill/narration.mp3" type="audio/mpeg">
+      <source src="/audio/2026-06-25-perf-avatar-backfill/narration.mp3" type="audio/mpeg">
     </audio>
   </div>
   <div class="audio-section">
     <h4>🎵 背景音乐</h4>
     <audio controls loop preload="metadata">
-      <source src="/2026-06-25-perf-avatar-backfill/bgm.mp3" type="audio/mpeg">
+      <source src="/audio/2026-06-25-perf-avatar-backfill/bgm.mp3" type="audio/mpeg">
     </audio>
   </div>
 </div>
 
 <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>钉钉同步功能跑通后，规模放大就出问题：15000+ 用户同步时网关超时。问题的本质不是”代码错了”，而是”算法复杂度在小规模下隐藏了性能问题”——这是典型的”小规模下完全合理、大规模下完全不可用”的设计。</p>
 <p>同时新加的头像回填接口”返回 200 但没效果”，表面是逻辑分支问题，深挖发现是网络可达性假设不成立。</p>
-<p><img src="/2026-06-25-perf-avatar-backfill/assets/images/fig1_001.jpg" alt="异步化时序图"><br><em>图1：异步化时序图</em></p>
+<p><img data-src="/images/posts/2026-06-25-perf-avatar-backfill/fig1_001.jpg" alt="异步化时序图"><br><em>图1：异步化时序图</em></p>
 <h2 id="Part-1：性能优化"><a href="#Part-1：性能优化" class="headerlink" title="Part 1：性能优化"></a>Part 1：性能优化</h2><h3 id="问题分析"><a href="#问题分析" class="headerlink" title="问题分析"></a>问题分析</h3><p><code>handleDingUserSync</code> 方法中，对每个已存在的钉钉用户，在循环体内依次执行<strong>三次数据库查询</strong>：</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 重构前：循环内每人 3 次 DB 查询</span></span><br><span class="line"><span class="keyword">for</span> (UserDTO updateUser : toUpdateUsers) &#123;</span><br><span class="line">    Set&lt;String&gt; existingOrgs = userOrganizationService</span><br><span class="line">            .listByCondition(orgQuery).stream()       <span class="comment">// 1 SQL/user</span></span><br><span class="line">            .map(UserOrganizationDTO::getOrgId)</span><br><span class="line">            .collect(Collectors.toSet());</span><br><span class="line">    <span class="type">ParkOrganizationDTO</span> <span class="variable">newParkOrg</span> <span class="operator">=</span> parkOrganizationService</span><br><span class="line">            .findParkByOrgWalkUp(deptOrgId);           <span class="comment">// 1 SQL/user</span></span><br><span class="line">    List&lt;UserParkDTO&gt; existParks = userParkService</span><br><span class="line">            .listByCondition(parkQuery);                <span class="comment">// 1 SQL/user</span></span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
@@ -360,7 +362,7 @@
 </tr>
 </tbody></table>
 <p>编译已通过（BUILD SUCCESS），但 Task 3 的手动验证待执行：启动 admin → curl 触发同步 → 确认立即返回 → 二次触发被拒 → 日志确认后台完成。</p>
-<p><img src="/2026-06-25-perf-avatar-backfill/assets/images/fig3_001.jpg" alt="性能对比柱状图"><br><em>图3：性能对比柱状图</em></p>
+<p><img data-src="/images/posts/2026-06-25-perf-avatar-backfill/fig3_001.jpg" alt="性能对比柱状图"><br><em>图3：性能对比柱状图</em></p>
 <h2 id="Part-2：头像回填失败"><a href="#Part-2：头像回填失败" class="headerlink" title="Part 2：头像回填失败"></a>Part 2：头像回填失败</h2><h3 id="问题背景"><a href="#问题背景" class="headerlink" title="问题背景"></a>问题背景</h3><p>南网项目的用户同步流程从钉钉中台（DataPhin）拉取用户信息后，会把基本字段写入 <code>sys_user</code> 表。但头像字段 <code>face_pic</code> 一直留空——原因是早期的同步代码根本没有自动下载头像这一步，头像全靠人工在前端拍照或手动上传。</p>
 <p>后来开发了 <code>backfillDingAvatar</code> 接口，意图一次性把存量用户的钉钉头像下载到本地存储（aided 服务的 <code>/fs/hikFacePic/</code> 目录），再把本地路径回填到 <code>sys_user.face_pic</code>。接口调上去<strong>返回 200，日志也没有报错</strong>，但成功计数始终是 0。</p>
 <p>数据库现状一目了然：约 15000 名用户中，<code>face_pic</code> 为 NULL 的有 5102 人，为空字符串的有 10000 人（主同步新建时设的默认值），标记为 <code>&quot;2&quot;</code> 的有 180 人（拒绝标记），而真正有正常路径的——<strong>0 人</strong>。</p>
@@ -376,7 +378,7 @@
 <h3 id="修复方案"><a href="#修复方案" class="headerlink" title="修复方案"></a>修复方案</h3><h4 id="方案一：admin-服务器配外网代理"><a href="#方案一：admin-服务器配外网代理" class="headerlink" title="方案一：admin 服务器配外网代理"></a>方案一：admin 服务器配外网代理</h4><p>让 <code>UrlToMultipartFileConverter</code> 的底层 HTTP 客户端走代理服务器下载钉钉头像。这是改动量最小的方案——零代码改动，只需运维在服务器上配置 HTTP 代理环境变量或在 HTTP 客户端中注入代理地址。但需要运维配合，且代理服务器本身需要能访问钉钉 CDN。</p>
 <h4 id="方案二：中台提供头像下载接口"><a href="#方案二：中台提供头像下载接口" class="headerlink" title="方案二：中台提供头像下载接口"></a>方案二：中台提供头像下载接口</h4><p>不直接访问钉钉 CDN，而是调用钉钉中台（iot-middle）的接口获取图片字节流。admin 和中台在同一个内网环境，网络互通。这个方案需要中台配合新增一个头像下载接口，但彻底绕开了外网访问的问题。</p>
 <h4 id="方案三：暂不自动回填"><a href="#方案三：暂不自动回填" class="headerlink" title="方案三：暂不自动回填"></a>方案三：暂不自动回填</h4><p>回填接口保留代码不动，等网络环境打通后再执行。现有头像继续靠人工上传。这是零改动方案，适合短期内不紧急的场景。</p>
-<h3 id="经验总结"><a href="#经验总结" class="headerlink" title="经验总结"></a>经验总结</h3><p><img src="/2026-06-25-perf-avatar-backfill/assets/images/fig2_001.jpg" alt="批量查询优化"><br><em>图2：批量查询优化</em></p>
+<h3 id="经验总结"><a href="#经验总结" class="headerlink" title="经验总结"></a>经验总结</h3><p><img data-src="/images/posts/2026-06-25-perf-avatar-backfill/fig2_001.jpg" alt="批量查询优化"><br><em>图2：批量查询优化</em></p>
 <h4 id="异常处理的粒度"><a href="#异常处理的粒度" class="headerlink" title="异常处理的粒度"></a>异常处理的粒度</h4><p><code>uploadDingAvatar</code> 把所有异常一网打尽返回空字符串，表面上是”容错”，实际上把可恢复的错误（网络不通，换个方式下载就行）和不可恢复的错误（URL 本身无效）混为一谈。建议：</p>
 <ul>
 <li>区分 <code>IOException</code>（网络层失败，可重试或降级）和其他异常（逻辑错误，应告警）</li>

@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.28.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
 
     <meta name="description" content="从零在 Windows 11 + 16G 内存下跑通电商问数项目 shopkeeper-agent 的完整排障笔记，覆盖 Python 环境、LLM 接入、Embedding、Docker、中间件、后端启动六大环节共 13 个真实坑。">
 <meta property="og:type" content="article">
@@ -27,9 +27,9 @@
 <meta property="og:site_name" content="我的技术博客">
 <meta property="og:description" content="从零在 Windows 11 + 16G 内存下跑通电商问数项目 shopkeeper-agent 的完整排障笔记，覆盖 Python 环境、LLM 接入、Embedding、Docker、中间件、后端启动六大环节共 13 个真实坑。">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://zhlifeiy.codes/images/covers/shopkeeper-agent-troubleshooting-cover_001.jpg">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/shopkeeper-agent-troubleshooting-cover_001.webp">
 <meta property="article:published_time" content="2026-07-18T13:30:00.000Z">
-<meta property="article:modified_time" content="2026-07-18T07:41:39.434Z">
+<meta property="article:modified_time" content="2026-07-25T16:57:46.919Z">
 <meta property="article:author" content="zhlifeiy35">
 <meta property="article:tag" content="shopkeeper-agent">
 <meta property="article:tag" content="AI问数">
@@ -40,7 +40,7 @@
 <meta property="article:tag" content="uv">
 <meta property="article:tag" content="Python3.14">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/shopkeeper-agent-troubleshooting-cover_001.jpg">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/shopkeeper-agent-troubleshooting-cover_001.webp">
 
 
 <link rel="canonical" href="https://zhlifeiy.codes/2026/07/18/shopkeeper-agent-troubleshooting/">
@@ -61,6 +61,7 @@
 
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
 <script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
@@ -81,6 +82,7 @@
   <noscript>
     <link rel="stylesheet" href="/css/noscript.css">
   </noscript>
+<link rel="alternate" href="/atom.xml" title="我的技术博客" type="application/atom+xml">
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
@@ -224,7 +226,7 @@
   <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
     
     <div class="post-gallery-image">
-      <img src="/images/covers/shopkeeper-agent-troubleshooting-cover_001.jpg" itemprop="contentUrl">
+      <img src="/images/covers/shopkeeper-agent-troubleshooting-cover_001.webp" itemprop="contentUrl">
     </div>
     </div>
 
@@ -257,9 +259,15 @@
         <i class="far fa-calendar"></i>
       </span>
       <span class="post-meta-item-text">发表于</span>
-      
 
-      <time title="创建时间：2026-07-18 21:30:00 / 修改时间：15:41:39" itemprop="dateCreated datePublished" datetime="2026-07-18T21:30:00+08:00">2026-07-18</time>
+      <time title="创建时间：2026-07-18 21:30:00" itemprop="dateCreated datePublished" datetime="2026-07-18T21:30:00+08:00">2026-07-18</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-07-26 00:57:46" itemprop="dateModified" datetime="2026-07-26T00:57:46+08:00">2026-07-26</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -303,7 +311,7 @@
 <h2 id="前言：为什么要在本机跑这个项目"><a href="#前言：为什么要在本机跑这个项目" class="headerlink" title="前言：为什么要在本机跑这个项目"></a>前言：为什么要在本机跑这个项目</h2><p>shopkeeper-agent 是一个 <strong>Text-to-SQL 的电商问数 Agent</strong>：你用自然语言问”统计华北地区的销售总额”，它会拆解意图、查元数据知识库、检索字段、生成 SQL、执行、返回结果。整套链路是当下最典型的 RAG + Agent 范式——LLM 负责推理，向量库做语义召回，关系库做事实落地。</p>
 <p>但官方文档在 macOS &#x2F; Linux 上跑得很顺，<strong>到了 Windows 这边几乎每一步都炸</strong>。原因很简单：项目用 Python 3.14（最新）、asyncmy（Cython 扩展，需要 MSVC 编译）、HF 下载（国内网络不稳）、Docker Desktop 4 容器（16G 内存吃紧）。每一项单独看都不致命，叠加在一起就是连环炸。</p>
 <p>我把这 13 个坑按”环境 → 依赖 → 中间件 → 后端 → 模型”的顺序重新组织，读起来更像调试日志，而不是 dump 出来的报错清单。</p>
-<p><img src="/images/posts/shopkeeper-agent-troubleshooting/fig1-architecture_001.jpg" alt="shopkeeper-agent 系统架构图"><br><em>图 1：shopkeeper-agent 整体架构——FastAPI 后端调度 LLM + 4 个 Docker 中间件</em></p>
+<p><img data-src="/images/posts/shopkeeper-agent-troubleshooting/fig1-architecture_001.jpg" alt="shopkeeper-agent 系统架构图"><br><em>图 1：shopkeeper-agent 整体架构——FastAPI 后端调度 LLM + 4 个 Docker 中间件</em></p>
 <h2 id="环境速览"><a href="#环境速览" class="headerlink" title="环境速览"></a>环境速览</h2><p>先交代舞台。下表是我跑通时的全套环境配置（<strong>版本错一位，行为就可能不一样</strong>）：</p>
 <table>
 <thead>
@@ -405,7 +413,7 @@
 <blockquote>
 <p>⚠️ 这个坑是”我自己吓自己”——<strong>遇到报错前先看官方文档说什么</strong>，别被搜索结果里的”通用经验”误导。TEI 用 candle 后端时是支持 pytorch_model.bin 的。</p>
 </blockquote>
-<h2 id="第四章：Docker-编排——16G-内存下的容器战争"><a href="#第四章：Docker-编排——16G-内存下的容器战争" class="headerlink" title="第四章：Docker 编排——16G 内存下的容器战争"></a>第四章：Docker 编排——16G 内存下的容器战争</h2><p><img src="/images/posts/shopkeeper-agent-troubleshooting/fig2-docker_001.jpg" alt="Docker 容器编排关系图"><br><em>图 2：4 个核心容器（mysql&#x2F;es&#x2F;qdrant&#x2F;TEI）+ 可选 kibana</em></p>
+<h2 id="第四章：Docker-编排——16G-内存下的容器战争"><a href="#第四章：Docker-编排——16G-内存下的容器战争" class="headerlink" title="第四章：Docker 编排——16G 内存下的容器战争"></a>第四章：Docker 编排——16G 内存下的容器战争</h2><p><img data-src="/images/posts/shopkeeper-agent-troubleshooting/fig2-docker_001.jpg" alt="Docker 容器编排关系图"><br><em>图 2：4 个核心容器（mysql&#x2F;es&#x2F;qdrant&#x2F;TEI）+ 可选 kibana</em></p>
 <h3 id="坑-5：OOM-黑屏"><a href="#坑-5：OOM-黑屏" class="headerlink" title="坑 5：OOM 黑屏"></a>坑 5：OOM 黑屏</h3><p><code>docker compose up</code> 拉起 5 个容器（含 kibana）时，<strong>整机黑屏 3 秒</strong>。重启后发现 ES 镜像 675MB 那层 extract 时直接把内存撑爆——16G 只剩 988MB，IDEA + Chrome 已经把可用内存吃干抹净。</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 关 IDEA</span></span><br><span class="line"><span class="comment"># 跳 kibana（非必须，只是 ES 可视化 UI）</span></span><br><span class="line">docker compose -f docker/docker-compose.yaml up -d \</span><br><span class="line">  mysql elasticsearch qdrant embedding</span><br></pre></td></tr></table></figure>
 
@@ -460,7 +468,7 @@
 <h2 id="第七章：模型选型心路——这是最长的一章"><a href="#第七章：模型选型心路——这是最长的一章" class="headerlink" title="第七章：模型选型心路——这是最长的一章"></a>第七章：模型选型心路——这是最长的一章</h2><blockquote>
 <p>这是整篇博客最值得读的部分。前 10 个坑都是工程问题，<strong>坑 12 是 LLM 应用的核心架构问题</strong>。</p>
 </blockquote>
-<p><img src="/images/posts/shopkeeper-agent-troubleshooting/fig3-llm-decision_001.jpg" alt="LLM 模型选型决策树"><br><em>图 3：从 MiniMax-M2.7 到 M3 + extra_body 的四步选型路径</em></p>
+<p><img data-src="/images/posts/shopkeeper-agent-troubleshooting/fig3-llm-decision_001.jpg" alt="LLM 模型选型决策树"><br><em>图 3：从 MiniMax-M2.7 到 M3 + extra_body 的四步选型路径</em></p>
 <p>shopkeeper-agent 用 LangChain 的 <strong>PydanticOutputParser</strong>（一种 JSON 输出解析器）来约束 LLM 输出。解析器期望：</p>
 <figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span><span class="attr">&quot;intent&quot;</span><span class="punctuation">:</span> <span class="string">&quot;aggregation&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;metric&quot;</span><span class="punctuation">:</span> <span class="string">&quot;销售总额&quot;</span><span class="punctuation">,</span> ...<span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
 
@@ -547,7 +555,7 @@
 <li>前端 <code>nvm use 22.20.0 &amp;&amp; cd frontend &amp;&amp; npx --no-install vite</code></li>
 <li>浏览器开 <a target="_blank" rel="noopener" href="http://localhost:5173/">http://localhost:5173</a> 问数</li>
 </ol>
-<h2 id="排障时间线复盘"><a href="#排障时间线复盘" class="headerlink" title="排障时间线复盘"></a>排障时间线复盘</h2><p><img src="/images/posts/shopkeeper-agent-troubleshooting/fig4-timeline_001.jpg" alt="13 个坑的排障时间线"><br><em>图 4：13 个坑按启动顺序排列的时间线</em></p>
+<h2 id="排障时间线复盘"><a href="#排障时间线复盘" class="headerlink" title="排障时间线复盘"></a>排障时间线复盘</h2><p><img data-src="/images/posts/shopkeeper-agent-troubleshooting/fig4-timeline_001.jpg" alt="13 个坑的排障时间线"><br><em>图 4：13 个坑按启动顺序排列的时间线</em></p>
 <p>把 13 个坑按启动顺序拉成一条线，能看清几件事：</p>
 <ul>
 <li><strong>前 1&#x2F;3 是环境问题</strong>（Python、依赖、Embedding），全部是”装东西”阶段的</li>

@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.28.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
 
     <meta name="description" content="三天里把数据归集系统的 6 个 tree 接口、148 个孤儿设备、5 个数据地雷全部扒了一遍，附完整证据链和修复指南">
 <meta property="og:type" content="article">
@@ -29,7 +29,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://zhlifeiy.codes/images/covers/%E6%95%B0%E6%8D%AE%E5%BD%92%E9%9B%866%E6%9C%88%E6%8E%A2%E6%9F%A5%E5%AE%9E%E5%BD%95-%E4%B8%89%E5%A4%A9%E4%B8%89%E4%BB%B6%E4%BA%8B.png">
 <meta property="article:published_time" content="2026-06-03T14:00:00.000Z">
-<meta property="article:modified_time" content="2026-06-03T08:42:25.940Z">
+<meta property="article:modified_time" content="2026-07-25T16:59:54.299Z">
 <meta property="article:author" content="zhlifeiy35">
 <meta property="article:tag" content="Spring Boot">
 <meta property="article:tag" content="多数据源">
@@ -62,6 +62,7 @@
 
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
 <script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
@@ -82,6 +83,7 @@
   <noscript>
     <link rel="stylesheet" href="/css/noscript.css">
   </noscript>
+<link rel="alternate" href="/atom.xml" title="我的技术博客" type="application/atom+xml">
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
@@ -258,9 +260,15 @@
         <i class="far fa-calendar"></i>
       </span>
       <span class="post-meta-item-text">发表于</span>
-      
 
-      <time title="创建时间：2026-06-03 22:00:00 / 修改时间：16:42:25" itemprop="dateCreated datePublished" datetime="2026-06-03T22:00:00+08:00">2026-06-03</time>
+      <time title="创建时间：2026-06-03 22:00:00" itemprop="dateCreated datePublished" datetime="2026-06-03T22:00:00+08:00">2026-06-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-07-26 00:59:54" itemprop="dateModified" datetime="2026-07-26T00:59:54+08:00">2026-07-26</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -583,7 +591,7 @@
 <li><strong>148 这个数字是个红旗</strong>——6 个根流域的 851 个测站全部没设备，这比例异常，肯定是数据问题不是代码问题。</li>
 </ol>
 </blockquote>
-<h4 id="1-3-5-紫洞设备排查路径总结"><a href="#1-3-5-紫洞设备排查路径总结" class="headerlink" title="1.3.5 紫洞设备排查路径总结"></a>1.3.5 紫洞设备排查路径总结</h4><p><img src="/images/posts/%E6%95%B0%E6%8D%AE%E5%BD%92%E9%9B%866%E6%9C%88%E6%8E%A2%E6%9F%A5%E5%AE%9E%E5%BD%95-%E4%B8%89%E5%A4%A9%E4%B8%89%E4%BB%B6%E4%BA%8B/fig1-zidong-trace.png" alt="紫洞设备排查路径图"><br><em>图 1-1：紫洞设备丢失问题的 5 步排查路径</em></p>
+<h4 id="1-3-5-紫洞设备排查路径总结"><a href="#1-3-5-紫洞设备排查路径总结" class="headerlink" title="1.3.5 紫洞设备排查路径总结"></a>1.3.5 紫洞设备排查路径总结</h4><p><img data-src="/images/posts/%E6%95%B0%E6%8D%AE%E5%BD%92%E9%9B%866%E6%9C%88%E6%8E%A2%E6%9F%A5%E5%AE%9E%E5%BD%95-%E4%B8%89%E5%A4%A9%E4%B8%89%E4%BB%B6%E4%BA%8B/fig1-zidong-trace.png" alt="紫洞设备排查路径图"><br><em>图 1-1：紫洞设备丢失问题的 5 步排查路径</em></p>
 <h3 id="1-4-第三件事：TreeNode-加-type-字段"><a href="#1-4-第三件事：TreeNode-加-type-字段" class="headerlink" title="1.4 第三件事：TreeNode 加 type 字段"></a>1.4 第三件事：TreeNode 加 <code>type</code> 字段</h3><p>下午 14:00，前端反馈现有 tree 接口返回的节点类型不明确：</p>
 <table>
 <thead>
@@ -825,7 +833,7 @@
 
 <p>效果：equipment 树从 7 根降到 2 根（西江 + 珠江三角洲）。</p>
 <h4 id="1-5-6-惊喜发现：紫洞出现了"><a href="#1-5-6-惊喜发现：紫洞出现了" class="headerlink" title="1.5.6 惊喜发现：紫洞出现了"></a>1.5.6 惊喜发现：紫洞出现了</h4><p>测试时发现紫洞（VV81303560）从无到有，出现在西江 → 北流河 → 杨梅河 → 潘内 下。说明 148 个孤儿设备中紫洞的 STCD 已经被补上。[[紫洞设备问题排查]] 里的 P0 数据问题已部分修复。</p>
-<p><img src="/images/posts/%E6%95%B0%E6%8D%AE%E5%BD%92%E9%9B%866%E6%9C%88%E6%8E%A2%E6%9F%A5%E5%AE%9E%E5%BD%95-%E4%B8%89%E5%A4%A9%E4%B8%89%E4%BB%B6%E4%BA%8B/fig2-tree-refactor-overview.png" alt="6 月 1 日树选择器改造全景图"><br><em>图 1-2：6&#x2F;1 树选择器改造全景——type 字段 + 多根返回 + 性能优化</em></p>
+<p><img data-src="/images/posts/%E6%95%B0%E6%8D%AE%E5%BD%92%E9%9B%866%E6%9C%88%E6%8E%A2%E6%9F%A5%E5%AE%9E%E5%BD%95-%E4%B8%89%E5%A4%A9%E4%B8%89%E4%BB%B6%E4%BA%8B/fig2-tree-refactor-overview.png" alt="6 月 1 日树选择器改造全景图"><br><em>图 1-2：6&#x2F;1 树选择器改造全景——type 字段 + 多根返回 + 性能优化</em></p>
 <h3 id="1-6-6-1-经验总结"><a href="#1-6-6-1-经验总结" class="headerlink" title="1.6 6&#x2F;1 经验总结"></a>1.6 6&#x2F;1 经验总结</h3><blockquote>
 <p>[!tip] 三个”不要”</p>
 <ol>
@@ -1383,7 +1391,7 @@
 <li>行政区侧 4 个接口不变</li>
 <li>设备类型接口不传参即可拿到全量类型列表</li>
 </ul>
-<p><img src="/images/posts/%E6%95%B0%E6%8D%AE%E5%BD%92%E9%9B%866%E6%9C%88%E6%8E%A2%E6%9F%A5%E5%AE%9E%E5%BD%95-%E4%B8%89%E5%A4%A9%E4%B8%89%E4%BB%B6%E4%BA%8B/fig3-api-contract.png" alt="6 月 2 日接口对接全景图"><br><em>图 2-1：6&#x2F;2 接口对接全景——前端适配 + 性能特征 + 提交清单</em></p>
+<p><img data-src="/images/posts/%E6%95%B0%E6%8D%AE%E5%BD%92%E9%9B%866%E6%9C%88%E6%8E%A2%E6%9F%A5%E5%AE%9E%E5%BD%95-%E4%B8%89%E5%A4%A9%E4%B8%89%E4%BB%B6%E4%BA%8B/fig3-api-contract.png" alt="6 月 2 日接口对接全景图"><br><em>图 2-1：6&#x2F;2 接口对接全景——前端适配 + 性能特征 + 提交清单</em></p>
 <h3 id="2-6-6-2-经验总结"><a href="#2-6-6-2-经验总结" class="headerlink" title="2.6 6&#x2F;2 经验总结"></a>2.6 6&#x2F;2 经验总结</h3><blockquote>
 <p>[!tip] 三个”清晰”</p>
 <ol>
@@ -1517,7 +1525,7 @@
 <li><strong>STCD 是唯一共识字段</strong>——两个库的其他字段不一致，只能按 STCD 拼</li>
 </ol>
 </blockquote>
-<p><img src="/images/posts/%E6%95%B0%E6%8D%AE%E5%BD%92%E9%9B%866%E6%9C%88%E6%8E%A2%E6%9F%A5%E5%AE%9E%E5%BD%95-%E4%B8%89%E5%A4%A9%E4%B8%89%E4%BB%B6%E4%BA%8B/fig4-cross-datasource.png" alt="跨数据源查询机制示意图"><br><em>图 3-1：跨数据源查询机制——Java 内存里两次查 + STCD 拼接</em></p>
+<p><img data-src="/images/posts/%E6%95%B0%E6%8D%AE%E5%BD%92%E9%9B%866%E6%9C%88%E6%8E%A2%E6%9F%A5%E5%AE%9E%E5%BD%95-%E4%B8%89%E5%A4%A9%E4%B8%89%E4%BB%B6%E4%BA%8B/fig4-cross-datasource.png" alt="跨数据源查询机制示意图"><br><em>图 3-1：跨数据源查询机制——Java 内存里两次查 + STCD 拼接</em></p>
 <h3 id="3-4-发现-3：计划文档与实际代码不一致"><a href="#3-4-发现-3：计划文档与实际代码不一致" class="headerlink" title="3.4 发现 3：计划文档与实际代码不一致"></a>3.4 发现 3：计划文档与实际代码不一致</h3><p>巡查 <code>docs/superpowers/plans/2026-05-21-tree-selector-refactor.md</code> 时发现一个尴尬的对账问题。</p>
 <p>文档里第 105 &#x2F; 138 &#x2F; 161 行多处明确写：</p>
 <blockquote>
@@ -1600,7 +1608,7 @@
 <blockquote>
 <p>[!quote] 一句话总结<br>今天没写一行业务代码，但把 5 个”地雷”都标了出来——这种工作的价值不在 PR 行数，而在以后少加几次班。</p>
 </blockquote>
-<p><img src="/images/posts/%E6%95%B0%E6%8D%AE%E5%BD%92%E9%9B%866%E6%9C%88%E6%8E%A2%E6%9F%A5%E5%AE%9E%E5%BD%95-%E4%B8%89%E5%A4%A9%E4%B8%89%E4%BB%B6%E4%BA%8B/fig5-data-mines.png" alt="5 个数据地雷汇总图"><br><em>图 3-2：5 个数据地雷汇总——组织架构、跨源机制、注解不一致、设备类型污染、公司表脏数据</em></p>
+<p><img data-src="/images/posts/%E6%95%B0%E6%8D%AE%E5%BD%92%E9%9B%866%E6%9C%88%E6%8E%A2%E6%9F%A5%E5%AE%9E%E5%BD%95-%E4%B8%89%E5%A4%A9%E4%B8%89%E4%BB%B6%E4%BA%8B/fig5-data-mines.png" alt="5 个数据地雷汇总图"><br><em>图 3-2：5 个数据地雷汇总——组织架构、跨源机制、注解不一致、设备类型污染、公司表脏数据</em></p>
 <hr>
 <h2 id="四、跨日总结：三天的工作节奏"><a href="#四、跨日总结：三天的工作节奏" class="headerlink" title="四、跨日总结：三天的工作节奏"></a>四、跨日总结：三天的工作节奏</h2><h3 id="4-1-节奏对比"><a href="#4-1-节奏对比" class="headerlink" title="4.1 节奏对比"></a>4.1 节奏对比</h3><table>
 <thead>
@@ -1919,7 +1927,7 @@
 </ul>
 <h3 id="5-7-关联博客"><a href="#5-7-关联博客" class="headerlink" title="5.7 关联博客"></a>5.7 关联博客</h3><ul>
 <li><a href="/2026/05/21/%E6%A0%91%E7%BB%93%E6%9E%84%E9%80%89%E6%8B%A9%E5%99%A8-%E4%BB%8ERedis%E5%88%B0%E7%9B%B4%E8%BF%9E%E6%95%B0%E6%8D%AE%E5%BA%93/">《树结构选择器：从 Redis 到直连数据库的架构重构》</a>——5&#x2F;21 改造基础</li>
-<li><a href="/2025/12/Spring-Boot%E5%A4%9A%E6%95%B0%E6%8D%AE%E6%BA%90%E5%BC%80%E5%8F%91%E5%AE%9E%E8%B7%B5-%E4%BB%8E%E8%B8%A9%E5%9D%91%E5%88%B0%E8%A7%A3%E5%86%B3/">《Spring Boot 多数据源开发实践：从踩坑到解决》</a>——多数据源原理</li>
+<li><a href="/2026/02/28/Spring-Boot%E5%A4%9A%E6%95%B0%E6%8D%AE%E6%BA%90%E5%BC%80%E5%8F%91%E5%AE%9E%E8%B7%B5%EF%BC%9A%E4%BB%8E%E8%B8%A9%E5%9D%91%E5%88%B0%E8%A7%A3%E5%86%B3/">《Spring Boot 多数据源开发实践：从踩坑到解决》</a>——多数据源原理</li>
 <li><a href="/2026/05/07/%E6%B0%B4%E6%96%87%E6%95%B0%E6%8D%AE%E5%9D%87%E5%80%BC%E5%AF%B9%E6%AF%94%E6%9F%A5%E8%AF%A2Bug%E4%BF%AE%E5%A4%8D%E5%85%A8%E8%AE%B0%E5%BD%95/">《水文数据均值对比查询 Bug 修复全记录》</a>——同项目 bug 修复风格</li>
 <li><a href="/2026/03/19/%E5%B9%BF%E4%B8%9C%E6%B0%B4%E6%96%87%E9%A1%B9%E7%9B%AE%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5%E5%AE%9E%E5%BD%952026%E5%B9%B43%E6%9C%8819%E6%97%A5%E6%8A%80%E6%9C%AF%E6%8C%91%E6%88%98/">《广东水文项目问题排查实录 2026 年 3 月 19 日》</a>——同项目排查风格</li>
 </ul>
