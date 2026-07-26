@@ -171,7 +171,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">59</span>
+          <span class="site-state-item-count">60</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -182,7 +182,7 @@
       </div>
       <div class="site-state-item site-state-tags">
           <a href="/tags/">
-        <span class="site-state-item-count">206</span>
+        <span class="site-state-item-count">209</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -204,6 +204,102 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/2026-06-23-pdeparts-deprecated_001.webp" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/06/23/2026-06-23-pdeparts-deprecated/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="记录项目实践、问题排查与工程经验">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content=" | zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2026/06/23/2026-06-23-pdeparts-deprecated/" class="post-title-link" itemprop="url">PDEPARTS 废弃 + 头像同步修复 + 用户查询回归：递归 CTE 上溯</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-06-23 18:00:00" itemprop="dateCreated datePublished" datetime="2026-06-23T18:00:00+08:00">2026-06-23</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">项目笔记</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/" itemprop="url" rel="index"><span itemprop="name">南网</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h2 id="导读"><a href="#导读" class="headerlink" title="导读"></a>导读</h2><blockquote>
+<p>6&#x2F;22 暴露的 PDEPARTS 下线问题，今天给出完整修复：废弃所有依赖 PDEPARTS 的解析，改用部门 UUID 沿 <code>sys_organization.parent_id</code> 递归上溯查 <code>sys_park_organization</code> 桥表（MySQL 8 CTE）。一个 commit 改了 8 个文件、+167&#x2F;-33，把昨天识别出的 4 个 Bug 全部修完。同时顺手把头像同步 bug（<code>setFacePic</code> 误写为 <code>setFacePicAuditStatus</code>）修了，并补充 <code>face_pic=&#39;2&#39;</code> 历史脏数据的处理策略。</p>
+</blockquote>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2026/06/23/2026-06-23-pdeparts-deprecated/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -1045,112 +1141,6 @@
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2026/06/03/%E6%95%B0%E6%8D%AE%E5%BD%92%E9%9B%866%E6%9C%88%E6%8E%A2%E6%9F%A5%E5%AE%9E%E5%BD%95-%E4%B8%89%E5%A4%A9%E4%B8%89%E4%BB%B6%E4%BA%8B/">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
-    
-    <div class="post-gallery-image">
-      <img src="/images/covers/consul-datasource-pitfall.png" itemprop="contentUrl">
-    </div>
-    </div>
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/05/29/Consul%E9%85%8D%E7%BD%AE%E8%B8%A9%E5%9D%91-%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="zhlifeiy35">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="zhlifeiy · 工程笔记">
-      <meta itemprop="description" content="记录项目实践、问题排查与工程经验">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content=" | zhlifeiy · 工程笔记">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2026/05/29/Consul%E9%85%8D%E7%BD%AE%E8%B8%A9%E5%9D%91-%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2/" class="post-title-link" itemprop="url">Consul 配置踩坑：数据源切换的陷阱与排查</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">发表于</span>
-
-      <time title="创建时间：2026-05-29 10:00:00" itemprop="dateCreated datePublished" datetime="2026-05-29T10:00:00+08:00">2026-05-29</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-folder"></i>
-      </span>
-      <span class="post-meta-item-text">分类于</span>
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">后端开发</span></a>
-        </span>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>数字孪生模块从 local profile 切换到 Consul 配置后，视频巡查接口全部报 500：<code>Table &#39;gdsw.bs_sw_cy_dh_video_inspection&#39; doesn&#39;t exist</code>。本地库有这张表，MCP 工具能查到，但服务连不上。本文记录了这个坑的根因、排查思路和解决方案。</p>
-<div class="audio-player">
-  <div class="audio-section">
-    <h4>🎧 文章导读</h4>
-    <audio controls preload="metadata">
-      <source src="/audio/Consul配置踩坑-数据源切换/narration.mp3" type="audio/mpeg">
-      您的浏览器不支持音频播放。
-    </audio>
-  </div>
-  <div class="audio-section">
-    <h4>🎵 背景音乐</h4>
-    <audio controls loop preload="metadata">
-      <source src="/audio/Consul配置踩坑-数据源切换/bgm.mp3" type="audio/mpeg">
-      您的浏览器不支持音频播放。
-    </audio>
-  </div>
-</div>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2026/05/29/Consul%E9%85%8D%E7%BD%AE%E8%B8%A9%E5%9D%91-%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
