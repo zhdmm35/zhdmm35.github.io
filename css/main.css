@@ -1451,7 +1451,7 @@ pre code {
     vertical-align: middle;
   }
   .links-of-author a::before {
-    background: #0b0ae5;
+    background: #988898;
     display: inline-block;
     margin-right: 3px;
     transform: translateY(-2px);
@@ -3159,6 +3159,12 @@ header.header {
 }
 .project-card--data {
   --project-color: #7c3aed;
+}
+.project-card--ai {
+  --project-color: #d97706;
+}
+.project-card--security {
+  --project-color: #dc2626;
 }
 @media (max-width: 767px) {
   .project-grid {

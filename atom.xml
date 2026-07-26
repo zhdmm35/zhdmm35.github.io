@@ -547,11 +547,11 @@
     
     <category term="Spring Cloud" scheme="https://zhlifeiy.codes/tags/Spring-Cloud/"/>
     
-    <category term="JWT" scheme="https://zhlifeiy.codes/tags/JWT/"/>
-    
     <category term="Gateway" scheme="https://zhlifeiy.codes/tags/Gateway/"/>
     
     <category term="Feign" scheme="https://zhlifeiy.codes/tags/Feign/"/>
+    
+    <category term="JWT" scheme="https://zhlifeiy.codes/tags/JWT/"/>
     
     <category term="Nacos" scheme="https://zhlifeiy.codes/tags/Nacos/"/>
     
