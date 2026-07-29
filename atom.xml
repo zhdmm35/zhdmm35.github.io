@@ -6,7 +6,7 @@
   <link href="https://zhlifeiy.codes/atom.xml" rel="self"/>
   
   <link href="https://zhlifeiy.codes/"/>
-  <updated>2026-07-26T05:10:10.000Z</updated>
+  <updated>2026-07-29T08:30:00.000Z</updated>
   <id>https://zhlifeiy.codes/</id>
   
   <author>
@@ -15,6 +15,31 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>给园区监控系统加录像/截图线上存储：后端设计与踩坑记录</title>
+    <link href="https://zhlifeiy.codes/2026/07/29/camera-video-screenshot-storage/"/>
+    <id>https://zhlifeiy.codes/2026/07/29/camera-video-screenshot-storage/</id>
+    <published>2026-07-29T08:30:00.000Z</published>
+    <updated>2026-07-29T08:30:00.000Z</updated>
+    
+    
+    <summary type="html">&lt;p&gt;园区监控平台里，用户看实时视频时的截图和录像，原本是浏览器直接下载到本地。这次把它改成上传线上存储，并补齐了分页列表、查看、改名、批量删除和审计日志。这篇复盘记录几个关键的设计决策，以及过程中踩到的五个真实的坑——分页插件的 NULL 参数、通用 mapper 的 OGNL 陷阱、单测测不到的 XML 语法错误、被 distinct 折叠的测试数据，还有 PowerShell 拼 URL 的变量名陷阱。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="项目复盘" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E5%A4%8D%E7%9B%98/"/>
+    
+    
+    <category term="MyBatis" scheme="https://zhlifeiy.codes/tags/MyBatis/"/>
+    
+    <category term="Spring Cloud" scheme="https://zhlifeiy.codes/tags/Spring-Cloud/"/>
+    
+    <category term="微服务" scheme="https://zhlifeiy.codes/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/"/>
+    
+    <category term="后端设计" scheme="https://zhlifeiy.codes/tags/%E5%90%8E%E7%AB%AF%E8%AE%BE%E8%AE%A1/"/>
+    
+  </entry>
   
   <entry>
     <title>给 Hexo 博客加一个 AI 助手：MiniMax + Cloudflare Workers 实战</title>
@@ -587,43 +612,6 @@
     <category term="环境搭建" scheme="https://zhlifeiy.codes/tags/%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA/"/>
     
     <category term="编译踩坑" scheme="https://zhlifeiy.codes/tags/%E7%BC%96%E8%AF%91%E8%B8%A9%E5%9D%91/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>数据归集 6 月探查实录：三天三件事，把树形接口、数据脏坑、跨源机制全部扒一遍</title>
-    <link href="https://zhlifeiy.codes/2026/06/03/%E6%95%B0%E6%8D%AE%E5%BD%92%E9%9B%866%E6%9C%88%E6%8E%A2%E6%9F%A5%E5%AE%9E%E5%BD%95-%E4%B8%89%E5%A4%A9%E4%B8%89%E4%BB%B6%E4%BA%8B/"/>
-    <id>https://zhlifeiy.codes/2026/06/03/%E6%95%B0%E6%8D%AE%E5%BD%92%E9%9B%866%E6%9C%88%E6%8E%A2%E6%9F%A5%E5%AE%9E%E5%BD%95-%E4%B8%89%E5%A4%A9%E4%B8%89%E4%BB%B6%E4%BA%8B/</id>
-    <published>2026-06-03T14:00:00.000Z</published>
-    <updated>2026-06-03T14:00:00.000Z</updated>
-    
-    
-    <summary type="html">三天里把数据归集系统的 6 个 tree 接口、148 个孤儿设备、5 个数据地雷全部扒了一遍，附完整证据链和修复指南</summary>
-    
-    
-    
-    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
-    
-    <category term="数据归集" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E6%95%B0%E6%8D%AE%E5%BD%92%E9%9B%86/"/>
-    
-    
-    <category term="Spring Boot" scheme="https://zhlifeiy.codes/tags/Spring-Boot/"/>
-    
-    <category term="多数据源" scheme="https://zhlifeiy.codes/tags/%E5%A4%9A%E6%95%B0%E6%8D%AE%E6%BA%90/"/>
-    
-    <category term="数据归集" scheme="https://zhlifeiy.codes/tags/%E6%95%B0%E6%8D%AE%E5%BD%92%E9%9B%86/"/>
-    
-    <category term="树选择器" scheme="https://zhlifeiy.codes/tags/%E6%A0%91%E9%80%89%E6%8B%A9%E5%99%A8/"/>
-    
-    <category term="baomidou-dynamic-datasource" scheme="https://zhlifeiy.codes/tags/baomidou-dynamic-datasource/"/>
-    
-    <category term="MySQL" scheme="https://zhlifeiy.codes/tags/MySQL/"/>
-    
-    <category term="数据治理" scheme="https://zhlifeiy.codes/tags/%E6%95%B0%E6%8D%AE%E6%B2%BB%E7%90%86/"/>
-    
-    <category term="Bug排查" scheme="https://zhlifeiy.codes/tags/Bug%E6%8E%92%E6%9F%A5/"/>
-    
-    <category term="接口改造" scheme="https://zhlifeiy.codes/tags/%E6%8E%A5%E5%8F%A3%E6%94%B9%E9%80%A0/"/>
     
   </entry>
   
