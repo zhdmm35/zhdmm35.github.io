@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Gemini","darkmode":true,"version":"8.28.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="任务原文写的是「调试旧版语音播报是否可用」。预期是「旧版已有，调通即可」。实际逐层调试后结论很反常：除了最底层的设备能力可复用，上面四层——Feign、触发、配置、素材持久化——全部断裂。这不是「调通旧功能」，而是在底层能力之上重建四层链路。这篇记录每一层的现状、证据和误判修正。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="一个「调通旧功能」如何变成四层重建——语音播报链路断裂复盘">
+<meta property="og:url" content="https://zhlifeiy.codes/2026/08/01/voice-broadcast-four-layer-breakdown/index.html">
+<meta property="og:site_name" content="zhlifeiy · 工程笔记">
+<meta property="og:description" content="任务原文写的是「调试旧版语音播报是否可用」。预期是「旧版已有，调通即可」。实际逐层调试后结论很反常：除了最底层的设备能力可复用，上面四层——Feign、触发、配置、素材持久化——全部断裂。这不是「调通旧功能」，而是在底层能力之上重建四层链路。这篇记录每一层的现状、证据和误判修正。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/voice-broadcast-four-layer-breakdown.webp">
+<meta property="article:published_time" content="2026-08-01T14:00:00.000Z">
+<meta property="article:author" content="zhlifeiy35">
+<meta property="article:tag" content="Spring Cloud">
+<meta property="article:tag" content="Feign">
+<meta property="article:tag" content="微服务">
+<meta property="article:tag" content="排障复盘">
+<meta property="article:tag" content="语音播报">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/voice-broadcast-four-layer-breakdown.webp">
+
+
+<link rel="canonical" href="https://zhlifeiy.codes/2026/08/01/voice-broadcast-four-layer-breakdown/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://zhlifeiy.codes/2026/08/01/voice-broadcast-four-layer-breakdown/","path":"2026/08/01/voice-broadcast-four-layer-breakdown/","title":"一个「调通旧功能」如何变成四层重建——语音播报链路断裂复盘"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>一个「调通旧功能」如何变成四层重建——语音播报链路断裂复盘 | zhlifeiy · 工程笔记</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/atom.xml" title="zhlifeiy · 工程笔记" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">zhlifeiy · 工程笔记</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">把项目里的坑，写成可以复用的答案</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-项目"><a href="/projects/" rel="section"><i class="fa fa-diagram-project fa-fw"></i>项目</a></li><li class="menu-item menu-item-简历"><a href="/resume/" rel="section"><i class="fa fa-id-card fa-fw"></i>简历</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-guestbook"><a href="/guestbook/" rel="section"><i class="fa fa-comment-dots fa-fw"></i>留言板</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%83%8C%E6%99%AF"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E5%B1%82%E9%93%BE%E8%B7%AF%E6%80%BB%E8%A7%88"><span class="nav-number">2.</span> <span class="nav-text">四层链路总览</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC-1-%E5%B1%82-%C2%B7-%E8%AE%BE%E5%A4%87%E8%83%BD%E5%8A%9B%E2%80%94%E2%80%94%E5%94%AF%E4%B8%80%E5%8F%AF%E5%A4%8D%E7%94%A8"><span class="nav-number">3.</span> <span class="nav-text">第 1 层 · 设备能力——唯一可复用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC-2-%E5%B1%82-%C2%B7-Feign%E2%80%94%E2%80%94%E6%96%AD%E8%A3%82"><span class="nav-number">4.</span> <span class="nav-text">第 2 层 · Feign——断裂</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC-3-%E5%B1%82-%C2%B7-%E8%A7%A6%E5%8F%91%E2%80%94%E2%80%94%E7%A9%BA-stub"><span class="nav-number">5.</span> <span class="nav-text">第 3 层 · 触发——空 stub</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E8%A2%AB%E4%BA%8C%E6%AC%A1%E6%A0%B8%E5%AF%B9%E7%BA%A0%E6%AD%A3%E7%9A%84%E8%AF%AF%E5%88%A4"><span class="nav-number">5.1.</span> <span class="nav-text">一个被二次核对纠正的误判</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC-4-%E5%B1%82-%C2%B7-%E9%85%8D%E7%BD%AE%E2%80%94%E2%80%94%E5%8D%8A%E6%88%90%E5%93%81%EF%BC%8C%E4%B8%A4%E4%B8%AA%E5%AD%90%E9%97%AE%E9%A2%98%E5%8F%A0%E5%8A%A0"><span class="nav-number">6.</span> <span class="nav-text">第 4 层 · 配置——半成品，两个子问题叠加</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%99%84-%C2%B7-%E7%B4%A0%E6%9D%90%E6%8C%81%E4%B9%85%E5%8C%96%E2%80%94%E2%80%94%E7%BC%BA%E5%A4%B1"><span class="nav-number">7.</span> <span class="nav-text">附 · 素材持久化——缺失</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B7%A5%E4%BD%9C%E9%87%8F%E6%B1%87%E6%80%BB"><span class="nav-number">8.</span> <span class="nav-text">工作量汇总</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B7%A5%E4%BD%9C%E9%87%8F%E8%AF%AF%E5%88%A4%E9%A3%8E%E9%99%A9"><span class="nav-number">8.1.</span> <span class="nav-text">工作量误判风险</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%AA%E7%A1%AE%E8%AE%A4%E7%9A%84%E5%A4%96%E9%83%A8%E4%BE%9D%E8%B5%96%EF%BC%88%E4%B8%BB%E8%A6%81%E9%A3%8E%E9%99%A9%EF%BC%89"><span class="nav-number">9.</span> <span class="nav-text">未确认的外部依赖（主要风险）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B7%B2%E5%AE%8C%E6%88%90%E7%9A%84%E5%89%8D%E7%BD%AE%E6%94%B9%E5%8A%A8"><span class="nav-number">10.</span> <span class="nav-text">已完成的前置改动</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">11.</span> <span class="nav-text">小结</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zhlifeiy35</p>
+  <div class="site-description" itemprop="description">记录项目实践、问题排查与工程经验</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">65</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">14</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">219</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zhdmm35" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zhdmm35" rel="noopener me" target="_blank"><i class="fa fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/voice-broadcast-four-layer-breakdown.webp" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/08/01/voice-broadcast-four-layer-breakdown/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="记录项目实践、问题排查与工程经验">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="一个「调通旧功能」如何变成四层重建——语音播报链路断裂复盘 | zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          一个「调通旧功能」如何变成四层重建——语音播报链路断裂复盘
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-08-01 22:00:00" itemprop="dateCreated datePublished" datetime="2026-08-01T22:00:00+08:00">2026-08-01</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E9%A1%B9%E7%9B%AE%E5%A4%8D%E7%9B%98/" itemprop="url" rel="index"><span itemprop="name">项目复盘</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>任务原文写的是「调试旧版语音播报是否可用」。预期是「旧版已有，调通即可」。实际逐层调试后结论很反常：<strong>除了最底层的设备能力可复用，上面四层——Feign、触发、配置、素材持久化——全部断裂</strong>。这不是「调通旧功能」，而是在底层能力之上重建四层链路。这篇记录每一层的现状、证据和误判修正。</p>
+<span id="more"></span>
+
+<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>AI 视频分析闭环里有三个联动：平台弹窗、信息屏发布、语音播报。语音播报子任务原文：</p>
+<blockquote>
+<p>旧版本已有相关功能，需要调试是否可用。</p>
+</blockquote>
+<p>预期「旧版已有，调通即可」。实际调试结论：旧版只有一副骨架，四截全断，需要补开发。</p>
+<h2 id="四层链路总览"><a href="#四层链路总览" class="headerlink" title="四层链路总览"></a>四层链路总览</h2><p>语音播报从平台底层能力到用户听到声音，逻辑上分四层：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">flowchart TD</span><br><span class="line">    L1[&quot;第 1 层 · 设备能力&lt;br/&gt;视频平台语音广播接口&quot;] --&gt; L2[&quot;第 2 层 · Feign 客户端&lt;br/&gt;跨服务调用入口&quot;]</span><br><span class="line">    L2 --&gt; L3[&quot;第 3 层 · 触发层&lt;br/&gt;告警事件驱动调用&quot;]</span><br><span class="line">    L3 --&gt; L4[&quot;第 4 层 · 配置层&lt;br/&gt;设备/素材绑定与保存&quot;]</span><br><span class="line">    L4 --&gt; L5[&quot;附 · 素材持久化&lt;br/&gt;audioUrl 稳定地址&quot;]</span><br><span class="line">    style L1 fill:#c8e6c9</span><br><span class="line">    style L2 fill:#ffcdd2</span><br><span class="line">    style L3 fill:#ffcdd2</span><br><span class="line">    style L4 fill:#ffd6a0</span><br><span class="line">    style L5 fill:#ffcdd2</span><br></pre></td></tr></table></figure>
+
+<p>绿色是唯一不用动的，红色是断裂的，橙色是半成品。</p>
+<p><img data-src="/images/posts/voice-broadcast-four-layer-breakdown/concept-layers-broken.webp" alt="四层断裂"><br><em>图 1：四层叠放——底层设备能力完好，上面三层全断。</em></p>
+<h2 id="第-1-层-·-设备能力——唯一可复用"><a href="#第-1-层-·-设备能力——唯一可复用" class="headerlink" title="第 1 层 · 设备能力——唯一可复用"></a>第 1 层 · 设备能力——唯一可复用</h2><p><code>integrate-iot</code> 的 <code>PlfVideoClientImpl</code> 真实调用了视频平台的语音广播接口。</p>
+<table>
+<thead>
+<tr>
+<th>能力</th>
+<th>接口</th>
+<th>实现</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>开始广播</td>
+<td>POST <code>/protocol/ProtocolApiService/requestVoiceBroadcas</code></td>
+<td>真实调用</td>
+</tr>
+<tr>
+<td>停止广播</td>
+<td>POST <code>/protocol/ProtocolApiService/stopVoice</code></td>
+<td>真实调用</td>
+</tr>
+<tr>
+<td>Provider 暴露</td>
+<td><code>/platformVideo/broadcast/broadcastStart</code>、<code>/broadcastStop</code></td>
+<td>已暴露</td>
+</tr>
+</tbody></table>
+<p>参数：<code>mainId</code>（设备主 Id）+ <code>subId</code>（设备子 Id）+ <code>audioUrl</code>（语音文件地址；不传则返回 websocket 地址，推 opus 音频流）。</p>
+<p>这是整条链路里唯一不用动的部分。底层调用和 Provider 都在，能复用。问题全在它之上。</p>
+<p>证据：<code>PlfVideoClientImpl.java:870</code>（broadcastStart）、<code>:889</code>（broadcastStop）；<code>IotPlatformVideoProvider.java:727</code>、<code>:742</code>。</p>
+<blockquote>
+<p>底层探活的一个间接证据：<strong>实时监控能看画面</strong>（走同一个视频平台 <code>PlfVideoClient.playWsFlvUrl</code>），说明 host 配的对、网络通、登录鉴权通。广播接口和视频流接口共一套 <code>prepareToken</code> 鉴权，大概率也活。</p>
+</blockquote>
+<h2 id="第-2-层-·-Feign——断裂"><a href="#第-2-层-·-Feign——断裂" class="headerlink" title="第 2 层 · Feign——断裂"></a>第 2 层 · Feign——断裂</h2><p><img data-src="/images/posts/voice-broadcast-four-layer-breakdown/concept-open-door-no-road.webp" alt="门开了但没修路"><br><em>图 2：Provider 把接口的「门」打开了，但 Feign 客户端这层「路」没修——别的服务调不到。</em></p>
+<p><code>IotPlatformVideoClient</code>（Feign 客户端）只有摄像头 &#x2F; 预置位方法，<strong>没有 broadcast 方法</strong>。</p>
+<p>Provider 已经把广播接口暴露在 <code>/platformVideo/broadcast/*</code>，但 Feign 客户端里没有对应方法——<strong>其他服务（warning）调不到</strong>。等于门开了，但没修路。</p>
+<p>附带问题：该 Feign 客户端的 <code>fallbackFactory</code> 指向了通用的 <code>IotPlatformFallbackFactory</code>，而项目里有一个专门的 <code>IotPlatformVideoFallbackFactory</code> 没被用上——<strong>熔断兜底也指错了</strong>。</p>
+<p>要修三件事：</p>
+<ul>
+<li>加 <code>broadcastStart</code> &#x2F; <code>broadcastStop</code> 两个 Feign 方法；</li>
+<li><code>fallbackFactory</code> 改指 <code>IotPlatformVideoFallbackFactory</code>；</li>
+<li><code>iot-api</code> 是共享模块，改完要 <code>mvn install</code> + 重编依赖它的服务。</li>
+</ul>
+<p>证据：<code>IotPlatformVideoClient.java:29</code>（fallbackFactory 指错），全文件无 broadcast 方法。</p>
+<blockquote>
+<p>这一层和第 1 层合起来是一个经典陷阱：<strong>Provider 暴露了接口不等于别的服务调得到</strong>。中间隔着 Feign 客户端这一层「路」，路没修，门开了也走不通。</p>
+</blockquote>
+<h2 id="第-3-层-·-触发——空-stub"><a href="#第-3-层-·-触发——空-stub" class="headerlink" title="第 3 层 · 触发——空 stub"></a>第 3 层 · 触发——空 stub</h2><p><code>warning</code> 服务的 <code>AlarmingEvenSinkServiceImpl.pushBroadcastDevice()</code> 是<strong>空方法</strong>——查出 <code>broadcastIds</code> 之后方法直接结束，<strong>既不调 Feign，也没有定时停止</strong>。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 现状：查出列表就 return，什么都没推</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">pushBroadcastDevice</span><span class="params">(String processorId)</span> &#123;</span><br><span class="line">    <span class="type">AlarmingPushBroadcastDTO</span> <span class="variable">apbdto</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">AlarmingPushBroadcastDTO</span>();</span><br><span class="line">    apbdto.setProcessorId(processorId);</span><br><span class="line">    List&lt;AlarmingPushBroadcastDTO&gt; apbList =</span><br><span class="line">        alarmingPushBroadcastService.listByCondition(apbdto);</span><br><span class="line">    List&lt;String&gt; broadcastIds = apbList.stream()</span><br><span class="line">        .map(AlarmingPushBroadcastDTO::getBroadcastId)</span><br><span class="line">        .collect(Collectors.toList());</span><br><span class="line">    <span class="comment">// ← 到此为止，broadcastIds 算出来就丢了，没有任何后续动作</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="一个被二次核对纠正的误判"><a href="#一个被二次核对纠正的误判" class="headerlink" title="一个被二次核对纠正的误判"></a>一个被二次核对纠正的误判</h3><p>最初以为这个 stub 会把告警记录的 <code>broadcast_push_flag</code> 置成「已推送」，造成「显示推了实际没推」。核对常量后纠正：</p>
+<ul>
+<li><code>BROADCAST_PUSH_FLAG_YES=&quot;0&quot;</code>（<strong>语义和直觉相反</strong>，”0” 才是「是」）；</li>
+<li>真正的执行状态字段是 <code>broadcast_push_status</code>（默认 <code>1</code> &#x3D; 未推送）。</li>
+</ul>
+<p>stub 不会误标已推送，但<strong>也没有任何真实执行结果落库</strong>。</p>
+<p>要修：完整实现——遍历配置 → 校验 <code>mainId/subId/audioUrl</code> 非空（缺则跳过 + 记日志，不能传空参给平台）→ 调 Feign <code>broadcastStart</code> → <strong>异步</strong>按插播时长调 <code>broadcastStop</code>（禁止 <code>Thread.sleep</code> 阻塞告警线程）→ 失败 &#x2F; 部分成功处理 + 状态落 <code>broadcast_push_status</code>。</p>
+<h2 id="第-4-层-·-配置——半成品，两个子问题叠加"><a href="#第-4-层-·-配置——半成品，两个子问题叠加" class="headerlink" title="第 4 层 · 配置——半成品，两个子问题叠加"></a>第 4 层 · 配置——半成品，两个子问题叠加</h2><p>这一层问题最隐蔽。</p>
+<p><strong>4a. 设备 &#x2F; 素材选择器数据源错误</strong></p>
+<p>告警配置页绑定广播时，「广播设备」和「广播素材」两个选择弹窗，拉的居然是 <strong>through 服务的通行通道（passagewayInfo）</strong>——风马牛不相及，是复制粘贴留下的半成品。</p>
+<p><strong>4b. 保存根本没调用接口</strong></p>
+<p><code>alarmConfig.vue</code> 的 <code>submitBroadcast()</code> 方法<strong>只关闭弹窗</strong>：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 现状：只关弹窗，没调保存接口</span></span><br><span class="line"><span class="title function_">submitBroadcast</span>(<span class="params"></span>) &#123;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">broadcastDialogVisible</span> = <span class="literal">false</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>updatealarmingPushBroadcast</code> 虽然 import 了，但<strong>从未被调用</strong>——用户在弹窗里选完点确定，<strong>配置根本不会保存</strong>。</p>
+<p>要修：</p>
+<ul>
+<li>设备选择器换数据源（视频平台设备列表，带 mainId&#x2F;subId）；</li>
+<li>素材选择器换数据源（真实音频素材，拿 audioUrl）；</li>
+<li><code>submitBroadcast</code> 补上调 <code>updatealarmingPushBroadcast</code>；</li>
+<li>广播配置需能存 <code>mainId/subId/audioUrl</code>（对应数据库新增字段）。</li>
+</ul>
+<h2 id="附-·-素材持久化——缺失"><a href="#附-·-素材持久化——缺失" class="headerlink" title="附 · 素材持久化——缺失"></a>附 · 素材持久化——缺失</h2><p>广播 API 要 <code>audioUrl</code>（语音文件地址），但现有配置只存 <code>broadcast_material_id</code>（一个没映射关系的 id），<strong>没有稳定的 audioUrl 持久化链路</strong>。</p>
+<ul>
+<li><code>audio_url</code> 必须是<strong>视频平台或 IoT 服务能访问的绝对地址</strong>，不能是浏览器相对路径；</li>
+<li>音频素材的上传（走附件服务传 mp3）、查询、URL 持久化，目前只有通用上传能力，<strong>没有完整链路</strong>。</li>
+</ul>
+<h2 id="工作量汇总"><a href="#工作量汇总" class="headerlink" title="工作量汇总"></a>工作量汇总</h2><table>
+<thead>
+<tr>
+<th>层</th>
+<th>要做什么</th>
+<th>后端 &#x2F; 前端</th>
+<th>工作量</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1 设备能力</td>
+<td>无（可复用）</td>
+<td>—</td>
+<td>0</td>
+</tr>
+<tr>
+<td>2 Feign</td>
+<td>加 2 个方法 + 修 fallback + install</td>
+<td>后端</td>
+<td>0.5 天</td>
+</tr>
+<tr>
+<td>3 触发</td>
+<td>实现 stub（异步停播 + 状态落库 + 失败处理）</td>
+<td>后端</td>
+<td>1~1.5 天</td>
+</tr>
+<tr>
+<td>4a 选择器</td>
+<td>设备 &#x2F; 素材选择器换数据源</td>
+<td>前端</td>
+<td>0.5~1 天</td>
+</tr>
+<tr>
+<td>4b 保存</td>
+<td>submitBroadcast 接通保存接口</td>
+<td>前端</td>
+<td>0.5 天</td>
+</tr>
+<tr>
+<td>附 素材</td>
+<td>音频上传 + audioUrl 持久化</td>
+<td>后端 + 前端</td>
+<td>0.5~1 天</td>
+</tr>
+<tr>
+<td>联调</td>
+<td>真实视频平台 + 带扬声器设备</td>
+<td>联调</td>
+<td>0.5~1 天（看环境）</td>
+</tr>
+</tbody></table>
+<h3 id="工作量误判风险"><a href="#工作量误判风险" class="headerlink" title="工作量误判风险"></a>工作量误判风险</h3><p>最初估「后端 1<del>2 天」只够 happy path（Feign + stub 接通）。加上 mainId&#x2F;subId 映射、素材 URL 链路、状态落库、前端三个修复点、联调，**完整闭环远超 1</del>2 天**。前端「0.5~1 天」只有在设备树和素材 URL 接口确定后才成立。</p>
+<h2 id="未确认的外部依赖（主要风险）"><a href="#未确认的外部依赖（主要风险）" class="headerlink" title="未确认的外部依赖（主要风险）"></a>未确认的外部依赖（主要风险）</h2><p>以下项不确认，做完代码也联调不了：</p>
+<ol>
+<li><strong>哪些设备支持语音广播</strong>（摄像头自带扬声器，还是外接音柱？）——设备侧未确认；</li>
+<li><strong>音频格式要求</strong>（opus &#x2F; mp3？）——视频平台文档未拿到；</li>
+<li><strong>mainId&#x2F;subId 从哪来</strong>（设备同步还是手工配置？）——无广播设备同步逻辑；</li>
+<li><strong>视频平台能否访问附件 URL</strong>（网络可达性）——未测。</li>
+</ol>
+<h2 id="已完成的前置改动"><a href="#已完成的前置改动" class="headerlink" title="已完成的前置改动"></a>已完成的前置改动</h2><p>四层里最底层、不依赖任何外部确认的两步已经做完，为后续补开发铺好地基：</p>
+<p><strong>① Feign 方法（第 2 层）</strong>——<code>IotPlatformVideoClient</code> 新增 <code>broadcastStart</code> &#x2F; <code>broadcastStop</code>，<code>fallbackFactory</code> 修正为 <code>IotPlatformVideoFallbackFactory</code>，<code>iot-api</code> 编译并 install。</p>
+<p><strong>② 数据承载（第 4 层的数据基础）</strong>——<code>AlarmingPushBroadcast</code> 实体新增 <code>mainId</code> &#x2F; <code>subId</code> &#x2F; <code>audioUrl</code>（允许为空，兼容旧数据），Flyway 迁移 <code>V20260801.22.45__alter_alarming_push_broadcast_add_broadcast_device.sql</code>，<code>AlarmingPushBroadcastMapper.xml</code> 三字段覆盖全部 12 处（resultMap &#x2F; 列清单 &#x2F; 条件块 &#x2F; 增改）。</p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>语音播报的工作量被任务描述（「调试是否可用」）严重低估。实际是：<strong>底层能力可复用，但 Feign、触发、配置、素材持久化四层都要重建</strong>，且联调依赖设备侧能力确认。</p>
+<p>几个值得带走的判断方法：</p>
+<ul>
+<li><strong>逐层探活</strong>：从底层设备能力往上，一层一层确认通断，比笼统说「不能用」精准得多。</li>
+<li><strong>Provider 暴露 ≠ 调得到</strong>：中间隔着 Feign 客户端这层「路」。</li>
+<li><strong>布尔常量不能按常理猜</strong>：<code>YES=&quot;0&quot;</code> &#x2F; <code>NO=&quot;1&quot;</code> 这种反直觉取值，看到任何标记先 grep 常量类确认。</li>
+<li><strong>空 stub 不等于「标记已执行」</strong>：要分清「配置 flag」和「执行状态字段」是两回事。</li>
+<li><strong>保存按钮只关弹窗</strong>：是最隐蔽的「功能不可用」，UI 看着正常，配置根本没落库。</li>
+</ul>
+<p>建议视设备侧确认进度，决定本阶段是否纳入后续开发，或整体后移与设备接入同步推进。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Spring-Cloud/" rel="tag"># Spring Cloud</a>
+              <a href="/tags/Feign/" rel="tag"># Feign</a>
+              <a href="/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/" rel="tag"># 微服务</a>
+              <a href="/tags/%E6%8E%92%E9%9A%9C%E5%A4%8D%E7%9B%98/" rel="tag"># 排障复盘</a>
+              <a href="/tags/%E8%AF%AD%E9%9F%B3%E6%92%AD%E6%8A%A5/" rel="tag"># 语音播报</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/07/29/camera-video-screenshot-storage/" rel="prev" title="给园区监控系统加录像&#x2F;截图线上存储：后端设计与踩坑记录">
+                  <i class="fa fa-angle-left"></i> 给园区监控系统加录像/截图线上存储：后端设计与踩坑记录
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2026/08/01/ai-video-analysis-scope-reality/" rel="next" title="AI 视频分析任务的范围拆解与现实收敛：原型要的九项 API 都不支持">
+                  AI 视频分析任务的范围拆解与现实收敛：原型要的九项 API 都不支持 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  
+  <div class="comments giscus-container">
+  </div>
+  
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">zhlifeiy35</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/zhdmm35" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"zhdmm35/zhdmm35.github.io","repo_id":"R_kgDOON4bhg","category":"Announcements","category_id":"DIC_kwDOON4bhs4C3dEc","mapping":"pathname","strict":0,"reactions_enabled":1,"emit_metadata":0,"theme":"preferred_color_scheme","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+
+<script>
+document.addEventListener('page:loaded', () => {
+  if (!CONFIG.page.comments) return;
+
+  NexT.utils.loadComments('.giscus-container')
+    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
+      attributes: {
+        async                   : true,
+        crossOrigin             : 'anonymous',
+        'data-repo'             : CONFIG.giscus.repo,
+        'data-repo-id'          : CONFIG.giscus.repo_id,
+        'data-category'         : CONFIG.giscus.category,
+        'data-category-id'      : CONFIG.giscus.category_id,
+        'data-mapping'          : CONFIG.giscus.mapping,
+        'data-strict'           : CONFIG.giscus.strict,
+        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
+        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
+        'data-theme'            : CONFIG.giscus.theme,
+        'data-lang'             : CONFIG.giscus.lang,
+        'data-input-position'   : CONFIG.giscus.input_position,
+        'data-loading'          : CONFIG.giscus.loading
+      },
+      parentNode: document.querySelector('.giscus-container')
+    }));
+});
+</script>
+<script defer src="/js/blog-assistant.js" data-endpoint="https://zhlifeiy-blog-assistant.huiyaozhang07.workers.dev/ask"></script>
+
+</body>
+</html>

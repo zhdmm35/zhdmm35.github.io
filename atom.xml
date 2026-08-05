@@ -6,7 +6,7 @@
   <link href="https://zhlifeiy.codes/atom.xml" rel="self"/>
   
   <link href="https://zhlifeiy.codes/"/>
-  <updated>2026-07-29T08:30:00.000Z</updated>
+  <updated>2026-08-05T13:00:00.000Z</updated>
   <id>https://zhlifeiy.codes/</id>
   
   <author>
@@ -15,6 +15,112 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>代码看着没毛病，但这链路从没跑过——显示屏推送排查的四次打脸</title>
+    <link href="https://zhlifeiy.codes/2026/08/05/screen-push-pipeline-investigation/"/>
+    <id>https://zhlifeiy.codes/2026/08/05/screen-push-pipeline-investigation/</id>
+    <published>2026-08-05T13:00:00.000Z</published>
+    <updated>2026-08-05T13:00:00.000Z</updated>
+    
+    
+    <summary type="html">&lt;p&gt;用户抛了一个看起来简单的问题：显示屏推送代码是不是没问题？线上能顺利保存「推送显示屏」的告警配置，但不确定真实告警触发时推不推得出去。排查后结论有点意外：&lt;strong&gt;这条链路从没真正跑过&lt;/strong&gt;。更值得记录的不是结论本身，而是排查过程中我做的四次错误推断——每一次都被事实打脸。这篇诚实复盘整个过程。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="项目复盘" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E5%A4%8D%E7%9B%98/"/>
+    
+    
+    <category term="MyBatis" scheme="https://zhlifeiy.codes/tags/MyBatis/"/>
+    
+    <category term="Spring Cloud" scheme="https://zhlifeiy.codes/tags/Spring-Cloud/"/>
+    
+    <category term="微服务" scheme="https://zhlifeiy.codes/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/"/>
+    
+    <category term="排障复盘" scheme="https://zhlifeiy.codes/tags/%E6%8E%92%E9%9A%9C%E5%A4%8D%E7%9B%98/"/>
+    
+    <category term="方法论" scheme="https://zhlifeiy.codes/tags/%E6%96%B9%E6%B3%95%E8%AE%BA/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>AI 告警 WebSocket 弹窗：从「能弹出来」到「弹对人 + 能录像截图」</title>
+    <link href="https://zhlifeiy.codes/2026/08/05/ai-alarm-websocket-popup/"/>
+    <id>https://zhlifeiy.codes/2026/08/05/ai-alarm-websocket-popup/</id>
+    <published>2026-08-05T10:30:00.000Z</published>
+    <updated>2026-08-05T10:30:00.000Z</updated>
+    
+    
+    <summary type="html">&lt;p&gt;园区安防平台有一类需求：AI 摄像头检测到人员越界，前端要能在右下角弹一个带实时视频的告警卡片。旧版代码里这套弹窗是「半幅骨架」——后端发送链路还在，但前端订阅早就下架了。这两天分两轮把它补成了完整闭环：第一轮让它「能弹出来、能播视频」，第二轮加上「只弹给指定的人」和「用户能在卡片里录一段、截一张」。这篇记录链路设计、几个关键决策，还有联调时踩的坑。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="项目复盘" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E5%A4%8D%E7%9B%98/"/>
+    
+    
+    <category term="Spring Cloud" scheme="https://zhlifeiy.codes/tags/Spring-Cloud/"/>
+    
+    <category term="Vue" scheme="https://zhlifeiy.codes/tags/Vue/"/>
+    
+    <category term="WebSocket" scheme="https://zhlifeiy.codes/tags/WebSocket/"/>
+    
+    <category term="STOMP" scheme="https://zhlifeiy.codes/tags/STOMP/"/>
+    
+    <category term="MediaRecorder" scheme="https://zhlifeiy.codes/tags/MediaRecorder/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>AI 视频分析任务的范围拆解与现实收敛：原型要的九项 API 都不支持</title>
+    <link href="https://zhlifeiy.codes/2026/08/01/ai-video-analysis-scope-reality/"/>
+    <id>https://zhlifeiy.codes/2026/08/01/ai-video-analysis-scope-reality/</id>
+    <published>2026-08-01T15:30:00.000Z</published>
+    <updated>2026-08-01T15:30:00.000Z</updated>
+    
+    
+    <summary type="html">&lt;p&gt;一个 AI 视频分析的「基本功能开发」任务，原型画得很完整：区域入侵、徘徊侦测、灵敏度调节、多边形绘制……真去对接上游 AI 网关的 API，发现原型要的九项能力一个都不支持。这篇记录任务范围怎么从「基本闭环」一步步收敛到「能跑的最小集」，以及三个联动（弹窗、信息屏、语音播报）各自的现实卡点。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="项目复盘" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E5%A4%8D%E7%9B%98/"/>
+    
+    
+    <category term="Spring Cloud" scheme="https://zhlifeiy.codes/tags/Spring-Cloud/"/>
+    
+    <category term="AI视频分析" scheme="https://zhlifeiy.codes/tags/AI%E8%A7%86%E9%A2%91%E5%88%86%E6%9E%90/"/>
+    
+    <category term="项目复盘" scheme="https://zhlifeiy.codes/tags/%E9%A1%B9%E7%9B%AE%E5%A4%8D%E7%9B%98/"/>
+    
+    <category term="需求拆解" scheme="https://zhlifeiy.codes/tags/%E9%9C%80%E6%B1%82%E6%8B%86%E8%A7%A3/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>一个「调通旧功能」如何变成四层重建——语音播报链路断裂复盘</title>
+    <link href="https://zhlifeiy.codes/2026/08/01/voice-broadcast-four-layer-breakdown/"/>
+    <id>https://zhlifeiy.codes/2026/08/01/voice-broadcast-four-layer-breakdown/</id>
+    <published>2026-08-01T14:00:00.000Z</published>
+    <updated>2026-08-01T14:00:00.000Z</updated>
+    
+    
+    <summary type="html">&lt;p&gt;任务原文写的是「调试旧版语音播报是否可用」。预期是「旧版已有，调通即可」。实际逐层调试后结论很反常：&lt;strong&gt;除了最底层的设备能力可复用，上面四层——Feign、触发、配置、素材持久化——全部断裂&lt;/strong&gt;。这不是「调通旧功能」，而是在底层能力之上重建四层链路。这篇记录每一层的现状、证据和误判修正。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="项目复盘" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E5%A4%8D%E7%9B%98/"/>
+    
+    
+    <category term="Spring Cloud" scheme="https://zhlifeiy.codes/tags/Spring-Cloud/"/>
+    
+    <category term="Feign" scheme="https://zhlifeiy.codes/tags/Feign/"/>
+    
+    <category term="微服务" scheme="https://zhlifeiy.codes/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/"/>
+    
+    <category term="排障复盘" scheme="https://zhlifeiy.codes/tags/%E6%8E%92%E9%9A%9C%E5%A4%8D%E7%9B%98/"/>
+    
+    <category term="语音播报" scheme="https://zhlifeiy.codes/tags/%E8%AF%AD%E9%9F%B3%E6%92%AD%E6%8A%A5/"/>
+    
+  </entry>
   
   <entry>
     <title>给园区监控系统加录像/截图线上存储：后端设计与踩坑记录</title>
@@ -111,13 +217,13 @@
     <category term="AI经验" scheme="https://zhlifeiy.codes/categories/AI%E7%BB%8F%E9%AA%8C/"/>
     
     
-    <category term="MiniMax" scheme="https://zhlifeiy.codes/tags/MiniMax/"/>
-    
     <category term="shopkeeper-agent" scheme="https://zhlifeiy.codes/tags/shopkeeper-agent/"/>
     
     <category term="AI问数" scheme="https://zhlifeiy.codes/tags/AI%E9%97%AE%E6%95%B0/"/>
     
     <category term="排障记录" scheme="https://zhlifeiy.codes/tags/%E6%8E%92%E9%9A%9C%E8%AE%B0%E5%BD%95/"/>
+    
+    <category term="MiniMax" scheme="https://zhlifeiy.codes/tags/MiniMax/"/>
     
     <category term="Docker" scheme="https://zhlifeiy.codes/tags/Docker/"/>
     
@@ -484,134 +590,6 @@
     <category term="死亡覆盖链" scheme="https://zhlifeiy.codes/tags/%E6%AD%BB%E4%BA%A1%E8%A6%86%E7%9B%96%E9%93%BE/"/>
     
     <category term="Bug修复" scheme="https://zhlifeiy.codes/tags/Bug%E4%BF%AE%E5%A4%8D/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>钉钉同步写 sys_user_park + 园区绑定一级公司：从功能到 OGNL 经典踩坑</title>
-    <link href="https://zhlifeiy.codes/2026/06/11/2026-06-11-ding-park-bind/"/>
-    <id>https://zhlifeiy.codes/2026/06/11/2026-06-11-ding-park-bind/</id>
-    <published>2026-06-11T12:00:00.000Z</published>
-    <updated>2026-06-11T12:00:00.000Z</updated>
-    
-    
-    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;blockquote&gt;
-&lt;p&gt;今天一口气做了 2 个 feature + 1 个构建命令摸清：钉钉同步补 &lt;code&gt;sys_user_park&lt;/code&gt; 占位记录、园区绑定一级公司（顶级 org + 互斥）、admin-service 打包 fat jar。feature 走的是 spec-first + subagent-driven，3 轮 spec review + 3 轮 code review。但 06-11 集成测试&lt;strong&gt;第一次就跑出 500&lt;/strong&gt;——&lt;code&gt;saveCompanyBind&lt;/code&gt; 调 &lt;code&gt;updateParkOrganization&lt;/code&gt; 时，generic mapper 对 Date 字段 OGNL 求值崩了。**1 行 fix：删掉多余的 &lt;code&gt;WebExtUtils.iniCreate(model);&lt;/code&gt;**。这条经验已经写进全局 CLAUDE.md。&lt;/p&gt;
-&lt;/blockquote&gt;</summary>
-    
-    
-    
-    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
-    
-    <category term="南网" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/"/>
-    
-    
-    <category term="MyBatis" scheme="https://zhlifeiy.codes/tags/MyBatis/"/>
-    
-    <category term="Spring Cloud" scheme="https://zhlifeiy.codes/tags/Spring-Cloud/"/>
-    
-    <category term="钉钉同步" scheme="https://zhlifeiy.codes/tags/%E9%92%89%E9%92%89%E5%90%8C%E6%AD%A5/"/>
-    
-    <category term="OGNL" scheme="https://zhlifeiy.codes/tags/OGNL/"/>
-    
-    <category term="园区绑定" scheme="https://zhlifeiy.codes/tags/%E5%9B%AD%E5%8C%BA%E7%BB%91%E5%AE%9A/"/>
-    
-    <category term="互斥校验" scheme="https://zhlifeiy.codes/tags/%E4%BA%92%E6%96%A5%E6%A0%A1%E9%AA%8C/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>登录 token 补齐与项目改动全量汇总</title>
-    <link href="https://zhlifeiy.codes/2026/06/10/2026-06-10-login-token-and-summary/"/>
-    <id>https://zhlifeiy.codes/2026/06/10/2026-06-10-login-token-and-summary/</id>
-    <published>2026-06-10T04:00:00.000Z</published>
-    <updated>2026-06-10T04:00:00.000Z</updated>
-    
-    
-    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;blockquote&gt;
-&lt;p&gt;链路通了，admin 也起来了，但登录返回的响应没有 token——因为 token 是 Gateway 加的，不是 admin 加的。本篇解决：登录 token 补齐 + Nacos 分组统一 + admin 注册 Nacos + 980.sql 数据导入，以及一份完整的项目改动清单（5 个我们改的代码文件 + 3 个 dist_sync 分支已有的改动）。&lt;/p&gt;
-&lt;/blockquote&gt;</summary>
-    
-    
-    
-    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
-    
-    <category term="南网" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/"/>
-    
-    
-    <category term="JWT" scheme="https://zhlifeiy.codes/tags/JWT/"/>
-    
-    <category term="Nacos分组" scheme="https://zhlifeiy.codes/tags/Nacos%E5%88%86%E7%BB%84/"/>
-    
-    <category term="数据导入" scheme="https://zhlifeiy.codes/tags/%E6%95%B0%E6%8D%AE%E5%AF%BC%E5%85%A5/"/>
-    
-    <category term="改动汇总" scheme="https://zhlifeiy.codes/tags/%E6%94%B9%E5%8A%A8%E6%B1%87%E6%80%BB/"/>
-    
-    <category term="Git" scheme="https://zhlifeiy.codes/tags/Git/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>6 个启动连环坑：从 MySQL 用户到前端 401 的完整链路打通</title>
-    <link href="https://zhlifeiy.codes/2026/06/09/2026-06-09-six-fixes/"/>
-    <id>https://zhlifeiy.codes/2026/06/09/2026-06-09-six-fixes/</id>
-    <published>2026-06-09T14:00:00.000Z</published>
-    <updated>2026-06-09T14:00:00.000Z</updated>
-    
-    
-    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;blockquote&gt;
-&lt;p&gt;编译跑绿后，启动链路又冒出 6 个连环坑：MySQL 没 &lt;code&gt;building_*&lt;/code&gt; 用户、property-service 写死内网 IP、admin 种子用户密码是 SHA512×2、&lt;code&gt;is_enable=1&lt;/code&gt; 居然是禁用、gateway 报 JWT NPE、前端访问报 401。本篇一次性梳理这 6 个坑的根因、修复方案、排查顺序，以及哪些是”反直觉的项目约定”。&lt;/p&gt;
-&lt;/blockquote&gt;</summary>
-    
-    
-    
-    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
-    
-    <category term="南网" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/"/>
-    
-    
-    <category term="Spring Cloud" scheme="https://zhlifeiy.codes/tags/Spring-Cloud/"/>
-    
-    <category term="Gateway" scheme="https://zhlifeiy.codes/tags/Gateway/"/>
-    
-    <category term="Feign" scheme="https://zhlifeiy.codes/tags/Feign/"/>
-    
-    <category term="JWT" scheme="https://zhlifeiy.codes/tags/JWT/"/>
-    
-    <category term="Nacos" scheme="https://zhlifeiy.codes/tags/Nacos/"/>
-    
-    <category term="启动修复" scheme="https://zhlifeiy.codes/tags/%E5%90%AF%E5%8A%A8%E4%BF%AE%E5%A4%8D/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>接手烂尾的 Spring Cloud 微服务项目：从零搭建 26 模块编译环境</title>
-    <link href="https://zhlifeiy.codes/2026/06/09/2026-06-09-spring-cloud-env-setup/"/>
-    <id>https://zhlifeiy.codes/2026/06/09/2026-06-09-spring-cloud-env-setup/</id>
-    <published>2026-06-09T10:00:00.000Z</published>
-    <updated>2026-06-09T10:00:00.000Z</updated>
-    
-    
-    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;blockquote&gt;
-&lt;p&gt;接手一个停更 2 年的 Spring Cloud Alibaba 微服务项目，13 个业务服务、11 个独立数据库、26 个 Maven 模块，本地 Maven 仓库空空如也，&lt;code&gt;mvn compile&lt;/code&gt; 一跑就是红海一片。这篇记录我从零搭建编译环境的完整过程，包括 Maven 配置重写、私有依赖安装、22 个 SNAPSHOT jar 的手工恢复，以及最终 26 模块 BUILD SUCCESS 的关键命令。&lt;/p&gt;
-&lt;/blockquote&gt;</summary>
-    
-    
-    
-    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
-    
-    <category term="南网" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/"/>
-    
-    
-    <category term="Spring Cloud" scheme="https://zhlifeiy.codes/tags/Spring-Cloud/"/>
-    
-    <category term="微服务" scheme="https://zhlifeiy.codes/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/"/>
-    
-    <category term="Maven" scheme="https://zhlifeiy.codes/tags/Maven/"/>
-    
-    <category term="环境搭建" scheme="https://zhlifeiy.codes/tags/%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA/"/>
-    
-    <category term="编译踩坑" scheme="https://zhlifeiy.codes/tags/%E7%BC%96%E8%AF%91%E8%B8%A9%E5%9D%91/"/>
     
   </entry>
   
