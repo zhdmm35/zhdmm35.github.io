@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Gemini","darkmode":true,"version":"8.28.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="导读 给告警规则任务级化改造做接口级 E2E 时，踩了一圈环境坑——服务在 JDK 17 下「能起端口、能收请求」，错误全在运行期深处才爆；Git Bash 里 export PATH 是个假动作；curl 带中文直接乱码。每个坑都有实锤报错。这篇把过程沉淀成配方，下次本地起服务测接口照抄即可。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="本地接口级 E2E 测试配方：JDK 8、假 PATH 和请求体的三个坑">
+<meta property="og:url" content="https://zhlifeiy.codes/2026/08/06/local-api-e2e-recipe/index.html">
+<meta property="og:site_name" content="zhlifeiy · 工程笔记">
+<meta property="og:description" content="导读 给告警规则任务级化改造做接口级 E2E 时，踩了一圈环境坑——服务在 JDK 17 下「能起端口、能收请求」，错误全在运行期深处才爆；Git Bash 里 export PATH 是个假动作；curl 带中文直接乱码。每个坑都有实锤报错。这篇把过程沉淀成配方，下次本地起服务测接口照抄即可。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/local-api-e2e-recipe.webp">
+<meta property="article:published_time" content="2026-08-06T10:00:00.000Z">
+<meta property="article:author" content="zhlifeiy35">
+<meta property="article:tag" content="踩坑记录">
+<meta property="article:tag" content="接口测试">
+<meta property="article:tag" content="E2E">
+<meta property="article:tag" content="JDK8">
+<meta property="article:tag" content="Spring Cloud Gateway">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/local-api-e2e-recipe.webp">
+
+
+<link rel="canonical" href="https://zhlifeiy.codes/2026/08/06/local-api-e2e-recipe/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://zhlifeiy.codes/2026/08/06/local-api-e2e-recipe/","path":"2026/08/06/local-api-e2e-recipe/","title":"本地接口级 E2E 测试配方：JDK 8、假 PATH 和请求体的三个坑"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>本地接口级 E2E 测试配方：JDK 8、假 PATH 和请求体的三个坑 | zhlifeiy · 工程笔记</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/atom.xml" title="zhlifeiy · 工程笔记" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">zhlifeiy · 工程笔记</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">把项目里的坑，写成可以复用的答案</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-项目"><a href="/projects/" rel="section"><i class="fa fa-diagram-project fa-fw"></i>项目</a></li><li class="menu-item menu-item-简历"><a href="/resume/" rel="section"><i class="fa fa-id-card fa-fw"></i>简历</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-guestbook"><a href="/guestbook/" rel="section"><i class="fa fa-comment-dots fa-fw"></i>留言板</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%BC%E8%AF%BB"><span class="nav-number">1.</span> <span class="nav-text">导读</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link"><span class="nav-number">1.0.1.</span> <span class="nav-text">🎧 文章导读</span></a></li><li class="nav-item nav-level-4"><a class="nav-link"><span class="nav-number">1.0.2.</span> <span class="nav-text">🎵 背景音乐</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E6%9C%8D%E5%8A%A1%E5%BF%85%E9%A1%BB%E8%B7%91-JDK-8%EF%BC%88%E4%B8%8D%E5%8F%AA%E6%98%AF%E7%BC%96%E8%AF%91%EF%BC%89"><span class="nav-number">2.</span> <span class="nav-text">一、服务必须跑 JDK 8（不只是编译）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E6%9C%80%E5%B0%8F%E6%9C%8D%E5%8A%A1%E7%BB%84%E5%90%88%E4%B8%8E%E8%AF%B7%E6%B1%82%E8%B7%AF%E5%BE%84"><span class="nav-number">3.</span> <span class="nav-text">二、最小服务组合与请求路径</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E7%99%BB%E5%BD%95%E6%8B%BF-token"><span class="nav-number">4.</span> <span class="nav-text">三、登录拿 token</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E8%AF%B7%E6%B1%82%E4%BD%93%E4%B8%89%E5%9D%91"><span class="nav-number">5.</span> <span class="nav-text">四、请求体三坑</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E6%8E%92%E6%9F%A5%E7%9C%8B%E6%97%A5%E5%BF%97%E9%A1%BA%E5%BA%8F"><span class="nav-number">6.</span> <span class="nav-text">五、排查看日志顺序</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93%EF%BC%9A%E7%85%A7%E6%8A%84%E6%B8%85%E5%8D%95"><span class="nav-number">7.</span> <span class="nav-text">小结：照抄清单</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zhlifeiy35</p>
+  <div class="site-description" itemprop="description">记录项目实践、问题排查与工程经验</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">67</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">14</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">225</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zhdmm35" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zhdmm35" rel="noopener me" target="_blank"><i class="fa fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/local-api-e2e-recipe.webp" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/08/06/local-api-e2e-recipe/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="记录项目实践、问题排查与工程经验">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="本地接口级 E2E 测试配方：JDK 8、假 PATH 和请求体的三个坑 | zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          本地接口级 E2E 测试配方：JDK 8、假 PATH 和请求体的三个坑
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-08-06 18:00:00" itemprop="dateCreated datePublished" datetime="2026-08-06T18:00:00+08:00">2026-08-06</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E9%A1%B9%E7%9B%AE%E5%A4%8D%E7%9B%98/" itemprop="url" rel="index"><span itemprop="name">项目复盘</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="导读"><a href="#导读" class="headerlink" title="导读"></a>导读</h2><blockquote>
+<p>给告警规则任务级化改造做接口级 E2E 时，踩了一圈环境坑——服务在 JDK 17 下「能起端口、能收请求」，错误全在运行期深处才爆；Git Bash 里 <code>export PATH</code> 是个假动作；curl 带中文直接乱码。每个坑都有实锤报错。这篇把过程沉淀成配方，下次本地起服务测接口照抄即可。</p>
+</blockquote>
+<span id="more"></span>
+
+<div class="audio-player">
+  <div class="audio-section">
+    <h4>🎧 文章导读</h4>
+    <audio controls preload="none">
+      <source src="/audio/local-api-e2e-recipe/narration.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+  <div class="audio-section">
+    <h4>🎵 背景音乐</h4>
+    <audio controls loop preload="none">
+      <source src="/audio/local-api-e2e-recipe/bgm.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+</div>
+
+<p>背景：<a href="/2026/08/06/alarm-rule-task-level/">告警规则任务级化改造</a> 需要在本地完整跑通「建规则 → 上报事件 → 命中规则 → 推弹窗」链路。 Spring Cloud 老项目（Spring Boot 2.5.7 + JDK 8 技术栈），以下配方在这套环境实测通过。</p>
+<h2 id="一、服务必须跑-JDK-8（不只是编译）"><a href="#一、服务必须跑-JDK-8（不只是编译）" class="headerlink" title="一、服务必须跑 JDK 8（不只是编译）"></a>一、服务必须跑 JDK 8（不只是编译）</h2><p>编译用 JDK 8 谁都记得，但<strong>运行也得是 JDK 8</strong>。JDK 17 下服务能起端口、能收请求，看起来一切正常，错误全在运行期深处才爆：</p>
+<table>
+<thead>
+<tr>
+<th>服务</th>
+<th>JDK 17 症状</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>admin</td>
+<td>Feign default method 反射 <code>InaccessibleObjectException</code>（启动即失败）</td>
+</tr>
+<tr>
+<td>gateway</td>
+<td><code>ClassNotFoundException: javax.xml.bind.DatatypeConverter</code>（jjwt 要 JAXB，登录转发挂）</td>
+</tr>
+<tr>
+<td>warning</td>
+<td>cglib BeanCopier <code>InaccessibleObjectException</code>（接口能通，走到 BeanCopier 才 500）</td>
+</tr>
+</tbody></table>
+<p>warning 这个最阴：接口是通的，请求打到具体逻辑才 500，而且 <code>@Transactional</code> 回滚不留脏数据——你会以为是业务 bug，其实是 JDK 模块系统把 cglib 的反射路封了。</p>
+<p><strong>启动命令</strong>用显式路径，最稳：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">&quot;E:/jdk/bin/java.exe&quot;</span> -jar service-provider/xxx-service/target/xxx.jar</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>坑：<code>export PATH=&quot;E:/jdk/bin:$PATH&quot;</code> 是假的。</strong><br>Git Bash 里 <code>E:</code> 后面的冒号会被当成 PATH 分隔符，这一条被拆成 <code>E</code> 和 <code>/jdk/bin</code> 两个无效条目，<code>which java</code> 仍指向 JDK 17。mvn 编译没事是因为它吃 <code>JAVA_HOME</code>；<code>java -jar</code> 就中招。要用 PATH 就写 Unix 风格：<code>export PATH=&quot;/e/jdk/bin:$PATH&quot;</code>。</p>
+</blockquote>
+<h2 id="二、最小服务组合与请求路径"><a href="#二、最小服务组合与请求路径" class="headerlink" title="二、最小服务组合与请求路径"></a>二、最小服务组合与请求路径</h2><p>不用把全家桶起起来。最小组合：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">flowchart LR</span><br><span class="line">    C[curl] --&gt; G[gateway :10001]</span><br><span class="line">    G --&gt; A[admin :18200&lt;br/&gt;仅登录用]</span><br><span class="line">    G --&gt; W[warning 等被测服务]</span><br><span class="line">    W --&gt; M[(MySQL / Redis / Nacos&lt;br/&gt;本机常驻)]</span><br></pre></td></tr></table></figure>
+
+<p>MySQL &#x2F; Redis &#x2F; Nacos 本机常驻，不用管。</p>
+<p>请求统一打网关，带 <code>devDebug=1</code>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl <span class="string">&quot;http://localhost:10001/&#123;svc&#125;/&#123;path&#125;?devDebug=1&quot;</span> ...</span><br></pre></td></tr></table></figure>
+
+<p>网关日志出现 <code>Route matched ... uri=http://127.0.0.1:&lt;port&gt;</code> 即 devDebug 生效、路由正确。</p>
+<p><strong>绕过上游模拟</strong>：测 warning 不用起 security &#x2F; integrate-iot——直接 curl <code>alarmingEvenSink/inputIteration</code>，这就是 security 实际调用的接口，自己造 JSON 事件即可。省掉两个服务，也省掉「上游没数据」这一类干扰。</p>
+<h2 id="三、登录拿-token"><a href="#三、登录拿-token" class="headerlink" title="三、登录拿 token"></a>三、登录拿 token</h2><p>本地建一个测试号（超管角色 + 绑定园区，建在 building_admin 库；被清了就按 sys_user + sys_user_role + sys_user_park 三表重建）。</p>
+<p>密码哈希算法与前端 JsSHA numRounds&#x3D;2 一致（已实测）：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">SALT_B64=$(<span class="built_in">printf</span> <span class="string">&#x27;e2etest&#x27;</span> | <span class="built_in">base64</span>)          <span class="comment"># 用户名 base64 做盐</span></span><br><span class="line">R1=$(<span class="built_in">printf</span> <span class="string">&#x27;%s&#x27;</span> <span class="string">&quot;<span class="variable">$&#123;SALT_B64&#125;</span>&lt;本地测试密码&gt;&quot;</span> | openssl dgst -sha512 -hex | sed <span class="string">&#x27;s/^.* //&#x27;</span>)</span><br><span class="line">HASH=$(<span class="built_in">printf</span> <span class="string">&#x27;%s&#x27;</span> <span class="string">&quot;<span class="variable">$R1</span>&quot;</span> | xxd -r -p | openssl dgst -sha512 -hex | sed <span class="string">&#x27;s/^.* //&#x27;</span>)</span><br><span class="line"><span class="comment"># HASH 即登录请求里的 password 字段</span></span><br></pre></td></tr></table></figure>
+
+<p>注意第二轮：先把第一轮的 hex 字符串 <code>xxd -r -p</code> 转回原始字节，再做 sha512 hex。直接对 hex 字符串再哈希会得到错误结果。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">curl -X POST <span class="string">&quot;http://localhost:10001/admin/user/login&quot;</span> -H <span class="string">&quot;Content-Type: application/json&quot;</span> \</span><br><span class="line">  -d <span class="string">&#x27;&#123;&quot;userName&quot;:&quot;e2etest&quot;,&quot;password&quot;:&quot;&lt;HASH&gt;&quot;,&quot;appId&quot;:&quot;biz_admin&quot;,&quot;endpoint&quot;:&quot;pc&quot;&#125;&#x27;</span></span><br><span class="line"><span class="comment"># 响应 data.token → 后续请求头 Authorization: Bearer &lt;token&gt;</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>密码连错 5 次锁号</strong>（<code>is_enable</code> 置位），别拿没把握的 hash 反复试。先用一次确认 HASH 算对了再进脚本循环。</p>
+</blockquote>
+<h2 id="四、请求体三坑"><a href="#四、请求体三坑" class="headerlink" title="四、请求体三坑"></a>四、请求体三坑</h2><p><strong>1. 中文必须文件投递。</strong> Windows Git Bash 里 curl <code>-d</code> 直接带中文，按 GBK 编码发出去，服务端 Jackson 报 <code>Invalid UTF-8 middle byte</code>。JSON 写进 UTF-8 文件，用 <code>curl --data-binary @file</code> 发送，避开终端编码干扰。</p>
+<p><strong>2. 裸 Date 字段传 epoch 毫秒。</strong> 没有 <code>@JsonFormat</code> 的 Date 字段（如 <code>AlarmingEventData.alarmTime</code>）不收 <code>&quot;yyyy-MM-dd HH:mm:ss&quot;</code>（报「请求参数不正确」），传毫秒数：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span> <span class="attr">&quot;alarmTime&quot;</span><span class="punctuation">:</span> <span class="number">1786000430000</span> <span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>3. 网关偶发 500 是 DNS。</strong> 本机 DNS 偶发超时导致 <code>DnsNameResolverTimeoutException</code>，重试即可，不是代码问题。偶发 500 先重试两次再开始排查，能省半小时。</p>
+<h2 id="五、排查看日志顺序"><a href="#五、排查看日志顺序" class="headerlink" title="五、排查看日志顺序"></a>五、排查看日志顺序</h2><p>网关 500 时的固定顺序：</p>
+<ol>
+<li><strong>先看 gateway 日志</strong> <code>Route matched</code> 的 uri——确认路由到了正确的服务端口，devDebug 生效。</li>
+<li><strong>再看被测服务日志</strong>——路由对了才是服务内部问题。</li>
+</ol>
+<p>服务后台启动时输出重定向：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">&quot;E:/jdk/bin/java.exe&quot;</span> -jar xxx.jar &gt; /tmp/xxx.log 2&gt;&amp;1 &amp;</span><br></pre></td></tr></table></figure>
+
+<p>报错直接过滤：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -v DEBUG /tmp/xxx.log | <span class="built_in">tail</span> -50</span><br></pre></td></tr></table></figure>
+
+<h2 id="小结：照抄清单"><a href="#小结：照抄清单" class="headerlink" title="小结：照抄清单"></a>小结：照抄清单</h2><p>下次本地起服务做接口级 E2E，按这个顺序：</p>
+<ol>
+<li>显式路径启 JDK 8：<code>&quot;E:/jdk/bin/java.exe&quot; -jar ...</code>（别信 <code>export PATH</code> 的 Windows 路径写法）。</li>
+<li>最小组合：gateway + admin + 被测服务；测下游服务用上游实际调用的接口直接造事件。</li>
+<li>算好登录 HASH（两轮 sha512，第二轮前先转字节），错 5 次锁号，谨慎试。</li>
+<li>请求体：中文走 <code>--data-binary @file</code>，裸 Date 传 epoch 毫秒。</li>
+<li>偶发 500 先重试（DNS）；持续 500 按「gateway 路由日志 → 被测服务日志」顺序查。</li>
+</ol>
+<p>这套配方最大的价值不是某一条命令，而是把「以为是业务 bug、实际是环境问题」的几类伪装提前点名：JDK 运行期反射、假 PATH、GBK 编码、DNS 抖动。环境坑的特征都是<strong>报错位置和真实原因隔着好几层</strong>，先排除环境再查业务，顺序不能反。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E8%B8%A9%E5%9D%91%E8%AE%B0%E5%BD%95/" rel="tag"># 踩坑记录</a>
+              <a href="/tags/%E6%8E%A5%E5%8F%A3%E6%B5%8B%E8%AF%95/" rel="tag"># 接口测试</a>
+              <a href="/tags/E2E/" rel="tag"># E2E</a>
+              <a href="/tags/JDK8/" rel="tag"># JDK8</a>
+              <a href="/tags/Spring-Cloud-Gateway/" rel="tag"># Spring Cloud Gateway</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/08/05/screen-push-pipeline-investigation/" rel="prev" title="代码看着没毛病，但这链路从没跑过——显示屏推送排查的四次打脸">
+                  <i class="fa fa-angle-left"></i> 代码看着没毛病，但这链路从没跑过——显示屏推送排查的四次打脸
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2026/08/06/alarm-rule-task-level/" rel="next" title="告警规则任务级化：从「全类型共享一条规则」到「每个任务各管各的」">
+                  告警规则任务级化：从「全类型共享一条规则」到「每个任务各管各的」 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  
+  <div class="comments giscus-container">
+  </div>
+  
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">zhlifeiy35</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/zhdmm35" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"zhdmm35/zhdmm35.github.io","repo_id":"R_kgDOON4bhg","category":"Announcements","category_id":"DIC_kwDOON4bhs4C3dEc","mapping":"pathname","strict":0,"reactions_enabled":1,"emit_metadata":0,"theme":"preferred_color_scheme","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+
+<script>
+document.addEventListener('page:loaded', () => {
+  if (!CONFIG.page.comments) return;
+
+  NexT.utils.loadComments('.giscus-container')
+    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
+      attributes: {
+        async                   : true,
+        crossOrigin             : 'anonymous',
+        'data-repo'             : CONFIG.giscus.repo,
+        'data-repo-id'          : CONFIG.giscus.repo_id,
+        'data-category'         : CONFIG.giscus.category,
+        'data-category-id'      : CONFIG.giscus.category_id,
+        'data-mapping'          : CONFIG.giscus.mapping,
+        'data-strict'           : CONFIG.giscus.strict,
+        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
+        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
+        'data-theme'            : CONFIG.giscus.theme,
+        'data-lang'             : CONFIG.giscus.lang,
+        'data-input-position'   : CONFIG.giscus.input_position,
+        'data-loading'          : CONFIG.giscus.loading
+      },
+      parentNode: document.querySelector('.giscus-container')
+    }));
+});
+</script>
+<script defer src="/js/blog-assistant.js" data-endpoint="https://zhlifeiy-blog-assistant.huiyaozhang07.workers.dev/ask"></script>
+
+</body>
+</html>

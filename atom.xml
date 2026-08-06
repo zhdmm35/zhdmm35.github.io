@@ -6,7 +6,7 @@
   <link href="https://zhlifeiy.codes/atom.xml" rel="self"/>
   
   <link href="https://zhlifeiy.codes/"/>
-  <updated>2026-08-05T13:00:00.000Z</updated>
+  <updated>2026-08-06T11:30:00.000Z</updated>
   <id>https://zhlifeiy.codes/</id>
   
   <author>
@@ -15,6 +15,64 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>告警规则任务级化：从「全类型共享一条规则」到「每个任务各管各的」</title>
+    <link href="https://zhlifeiy.codes/2026/08/06/alarm-rule-task-level/"/>
+    <id>https://zhlifeiy.codes/2026/08/06/alarm-rule-task-level/</id>
+    <published>2026-08-06T11:30:00.000Z</published>
+    <updated>2026-08-06T11:30:00.000Z</updated>
+    
+    
+    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;blockquote&gt;
+&lt;p&gt;给 AI 告警弹窗加上接收人定向后，暴露出一个结构性问题：告警规则是「类型级」共享的，同类型的所有监控任务共用一条规则，A 任务改接收人会把 B 任务的也改掉。这次把规则挂到任务级，语义是「任务优先、共享兜底」。改造中确认了三条反直觉的约束（禁用不回退、只认 ‘0’、共享查询显式隔离），顺手修了一个 threshold_status 整列写不进库的存量 bug，全部由单测 + 真实 SQL + 接口级 E2E 验证。&lt;/p&gt;
+&lt;/blockquote&gt;</summary>
+    
+    
+    
+    <category term="项目复盘" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E5%A4%8D%E7%9B%98/"/>
+    
+    
+    <category term="MyBatis" scheme="https://zhlifeiy.codes/tags/MyBatis/"/>
+    
+    <category term="Spring Cloud" scheme="https://zhlifeiy.codes/tags/Spring-Cloud/"/>
+    
+    <category term="MySQL" scheme="https://zhlifeiy.codes/tags/MySQL/"/>
+    
+    <category term="Flyway" scheme="https://zhlifeiy.codes/tags/Flyway/"/>
+    
+    <category term="告警规则" scheme="https://zhlifeiy.codes/tags/%E5%91%8A%E8%AD%A6%E8%A7%84%E5%88%99/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>本地接口级 E2E 测试配方：JDK 8、假 PATH 和请求体的三个坑</title>
+    <link href="https://zhlifeiy.codes/2026/08/06/local-api-e2e-recipe/"/>
+    <id>https://zhlifeiy.codes/2026/08/06/local-api-e2e-recipe/</id>
+    <published>2026-08-06T10:00:00.000Z</published>
+    <updated>2026-08-06T10:00:00.000Z</updated>
+    
+    
+    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;blockquote&gt;
+&lt;p&gt;给告警规则任务级化改造做接口级 E2E 时，踩了一圈环境坑——服务在 JDK 17 下「能起端口、能收请求」，错误全在运行期深处才爆；Git Bash 里 &lt;code&gt;export PATH&lt;/code&gt; 是个假动作；curl 带中文直接乱码。每个坑都有实锤报错。这篇把过程沉淀成配方，下次本地起服务测接口照抄即可。&lt;/p&gt;
+&lt;/blockquote&gt;</summary>
+    
+    
+    
+    <category term="项目复盘" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E5%A4%8D%E7%9B%98/"/>
+    
+    
+    <category term="踩坑记录" scheme="https://zhlifeiy.codes/tags/%E8%B8%A9%E5%9D%91%E8%AE%B0%E5%BD%95/"/>
+    
+    <category term="接口测试" scheme="https://zhlifeiy.codes/tags/%E6%8E%A5%E5%8F%A3%E6%B5%8B%E8%AF%95/"/>
+    
+    <category term="E2E" scheme="https://zhlifeiy.codes/tags/E2E/"/>
+    
+    <category term="JDK8" scheme="https://zhlifeiy.codes/tags/JDK8/"/>
+    
+    <category term="Spring Cloud Gateway" scheme="https://zhlifeiy.codes/tags/Spring-Cloud-Gateway/"/>
+    
+  </entry>
   
   <entry>
     <title>代码看着没毛病，但这链路从没跑过——显示屏推送排查的四次打脸</title>
@@ -217,13 +275,13 @@
     <category term="AI经验" scheme="https://zhlifeiy.codes/categories/AI%E7%BB%8F%E9%AA%8C/"/>
     
     
+    <category term="MiniMax" scheme="https://zhlifeiy.codes/tags/MiniMax/"/>
+    
     <category term="shopkeeper-agent" scheme="https://zhlifeiy.codes/tags/shopkeeper-agent/"/>
     
     <category term="AI问数" scheme="https://zhlifeiy.codes/tags/AI%E9%97%AE%E6%95%B0/"/>
     
     <category term="排障记录" scheme="https://zhlifeiy.codes/tags/%E6%8E%92%E9%9A%9C%E8%AE%B0%E5%BD%95/"/>
-    
-    <category term="MiniMax" scheme="https://zhlifeiy.codes/tags/MiniMax/"/>
     
     <category term="Docker" scheme="https://zhlifeiy.codes/tags/Docker/"/>
     
@@ -528,68 +586,6 @@
     <category term="端到端测试" scheme="https://zhlifeiy.codes/tags/%E7%AB%AF%E5%88%B0%E7%AB%AF%E6%B5%8B%E8%AF%95/"/>
     
     <category term="多表一致性" scheme="https://zhlifeiy.codes/tags/%E5%A4%9A%E8%A1%A8%E4%B8%80%E8%87%B4%E6%80%A7/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>pass_user 字段同步 + 人员列表联动 + 代码审查：折中方案与前端 import 来源踩坑</title>
-    <link href="https://zhlifeiy.codes/2026/06/15/2026-06-15-pass-user-fields-and-org-tree/"/>
-    <id>https://zhlifeiy.codes/2026/06/15/2026-06-15-pass-user-fields-and-org-tree/</id>
-    <published>2026-06-15T08:00:00.000Z</published>
-    <updated>2026-06-15T08:00:00.000Z</updated>
-    
-    
-    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;blockquote&gt;
-&lt;p&gt;今天三个主题：钉钉同步补 pass_user 的手机号和部门（折中方案）、人员列表页面部门下拉按园区联动（前端 import 来源同名坑）、代码审查记录（已合并改动）。其中&lt;strong&gt;最值得记录的是折中方案的取舍&lt;/strong&gt;——为什么”换部门同步”主动放弃，以及&lt;strong&gt;前端 import 同名函数指向不同后端接口&lt;/strong&gt;这种隐蔽问题。&lt;/p&gt;
-&lt;/blockquote&gt;</summary>
-    
-    
-    
-    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
-    
-    <category term="南网" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/"/>
-    
-    
-    <category term="钉钉同步" scheme="https://zhlifeiy.codes/tags/%E9%92%89%E9%92%89%E5%90%8C%E6%AD%A5/"/>
-    
-    <category term="折中方案" scheme="https://zhlifeiy.codes/tags/%E6%8A%98%E4%B8%AD%E6%96%B9%E6%A1%88/"/>
-    
-    <category term="Vue" scheme="https://zhlifeiy.codes/tags/Vue/"/>
-    
-    <category term="代码审查" scheme="https://zhlifeiy.codes/tags/%E4%BB%A3%E7%A0%81%E5%AE%A1%E6%9F%A5/"/>
-    
-    <category term="部门联动" scheme="https://zhlifeiy.codes/tags/%E9%83%A8%E9%97%A8%E8%81%94%E5%8A%A8/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>pass_user 死亡覆盖链与 spec 错误判断：从集成测试挖出 421 条脏数据</title>
-    <link href="https://zhlifeiy.codes/2026/06/12/2026-06-12-pass-user-death-chain/"/>
-    <id>https://zhlifeiy.codes/2026/06/12/2026-06-12-pass-user-death-chain/</id>
-    <published>2026-06-12T10:00:00.000Z</published>
-    <updated>2026-06-12T10:00:00.000Z</updated>
-    
-    
-    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;blockquote&gt;
-&lt;p&gt;6&amp;#x2F;11 实现的”钉钉同步触发 pass_user 同步”功能本身端到端跑通，但暴露出 6&amp;#x2F;11 spec 文档第 46 行的一个&lt;strong&gt;事实错误判断&lt;/strong&gt;：把 &lt;code&gt;PassUserServiceImpl.synSysUserToPassUser()&lt;/code&gt; 里的 &lt;code&gt;setParkId(DEFAULT_PARK_ID)&lt;/code&gt; 误判为”无效死代码”。&lt;strong&gt;实际是有效过滤&lt;/strong&gt;。更糟的是下午挖出了真正的死亡覆盖链：admin 端 &lt;code&gt;UserMapperExt.xml&lt;/code&gt; 的 &lt;code&gt;listByConditionExt&lt;/code&gt; SQL &lt;strong&gt;没 select &lt;code&gt;urp.park_id&lt;/code&gt; 列&lt;/strong&gt;，导致 &lt;code&gt;user.getParkId()&lt;/code&gt; 永远是 NULL，421 条 &lt;code&gt;pass_user.park_id&lt;/code&gt; 全被污染成 NULL。&lt;/p&gt;
-&lt;/blockquote&gt;</summary>
-    
-    
-    
-    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
-    
-    <category term="南网" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/"/>
-    
-    
-    <category term="MyBatis" scheme="https://zhlifeiy.codes/tags/MyBatis/"/>
-    
-    <category term="集成测试" scheme="https://zhlifeiy.codes/tags/%E9%9B%86%E6%88%90%E6%B5%8B%E8%AF%95/"/>
-    
-    <category term="多园区" scheme="https://zhlifeiy.codes/tags/%E5%A4%9A%E5%9B%AD%E5%8C%BA/"/>
-    
-    <category term="死亡覆盖链" scheme="https://zhlifeiy.codes/tags/%E6%AD%BB%E4%BA%A1%E8%A6%86%E7%9B%96%E9%93%BE/"/>
-    
-    <category term="Bug修复" scheme="https://zhlifeiy.codes/tags/Bug%E4%BF%AE%E5%A4%8D/"/>
     
   </entry>
   
