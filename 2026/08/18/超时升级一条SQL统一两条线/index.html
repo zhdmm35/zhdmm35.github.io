@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Gemini","darkmode":true,"version":"8.28.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="告警有个期限，到期没人理，级别就往上抬——需求一句话就说完了。但落地时它分裂成两条业务线：人工确认线的期限在告警侧（告警产生时刻 + N 分钟），自动工单线的期限在 BPM 侧（审批节点配置的处理时限）。两版方案迭代下来，最终的形态是一条 UPDATE 语句覆盖两条线，而中间踩掉的几个坑，比 SQL 本身更值得记录。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="超时升级：一条 SQL 统一两条业务线">
+<meta property="og:url" content="https://zhlifeiy.codes/2026/08/18/%E8%B6%85%E6%97%B6%E5%8D%87%E7%BA%A7%E4%B8%80%E6%9D%A1SQL%E7%BB%9F%E4%B8%80%E4%B8%A4%E6%9D%A1%E7%BA%BF/index.html">
+<meta property="og:site_name" content="zhlifeiy · 工程笔记">
+<meta property="og:description" content="告警有个期限，到期没人理，级别就往上抬——需求一句话就说完了。但落地时它分裂成两条业务线：人工确认线的期限在告警侧（告警产生时刻 + N 分钟），自动工单线的期限在 BPM 侧（审批节点配置的处理时限）。两版方案迭代下来，最终的形态是一条 UPDATE 语句覆盖两条线，而中间踩掉的几个坑，比 SQL 本身更值得记录。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/timeout-escalation-sql.webp">
+<meta property="article:published_time" content="2026-08-18T13:30:00.000Z">
+<meta property="article:author" content="zhlifeiy35">
+<meta property="article:tag" content="MySQL">
+<meta property="article:tag" content="BPM">
+<meta property="article:tag" content="SQL">
+<meta property="article:tag" content="幂等">
+<meta property="article:tag" content="定时任务">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/timeout-escalation-sql.webp">
+
+
+<link rel="canonical" href="https://zhlifeiy.codes/2026/08/18/%E8%B6%85%E6%97%B6%E5%8D%87%E7%BA%A7%E4%B8%80%E6%9D%A1SQL%E7%BB%9F%E4%B8%80%E4%B8%A4%E6%9D%A1%E7%BA%BF/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://zhlifeiy.codes/2026/08/18/%E8%B6%85%E6%97%B6%E5%8D%87%E7%BA%A7%E4%B8%80%E6%9D%A1SQL%E7%BB%9F%E4%B8%80%E4%B8%A4%E6%9D%A1%E7%BA%BF/","path":"2026/08/18/超时升级一条SQL统一两条线/","title":"超时升级：一条 SQL 统一两条业务线"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>超时升级：一条 SQL 统一两条业务线 | zhlifeiy · 工程笔记</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/atom.xml" title="zhlifeiy · 工程笔记" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">zhlifeiy · 工程笔记</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">把项目里的坑，写成可以复用的答案</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-项目"><a href="/projects/" rel="section"><i class="fa fa-diagram-project fa-fw"></i>项目</a></li><li class="menu-item menu-item-简历"><a href="/resume/" rel="section"><i class="fa fa-id-card fa-fw"></i>简历</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-guestbook"><a href="/guestbook/" rel="section"><i class="fa fa-comment-dots fa-fw"></i>留言板</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%88%E6%8B%8D%E6%AD%BB%E9%9C%80%E6%B1%82%EF%BC%9A%E4%B8%89%E5%A5%97%E6%B3%A8%E9%87%8A%EF%BC%8C%E4%B8%A4%E5%A5%97%E6%98%AF%E9%94%99%E7%9A%84"><span class="nav-number">1.</span> <span class="nav-text">先拍死需求：三套注释，两套是错的</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E7%89%88%E7%9A%84%E6%95%99%E8%AE%AD%EF%BC%9A%E7%8A%B6%E6%80%81%E4%BD%8D%E3%80%81%E6%8E%A5%E7%BA%BF%E4%B8%8E%E9%98%B2%E5%BE%A1%E6%80%A7%E8%BF%87%E6%BB%A4"><span class="nav-number">2.</span> <span class="nav-text">第一版的教训：状态位、接线与防御性过滤</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E4%BA%8C%E7%89%88%EF%BC%9A%E7%94%A8%E2%80%9D%E4%BA%8B%E5%AE%9E%E2%80%9D%E5%BD%93%E6%A0%87%E8%AE%B0%EF%BC%8C%E8%80%8C%E4%B8%8D%E6%98%AF%E6%96%B0%E5%A2%9E%E6%A0%87%E8%AE%B0"><span class="nav-number">3.</span> <span class="nav-text">第二版：用”事实”当标记，而不是新增标记</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E4%B8%8D%E5%9C%A8-service-%E9%87%8C%E2%80%9D%E6%9F%A5-%E5%88%A4-%E6%94%B9%E2%80%9D%EF%BC%9F"><span class="nav-number">4.</span> <span class="nav-text">为什么不在 service 里”查-判-改”？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%98%8E%E7%A1%AE%E4%B8%8D%E5%81%9A%E7%9A%84"><span class="nav-number">5.</span> <span class="nav-text">明确不做的</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%AA%8C%E8%AF%81"><span class="nav-number">6.</span> <span class="nav-text">验证</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-number">7.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zhlifeiy35</p>
+  <div class="site-description" itemprop="description">记录项目实践、问题排查与工程经验</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">74</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">241</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zhdmm35" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zhdmm35" rel="noopener me" target="_blank"><i class="fa fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/timeout-escalation-sql.webp" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/08/18/%E8%B6%85%E6%97%B6%E5%8D%87%E7%BA%A7%E4%B8%80%E6%9D%A1SQL%E7%BB%9F%E4%B8%80%E4%B8%A4%E6%9D%A1%E7%BA%BF/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="记录项目实践、问题排查与工程经验">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="超时升级：一条 SQL 统一两条业务线 | zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          超时升级：一条 SQL 统一两条业务线
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-08-18 21:30:00" itemprop="dateCreated datePublished" datetime="2026-08-18T21:30:00+08:00">2026-08-18</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">项目笔记</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E6%99%BA%E6%85%A7%E5%9B%AD%E5%8C%BA/" itemprop="url" rel="index"><span itemprop="name">智慧园区</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>告警有个期限，到期没人理，级别就往上抬——需求一句话就说完了。但落地时它分裂成两条业务线：人工确认线的期限在告警侧（告警产生时刻 + N 分钟），自动工单线的期限在 BPM 侧（审批节点配置的处理时限）。两版方案迭代下来，最终的形态是<strong>一条 UPDATE 语句覆盖两条线</strong>，而中间踩掉的几个坑，比 SQL 本身更值得记录。</p>
+<span id="more"></span>
+
+<p><img data-src="/images/posts/timeout-escalation-sql/merge.webp" alt="两条业务线汇入同一条扫描 SQL"><br><em>图 1：期限来源不同的两条线，在”快照”这一步被归一化成同样的两个字段。</em></p>
+<h2 id="先拍死需求：三套注释，两套是错的"><a href="#先拍死需求：三套注释，两套是错的" class="headerlink" title="先拍死需求：三套注释，两套是错的"></a>先拍死需求：三套注释，两套是错的</h2><p>动手前有个前置问题差点把方向搞反：告警级别到底是几级、哪头高？用户以为是 3 级；代码里的枚举是 4 级但注释写”3&#x3D;严重”；另一个模块的实体注释又是”1紧急 2重要 3一般”——三套说法，两个方向相反。</p>
+<p>最后敢拍板的依据只有一个：<strong>渲染端实际使用的运行时字典</strong>。查字典表，真实值是”0一般 &#x2F; 1普通 &#x2F; 2重要 &#x2F; 3紧急”，数值越大级别越高。平台里多个模块对同一个概念各写各的注释时，注释不是文档，运行起来的数据才是。顺带还挖出一个既有 bug：统计接口拿级别字段去比英文串，永远匹配不上、统计恒为 0——记录在案，另行治理。</p>
+<h2 id="第一版的教训：状态位、接线与防御性过滤"><a href="#第一版的教训：状态位、接线与防御性过滤" class="headerlink" title="第一版的教训：状态位、接线与防御性过滤"></a>第一版的教训：状态位、接线与防御性过滤</h2><p>第一版方案走”bpm 扫描超时 → 回调 warning 升级”的路线，给超时表加 <code>is_escalated</code> 标记位保证同节点只升一次。这一版在需求确认和 review 阶段各炸出一个”上线才会发现”的问题，最终整体被回退，但三个教训留了下来。</p>
+<p><strong>教训一：挂在长方法尾部的新逻辑，可能被提前 return 短路。</strong> 最初把升级调用挂在宿主方法尾部，直觉是”先干主流程再干附加的”。但宿主方法有两处提前 return，全在尾部之前——升级代码<strong>永远执行不到</strong>。最坑的是单测全绿：测试直接调新方法本身，方法没错，坏的是它和入口的接线。修复方式是把测试改成走真实入口，先红后绿。挂新逻辑前，先扫一遍宿主方法的全部 return 路径。</p>
+<p><strong>教训二：防御性过滤会把合法数据筛光。</strong> review 建议扫描 SQL 补一个软删过滤 <code>delete_flag = &#39;0&#39;</code>——项目通用惯例，看着毫无问题。加上后真库实测：扫描结果从 9 条变成 <strong>0 条</strong>。查数据才发现这张表现存行的 <code>delete_flag</code> 全为 NULL：全量 insert 时实体未初始化的字段以 NULL 入库，盖掉了列默认值。加过滤条件前先查真实数据分布——“防御性”条件筛掉全部合法数据时比 bug 更隐蔽：不报错，只是永远查不出结果。</p>
+<p><strong>教训三：状态位是一致性负债。</strong> <code>is_escalated</code> 这类标记位，多一个就多一份”标记和事实不同步”的风险。这直接促成了第二版的思路转向。</p>
+<h2 id="第二版：用”事实”当标记，而不是新增标记"><a href="#第二版：用”事实”当标记，而不是新增标记" class="headerlink" title="第二版：用”事实”当标记，而不是新增标记"></a>第二版：用”事实”当标记，而不是新增标记</h2><p>第二版换了一个问法：能不能不加任何状态位，让”该不该升”这件事由数据里<strong>已经存在的事实</strong>回答？</p>
+<p>关键动作是把期限和目标级别<strong>快照</strong>到告警记录上。工单发起成功后，warning 侧回查 BPM 的超时记录拿到截止时间，写入告警的 <code>confirm_deadline</code>，并把目标级别在当时就算死（当前级别 + 1）。之后扫描 SQL 不需要懂任何业务语义，只负责比较两个现成字段：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">UPDATE</span> alarming_record</span><br><span class="line"><span class="keyword">SET</span> confirm_status <span class="operator">=</span> <span class="keyword">CASE</span> <span class="keyword">WHEN</span> confirm_status<span class="operator">=</span><span class="string">&#x27;0&#x27;</span> <span class="keyword">THEN</span> <span class="string">&#x27;2&#x27;</span> <span class="keyword">ELSE</span> confirm_status <span class="keyword">END</span>,</span><br><span class="line">    alarm_level <span class="operator">=</span> <span class="keyword">CASE</span> <span class="keyword">WHEN</span> <span class="built_in">CAST</span>(alarm_level <span class="keyword">AS</span> UNSIGNED) <span class="operator">&lt;</span> <span class="built_in">CAST</span>(timeout_target_level <span class="keyword">AS</span> UNSIGNED)</span><br><span class="line">                       <span class="keyword">THEN</span> timeout_target_level <span class="keyword">ELSE</span> alarm_level <span class="keyword">END</span>,</span><br><span class="line">    update_time <span class="operator">=</span> NOW()</span><br><span class="line"><span class="keyword">WHERE</span> delete_flag<span class="operator">=</span><span class="string">&#x27;0&#x27;</span> <span class="keyword">AND</span> confirm_deadline <span class="keyword">IS</span> <span class="keyword">NOT NULL</span> <span class="keyword">AND</span> confirm_deadline <span class="operator">&lt;=</span> NOW()</span><br><span class="line">  <span class="keyword">AND</span> timeout_target_level <span class="keyword">IS</span> <span class="keyword">NOT NULL</span></span><br><span class="line">  <span class="keyword">AND</span> ( confirm_status <span class="operator">=</span> <span class="string">&#x27;0&#x27;</span>                                   <span class="comment">-- 手动线：待确认且超时</span></span><br><span class="line">        <span class="keyword">OR</span> ( confirm_status <span class="operator">=</span> <span class="string">&#x27;1&#x27;</span> <span class="keyword">AND</span> work_order_id <span class="keyword">IS</span> <span class="keyword">NOT NULL</span>   <span class="comment">-- 自动线</span></span><br><span class="line">             <span class="keyword">AND</span> alarming_status <span class="operator">=</span> <span class="string">&#x27;1&#x27;</span> <span class="keyword">AND</span> confirm_time <span class="keyword">IS</span> <span class="keyword">NULL</span></span><br><span class="line">             <span class="keyword">AND</span> <span class="built_in">CAST</span>(alarm_level <span class="keyword">AS</span> UNSIGNED) <span class="operator">&lt;</span> <span class="built_in">CAST</span>(timeout_target_level <span class="keyword">AS</span> UNSIGNED) ) )</span><br></pre></td></tr></table></figure>
+
+<p>这条 SQL 里藏着四个决策，每个都有出处：</p>
+<p><strong><code>level &lt; target</code> 自带幂等。</strong> 升过级的行级别已等于目标值，下一轮扫描自动掉出 WHERE——不需要 <code>is_escalated</code> 标记位。用”级别已达标”这个天然事实当标记，比新增状态位干净，这是第一版回退换来的认知。</p>
+<p><strong>“确认超时”状态只落手动线。</strong> 自动行的 <code>confirm_status</code> 本来就是”已确认”，改成”确认超时”会污染人工确认的语义，前端确认列就乱了。CASE 表达式的 ELSE 分支原样保留，天然实现。</p>
+<p><strong><code>alarming_status = &#39;1&#39;</code> 是评审补的口子。</strong> 原始版本没有这行。评审发现：用户从 BPM 侧直接办结工单时，回调已把告警置为”已处理”但 <code>confirm_time</code> 是空的——没这行，到期会误升级一条已处理的告警。宁可少升，不制造用户看不懂的灵异现象。</p>
+<p><strong>“有人看过就不升级”是两线统一的豁免。</strong> 手动线靠确认状态离开初始值；自动线靠 <code>confirm_time</code> 有值或告警被处理。一条 SQL 里两套豁免各自归位。</p>
+<div class="note primary"><p>快照的价值不止是给 SQL 减负。BPM 侧的超时记录会随审批节点流转删除重建，如果扫描时实时去查，计时基准一直在抖动；快照到告警记录上，正好把这个抖动隔离在系统边界之外。</p>
+</div>
+
+<h2 id="为什么不在-service-里”查-判-改”？"><a href="#为什么不在-service-里”查-判-改”？" class="headerlink" title="为什么不在 service 里”查-判-改”？"></a>为什么不在 service 里”查-判-改”？</h2><p>四条业务边界（到顶、已处理、已删、不存在）全部压进 WHERE 之后，影响行数 0 就是”不该升”、1 就是”升了”——<strong>单条语句原子生效</strong>。如果拆成”先查询、再判断、再更新”三步，判断和更新之间状态可能变（并发、重复调度），还得自己铺一层判空分支。把守卫写进 WHERE，是让数据库的更新语义替你兜并发。</p>
+<h2 id="明确不做的"><a href="#明确不做的" class="headerlink" title="明确不做的"></a>明确不做的</h2><p>设计里同样有分量的是三条”不做”：BPM 侧撤销工单，warning 无感知、告警仍可能升级（用户拍板接受）；只快照首个审批节点的期限，不跟随后续节点重新计时；节点没配审批时限就不参与升级。把边界写在明处，比假装系统全能要诚实得多。</p>
+<h2 id="验证"><a href="#验证" class="headerlink" title="验证"></a>验证</h2><p>单测 22&#x2F;22（TDD 先红后绿，6 个快照用例覆盖决策链的每个早退分支）；E2E 六项矩阵全过，包括”重复扫描 0 行”这个幂等性实证，和评审后补测的”已处理告警不升级”。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://dev.mysql.com/doc/refman/8.0/en/update.html">MySQL 8.0 Reference: UPDATE Statement</a>（单语句更新的原子性）</li>
+<li><a target="_blank" rel="noopener" href="https://dev.mysql.com/doc/refman/8.0/en/case.html">MySQL 8.0 Reference: CASE Operator</a></li>
+<li><a target="_blank" rel="noopener" href="https://shardingsphere.apache.org/elasticjob/index_zh.html">Elastic-Job 官方文档</a>（本项目定时扫描的调度载体）</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/MySQL/" rel="tag"># MySQL</a>
+              <a href="/tags/BPM/" rel="tag"># BPM</a>
+              <a href="/tags/SQL/" rel="tag"># SQL</a>
+              <a href="/tags/%E5%B9%82%E7%AD%89/" rel="tag"># 幂等</a>
+              <a href="/tags/%E5%AE%9A%E6%97%B6%E4%BB%BB%E5%8A%A1/" rel="tag"># 定时任务</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/08/17/%E8%B7%A8%E6%9C%8D%E5%8A%A1%E5%B7%A5%E5%8D%95%E9%98%B2%E5%AD%A4%E5%84%BF%E8%AE%BE%E8%AE%A1/" rel="prev" title="跨服务工单的一致性：补偿、防线与不漂移的契约">
+                  <i class="fa fa-angle-left"></i> 跨服务工单的一致性：补偿、防线与不漂移的契约
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2026/08/19/%E4%B8%A4%E4%B8%AA500%E6%A0%A1%E9%AA%8C%E5%AF%B9%E8%B1%A1%E4%B8%8E%E6%8F%90%E4%BA%A4%E5%AF%B9%E8%B1%A1/" rel="next" title="同一天两个 500：校验的对象，和提交的对象不是同一个">
+                  同一天两个 500：校验的对象，和提交的对象不是同一个 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  
+  <div class="comments giscus-container">
+  </div>
+  
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">zhlifeiy35</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/zhdmm35" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"zhdmm35/zhdmm35.github.io","repo_id":"R_kgDOON4bhg","category":"Announcements","category_id":"DIC_kwDOON4bhs4C3dEc","mapping":"pathname","strict":0,"reactions_enabled":1,"emit_metadata":0,"theme":"preferred_color_scheme","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+
+<script>
+document.addEventListener('page:loaded', () => {
+  if (!CONFIG.page.comments) return;
+
+  NexT.utils.loadComments('.giscus-container')
+    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
+      attributes: {
+        async                   : true,
+        crossOrigin             : 'anonymous',
+        'data-repo'             : CONFIG.giscus.repo,
+        'data-repo-id'          : CONFIG.giscus.repo_id,
+        'data-category'         : CONFIG.giscus.category,
+        'data-category-id'      : CONFIG.giscus.category_id,
+        'data-mapping'          : CONFIG.giscus.mapping,
+        'data-strict'           : CONFIG.giscus.strict,
+        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
+        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
+        'data-theme'            : CONFIG.giscus.theme,
+        'data-lang'             : CONFIG.giscus.lang,
+        'data-input-position'   : CONFIG.giscus.input_position,
+        'data-loading'          : CONFIG.giscus.loading
+      },
+      parentNode: document.querySelector('.giscus-container')
+    }));
+});
+</script>
+<script defer src="/js/blog-assistant.js" data-endpoint="https://zhlifeiy-blog-assistant.huiyaozhang07.workers.dev/ask"></script>
+
+</body>
+</html>

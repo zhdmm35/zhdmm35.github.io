@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Gemini","darkmode":true,"version":"8.28.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="园区平台的信息发布模块，同一天在同一个接口上连续爆出两个不同的 500：下午五点半一个 NullPointerException，二十分钟后一个 DateTimeParseException。表面是两个不相干的异常，根因却是同一个模式——前端把非法值带进了请求体，后端在关键路径上既没有校验也没有空值保护，@Transactional 回滚，数据未落库。这篇记录两个 bug 的完整触发链，以及那条最">
+<meta property="og:type" content="article">
+<meta property="og:title" content="同一天两个 500：校验的对象，和提交的对象不是同一个">
+<meta property="og:url" content="https://zhlifeiy.codes/2026/08/19/%E4%B8%A4%E4%B8%AA500%E6%A0%A1%E9%AA%8C%E5%AF%B9%E8%B1%A1%E4%B8%8E%E6%8F%90%E4%BA%A4%E5%AF%B9%E8%B1%A1/index.html">
+<meta property="og:site_name" content="zhlifeiy · 工程笔记">
+<meta property="og:description" content="园区平台的信息发布模块，同一天在同一个接口上连续爆出两个不同的 500：下午五点半一个 NullPointerException，二十分钟后一个 DateTimeParseException。表面是两个不相干的异常，根因却是同一个模式——前端把非法值带进了请求体，后端在关键路径上既没有校验也没有空值保护，@Transactional 回滚，数据未落库。这篇记录两个 bug 的完整触发链，以及那条最">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/validation-target-mismatch.webp">
+<meta property="article:published_time" content="2026-08-19T14:00:00.000Z">
+<meta property="article:author" content="zhlifeiy35">
+<meta property="article:tag" content="Spring Boot">
+<meta property="article:tag" content="Vue">
+<meta property="article:tag" content="排障">
+<meta property="article:tag" content="空值安全">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/validation-target-mismatch.webp">
+
+
+<link rel="canonical" href="https://zhlifeiy.codes/2026/08/19/%E4%B8%A4%E4%B8%AA500%E6%A0%A1%E9%AA%8C%E5%AF%B9%E8%B1%A1%E4%B8%8E%E6%8F%90%E4%BA%A4%E5%AF%B9%E8%B1%A1/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://zhlifeiy.codes/2026/08/19/%E4%B8%A4%E4%B8%AA500%E6%A0%A1%E9%AA%8C%E5%AF%B9%E8%B1%A1%E4%B8%8E%E6%8F%90%E4%BA%A4%E5%AF%B9%E8%B1%A1/","path":"2026/08/19/两个500校验对象与提交对象/","title":"同一天两个 500：校验的对象，和提交的对象不是同一个"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>同一天两个 500：校验的对象，和提交的对象不是同一个 | zhlifeiy · 工程笔记</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/atom.xml" title="zhlifeiy · 工程笔记" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">zhlifeiy · 工程笔记</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">把项目里的坑，写成可以复用的答案</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-项目"><a href="/projects/" rel="section"><i class="fa fa-diagram-project fa-fw"></i>项目</a></li><li class="menu-item menu-item-简历"><a href="/resume/" rel="section"><i class="fa fa-id-card fa-fw"></i>简历</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-guestbook"><a href="/guestbook/" rel="section"><i class="fa fa-comment-dots fa-fw"></i>留言板</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Bug-1%EF%BC%9A%E7%A9%BA%E4%B8%B2%E5%8E%82%E5%95%86%E5%AD%97%E6%AE%B5%E5%BC%95%E5%8F%91%E7%9A%84-NPE"><span class="nav-number">1.</span> <span class="nav-text">Bug 1：空串厂商字段引发的 NPE</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Bug-2%EF%BC%9A%E5%BF%85%E9%A1%BB%E5%85%88%E2%80%9D%E7%9C%8B%E8%BF%87%E4%B8%80%E6%9D%A1%E2%80%9D%E6%89%8D%E8%83%BD%E8%A7%A6%E5%8F%91%E7%9A%84-500"><span class="nav-number">2.</span> <span class="nav-text">Bug 2：必须先”看过一条”才能触发的 500</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%A4%E4%B8%AA-bug-%E7%9A%84%E5%85%B1%E6%80%A7"><span class="nav-number">3.</span> <span class="nav-text">两个 bug 的共性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E6%9D%A1%E5%B8%A6%E5%BE%97%E8%B5%B0%E7%9A%84%E7%BB%93%E8%AE%BA"><span class="nav-number">4.</span> <span class="nav-text">五条带得走的结论</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%AE%E5%A4%8D%E6%96%B9%E6%A1%88"><span class="nav-number">5.</span> <span class="nav-text">修复方案</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-number">6.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zhlifeiy35</p>
+  <div class="site-description" itemprop="description">记录项目实践、问题排查与工程经验</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">74</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">241</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zhdmm35" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zhdmm35" rel="noopener me" target="_blank"><i class="fa fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/validation-target-mismatch.webp" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/08/19/%E4%B8%A4%E4%B8%AA500%E6%A0%A1%E9%AA%8C%E5%AF%B9%E8%B1%A1%E4%B8%8E%E6%8F%90%E4%BA%A4%E5%AF%B9%E8%B1%A1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="记录项目实践、问题排查与工程经验">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="同一天两个 500：校验的对象，和提交的对象不是同一个 | zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          同一天两个 500：校验的对象，和提交的对象不是同一个
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-08-19 22:00:00" itemprop="dateCreated datePublished" datetime="2026-08-19T22:00:00+08:00">2026-08-19</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">项目笔记</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E6%99%BA%E6%85%A7%E5%9B%AD%E5%8C%BA/" itemprop="url" rel="index"><span itemprop="name">智慧园区</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>园区平台的信息发布模块，同一天在同一个接口上连续爆出两个不同的 500：下午五点半一个 <code>NullPointerException</code>，二十分钟后一个 <code>DateTimeParseException</code>。表面是两个不相干的异常，根因却是同一个模式——<strong>前端把非法值带进了请求体，后端在关键路径上既没有校验也没有空值保护</strong>，<code>@Transactional</code> 回滚，数据未落库。这篇记录两个 bug 的完整触发链，以及那条最值得记住的结论：前端校验的对象，和最终提交的对象，根本不是同一个。</p>
+<span id="more"></span>
+
+<p><img data-src="/images/posts/validation-target-mismatch/mismatch.webp" alt="校验链与提交链的错位"><br><em>图 1：UI 状态、校验逻辑、提交对象三条链没有对齐时，非法值总能找到绕过去的路。</em></p>
+<h2 id="Bug-1：空串厂商字段引发的-NPE"><a href="#Bug-1：空串厂商字段引发的-NPE" class="headerlink" title="Bug 1：空串厂商字段引发的 NPE"></a>Bug 1：空串厂商字段引发的 NPE</h2><p>请求体里 <code>factory: &quot;&quot;</code>。后端把请求体的厂商字段塞进 DTO，走进一个按厂商分派的 switch：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">switch</span> (factory) &#123;</span><br><span class="line">    <span class="keyword">case</span> <span class="string">&quot;2&quot;</span>:  <span class="keyword">return</span> ...;   <span class="comment">// 大华逻辑</span></span><br><span class="line">    <span class="keyword">case</span> <span class="string">&quot;1&quot;</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">&quot;3&quot;</span>:  <span class="keyword">return</span> <span class="literal">null</span>;  <span class="comment">// 海康、明景：未实现，直接 return null</span></span><br><span class="line">    <span class="keyword">default</span>:   <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>空串不匹配任何 case，落到 <code>default</code> 返回 null。上层不加保护地调用 <code>baseResult.isSuccess()</code>——NPE。</p>
+<p>前端的触发链更有意思。节目列表的行内有一个”发布计划”按钮，它往路由 query 里塞的是<strong>新增&#x2F;编辑弹窗的表单值</strong>（初始为空串），而不是 <code>row.factory</code>（该行节目自己的厂商）：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable language_">this</span>.<span class="property">$router</span>.<span class="title function_">push</span>(&#123;</span><br><span class="line">    <span class="attr">path</span>: <span class="string">&#x27;/informationIssueManage/planMng&#x27;</span>,</span><br><span class="line">    <span class="attr">query</span>: &#123; <span class="attr">factory</span>: <span class="variable language_">this</span>.<span class="property">addEditForm</span>.<span class="property">factory</span>, ... &#125;   <span class="comment">// 应为 row.factory</span></span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+
+<p>用户不打开弹窗、直接点行内按钮，空串就被带到了计划页，再被 <code>created()</code> 写进计划表单。</p>
+<p>而真正暴露设计问题的是：同一份 Service 里，另一个方法取的是<strong>节目的</strong>厂商字段，这个方法取的是<strong>请求的</strong>厂商字段。同一个业务动作、两条数据口径——只要请求体被污染，后端就会用错值。如果统一从节目取，空串根本走不到设备下发。</p>
+<h2 id="Bug-2：必须先”看过一条”才能触发的-500"><a href="#Bug-2：必须先”看过一条”才能触发的-500" class="headerlink" title="Bug 2：必须先”看过一条”才能触发的 500"></a>Bug 2：必须先”看过一条”才能触发的 500</h2><p>请求体里 <code>startTime: &quot;&quot;</code>、<code>endTime: &quot;&quot;</code>，后端直接 <code>LocalTime.parse(&quot;&quot;)</code>，抛 <code>DateTimeParseException</code>。</p>
+<p>前端的触发链是教科书级的”校验被绕过”。时间选择器绑定的是 <code>timelist</code>，只有 <code>@change</code> 事件才会把值同步进表单字段；保存时的校验查的是 <code>timelist</code>，提交的却是 <code>addEditForm.startTime/endTime</code>——<strong>校验一个变量，提交另一个变量</strong>。雪上加霜的是，<code>add()</code> 重置表单时清空了一堆状态，唯独漏了 <code>this.timelist</code>：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="title function_">add</span>(<span class="params"></span>) &#123;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">addEditForm</span> = &#123; <span class="comment">/* 默认值 */</span> &#125;;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">datetime</span> = [];</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">timelists</span> = [];</span><br><span class="line">    <span class="comment">// 漏了 this.timelist = [&#x27;&#x27;, &#x27;&#x27;]</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>于是触发序列是：</p>
+<ol>
+<li>用户先查看或编辑过某条计划 → <code>timelist</code> 被填上旧时间；</li>
+<li>点”新增” → 弹窗里时间选择器仍显示旧时间；</li>
+<li>用户以为时间已填，不碰选择器 → <code>@change</code> 不触发，表单字段一直是空串；</li>
+<li>校验查的是旧 <code>timelist</code>（非空）→ 放行；</li>
+<li>空时间提交 → 后端 500。</li>
+</ol>
+<div class="note warning"><p>这个 bug 最反直觉的地方：<strong>全新页面首次新增反而提交不了</strong>（初始空 <code>timelist</code> 会被校验拦住），必须先看过或编辑过一条计划、再新增，才能触发。这类”依赖前序操作状态残留”的 bug，在功能测试里几乎必然漏网——测试习惯从干净页面开始。</p>
+</div>
+
+<h2 id="两个-bug-的共性"><a href="#两个-bug-的共性" class="headerlink" title="两个 bug 的共性"></a>两个 bug 的共性</h2><table>
+<thead>
+<tr>
+<th>维度</th>
+<th>Bug 1</th>
+<th>Bug 2</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>直接异常</td>
+<td><code>NullPointerException</code></td>
+<td><code>DateTimeParseException</code></td>
+</tr>
+<tr>
+<td>非法值来源</td>
+<td>行内按钮传错了字段来源</td>
+<td>新增时状态残留、漏清空</td>
+</tr>
+<tr>
+<td>后端问题</td>
+<td>对 null 返回值无保护</td>
+<td>对空串直接 parse</td>
+</tr>
+<tr>
+<td>前端问题</td>
+<td>弹窗值与行数据混用</td>
+<td>校验对象与提交对象不一致</td>
+</tr>
+<tr>
+<td>结果</td>
+<td>事务回滚，计划未落库</td>
+<td>同左</td>
+</tr>
+</tbody></table>
+<p>还有一个被空串场景盖住的隐患：计划页的表单默认值是海康厂商，但后端对海康 <code>case</code> 直接 <code>return null</code>——即使前端不传空串，从计划页直接新增海康计划也会 500。<strong>默认值也是攻击面。</strong></p>
+<h2 id="五条带得走的结论"><a href="#五条带得走的结论" class="headerlink" title="五条带得走的结论"></a>五条带得走的结论</h2><ol>
+<li><strong>不要被堆栈顶行骗到。</strong> 两个 bug 的堆栈都停在同一个方法，但一个是”下游返回 null 上层没防”，另一个是”入口直接 parse 空串”。只看行号会以为都是同一类空值问题，实际根因位置不同。</li>
+<li><strong>前端校验不等于提交安全。</strong> 只校验 UI 状态、不校验最终提交对象的校验，都是脆弱校验。</li>
+<li><strong>同一动作的数据口径要一致。</strong> 一个地方取请求值、另一个地方取实体值，前端的小错会被放大成后端的崩溃。</li>
+<li><strong>不要假设调用链一定返回非 null。</strong> 下游”对未实现的厂商返回 null”是事实，上层必须按”可能返回 null”来设计。</li>
+<li><strong>前后端要各防一手。</strong> 后端入口校验非空、空则记日志并降级（计划照常落库但不下发设备），比让异常穿透到事务层体面得多。</li>
+</ol>
+<h2 id="修复方案"><a href="#修复方案" class="headerlink" title="修复方案"></a>修复方案</h2><p>后端：厂商字段改从节目实体取、对分派结果做空值判断、入口校验时间字段非空并降级。前端：<code>add()</code> 补上 <code>timelist</code> 的重置、行内按钮改传 <code>row.factory</code>。方案不在多，在于每一刀都对应一条被实证过的触发链。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://element.eleme.cn/#/zh-CN/component/form">Element UI: Form 表单校验</a>（基于 async-validator，校验的是绑定在 form 上的模型）</li>
+<li><a target="_blank" rel="noopener" href="https://docs.oracle.com/javase/8/docs/api/java/time/LocalTime.html#parse-java.lang.CharSequence-">Java 8 API: LocalTime.parse</a>（空串抛 <code>DateTimeParseException</code> 的契约）</li>
+<li><a target="_blank" rel="noopener" href="https://docs.spring.io/spring-framework/reference/data-access/transaction/declarative.html">Spring Framework: 声明式事务管理</a>（运行时异常触发回滚的默认语义）</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Spring-Boot/" rel="tag"># Spring Boot</a>
+              <a href="/tags/Vue/" rel="tag"># Vue</a>
+              <a href="/tags/%E6%8E%92%E9%9A%9C/" rel="tag"># 排障</a>
+              <a href="/tags/%E7%A9%BA%E5%80%BC%E5%AE%89%E5%85%A8/" rel="tag"># 空值安全</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/08/18/%E8%B6%85%E6%97%B6%E5%8D%87%E7%BA%A7%E4%B8%80%E6%9D%A1SQL%E7%BB%9F%E4%B8%80%E4%B8%A4%E6%9D%A1%E7%BA%BF/" rel="prev" title="超时升级：一条 SQL 统一两条业务线">
+                  <i class="fa fa-angle-left"></i> 超时升级：一条 SQL 统一两条业务线
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2026/08/20/%E8%B4%9F%E8%B4%A3%E4%BA%BA%E5%8F%8D%E6%9F%A5%E8%A7%92%E8%89%B2%E5%8C%96%E5%9C%B0%E5%9F%BA/" rel="next" title="给员工 ID 算出审批人：负责人反查的角色化地基">
+                  给员工 ID 算出审批人：负责人反查的角色化地基 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  
+  <div class="comments giscus-container">
+  </div>
+  
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">zhlifeiy35</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/zhdmm35" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"zhdmm35/zhdmm35.github.io","repo_id":"R_kgDOON4bhg","category":"Announcements","category_id":"DIC_kwDOON4bhs4C3dEc","mapping":"pathname","strict":0,"reactions_enabled":1,"emit_metadata":0,"theme":"preferred_color_scheme","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+
+<script>
+document.addEventListener('page:loaded', () => {
+  if (!CONFIG.page.comments) return;
+
+  NexT.utils.loadComments('.giscus-container')
+    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
+      attributes: {
+        async                   : true,
+        crossOrigin             : 'anonymous',
+        'data-repo'             : CONFIG.giscus.repo,
+        'data-repo-id'          : CONFIG.giscus.repo_id,
+        'data-category'         : CONFIG.giscus.category,
+        'data-category-id'      : CONFIG.giscus.category_id,
+        'data-mapping'          : CONFIG.giscus.mapping,
+        'data-strict'           : CONFIG.giscus.strict,
+        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
+        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
+        'data-theme'            : CONFIG.giscus.theme,
+        'data-lang'             : CONFIG.giscus.lang,
+        'data-input-position'   : CONFIG.giscus.input_position,
+        'data-loading'          : CONFIG.giscus.loading
+      },
+      parentNode: document.querySelector('.giscus-container')
+    }));
+});
+</script>
+<script defer src="/js/blog-assistant.js" data-endpoint="https://zhlifeiy-blog-assistant.huiyaozhang07.workers.dev/ask"></script>
+
+</body>
+</html>

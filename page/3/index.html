@@ -171,18 +171,18 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">69</span>
+          <span class="site-state-item-count">74</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
           <a href="/categories/">
-        <span class="site-state-item-count">14</span>
+        <span class="site-state-item-count">15</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
           <a href="/tags/">
-        <span class="site-state-item-count">232</span>
+        <span class="site-state-item-count">241</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -204,6 +204,480 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/token-identity-contract-cover.webp" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/07/13/Token%E8%BA%AB%E4%BB%BD%E8%B6%8A%E6%9D%83%E5%A5%91%E7%BA%A6%E6%B5%8B%E8%AF%95/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="记录项目实践、问题排查与工程经验">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content=" | zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2026/07/13/Token%E8%BA%AB%E4%BB%BD%E8%B6%8A%E6%9D%83%E5%A5%91%E7%BA%A6%E6%B5%8B%E8%AF%95/" class="post-title-link" itemprop="url">一行 parkId 改不出越权：契约测试如何锁死 Token 身份来源</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-07-13 11:00:00" itemprop="dateCreated datePublished" datetime="2026-07-13T11:00:00+08:00">2026-07-13</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">项目笔记</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/" itemprop="url" rel="index"><span itemprop="name">南网</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>多园区切换接口能不能被前端伪造身份？改一行 parkId 就能越权吗？本文用 4 个测试用例 + 1 次反向变异验证，证明 userParkSwitch 的身份来源、授权顺序、Redis 更新顺序已被源码契约测试锁死。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2026/07/13/Token%E8%BA%AB%E4%BB%BD%E8%B6%8A%E6%9D%83%E5%A5%91%E7%BA%A6%E6%B5%8B%E8%AF%95/">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/multi-park-test-cover.webp" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/07/08/%E5%A4%9A%E5%9B%AD%E5%8C%BA%E6%94%B9%E9%80%A0%E6%B5%8B%E8%AF%95%E5%85%A8%E6%99%AF/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="记录项目实践、问题排查与工程经验">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content=" | zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2026/07/08/%E5%A4%9A%E5%9B%AD%E5%8C%BA%E6%94%B9%E9%80%A0%E6%B5%8B%E8%AF%95%E5%85%A8%E6%99%AF/" class="post-title-link" itemprop="url">多园区改造测试全景：从登录到业务隔离的 7 大模块验证清单</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-07-08 17:15:00" itemprop="dateCreated datePublished" datetime="2026-07-08T17:15:00+08:00">2026-07-08</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">项目笔记</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/" itemprop="url" rel="index"><span itemprop="name">南网</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>多园区改造不是改几个字段那么简单。登录态、菜单、角色、同步链路、业务数据、回归兼容——任何一个模块漏测，都可能在生产里埋雷。本文把改造测试要覆盖的 7 大模块完整拆开。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2026/07/08/%E5%A4%9A%E5%9B%AD%E5%8C%BA%E6%94%B9%E9%80%A0%E6%B5%8B%E8%AF%95%E5%85%A8%E6%99%AF/">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/redis-db-mismatch-cover.webp" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/07/07/%E5%9B%AD%E5%8C%BA%E5%88%87%E6%8D%A2%E4%B8%8D%E7%94%9F%E6%95%88-RedisDB%E4%B8%8D%E4%B8%80%E8%87%B4/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="记录项目实践、问题排查与工程经验">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content=" | zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2026/07/07/%E5%9B%AD%E5%8C%BA%E5%88%87%E6%8D%A2%E4%B8%8D%E7%94%9F%E6%95%88-RedisDB%E4%B8%8D%E4%B8%80%E8%87%B4/" class="post-title-link" itemprop="url">园区切换不生效？Redis DB 不一致这个坑我替你踩过了</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-07-07 09:50:00" itemprop="dateCreated datePublished" datetime="2026-07-07T09:50:00+08:00">2026-07-07</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">项目笔记</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/" itemprop="url" rel="index"><span itemprop="name">南网</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>dev 环境切园区后 /user/info 仍是旧园区，访客预约列表也不刷新。问题不在业务代码，而在 admin-service 和 gateway 写入了不同 Redis DB——这次把排障链路完整记录下来。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2026/07/07/%E5%9B%AD%E5%8C%BA%E5%88%87%E6%8D%A2%E4%B8%8D%E7%94%9F%E6%95%88-RedisDB%E4%B8%8D%E4%B8%80%E8%87%B4/">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/2026-06-25-perf-avatar-backfill_001.webp" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/06/25/2026-06-25-perf-avatar-backfill/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="记录项目实践、问题排查与工程经验">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content=" | zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2026/06/25/2026-06-25-perf-avatar-backfill/" class="post-title-link" itemprop="url">钉钉同步性能优化（异步化+批量化）+ 头像回填 CDN 解析失败</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-06-25 18:00:00" itemprop="dateCreated datePublished" datetime="2026-06-25T18:00:00+08:00">2026-06-25</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">项目笔记</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/" itemprop="url" rel="index"><span itemprop="name">南网</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h2 id="导读"><a href="#导读" class="headerlink" title="导读"></a>导读</h2><blockquote>
+<p>钉钉同步两个故事：(1) 15000+ 用户同步时 HTTP 超时——根因是 <code>toUpdateUsers</code> 循环内 3 次 DB 查询每人 &#x3D; 46000 次 SQL round-trip 在一个事务内串行执行，<strong>两步优化</strong>：异步化（HTTP 立即返回”已受理”，后台静默执行）+ 批量化（循环前 IN 批量预加载到 Map，循环内 O(1) 查 Map），计划阶段就识别出 4 个潜在 bug（路径双重前缀、BaseResultMap 错映射、dirty-check 破坏恢复语义、peek 污染原始 DB 状态）。(2) 头像回填接口返回 200 但成功数始终为 0——admin 服务器在内网，DNS 无法解析钉钉 CDN 域名 <code>static-legacy.dingtalk.com</code>，所有用户全部被静默跳过。</p>
+</blockquote>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2026/06/25/2026-06-25-perf-avatar-backfill/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/2026-06-23-pdeparts-deprecated_001.webp" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/06/23/2026-06-23-pdeparts-deprecated/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="记录项目实践、问题排查与工程经验">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content=" | zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2026/06/23/2026-06-23-pdeparts-deprecated/" class="post-title-link" itemprop="url">PDEPARTS 废弃 + 头像同步修复 + 用户查询回归：递归 CTE 上溯</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-06-23 18:00:00" itemprop="dateCreated datePublished" datetime="2026-06-23T18:00:00+08:00">2026-06-23</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">项目笔记</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/" itemprop="url" rel="index"><span itemprop="name">南网</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h2 id="导读"><a href="#导读" class="headerlink" title="导读"></a>导读</h2><blockquote>
+<p>6&#x2F;22 暴露的 PDEPARTS 下线问题，今天给出完整修复：废弃所有依赖 PDEPARTS 的解析，改用部门 UUID 沿 <code>sys_organization.parent_id</code> 递归上溯查 <code>sys_park_organization</code> 桥表（MySQL 8 CTE）。一个 commit 改了 8 个文件、+167&#x2F;-33，把昨天识别出的 4 个 Bug 全部修完。同时顺手把头像同步 bug（<code>setFacePic</code> 误写为 <code>setFacePicAuditStatus</code>）修了，并补充 <code>face_pic=&#39;2&#39;</code> 历史脏数据的处理策略。</p>
+</blockquote>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2026/06/23/2026-06-23-pdeparts-deprecated/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -685,496 +1159,8 @@
 
 
 
-    
-
-
-<div class="post-block">
-  
-  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
-    
-    <div class="post-gallery-image">
-      <img src="/images/covers/2026-06-10-login-token-and-summary_001.jpg" itemprop="contentUrl">
-    </div>
-    </div>
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/06/10/2026-06-10-login-token-and-summary/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="zhlifeiy35">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="zhlifeiy · 工程笔记">
-      <meta itemprop="description" content="记录项目实践、问题排查与工程经验">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content=" | zhlifeiy · 工程笔记">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2026/06/10/2026-06-10-login-token-and-summary/" class="post-title-link" itemprop="url">登录 token 补齐与项目改动全量汇总</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">发表于</span>
-
-      <time title="创建时间：2026-06-10 12:00:00" itemprop="dateCreated datePublished" datetime="2026-06-10T12:00:00+08:00">2026-06-10</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-folder"></i>
-      </span>
-      <span class="post-meta-item-text">分类于</span>
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">项目笔记</span></a>
-        </span>
-          ，
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/" itemprop="url" rel="index"><span itemprop="name">南网</span></a>
-        </span>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h2 id="导读"><a href="#导读" class="headerlink" title="导读"></a>导读</h2><blockquote>
-<p>链路通了，admin 也起来了，但登录返回的响应没有 token——因为 token 是 Gateway 加的，不是 admin 加的。本篇解决：登录 token 补齐 + Nacos 分组统一 + admin 注册 Nacos + 980.sql 数据导入，以及一份完整的项目改动清单（5 个我们改的代码文件 + 3 个 dist_sync 分支已有的改动）。</p>
-</blockquote>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2026/06/10/2026-06-10-login-token-and-summary/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
-    
-    <div class="post-gallery-image">
-      <img src="/images/covers/2026-06-09-six-fixes_001.jpg" itemprop="contentUrl">
-    </div>
-    </div>
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/06/09/2026-06-09-six-fixes/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="zhlifeiy35">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="zhlifeiy · 工程笔记">
-      <meta itemprop="description" content="记录项目实践、问题排查与工程经验">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content=" | zhlifeiy · 工程笔记">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2026/06/09/2026-06-09-six-fixes/" class="post-title-link" itemprop="url">6 个启动连环坑：从 MySQL 用户到前端 401 的完整链路打通</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">发表于</span>
-
-      <time title="创建时间：2026-06-09 22:00:00" itemprop="dateCreated datePublished" datetime="2026-06-09T22:00:00+08:00">2026-06-09</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-folder"></i>
-      </span>
-      <span class="post-meta-item-text">分类于</span>
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">项目笔记</span></a>
-        </span>
-          ，
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/" itemprop="url" rel="index"><span itemprop="name">南网</span></a>
-        </span>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h2 id="导读"><a href="#导读" class="headerlink" title="导读"></a>导读</h2><blockquote>
-<p>编译跑绿后，启动链路又冒出 6 个连环坑：MySQL 没 <code>building_*</code> 用户、property-service 写死内网 IP、admin 种子用户密码是 SHA512×2、<code>is_enable=1</code> 居然是禁用、gateway 报 JWT NPE、前端访问报 401。本篇一次性梳理这 6 个坑的根因、修复方案、排查顺序，以及哪些是”反直觉的项目约定”。</p>
-</blockquote>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2026/06/09/2026-06-09-six-fixes/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
-    
-    <div class="post-gallery-image">
-      <img src="/images/covers/2026-06-09-spring-cloud-env-setup_001.jpg" itemprop="contentUrl">
-    </div>
-    </div>
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/06/09/2026-06-09-spring-cloud-env-setup/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="zhlifeiy35">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="zhlifeiy · 工程笔记">
-      <meta itemprop="description" content="记录项目实践、问题排查与工程经验">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content=" | zhlifeiy · 工程笔记">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2026/06/09/2026-06-09-spring-cloud-env-setup/" class="post-title-link" itemprop="url">接手烂尾的 Spring Cloud 微服务项目：从零搭建 26 模块编译环境</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">发表于</span>
-
-      <time title="创建时间：2026-06-09 18:00:00" itemprop="dateCreated datePublished" datetime="2026-06-09T18:00:00+08:00">2026-06-09</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-folder"></i>
-      </span>
-      <span class="post-meta-item-text">分类于</span>
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">项目笔记</span></a>
-        </span>
-          ，
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/" itemprop="url" rel="index"><span itemprop="name">南网</span></a>
-        </span>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h2 id="导读"><a href="#导读" class="headerlink" title="导读"></a>导读</h2><blockquote>
-<p>接手一个停更 2 年的 Spring Cloud Alibaba 微服务项目，13 个业务服务、11 个独立数据库、26 个 Maven 模块，本地 Maven 仓库空空如也，<code>mvn compile</code> 一跑就是红海一片。这篇记录我从零搭建编译环境的完整过程，包括 Maven 配置重写、私有依赖安装、22 个 SNAPSHOT jar 的手工恢复，以及最终 26 模块 BUILD SUCCESS 的关键命令。</p>
-</blockquote>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2026/06/09/2026-06-09-spring-cloud-env-setup/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
-    
-    <div class="post-gallery-image">
-      <img src="/images/covers/%E6%95%B0%E6%8D%AE%E5%BD%92%E9%9B%866%E6%9C%88%E6%8E%A2%E6%9F%A5%E5%AE%9E%E5%BD%95-%E4%B8%89%E5%A4%A9%E4%B8%89%E4%BB%B6%E4%BA%8B.png" itemprop="contentUrl">
-    </div>
-    </div>
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/06/03/%E6%95%B0%E6%8D%AE%E5%BD%92%E9%9B%866%E6%9C%88%E6%8E%A2%E6%9F%A5%E5%AE%9E%E5%BD%95-%E4%B8%89%E5%A4%A9%E4%B8%89%E4%BB%B6%E4%BA%8B/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="zhlifeiy35">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="zhlifeiy · 工程笔记">
-      <meta itemprop="description" content="记录项目实践、问题排查与工程经验">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content=" | zhlifeiy · 工程笔记">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2026/06/03/%E6%95%B0%E6%8D%AE%E5%BD%92%E9%9B%866%E6%9C%88%E6%8E%A2%E6%9F%A5%E5%AE%9E%E5%BD%95-%E4%B8%89%E5%A4%A9%E4%B8%89%E4%BB%B6%E4%BA%8B/" class="post-title-link" itemprop="url">数据归集 6 月探查实录：三天三件事，把树形接口、数据脏坑、跨源机制全部扒一遍</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">发表于</span>
-
-      <time title="创建时间：2026-06-03 22:00:00" itemprop="dateCreated datePublished" datetime="2026-06-03T22:00:00+08:00">2026-06-03</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-folder"></i>
-      </span>
-      <span class="post-meta-item-text">分类于</span>
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">项目笔记</span></a>
-        </span>
-          ，
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E6%95%B0%E6%8D%AE%E5%BD%92%E9%9B%86/" itemprop="url" rel="index"><span itemprop="name">数据归集</span></a>
-        </span>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>三天里把数据归集系统的 6 个 tree 接口、148 个孤儿设备、5 个数据地雷全部扒了一遍，附完整证据链和修复指南</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2026/06/03/%E6%95%B0%E6%8D%AE%E5%BD%92%E9%9B%866%E6%9C%88%E6%8E%A2%E6%9F%A5%E5%AE%9E%E5%BD%95-%E4%B8%89%E5%A4%A9%E4%B8%89%E4%BB%B6%E4%BA%8B/">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
-    
-    <div class="post-gallery-image">
-      <img src="/images/covers/consul-datasource-pitfall.png" itemprop="contentUrl">
-    </div>
-    </div>
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/05/29/Consul%E9%85%8D%E7%BD%AE%E8%B8%A9%E5%9D%91-%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="zhlifeiy35">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="zhlifeiy · 工程笔记">
-      <meta itemprop="description" content="记录项目实践、问题排查与工程经验">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content=" | zhlifeiy · 工程笔记">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2026/05/29/Consul%E9%85%8D%E7%BD%AE%E8%B8%A9%E5%9D%91-%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2/" class="post-title-link" itemprop="url">Consul 配置踩坑：数据源切换的陷阱与排查</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">发表于</span>
-
-      <time title="创建时间：2026-05-29 10:00:00" itemprop="dateCreated datePublished" datetime="2026-05-29T10:00:00+08:00">2026-05-29</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-folder"></i>
-      </span>
-      <span class="post-meta-item-text">分类于</span>
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">后端开发</span></a>
-        </span>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>数字孪生模块从 local profile 切换到 Consul 配置后，视频巡查接口全部报 500：<code>Table &#39;gdsw.bs_sw_cy_dh_video_inspection&#39; doesn&#39;t exist</code>。本地库有这张表，MCP 工具能查到，但服务连不上。本文记录了这个坑的根因、排查思路和解决方案。</p>
-<div class="audio-player">
-  <div class="audio-section">
-    <h4>🎧 文章导读</h4>
-    <audio controls preload="metadata">
-      <source src="/audio/Consul配置踩坑-数据源切换/narration.mp3" type="audio/mpeg">
-      您的浏览器不支持音频播放。
-    </audio>
-  </div>
-  <div class="audio-section">
-    <h4>🎵 背景音乐</h4>
-    <audio controls loop preload="metadata">
-      <source src="/audio/Consul配置踩坑-数据源切换/bgm.mp3" type="audio/mpeg">
-      您的浏览器不支持音频播放。
-    </audio>
-  </div>
-</div>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2026/05/29/Consul%E9%85%8D%E7%BD%AE%E8%B8%A9%E5%9D%91-%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
   <nav class="pagination">
-    <a class="extend prev" rel="prev" title="上一页" aria-label="上一页" href="/page/2/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/">4</a><span class="space">&hellip;</span><a class="page-number" href="/page/7/">7</a><a class="extend next" rel="next" title="下一页" aria-label="下一页" href="/page/4/"><i class="fa fa-angle-right"></i></a>
+    <a class="extend prev" rel="prev" title="上一页" aria-label="上一页" href="/page/2/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/">4</a><span class="space">&hellip;</span><a class="page-number" href="/page/8/">8</a><a class="extend next" rel="next" title="下一页" aria-label="下一页" href="/page/4/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 </div>

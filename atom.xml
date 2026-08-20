@@ -6,7 +6,7 @@
   <link href="https://zhlifeiy.codes/atom.xml" rel="self"/>
   
   <link href="https://zhlifeiy.codes/"/>
-  <updated>2026-08-10T11:30:00.000Z</updated>
+  <updated>2026-08-20T13:00:00.000Z</updated>
   <id>https://zhlifeiy.codes/</id>
   
   <author>
@@ -15,6 +15,149 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>给员工 ID 算出审批人：负责人反查的角色化地基</title>
+    <link href="https://zhlifeiy.codes/2026/08/20/%E8%B4%9F%E8%B4%A3%E4%BA%BA%E5%8F%8D%E6%9F%A5%E8%A7%92%E8%89%B2%E5%8C%96%E5%9C%B0%E5%9F%BA/"/>
+    <id>https://zhlifeiy.codes/2026/08/20/%E8%B4%9F%E8%B4%A3%E4%BA%BA%E5%8F%8D%E6%9F%A5%E8%A7%92%E8%89%B2%E5%8C%96%E5%9C%B0%E5%9F%BA/</id>
+    <published>2026-08-20T13:00:00.000Z</published>
+    <updated>2026-08-20T13:00:00.000Z</updated>
+    
+    
+    <summary type="html">&lt;p&gt;BPM 审批流要跑起来，地基不是流程图，而是一个看起来朴素的问题：&lt;strong&gt;给一个员工 ID，算出这张单该批给谁&lt;/strong&gt;。这次改造把原先”部门管理员”的散装机制整体角色化，落地两个负责人反查接口。中间有三个决策值得展开：主部门锚点的回填、递归 CTE 的”最近一级优先”、以及同步绑定与手动绑定的免疫隔离。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
+    
+    <category term="智慧园区" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E6%99%BA%E6%85%A7%E5%9B%AD%E5%8C%BA/"/>
+    
+    
+    <category term="钉钉同步" scheme="https://zhlifeiy.codes/tags/%E9%92%89%E9%92%89%E5%90%8C%E6%AD%A5/"/>
+    
+    <category term="递归CTE" scheme="https://zhlifeiy.codes/tags/%E9%80%92%E5%BD%92CTE/"/>
+    
+    <category term="MySQL" scheme="https://zhlifeiy.codes/tags/MySQL/"/>
+    
+    <category term="权限设计" scheme="https://zhlifeiy.codes/tags/%E6%9D%83%E9%99%90%E8%AE%BE%E8%AE%A1/"/>
+    
+    <category term="BPM" scheme="https://zhlifeiy.codes/tags/BPM/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>同一天两个 500：校验的对象，和提交的对象不是同一个</title>
+    <link href="https://zhlifeiy.codes/2026/08/19/%E4%B8%A4%E4%B8%AA500%E6%A0%A1%E9%AA%8C%E5%AF%B9%E8%B1%A1%E4%B8%8E%E6%8F%90%E4%BA%A4%E5%AF%B9%E8%B1%A1/"/>
+    <id>https://zhlifeiy.codes/2026/08/19/%E4%B8%A4%E4%B8%AA500%E6%A0%A1%E9%AA%8C%E5%AF%B9%E8%B1%A1%E4%B8%8E%E6%8F%90%E4%BA%A4%E5%AF%B9%E8%B1%A1/</id>
+    <published>2026-08-19T14:00:00.000Z</published>
+    <updated>2026-08-19T14:00:00.000Z</updated>
+    
+    
+    <summary type="html">&lt;p&gt;园区平台的信息发布模块，同一天在同一个接口上连续爆出两个不同的 500：下午五点半一个 &lt;code&gt;NullPointerException&lt;/code&gt;，二十分钟后一个 &lt;code&gt;DateTimeParseException&lt;/code&gt;。表面是两个不相干的异常，根因却是同一个模式——&lt;strong&gt;前端把非法值带进了请求体，后端在关键路径上既没有校验也没有空值保护&lt;/strong&gt;，&lt;code&gt;@Transactional&lt;/code&gt; 回滚，数据未落库。这篇记录两个 bug 的完整触发链，以及那条最值得记住的结论：前端校验的对象，和最终提交的对象，根本不是同一个。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
+    
+    <category term="智慧园区" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E6%99%BA%E6%85%A7%E5%9B%AD%E5%8C%BA/"/>
+    
+    
+    <category term="Spring Boot" scheme="https://zhlifeiy.codes/tags/Spring-Boot/"/>
+    
+    <category term="Vue" scheme="https://zhlifeiy.codes/tags/Vue/"/>
+    
+    <category term="排障" scheme="https://zhlifeiy.codes/tags/%E6%8E%92%E9%9A%9C/"/>
+    
+    <category term="空值安全" scheme="https://zhlifeiy.codes/tags/%E7%A9%BA%E5%80%BC%E5%AE%89%E5%85%A8/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>超时升级：一条 SQL 统一两条业务线</title>
+    <link href="https://zhlifeiy.codes/2026/08/18/%E8%B6%85%E6%97%B6%E5%8D%87%E7%BA%A7%E4%B8%80%E6%9D%A1SQL%E7%BB%9F%E4%B8%80%E4%B8%A4%E6%9D%A1%E7%BA%BF/"/>
+    <id>https://zhlifeiy.codes/2026/08/18/%E8%B6%85%E6%97%B6%E5%8D%87%E7%BA%A7%E4%B8%80%E6%9D%A1SQL%E7%BB%9F%E4%B8%80%E4%B8%A4%E6%9D%A1%E7%BA%BF/</id>
+    <published>2026-08-18T13:30:00.000Z</published>
+    <updated>2026-08-18T13:30:00.000Z</updated>
+    
+    
+    <summary type="html">&lt;p&gt;告警有个期限，到期没人理，级别就往上抬——需求一句话就说完了。但落地时它分裂成两条业务线：人工确认线的期限在告警侧（告警产生时刻 + N 分钟），自动工单线的期限在 BPM 侧（审批节点配置的处理时限）。两版方案迭代下来，最终的形态是&lt;strong&gt;一条 UPDATE 语句覆盖两条线&lt;/strong&gt;，而中间踩掉的几个坑，比 SQL 本身更值得记录。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
+    
+    <category term="智慧园区" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E6%99%BA%E6%85%A7%E5%9B%AD%E5%8C%BA/"/>
+    
+    
+    <category term="MySQL" scheme="https://zhlifeiy.codes/tags/MySQL/"/>
+    
+    <category term="BPM" scheme="https://zhlifeiy.codes/tags/BPM/"/>
+    
+    <category term="SQL" scheme="https://zhlifeiy.codes/tags/SQL/"/>
+    
+    <category term="幂等" scheme="https://zhlifeiy.codes/tags/%E5%B9%82%E7%AD%89/"/>
+    
+    <category term="定时任务" scheme="https://zhlifeiy.codes/tags/%E5%AE%9A%E6%97%B6%E4%BB%BB%E5%8A%A1/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>跨服务工单的一致性：补偿、防线与不漂移的契约</title>
+    <link href="https://zhlifeiy.codes/2026/08/17/%E8%B7%A8%E6%9C%8D%E5%8A%A1%E5%B7%A5%E5%8D%95%E9%98%B2%E5%AD%A4%E5%84%BF%E8%AE%BE%E8%AE%A1/"/>
+    <id>https://zhlifeiy.codes/2026/08/17/%E8%B7%A8%E6%9C%8D%E5%8A%A1%E5%B7%A5%E5%8D%95%E9%98%B2%E5%AD%A4%E5%84%BF%E8%AE%BE%E8%AE%A1/</id>
+    <published>2026-08-17T14:00:00.000Z</published>
+    <updated>2026-08-17T14:00:00.000Z</updated>
+    
+    
+    <summary type="html">&lt;p&gt;把告警系统和 BPM 工单打通，听起来是”调一个发起流程的接口”就能做完的事。真正做起来才发现，难点从来不在发起，而在&lt;strong&gt;失败的那一瞬间&lt;/strong&gt;：远程流程已经发起成功、本地事务却回滚了，那条没有告警指向的孤儿工单谁来收？本文记录这次改造里三个相互咬合的设计——契约、补偿、防线——以及一个”什么都没发生”的典型 bug。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
+    
+    <category term="智慧园区" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E6%99%BA%E6%85%A7%E5%9B%AD%E5%8C%BA/"/>
+    
+    
+    <category term="微服务" scheme="https://zhlifeiy.codes/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/"/>
+    
+    <category term="分布式事务" scheme="https://zhlifeiy.codes/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/"/>
+    
+    <category term="BPM" scheme="https://zhlifeiy.codes/tags/BPM/"/>
+    
+    <category term="Flowable" scheme="https://zhlifeiy.codes/tags/Flowable/"/>
+    
+    <category term="网关" scheme="https://zhlifeiy.codes/tags/%E7%BD%91%E5%85%B3/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>三层断点：新功能上线的&quot;最后一百米&quot;</title>
+    <link href="https://zhlifeiy.codes/2026/08/15/%E4%B8%89%E5%B1%82%E6%96%AD%E7%82%B9-%E6%96%B0%E5%8A%9F%E8%83%BD%E4%B8%8A%E7%BA%BF%E6%9C%80%E5%90%8E%E4%B8%80%E7%99%BE%E7%B1%B3/"/>
+    <id>https://zhlifeiy.codes/2026/08/15/%E4%B8%89%E5%B1%82%E6%96%AD%E7%82%B9-%E6%96%B0%E5%8A%9F%E8%83%BD%E4%B8%8A%E7%BA%BF%E6%9C%80%E5%90%8E%E4%B8%80%E7%99%BE%E7%B1%B3/</id>
+    <published>2026-08-15T13:00:00.000Z</published>
+    <updated>2026-08-15T13:00:00.000Z</updated>
+    
+    
+    <summary type="html">&lt;p&gt;园区平台的消防设备地图功能上线那天，楼层平面图一张也显示不出来。从 dev 联调一路追到生产 Nginx，最后发现这不是一个 bug，而是&lt;strong&gt;三层断点叠在一起&lt;/strong&gt;：库表迁移没跑、前端 env 缺配置、Nginx 缺路由。任何一层单独修好，页面依然是坏的——这大概是”新功能第一次把文件服务暴露到浏览器侧”时最典型的事故形态。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
+    
+    <category term="智慧园区" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E6%99%BA%E6%85%A7%E5%9B%AD%E5%8C%BA/"/>
+    
+    
+    <category term="Nginx" scheme="https://zhlifeiy.codes/tags/Nginx/"/>
+    
+    <category term="Vue" scheme="https://zhlifeiy.codes/tags/Vue/"/>
+    
+    <category term="Flyway" scheme="https://zhlifeiy.codes/tags/Flyway/"/>
+    
+    <category term="排障" scheme="https://zhlifeiy.codes/tags/%E6%8E%92%E9%9A%9C/"/>
+    
+    <category term="部署" scheme="https://zhlifeiy.codes/tags/%E9%83%A8%E7%BD%B2/"/>
+    
+  </entry>
   
   <entry>
     <title>告警通知扩展到钉钉和短信：多通道路由、Token 缓存与失败隔离</title>
@@ -431,155 +574,6 @@
     <category term="分页" scheme="https://zhlifeiy.codes/tags/%E5%88%86%E9%A1%B5/"/>
     
     <category term="容错" scheme="https://zhlifeiy.codes/tags/%E5%AE%B9%E9%94%99/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>一行 parkId 改不出越权：契约测试如何锁死 Token 身份来源</title>
-    <link href="https://zhlifeiy.codes/2026/07/13/Token%E8%BA%AB%E4%BB%BD%E8%B6%8A%E6%9D%83%E5%A5%91%E7%BA%A6%E6%B5%8B%E8%AF%95/"/>
-    <id>https://zhlifeiy.codes/2026/07/13/Token%E8%BA%AB%E4%BB%BD%E8%B6%8A%E6%9D%83%E5%A5%91%E7%BA%A6%E6%B5%8B%E8%AF%95/</id>
-    <published>2026-07-13T03:00:00.000Z</published>
-    <updated>2026-07-13T03:00:00.000Z</updated>
-    
-    
-    <summary type="html">多园区切换接口能不能被前端伪造身份？改一行 parkId 就能越权吗？本文用 4 个测试用例 + 1 次反向变异验证，证明 userParkSwitch 的身份来源、授权顺序、Redis 更新顺序已被源码契约测试锁死。</summary>
-    
-    
-    
-    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
-    
-    <category term="南网" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/"/>
-    
-    
-    <category term="南网项目" scheme="https://zhlifeiy.codes/tags/%E5%8D%97%E7%BD%91%E9%A1%B9%E7%9B%AE/"/>
-    
-    <category term="安全测试" scheme="https://zhlifeiy.codes/tags/%E5%AE%89%E5%85%A8%E6%B5%8B%E8%AF%95/"/>
-    
-    <category term="契约测试" scheme="https://zhlifeiy.codes/tags/%E5%A5%91%E7%BA%A6%E6%B5%8B%E8%AF%95/"/>
-    
-    <category term="反向变异" scheme="https://zhlifeiy.codes/tags/%E5%8F%8D%E5%90%91%E5%8F%98%E5%BC%82/"/>
-    
-    <category term="Spring Security" scheme="https://zhlifeiy.codes/tags/Spring-Security/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>多园区改造测试全景：从登录到业务隔离的 7 大模块验证清单</title>
-    <link href="https://zhlifeiy.codes/2026/07/08/%E5%A4%9A%E5%9B%AD%E5%8C%BA%E6%94%B9%E9%80%A0%E6%B5%8B%E8%AF%95%E5%85%A8%E6%99%AF/"/>
-    <id>https://zhlifeiy.codes/2026/07/08/%E5%A4%9A%E5%9B%AD%E5%8C%BA%E6%94%B9%E9%80%A0%E6%B5%8B%E8%AF%95%E5%85%A8%E6%99%AF/</id>
-    <published>2026-07-08T09:15:00.000Z</published>
-    <updated>2026-07-08T09:15:00.000Z</updated>
-    
-    
-    <summary type="html">多园区改造不是改几个字段那么简单。登录态、菜单、角色、同步链路、业务数据、回归兼容——任何一个模块漏测，都可能在生产里埋雷。本文把改造测试要覆盖的 7 大模块完整拆开。</summary>
-    
-    
-    
-    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
-    
-    <category term="南网" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/"/>
-    
-    
-    <category term="多园区" scheme="https://zhlifeiy.codes/tags/%E5%A4%9A%E5%9B%AD%E5%8C%BA/"/>
-    
-    <category term="南网项目" scheme="https://zhlifeiy.codes/tags/%E5%8D%97%E7%BD%91%E9%A1%B9%E7%9B%AE/"/>
-    
-    <category term="测试计划" scheme="https://zhlifeiy.codes/tags/%E6%B5%8B%E8%AF%95%E8%AE%A1%E5%88%92/"/>
-    
-    <category term="越权校验" scheme="https://zhlifeiy.codes/tags/%E8%B6%8A%E6%9D%83%E6%A0%A1%E9%AA%8C/"/>
-    
-    <category term="数据隔离" scheme="https://zhlifeiy.codes/tags/%E6%95%B0%E6%8D%AE%E9%9A%94%E7%A6%BB/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>园区切换不生效？Redis DB 不一致这个坑我替你踩过了</title>
-    <link href="https://zhlifeiy.codes/2026/07/07/%E5%9B%AD%E5%8C%BA%E5%88%87%E6%8D%A2%E4%B8%8D%E7%94%9F%E6%95%88-RedisDB%E4%B8%8D%E4%B8%80%E8%87%B4/"/>
-    <id>https://zhlifeiy.codes/2026/07/07/%E5%9B%AD%E5%8C%BA%E5%88%87%E6%8D%A2%E4%B8%8D%E7%94%9F%E6%95%88-RedisDB%E4%B8%8D%E4%B8%80%E8%87%B4/</id>
-    <published>2026-07-07T01:50:00.000Z</published>
-    <updated>2026-07-07T01:50:00.000Z</updated>
-    
-    
-    <summary type="html">dev 环境切园区后 /user/info 仍是旧园区，访客预约列表也不刷新。问题不在业务代码，而在 admin-service 和 gateway 写入了不同 Redis DB——这次把排障链路完整记录下来。</summary>
-    
-    
-    
-    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
-    
-    <category term="南网" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/"/>
-    
-    
-    <category term="踩坑记录" scheme="https://zhlifeiy.codes/tags/%E8%B8%A9%E5%9D%91%E8%AE%B0%E5%BD%95/"/>
-    
-    <category term="Spring Cloud" scheme="https://zhlifeiy.codes/tags/Spring-Cloud/"/>
-    
-    <category term="南网项目" scheme="https://zhlifeiy.codes/tags/%E5%8D%97%E7%BD%91%E9%A1%B9%E7%9B%AE/"/>
-    
-    <category term="智慧园区" scheme="https://zhlifeiy.codes/tags/%E6%99%BA%E6%85%A7%E5%9B%AD%E5%8C%BA/"/>
-    
-    <category term="Redis" scheme="https://zhlifeiy.codes/tags/Redis/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>钉钉同步性能优化（异步化+批量化）+ 头像回填 CDN 解析失败</title>
-    <link href="https://zhlifeiy.codes/2026/06/25/2026-06-25-perf-avatar-backfill/"/>
-    <id>https://zhlifeiy.codes/2026/06/25/2026-06-25-perf-avatar-backfill/</id>
-    <published>2026-06-25T10:00:00.000Z</published>
-    <updated>2026-06-25T10:00:00.000Z</updated>
-    
-    
-    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;blockquote&gt;
-&lt;p&gt;钉钉同步两个故事：(1) 15000+ 用户同步时 HTTP 超时——根因是 &lt;code&gt;toUpdateUsers&lt;/code&gt; 循环内 3 次 DB 查询每人 &amp;#x3D; 46000 次 SQL round-trip 在一个事务内串行执行，&lt;strong&gt;两步优化&lt;/strong&gt;：异步化（HTTP 立即返回”已受理”，后台静默执行）+ 批量化（循环前 IN 批量预加载到 Map，循环内 O(1) 查 Map），计划阶段就识别出 4 个潜在 bug（路径双重前缀、BaseResultMap 错映射、dirty-check 破坏恢复语义、peek 污染原始 DB 状态）。(2) 头像回填接口返回 200 但成功数始终为 0——admin 服务器在内网，DNS 无法解析钉钉 CDN 域名 &lt;code&gt;static-legacy.dingtalk.com&lt;/code&gt;，所有用户全部被静默跳过。&lt;/p&gt;
-&lt;/blockquote&gt;</summary>
-    
-    
-    
-    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
-    
-    <category term="南网" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/"/>
-    
-    
-    <category term="性能优化" scheme="https://zhlifeiy.codes/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/"/>
-    
-    <category term="异步化" scheme="https://zhlifeiy.codes/tags/%E5%BC%82%E6%AD%A5%E5%8C%96/"/>
-    
-    <category term="批量化查询" scheme="https://zhlifeiy.codes/tags/%E6%89%B9%E9%87%8F%E5%8C%96%E6%9F%A5%E8%AF%A2/"/>
-    
-    <category term="CDN解析" scheme="https://zhlifeiy.codes/tags/CDN%E8%A7%A3%E6%9E%90/"/>
-    
-    <category term="N+1" scheme="https://zhlifeiy.codes/tags/N-1/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>PDEPARTS 废弃 + 头像同步修复 + 用户查询回归：递归 CTE 上溯</title>
-    <link href="https://zhlifeiy.codes/2026/06/23/2026-06-23-pdeparts-deprecated/"/>
-    <id>https://zhlifeiy.codes/2026/06/23/2026-06-23-pdeparts-deprecated/</id>
-    <published>2026-06-23T10:00:00.000Z</published>
-    <updated>2026-06-23T10:00:00.000Z</updated>
-    
-    
-    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;blockquote&gt;
-&lt;p&gt;6&amp;#x2F;22 暴露的 PDEPARTS 下线问题，今天给出完整修复：废弃所有依赖 PDEPARTS 的解析，改用部门 UUID 沿 &lt;code&gt;sys_organization.parent_id&lt;/code&gt; 递归上溯查 &lt;code&gt;sys_park_organization&lt;/code&gt; 桥表（MySQL 8 CTE）。一个 commit 改了 8 个文件、+167&amp;#x2F;-33，把昨天识别出的 4 个 Bug 全部修完。同时顺手把头像同步 bug（&lt;code&gt;setFacePic&lt;/code&gt; 误写为 &lt;code&gt;setFacePicAuditStatus&lt;/code&gt;）修了，并补充 &lt;code&gt;face_pic=&amp;#39;2&amp;#39;&lt;/code&gt; 历史脏数据的处理策略。&lt;/p&gt;
-&lt;/blockquote&gt;</summary>
-    
-    
-    
-    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
-    
-    <category term="南网" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/"/>
-    
-    
-    <category term="PDEPARTS废弃" scheme="https://zhlifeiy.codes/tags/PDEPARTS%E5%BA%9F%E5%BC%83/"/>
-    
-    <category term="递归CTE" scheme="https://zhlifeiy.codes/tags/%E9%80%92%E5%BD%92CTE/"/>
-    
-    <category term="头像同步" scheme="https://zhlifeiy.codes/tags/%E5%A4%B4%E5%83%8F%E5%90%8C%E6%AD%A5/"/>
-    
-    <category term="回归修复" scheme="https://zhlifeiy.codes/tags/%E5%9B%9E%E5%BD%92%E4%BF%AE%E5%A4%8D/"/>
-    
-    <category term="BaseResultMap" scheme="https://zhlifeiy.codes/tags/BaseResultMap/"/>
     
   </entry>
   
