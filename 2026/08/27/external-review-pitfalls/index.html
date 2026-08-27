@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Gemini","darkmode":true,"version":"8.28.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="人脸审批钉钉卡片功能做完后，交给外部评审挑刺。四轮下来共十二条意见，我们逐条核实——全部属实，然后逐条修复。评审意见全对这种事并不常见，更难得的是其中几条属于”教科书不会讲、不炸一次不会信”的坑：afterCommit 根本不异步、vant Toast 是单例、surefire 版本太老会让测试”假装通过”。逐条记录。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="四轮外部评审，十二条意见全部属实——afterCommit 不是异步任务">
+<meta property="og:url" content="https://zhlifeiy.codes/2026/08/27/external-review-pitfalls/index.html">
+<meta property="og:site_name" content="zhlifeiy · 工程笔记">
+<meta property="og:description" content="人脸审批钉钉卡片功能做完后，交给外部评审挑刺。四轮下来共十二条意见，我们逐条核实——全部属实，然后逐条修复。评审意见全对这种事并不常见，更难得的是其中几条属于”教科书不会讲、不炸一次不会信”的坑：afterCommit 根本不异步、vant Toast 是单例、surefire 版本太老会让测试”假装通过”。逐条记录。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/external-review-pitfalls.webp">
+<meta property="article:published_time" content="2026-08-27T14:00:00.000Z">
+<meta property="article:author" content="zhlifeiy35">
+<meta property="article:tag" content="踩坑">
+<meta property="article:tag" content="线程池">
+<meta property="article:tag" content="Code Review">
+<meta property="article:tag" content="Spring">
+<meta property="article:tag" content="测试">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/external-review-pitfalls.webp">
+
+
+<link rel="canonical" href="https://zhlifeiy.codes/2026/08/27/external-review-pitfalls/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://zhlifeiy.codes/2026/08/27/external-review-pitfalls/","path":"2026/08/27/external-review-pitfalls/","title":"四轮外部评审，十二条意见全部属实——afterCommit 不是异步任务"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>四轮外部评审，十二条意见全部属实——afterCommit 不是异步任务 | zhlifeiy · 工程笔记</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/atom.xml" title="zhlifeiy · 工程笔记" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">zhlifeiy · 工程笔记</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">把项目里的坑，写成可以复用的答案</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-项目"><a href="/projects/" rel="section"><i class="fa fa-diagram-project fa-fw"></i>项目</a></li><li class="menu-item menu-item-简历"><a href="/resume/" rel="section"><i class="fa fa-id-card fa-fw"></i>简历</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-guestbook"><a href="/guestbook/" rel="section"><i class="fa fa-comment-dots fa-fw"></i>留言板</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E8%BD%AE%E4%BF%AE%E5%A4%8D%E6%B8%85%E5%8D%95"><span class="nav-number">1.</span> <span class="nav-text">四轮修复清单</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9D%91%E4%B8%80%EF%BC%9AafterCommit-%E4%B8%8D%E6%98%AF%E5%BC%82%E6%AD%A5%E4%BB%BB%E5%8A%A1"><span class="nav-number">2.</span> <span class="nav-text">坑一：afterCommit 不是异步任务</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9D%91%E4%BA%8C%EF%BC%9Avant-Toast-%E6%98%AF%E5%8D%95%E4%BE%8B"><span class="nav-number">3.</span> <span class="nav-text">坑二：vant Toast 是单例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9D%91%E4%B8%89%EF%BC%9Asurefire-2-12-4-%E4%B8%8D%E8%AE%A4-JUnit5%E2%80%94%E2%80%94%E2%80%9C%E5%85%A8%E8%BF%87%E2%80%9D%E5%8F%AF%E8%83%BD%E6%98%AF%E2%80%9D%E6%B2%A1%E8%B7%91%E2%80%9D"><span class="nav-number">4.</span> <span class="nav-text">坑三：surefire 2.12.4 不认 JUnit5——“全过”可能是”没跑”</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9D%91%E5%9B%9B%EF%BC%9ABean-%E6%A0%A1%E9%AA%8C%E6%B3%A8%E8%A7%A3%E4%BC%9A%E9%9D%99%E9%BB%98%E5%A4%B1%E6%95%88"><span class="nav-number">5.</span> <span class="nav-text">坑四：Bean 校验注解会静默失效</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%8C%E4%B8%80%E6%89%B9%E6%8C%96%E5%87%BA%E6%9D%A5%E7%9A%84%E5%B0%8F%E5%9D%91%EF%BC%88%E4%B9%9F%E9%83%BD%E6%9C%89%E5%A4%8D%E7%94%A8%E4%BB%B7%E5%80%BC%EF%BC%89"><span class="nav-number">6.</span> <span class="nav-text">同一批挖出来的小坑（也都有复用价值）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%94%B6%E5%B0%BE"><span class="nav-number">7.</span> <span class="nav-text">收尾</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zhlifeiy35</p>
+  <div class="site-description" itemprop="description">记录项目实践、问题排查与工程经验</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">78</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">250</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zhdmm35" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zhdmm35" rel="noopener me" target="_blank"><i class="fa fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/external-review-pitfalls.webp" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/08/27/external-review-pitfalls/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="记录项目实践、问题排查与工程经验">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="四轮外部评审，十二条意见全部属实——afterCommit 不是异步任务 | zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          四轮外部评审，十二条意见全部属实——afterCommit 不是异步任务
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-08-27 22:00:00" itemprop="dateCreated datePublished" datetime="2026-08-27T22:00:00+08:00">2026-08-27</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">项目笔记</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E6%99%BA%E6%85%A7%E5%9B%AD%E5%8C%BA/" itemprop="url" rel="index"><span itemprop="name">智慧园区</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>人脸审批钉钉卡片功能做完后，交给外部评审挑刺。四轮下来共十二条意见，我们逐条核实——<strong>全部属实</strong>，然后逐条修复。评审意见全对这种事并不常见，更难得的是其中几条属于”教科书不会讲、不炸一次不会信”的坑：afterCommit 根本不异步、vant Toast 是单例、surefire 版本太老会让测试”假装通过”。逐条记录。</p>
+<span id="more"></span>
+
+<audio controls preload="none">
+  <source src="/audio/external-review-pitfalls/narration.mp3" type="audio/mpeg">
+  您的浏览器不支持音频播放。
+</audio>
+
+<h2 id="四轮修复清单"><a href="#四轮修复清单" class="headerlink" title="四轮修复清单"></a>四轮修复清单</h2><table>
+<thead>
+<tr>
+<th>轮次</th>
+<th>问题</th>
+<th>修法</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>一审 P1</td>
+<td>H5 图片质量检测失败仍提交（拿旧照片建无效审批单，原有 bug 被揪出）</td>
+<td>删提交逻辑，重置列表 + 提示重拍</td>
+</tr>
+<tr>
+<td>一审 P1</td>
+<td>钉钉调用在 complete() 事务内同步执行（Feign×2 + 钉钉 HTTP 拖事务）</td>
+<td>套 <code>TransactionSynchronization.afterCommit</code> 壳</td>
+</tr>
+<tr>
+<td>一审 P2</td>
+<td><code>applyReason</code> 的 <code>@Length</code> 不生效（controller 无 <code>@Valid</code>）</td>
+<td>service 层三值白名单 + 空值兼容旧客户端</td>
+</tr>
+<tr>
+<td>一审 P2</td>
+<td>取消事由选择后页面显示未生效的新照片</td>
+<td>暂存 pendingFaceUrl，确认后才写入</td>
+</tr>
+<tr>
+<td>一审</td>
+<td>iot 钉钉单次 100 人上限，超限整卡拒发</td>
+<td>按 100 分批，单批失败不影响其余</td>
+</tr>
+<tr>
+<td>复审 P1</td>
+<td><strong>afterCommit 仍在原请求线程同步执行</strong></td>
+<td>有界线程池，afterCommit 里只负责 execute</td>
+</tr>
+<tr>
+<td>复审 P2</td>
+<td>H5 提交失败仍显示新照片（只有 .then 无 .catch）</td>
+<td>成功回调才写入新照片</td>
+</tr>
+<tr>
+<td>三审 P2</td>
+<td><strong>catch 里 <code>Toast.clear()</code> 清掉了 axios 拦截器刚弹的错误提示</strong></td>
+<td>去 loading，catch 空处理</td>
+</tr>
+<tr>
+<td>四审 P2</td>
+<td>makePush 无条件注册异步任务，无关类型空任务挤满有界队列</td>
+<td>发送前同步 guard</td>
+</tr>
+<tr>
+<td>四审 P2</td>
+<td>security 回放审批通过通知同步 afterCommit（既有逻辑）</td>
+<td>两处调用点改池内异步</td>
+</tr>
+</tbody></table>
+<p>其中最贵的是复审那条——一审引入的修法本身是个半成品，复审才把它真正修对。下面展开讲四个最有复用价值的坑。</p>
+<h2 id="坑一：afterCommit-不是异步任务"><a href="#坑一：afterCommit-不是异步任务" class="headerlink" title="坑一：afterCommit 不是异步任务"></a>坑一：afterCommit 不是异步任务</h2><p><code>TransactionSynchronization.afterCommit()</code> 在<strong>触发提交的那个请求线程上同步执行</strong>。把钉钉调用从事务里挪进 afterCommit，只解决了”不占数据库事务”，**没有解决”不拖 HTTP 响应”**。</p>
+<p>更危险的是嵌套 Feign 场景：admin 的 <code>@Transactional</code> 方法通过 Feign 调 bpm 的 complete()，bpm 的 afterCommit 同步跑钉钉 HTTP 时，外层 admin 的事务还在等。钉钉一慢，外层 Feign 超时 → admin 事务回滚 → 但 bpm 的事务<strong>已经提交了</strong>——一笔孤立工单就此产生，两边数据永久不一致。</p>
+<p>旁路通知的正确姿势是：<strong>afterCommit 里只做一件事——把任务交给有界线程池</strong>。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">flowchart LR</span><br><span class="line">    A[&quot;请求线程&quot;] --&gt; B[&quot;事务提交&quot;]</span><br><span class="line">    B --&gt; C[&quot;afterCommit&lt;br/&gt;只 execute,不干活&quot;]</span><br><span class="line">    C --&gt; D[&quot;dingNotifyExecutor&lt;br/&gt;core1/max2/queue50/daemon&quot;]</span><br><span class="line">    D --&gt; E[&quot;池内线程&lt;br/&gt;发钉钉&quot;]</span><br><span class="line">    A -.-&gt;|立刻返回响应| F[&quot;调用方&quot;]</span><br></pre></td></tr></table></figure>
+
+<p>线程池的参数语义每条都有出处：<strong>有界</strong>（无界队列起不到保护作用，warning 侧已有教训）；<strong>daemon 线程 + <code>@PreDestroy</code> shutdown</strong>（不挡 JVM 退出）；<strong>拒绝策略必须是丢弃 + 记日志，不能 CallerRunsPolicy</strong>——队列满时退回调用线程执行，等于把活又拖回请求线程，池子白建了（admin 的 AsyncConfig 用 CallerRuns 是”日志不能丢”的场景，不能照抄）。通知是旁路逻辑，丢一张卡片记条 warn，完全可接受；拖死审批，不可接受。</p>
+<p><img data-src="/images/posts/external-review-pitfalls/aftercommit-pool.webp" alt="afterCommit 同步执行 vs 线程池异步"><br><em>图 1：afterCommit 只释放事务，不释放请求线程；真正的异步要再过一个有界线程池。</em></p>
+<h2 id="坑二：vant-Toast-是单例"><a href="#坑二：vant-Toast-是单例" class="headerlink" title="坑二：vant Toast 是单例"></a>坑二：vant Toast 是单例</h2><p>H5 页面的 <code>Toast.loading</code> 和 axios 拦截器的错误 <code>Toast(respMsg)</code> <strong>共用同一个 Toast 实例</strong>。失败时的时序是：拦截器先弹错误 Toast（替换掉 loading）→ reject → 页面 catch 里的 <code>Toast.clear()</code> 执行——<strong>清掉的正是刚弹出来的错误提示</strong>。用户看到错误一闪而过，然后盯着没有变化的页面发懵。</p>
+<p>修法：失败路径依赖拦截器统一提示的页面，<strong>不要在 catch 里 clear&#x2F;Toast</strong>，防连点也别用 loading 而改用状态占位。任何”loading + 统一错误 Toast”的页面都是同款坑。</p>
+<p><img data-src="/images/posts/external-review-pitfalls/toast-singleton.webp" alt="Toast 单例：后弹的被清掉"><br><em>图 2：拦截器弹出的错误提示，被页面 catch 里的 clear 当场擦掉——用户只看到错误一闪而过。</em></p>
+<h2 id="坑三：surefire-2-12-4-不认-JUnit5——“全过”可能是”没跑”"><a href="#坑三：surefire-2-12-4-不认-JUnit5——“全过”可能是”没跑”" class="headerlink" title="坑三：surefire 2.12.4 不认 JUnit5——“全过”可能是”没跑”"></a>坑三：surefire 2.12.4 不认 JUnit5——“全过”可能是”没跑”</h2><p>bpm 模块的 pom 一直依赖 spring-boot-starter-test，但 surefire 没显式配版本，用的是 Maven 老默认 2.12.4——<strong>它不认 JUnit5，测试静默执行 0 个，而且 BUILD SUCCESS</strong>。也就是说，bpm 历史上所有”测试通过”的构建，可能一个用例都没跑过。security 模块能跑是因为它显式配了 2.22.2。</p>
+<p>发现这个坑之后顺手补上了 bpm 的第一批测试（钉钉通知分派 4 个用例）。教训一句话：<strong>新模块加测试，先确认 surefire ≥ 2.22.2，再看测试报告里的执行数是不是 0</strong>——“BUILD SUCCESS”和”测试真的跑了”之间，隔着一个版本号。</p>
+<p><img data-src="/images/posts/external-review-pitfalls/silent-tests.webp" alt="BUILD SUCCESS 与 0 个测试"><br><em>图 3：构建全绿、用例为零——最危险的测试状态不是红，是”假装绿”。</em></p>
+<h2 id="坑四：Bean-校验注解会静默失效"><a href="#坑四：Bean-校验注解会静默失效" class="headerlink" title="坑四：Bean 校验注解会静默失效"></a>坑四：Bean 校验注解会静默失效</h2><p><code>@RequestBody</code> 不加 <code>@Valid</code>&#x2F;<code>@Validated</code>，实体上的 <code>@Length</code>&#x2F;<code>@NotBlank</code> <strong>一次都不会执行</strong>，请求照样进 service。人脸申请事由的边界校验因此从注解挪到 service 层显式做：三值白名单（与 H5 选项一致、trim 归一），空值放行兼容旧客户端，任意文本、markdown 链接一律拒绝。校验逻辑提成包级静态纯函数 <code>isAllowedApplyReason</code>，直测两个用例覆盖——admin 模块的测试风格就是不起 Spring、不 mock，可测逻辑尽量提静态纯函数。</p>
+<h2 id="同一批挖出来的小坑（也都有复用价值）"><a href="#同一批挖出来的小坑（也都有复用价值）" class="headerlink" title="同一批挖出来的小坑（也都有复用价值）"></a>同一批挖出来的小坑（也都有复用价值）</h2><ul>
+<li><strong>同名枚举</strong>：bpm 内部 <code>enums.BusinessTypeEnum</code>（4&#x2F;5 &#x3D; ACTUAL_TIME&#x2F;PLAYBACK）和 service-model 的 <code>model.enums.BusinessTypeEnum</code>（REALTIME_VIDEO&#x2F;PLAYBACK_VIDEO）同名不同物，import 错就是编译期”找不到符号”，运行时看就是行为诡异。</li>
+<li><strong><code>-pl &lt;svc&gt; compile</code> 不带 <code>-am</code></strong> 会加载本地仓库里的旧 model jar，报”找不到符号”——文档里警告过，又踩一次。</li>
+<li><strong>实体字段不要给初始化值</strong>：通用 mapper 的 OGNL 会把初始值卷进动态 SQL 条件（项目里栽过 <code>Date != &#39;&#39;</code> 的坑），新增可空字段保持 <code>null</code> 初始。</li>
+<li><strong>默认文案变长会同时影响短信</strong>：无模板规则的兜底文案变长会让短信拆条（费用），这是产品权衡不是 bug；配了模板的规则走模板不受影响。</li>
+</ul>
+<h2 id="收尾"><a href="#收尾" class="headerlink" title="收尾"></a>收尾</h2><p>修复完成时五个模块的测试全绿：warning 29&#x2F;29、iot 2&#x2F;2（含 101 人分批）、admin 2&#x2F;2（白名单）、bpm 4&#x2F;4（史上首批）、security 64&#x2F;64。四轮评审最有价值的产出不是十二个修复，而是确认了一件事：<strong>评审意见逐条核实这个流程本身是对的</strong>——“全部属实”不是因为评审客气，而是因为每一条都附了可复现的推理。尤其复审那条：一审的修法（挪进 afterCommit）当时看起来已经”修了”，是第二轮追问”那 HTTP 响应阻塞解决了吗”才戳穿半成品。对修复方案本身再做一轮评审，这个钱花得值。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E8%B8%A9%E5%9D%91/" rel="tag"># 踩坑</a>
+              <a href="/tags/%E7%BA%BF%E7%A8%8B%E6%B1%A0/" rel="tag"># 线程池</a>
+              <a href="/tags/Code-Review/" rel="tag"># Code Review</a>
+              <a href="/tags/Spring/" rel="tag"># Spring</a>
+              <a href="/tags/%E6%B5%8B%E8%AF%95/" rel="tag"># 测试</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/08/27/dingtalk-card-deeplink-system/" rel="prev" title="五种卡片，没有第六种：钉钉 ActionCard 深链通知体系全景与落地">
+                  <i class="fa fa-angle-left"></i> 五种卡片，没有第六种：钉钉 ActionCard 深链通知体系全景与落地
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  
+  <div class="comments giscus-container">
+  </div>
+  
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">zhlifeiy35</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/zhdmm35" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"zhdmm35/zhdmm35.github.io","repo_id":"R_kgDOON4bhg","category":"Announcements","category_id":"DIC_kwDOON4bhs4C3dEc","mapping":"pathname","strict":0,"reactions_enabled":1,"emit_metadata":0,"theme":"preferred_color_scheme","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+
+<script>
+document.addEventListener('page:loaded', () => {
+  if (!CONFIG.page.comments) return;
+
+  NexT.utils.loadComments('.giscus-container')
+    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
+      attributes: {
+        async                   : true,
+        crossOrigin             : 'anonymous',
+        'data-repo'             : CONFIG.giscus.repo,
+        'data-repo-id'          : CONFIG.giscus.repo_id,
+        'data-category'         : CONFIG.giscus.category,
+        'data-category-id'      : CONFIG.giscus.category_id,
+        'data-mapping'          : CONFIG.giscus.mapping,
+        'data-strict'           : CONFIG.giscus.strict,
+        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
+        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
+        'data-theme'            : CONFIG.giscus.theme,
+        'data-lang'             : CONFIG.giscus.lang,
+        'data-input-position'   : CONFIG.giscus.input_position,
+        'data-loading'          : CONFIG.giscus.loading
+      },
+      parentNode: document.querySelector('.giscus-container')
+    }));
+});
+</script>
+<script defer src="/js/blog-assistant.js" data-endpoint="https://zhlifeiy-blog-assistant.huiyaozhang07.workers.dev/ask"></script>
+
+</body>
+</html>

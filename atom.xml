@@ -6,7 +6,7 @@
   <link href="https://zhlifeiy.codes/atom.xml" rel="self"/>
   
   <link href="https://zhlifeiy.codes/"/>
-  <updated>2026-08-20T13:00:00.000Z</updated>
+  <updated>2026-08-27T14:00:00.000Z</updated>
   <id>https://zhlifeiy.codes/</id>
   
   <author>
@@ -15,6 +15,122 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>四轮外部评审，十二条意见全部属实——afterCommit 不是异步任务</title>
+    <link href="https://zhlifeiy.codes/2026/08/27/external-review-pitfalls/"/>
+    <id>https://zhlifeiy.codes/2026/08/27/external-review-pitfalls/</id>
+    <published>2026-08-27T14:00:00.000Z</published>
+    <updated>2026-08-27T14:00:00.000Z</updated>
+    
+    
+    <summary type="html">&lt;p&gt;人脸审批钉钉卡片功能做完后，交给外部评审挑刺。四轮下来共十二条意见，我们逐条核实——&lt;strong&gt;全部属实&lt;/strong&gt;，然后逐条修复。评审意见全对这种事并不常见，更难得的是其中几条属于”教科书不会讲、不炸一次不会信”的坑：afterCommit 根本不异步、vant Toast 是单例、surefire 版本太老会让测试”假装通过”。逐条记录。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
+    
+    <category term="智慧园区" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E6%99%BA%E6%85%A7%E5%9B%AD%E5%8C%BA/"/>
+    
+    
+    <category term="踩坑" scheme="https://zhlifeiy.codes/tags/%E8%B8%A9%E5%9D%91/"/>
+    
+    <category term="线程池" scheme="https://zhlifeiy.codes/tags/%E7%BA%BF%E7%A8%8B%E6%B1%A0/"/>
+    
+    <category term="Code Review" scheme="https://zhlifeiy.codes/tags/Code-Review/"/>
+    
+    <category term="Spring" scheme="https://zhlifeiy.codes/tags/Spring/"/>
+    
+    <category term="测试" scheme="https://zhlifeiy.codes/tags/%E6%B5%8B%E8%AF%95/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>五种卡片，没有第六种：钉钉 ActionCard 深链通知体系全景与落地</title>
+    <link href="https://zhlifeiy.codes/2026/08/27/dingtalk-card-deeplink-system/"/>
+    <id>https://zhlifeiy.codes/2026/08/27/dingtalk-card-deeplink-system/</id>
+    <published>2026-08-27T13:00:00.000Z</published>
+    <updated>2026-08-27T13:00:00.000Z</updated>
+    
+    
+    <summary type="html">&lt;p&gt;一天之内，智慧园区平台的钉钉通知从”一种告警卡片”扩成了”五张卡片”的体系：告警卡深链到 H5 办理页，人脸审批卡带上申请事由，视频申请审批卡深链到 PC 列表。上线前把全景彻底捋了一遍——&lt;strong&gt;线上代码里所有会发钉钉卡片的场景一共五种，再无其他&lt;/strong&gt;。这篇记录体系的设计、深链的取舍、旁路发送的架构，以及那份”明天照着测就行”的排障手册。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
+    
+    <category term="智慧园区" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E6%99%BA%E6%85%A7%E5%9B%AD%E5%8C%BA/"/>
+    
+    
+    <category term="Nacos" scheme="https://zhlifeiy.codes/tags/Nacos/"/>
+    
+    <category term="微服务" scheme="https://zhlifeiy.codes/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/"/>
+    
+    <category term="钉钉" scheme="https://zhlifeiy.codes/tags/%E9%92%89%E9%92%89/"/>
+    
+    <category term="深链" scheme="https://zhlifeiy.codes/tags/%E6%B7%B1%E9%93%BE/"/>
+    
+    <category term="线程池" scheme="https://zhlifeiy.codes/tags/%E7%BA%BF%E7%A8%8B%E6%B1%A0/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>站内信点击跳转：从三条硬编码映射，到&quot;字段始终携带&quot;的配置驱动</title>
+    <link href="https://zhlifeiy.codes/2026/08/26/notice-jump-route-config/"/>
+    <id>https://zhlifeiy.codes/2026/08/26/notice-jump-route-config/</id>
+    <published>2026-08-26T14:00:00.000Z</published>
+    <updated>2026-08-26T14:00:00.000Z</updated>
+    
+    
+    <summary type="html">&lt;p&gt;需求一句话：站内信要能点——实时监控申请、回放申请、入侵告警工单这三类消息，申请人、审批人、处理人收到后点击，要跳到对应的列表页。一期用前端硬编码映射快速落地，二期按上级要求改成流程配置驱动。真正值得记录的是二期定下来的那条核心语义——**&lt;code&gt;jumpRoute&lt;/code&gt; 字段始终携带，空串等于明确不跳转、绝不回落旧映射**——以及它背后被评审揪出来的盲区。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
+    
+    <category term="智慧园区" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E6%99%BA%E6%85%A7%E5%9B%AD%E5%8C%BA/"/>
+    
+    
+    <category term="Vue" scheme="https://zhlifeiy.codes/tags/Vue/"/>
+    
+    <category term="踩坑" scheme="https://zhlifeiy.codes/tags/%E8%B8%A9%E5%9D%91/"/>
+    
+    <category term="BPM" scheme="https://zhlifeiy.codes/tags/BPM/"/>
+    
+    <category term="配置化" scheme="https://zhlifeiy.codes/tags/%E9%85%8D%E7%BD%AE%E5%8C%96/"/>
+    
+    <category term="前后端协作" scheme="https://zhlifeiy.codes/tags/%E5%89%8D%E5%90%8E%E7%AB%AF%E5%8D%8F%E4%BD%9C/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>钉钉免登明明成功，为什么还停在登录页——一次&quot;半登录态&quot;排查</title>
+    <link href="https://zhlifeiy.codes/2026/08/24/dingtalk-h5-half-login/"/>
+    <id>https://zhlifeiy.codes/2026/08/24/dingtalk-h5-half-login/</id>
+    <published>2026-08-24T12:30:00.000Z</published>
+    <updated>2026-08-24T12:30:00.000Z</updated>
+    
+    
+    <summary type="html">&lt;p&gt;测试同事反馈：在钉钉里打开 H5 微应用，免登之后没有进入应用，而是停在账号密码登录页。更诡异的是，刷新一下有时又能进去；主动退出再打开，又可能卡住。最后查出来的真相是：&lt;strong&gt;钉钉授权和后端登录其实都成功了，token 已经拿到手，是 H5 自己在登录成功之后抛出异常，把用户卡在了门外&lt;/strong&gt;——一种”半登录态”。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
+    
+    <category term="智慧园区" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E6%99%BA%E6%85%A7%E5%9B%AD%E5%8C%BA/"/>
+    
+    
+    <category term="Vue" scheme="https://zhlifeiy.codes/tags/Vue/"/>
+    
+    <category term="钉钉" scheme="https://zhlifeiy.codes/tags/%E9%92%89%E9%92%89/"/>
+    
+    <category term="H5" scheme="https://zhlifeiy.codes/tags/H5/"/>
+    
+    <category term="排障" scheme="https://zhlifeiy.codes/tags/%E6%8E%92%E9%9A%9C/"/>
+    
+    <category term="前后端契约" scheme="https://zhlifeiy.codes/tags/%E5%89%8D%E5%90%8E%E7%AB%AF%E5%A5%91%E7%BA%A6/"/>
+    
+  </entry>
   
   <entry>
     <title>给员工 ID 算出审批人：负责人反查的角色化地基</title>
@@ -454,126 +570,6 @@
     <category term="越权防护" scheme="https://zhlifeiy.codes/tags/%E8%B6%8A%E6%9D%83%E9%98%B2%E6%8A%A4/"/>
     
     <category term="ThinkPHP" scheme="https://zhlifeiy.codes/tags/ThinkPHP/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>在 16G 内存的 Windows 本机跑通 shopkeeper-agent：13 个坑的完整排障笔记</title>
-    <link href="https://zhlifeiy.codes/2026/07/18/shopkeeper-agent-troubleshooting/"/>
-    <id>https://zhlifeiy.codes/2026/07/18/shopkeeper-agent-troubleshooting/</id>
-    <published>2026-07-18T13:30:00.000Z</published>
-    <updated>2026-07-18T13:30:00.000Z</updated>
-    
-    
-    <summary type="html">从零在 Windows 11 + 16G 内存下跑通电商问数项目 shopkeeper-agent 的完整排障笔记，覆盖 Python 环境、LLM 接入、Embedding、Docker、中间件、后端启动六大环节共 13 个真实坑。</summary>
-    
-    
-    
-    <category term="AI经验" scheme="https://zhlifeiy.codes/categories/AI%E7%BB%8F%E9%AA%8C/"/>
-    
-    
-    <category term="MiniMax" scheme="https://zhlifeiy.codes/tags/MiniMax/"/>
-    
-    <category term="shopkeeper-agent" scheme="https://zhlifeiy.codes/tags/shopkeeper-agent/"/>
-    
-    <category term="AI问数" scheme="https://zhlifeiy.codes/tags/AI%E9%97%AE%E6%95%B0/"/>
-    
-    <category term="排障记录" scheme="https://zhlifeiy.codes/tags/%E6%8E%92%E9%9A%9C%E8%AE%B0%E5%BD%95/"/>
-    
-    <category term="Docker" scheme="https://zhlifeiy.codes/tags/Docker/"/>
-    
-    <category term="FastAPI" scheme="https://zhlifeiy.codes/tags/FastAPI/"/>
-    
-    <category term="uv" scheme="https://zhlifeiy.codes/tags/uv/"/>
-    
-    <category term="Python3.14" scheme="https://zhlifeiy.codes/tags/Python3-14/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>一次干净的「放宽约束」重构：让公司楼层配置跨园区</title>
-    <link href="https://zhlifeiy.codes/2026/07/18/%E6%91%84%E5%83%8F%E5%A4%B4%E5%85%AC%E5%8F%B8%E6%A5%BC%E5%B1%82%E9%85%8D%E7%BD%AE%E8%B7%A8%E5%9B%AD%E5%8C%BA%E7%BB%91%E5%AE%9A/"/>
-    <id>https://zhlifeiy.codes/2026/07/18/%E6%91%84%E5%83%8F%E5%A4%B4%E5%85%AC%E5%8F%B8%E6%A5%BC%E5%B1%82%E9%85%8D%E7%BD%AE%E8%B7%A8%E5%9B%AD%E5%8C%BA%E7%BB%91%E5%AE%9A/</id>
-    <published>2026-07-18T13:30:00.000Z</published>
-    <updated>2026-07-18T13:30:00.000Z</updated>
-    
-    
-    <summary type="html">&lt;p&gt;公司默认可见楼层配置（&lt;code&gt;/orgFloorConfig/&amp;#123;orgId&amp;#125;&lt;/code&gt; 查询、&lt;code&gt;POST /orgFloorConfig&lt;/code&gt; 保存）最初的语义是「限当前园区」——超管在 A 园区，只能给 A 内的公司配 A 的楼层。本次把它放宽为「跨园区绑定」：一个公司可以同时绑多个园区的楼层。改动只动 6 个文件 +70&amp;#x2F;-23，但牵住了查询、保存、校验三个「按当前园区」硬编码点的同步改造，是放宽约束类重构的一个干净样本。&lt;/p&gt;</summary>
-    
-    
-    
-    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
-    
-    <category term="南网" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/"/>
-    
-    
-    <category term="Spring Cloud" scheme="https://zhlifeiy.codes/tags/Spring-Cloud/"/>
-    
-    <category term="重构" scheme="https://zhlifeiy.codes/tags/%E9%87%8D%E6%9E%84/"/>
-    
-    <category term="Java" scheme="https://zhlifeiy.codes/tags/Java/"/>
-    
-    <category term="跨服务聚合" scheme="https://zhlifeiy.codes/tags/%E8%B7%A8%E6%9C%8D%E5%8A%A1%E8%81%9A%E5%90%88/"/>
-    
-    <category term="园区隔离" scheme="https://zhlifeiy.codes/tags/%E5%9B%AD%E5%8C%BA%E9%9A%94%E7%A6%BB/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>O(N×M) 拍平成 O(N+M)：反查表如何把楼层摄像头计数从慢路径救回来</title>
-    <link href="https://zhlifeiy.codes/2026/07/17/%E5%8F%8D%E6%9F%A5%E8%A1%A8%E6%8A%8A%E6%A5%BC%E5%B1%82%E6%91%84%E5%83%8F%E5%A4%B4%E6%95%B0%E6%8B%8D%E5%B9%B3/"/>
-    <id>https://zhlifeiy.codes/2026/07/17/%E5%8F%8D%E6%9F%A5%E8%A1%A8%E6%8A%8A%E6%A5%BC%E5%B1%82%E6%91%84%E5%83%8F%E5%A4%B4%E6%95%B0%E6%8B%8D%E5%B9%B3/</id>
-    <published>2026-07-17T11:00:00.000Z</published>
-    <updated>2026-07-17T11:00:00.000Z</updated>
-    
-    
-    <summary type="html">「勾这个楼层到底覆盖几个摄像头」——超管在配置页的盲勾体验必须解决。后端用反查表把 O(N×M) 拍平成 O(N+M)，前端零计算渲染，6 个单测全绿。本文把这个看起来简单的功能拆开讲。</summary>
-    
-    
-    
-    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
-    
-    <category term="南网" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/"/>
-    
-    
-    <category term="Java" scheme="https://zhlifeiy.codes/tags/Java/"/>
-    
-    <category term="南网项目" scheme="https://zhlifeiy.codes/tags/%E5%8D%97%E7%BD%91%E9%A1%B9%E7%9B%AE/"/>
-    
-    <category term="算法" scheme="https://zhlifeiy.codes/tags/%E7%AE%97%E6%B3%95/"/>
-    
-    <category term="摄像头" scheme="https://zhlifeiy.codes/tags/%E6%91%84%E5%83%8F%E5%A4%B4/"/>
-    
-    <category term="反查表" scheme="https://zhlifeiy.codes/tags/%E5%8F%8D%E6%9F%A5%E8%A1%A8/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>氚云访客历史同步漏数据？分页方式、日期语义、头像容错三处全改</title>
-    <link href="https://zhlifeiy.codes/2026/07/14/%E6%B0%9A%E4%BA%91%E8%AE%BF%E5%AE%A2%E5%8E%86%E5%8F%B2%E5%90%8C%E6%AD%A5%E4%BF%AE%E5%A4%8D/"/>
-    <id>https://zhlifeiy.codes/2026/07/14/%E6%B0%9A%E4%BA%91%E8%AE%BF%E5%AE%A2%E5%8E%86%E5%8F%B2%E5%90%8C%E6%AD%A5%E4%BF%AE%E5%A4%8D/</id>
-    <published>2026-07-14T12:44:00.000Z</published>
-    <updated>2026-07-14T12:44:00.000Z</updated>
-    
-    
-    <summary type="html">氚云访客历史同步漏数据不是网络问题，而是分页方式、日期语义、头像容错三处都写错了。本文把三个根因、四个修复点、服务器验证步骤完整拆开，让你下次遇到第三方同步漏数据时能直接套用排查思路。</summary>
-    
-    
-    
-    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
-    
-    <category term="南网" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/"/>
-    
-    
-    <category term="南网项目" scheme="https://zhlifeiy.codes/tags/%E5%8D%97%E7%BD%91%E9%A1%B9%E7%9B%AE/"/>
-    
-    <category term="氚云" scheme="https://zhlifeiy.codes/tags/%E6%B0%9A%E4%BA%91/"/>
-    
-    <category term="访客同步" scheme="https://zhlifeiy.codes/tags/%E8%AE%BF%E5%AE%A2%E5%90%8C%E6%AD%A5/"/>
-    
-    <category term="分页" scheme="https://zhlifeiy.codes/tags/%E5%88%86%E9%A1%B5/"/>
-    
-    <category term="容错" scheme="https://zhlifeiy.codes/tags/%E5%AE%B9%E9%94%99/"/>
     
   </entry>
   

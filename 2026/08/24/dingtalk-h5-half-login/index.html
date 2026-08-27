@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Gemini","darkmode":true,"version":"8.28.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="测试同事反馈：在钉钉里打开 H5 微应用，免登之后没有进入应用，而是停在账号密码登录页。更诡异的是，刷新一下有时又能进去；主动退出再打开，又可能卡住。最后查出来的真相是：钉钉授权和后端登录其实都成功了，token 已经拿到手，是 H5 自己在登录成功之后抛出异常，把用户卡在了门外——一种”半登录态”。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="钉钉免登明明成功，为什么还停在登录页——一次&quot;半登录态&quot;排查">
+<meta property="og:url" content="https://zhlifeiy.codes/2026/08/24/dingtalk-h5-half-login/index.html">
+<meta property="og:site_name" content="zhlifeiy · 工程笔记">
+<meta property="og:description" content="测试同事反馈：在钉钉里打开 H5 微应用，免登之后没有进入应用，而是停在账号密码登录页。更诡异的是，刷新一下有时又能进去；主动退出再打开，又可能卡住。最后查出来的真相是：钉钉授权和后端登录其实都成功了，token 已经拿到手，是 H5 自己在登录成功之后抛出异常，把用户卡在了门外——一种”半登录态”。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/dingtalk-h5-half-login.webp">
+<meta property="article:published_time" content="2026-08-24T12:30:00.000Z">
+<meta property="article:author" content="zhlifeiy35">
+<meta property="article:tag" content="Vue">
+<meta property="article:tag" content="钉钉">
+<meta property="article:tag" content="H5">
+<meta property="article:tag" content="排障">
+<meta property="article:tag" content="前后端契约">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/dingtalk-h5-half-login.webp">
+
+
+<link rel="canonical" href="https://zhlifeiy.codes/2026/08/24/dingtalk-h5-half-login/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://zhlifeiy.codes/2026/08/24/dingtalk-h5-half-login/","path":"2026/08/24/dingtalk-h5-half-login/","title":"钉钉免登明明成功，为什么还停在登录页——一次\"半登录态\"排查"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>钉钉免登明明成功，为什么还停在登录页——一次"半登录态"排查 | zhlifeiy · 工程笔记</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/atom.xml" title="zhlifeiy · 工程笔记" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">zhlifeiy · 工程笔记</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">把项目里的坑，写成可以复用的答案</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-项目"><a href="/projects/" rel="section"><i class="fa fa-diagram-project fa-fw"></i>项目</a></li><li class="menu-item menu-item-简历"><a href="/resume/" rel="section"><i class="fa fa-id-card fa-fw"></i>简历</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-guestbook"><a href="/guestbook/" rel="section"><i class="fa fa-comment-dots fa-fw"></i>留言板</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%85%E9%9A%9C%E7%8E%B0%E8%B1%A1%E4%B8%8E%E7%AC%AC%E4%B8%80%E4%B8%AA%E8%AF%AF%E5%88%A4"><span class="nav-number">1.</span> <span class="nav-text">故障现象与第一个误判</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B2%BF%E5%85%8D%E7%99%BB%E9%93%BE%E8%B7%AF%E5%9F%8B%E4%B8%83%E4%B8%AA%E8%AF%8A%E6%96%AD%E7%82%B9"><span class="nav-number">2.</span> <span class="nav-text">沿免登链路埋七个诊断点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B9%E5%9B%A0%EF%BC%9A%E6%8A%8A%E5%8F%AF%E9%80%89%E5%AD%97%E6%AE%B5%E5%BD%93%E6%88%90%E5%BF%85%E5%A1%AB%E5%AD%97%E6%AE%B5"><span class="nav-number">3.</span> <span class="nav-text">根因：把可选字段当成必填字段</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E2%80%9D%E5%88%B7%E6%96%B0%E4%B8%80%E4%B8%8B%E5%B0%B1%E8%83%BD%E8%BF%9B%E2%80%9D"><span class="nav-number">4.</span> <span class="nav-text">为什么”刷新一下就能进”</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%AE%E5%A4%8D%EF%BC%9A%E5%8F%AA%E6%94%B9-H5%EF%BC%8C%E4%B8%8D%E5%8A%A8%E5%90%8E%E7%AB%AF"><span class="nav-number">5.</span> <span class="nav-text">修复：只改 H5，不动后端</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%AA%8C%E8%AF%81%E4%B8%8E%E7%BA%AA%E5%BE%8B"><span class="nav-number">6.</span> <span class="nav-text">验证与纪律</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%95%99%E4%B8%8B%E4%B8%89%E6%9D%A1%E7%BB%8F%E9%AA%8C"><span class="nav-number">7.</span> <span class="nav-text">留下三条经验</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zhlifeiy35</p>
+  <div class="site-description" itemprop="description">记录项目实践、问题排查与工程经验</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">78</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">250</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zhdmm35" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zhdmm35" rel="noopener me" target="_blank"><i class="fa fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/dingtalk-h5-half-login.webp" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/08/24/dingtalk-h5-half-login/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="记录项目实践、问题排查与工程经验">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="钉钉免登明明成功，为什么还停在登录页——一次&quot;半登录态&quot;排查 | zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          钉钉免登明明成功，为什么还停在登录页——一次"半登录态"排查
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-08-24 20:30:00" itemprop="dateCreated datePublished" datetime="2026-08-24T20:30:00+08:00">2026-08-24</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">项目笔记</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E6%99%BA%E6%85%A7%E5%9B%AD%E5%8C%BA/" itemprop="url" rel="index"><span itemprop="name">智慧园区</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>测试同事反馈：在钉钉里打开 H5 微应用，免登之后没有进入应用，而是停在账号密码登录页。更诡异的是，刷新一下有时又能进去；主动退出再打开，又可能卡住。最后查出来的真相是：<strong>钉钉授权和后端登录其实都成功了，token 已经拿到手，是 H5 自己在登录成功之后抛出异常，把用户卡在了门外</strong>——一种”半登录态”。</p>
+<span id="more"></span>
+
+<audio controls preload="none">
+  <source src="/audio/dingtalk-h5-half-login/narration.mp3" type="audio/mpeg">
+  您的浏览器不支持音频播放。
+</audio>
+
+<p><img data-src="/images/posts/dingtalk-h5-half-login/half-state.webp" alt="半登录态：token 已落地，用户信息缺失"><br><em>图 1：异常发生在”存 token”之后、”存用户信息”之前，应用被劈成一半已登录、一半未初始化的状态。</em></p>
+<h2 id="故障现象与第一个误判"><a href="#故障现象与第一个误判" class="headerlink" title="故障现象与第一个误判"></a>故障现象与第一个误判</h2><p>故障的三个表现放在一起看互相矛盾：</p>
+<ul>
+<li>钉钉内打开微应用，免登后<strong>停在登录页</strong>；</li>
+<li><strong>刷新页面</strong>后有时可以继续进入，甚至开始加载资源树；</li>
+<li>主动退出后再次打开，仍可能停在登录页。</li>
+</ul>
+<p>第一反应是查后端。结果在 admin 日志里只看到资源树相关请求，<strong>看不到任何钉钉接口的日志</strong>——这很容易让人误判为”钉钉授权码根本没拿到”，然后去查钉钉 SDK、查应用配置，方向全错。</p>
+<p>实际上日志给的是另一个提示：资源树请求能发出来，说明<strong>请求是带着有效 token 的</strong>。免登链路大概率已经走完了，问题出在走完之后的某个地方。光靠服务端日志看不到那一段，只能往 H5 里埋点。</p>
+<h2 id="沿免登链路埋七个诊断点"><a href="#沿免登链路埋七个诊断点" class="headerlink" title="沿免登链路埋七个诊断点"></a>沿免登链路埋七个诊断点</h2><p>H5 工程在本地，分支 <code>dev</code>。先同步同事的代码，核对免登、路由守卫、退出登录和用户信息初始化四块逻辑，然后沿着免登链路在七个位置加诊断日志：</p>
+<ol>
+<li>路由守卫是否发现 token；</li>
+<li>钉钉 SDK 是否加载成功；</li>
+<li><code>dd.ready</code> 是否触发；</li>
+<li><code>requestAuthCode</code> 是否取得授权码；</li>
+<li><code>/user/login</code> 是否返回 token 和 <code>loginUser</code>；</li>
+<li><code>/user/app/info</code> 是否返回用户菜单；</li>
+<li>登录后的路由跳转是否执行。</li>
+</ol>
+<p>诊断版本发到测试环境跑了一次，关键日志立刻把案情锁定：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[17:29:26.512] dd.ready</span><br><span class="line">[17:29:26.682] authCode.ok &#123;&quot;hasCode&quot;:true,&quot;codeLen&quot;:32&#125;</span><br><span class="line">[17:29:27.135] handleLogin.res &#123;&quot;hasToken&quot;:true,&quot;loginUserType&quot;:&quot;undefined&quot;,&quot;loginUserLen&quot;:0&#125;</span><br><span class="line">[17:29:27.137] handleLogin.fail &#123;&quot;msg&quot;:&quot;Unexpected token u in JSON at position 0&quot;&#125;</span><br><span class="line">[17:29:27.139] state.dump &#123;&quot;hasToken&quot;:true,&quot;hasLoginU&quot;:false&#125;</span><br></pre></td></tr></table></figure>
+
+<p>五行日志，四个事实：钉钉 SDK 正常、授权码正常、后端登录成功且返回了 token、<strong>登录响应里没有 <code>loginUser</code> 字段</strong>，而 H5 在解析它的时候抛了异常。</p>
+<h2 id="根因：把可选字段当成必填字段"><a href="#根因：把可选字段当成必填字段" class="headerlink" title="根因：把可选字段当成必填字段"></a>根因：把可选字段当成必填字段</h2><p><code>Unexpected token u in JSON at position 0</code> 这个报错里的 <code>u</code>，就是 <code>undefined</code> 的首字母。旧 H5 的登录处理里有一行无条件执行的代码：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="title class_">JSON</span>.<span class="title function_">parse</span>(<span class="built_in">decodeURIComponent</span>(res.<span class="property">loginUser</span>))</span><br></pre></td></tr></table></figure>
+
+<p>生产环境的 <code>/user/login</code> 响应中 <code>res.loginUser === undefined</code>，这行代码实际执行的是 <code>JSON.parse(&#39;undefined&#39;)</code>，当场抛异常。</p>
+<p><img data-src="/images/posts/dingtalk-h5-half-login/parse-error.webp" alt="undefined 被喂给 JSON.parse"><br><em>图 2：报错里的 <code>u</code> 就是 undefined 的首字母——一个可选字段被当成必填字段解析的典型现场。</em></p>
+<p>为什么生产环境没有这个字段？核对本地 Maven 仓库里的公共认证组件 <code>common-auth-2.6.0-SNAPSHOT.jar</code> 后确认：<strong>该组件始终返回 token，但只在 dev&#x2F;test profile 下附带 <code>loginUser</code>，prod 环境不返回</strong>。也就是说，生产缺 <code>loginUser</code> 是公共组件的既有行为，不是这次钉钉授权出的问题。前后端对这个字段的约定不一致——后端眼里它是可选的，H5 眼里它是必填的——这才是本质原因。</p>
+<h2 id="为什么”刷新一下就能进”"><a href="#为什么”刷新一下就能进”" class="headerlink" title="为什么”刷新一下就能进”"></a>为什么”刷新一下就能进”</h2><p>异常抛出的位置，恰好卡在登录流程三步走的中间：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">1. 保存 token          ← 已执行</span><br><span class="line">2. 解析 loginUser      ← 在这里炸了</span><br><span class="line">3. 保存 login_u        ← 永远没执行</span><br></pre></td></tr></table></figure>
+
+<p>于是形成 <code>token 已存在 + login_u 不存在</code> 的半登录态。刷新后路由守卫发现 token，尝试直接进首页并重新请求 <code>/user/app/info</code>——这就是”刷新后能进”的真相。但旧代码随后仍然从 <code>login_u</code> 里读 <code>userId</code> 等字段，刷新后的日志证实了第二次异常：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">guard.token→home</span><br><span class="line">getUserInfo.res &#123;&quot;hasRes&quot;:true,&quot;menusLen&quot;:1,&quot;hasLoginU&quot;:false&#125;</span><br><span class="line">getUserInfo.fail &#123;&quot;msg&quot;:&quot;Cannot read properties of null (reading &#x27;userId&#x27;)&quot;&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>/user/app/info</code> 明明返回了完整的用户、组织和菜单数据，H5 却执着于一个根本不存在的本地缓存。现象上时好时坏，机制上完全确定。</p>
+<p><img data-src="/images/posts/dingtalk-h5-half-login/fixed-flow.webp" alt="修复后的免登流程"><br><em>图 3：修复后的流程不再强依赖 loginUser，用户信息以 &#x2F;user&#x2F;app&#x2F;info 的返回为准。</em></p>
+<h2 id="修复：只改-H5，不动后端"><a href="#修复：只改-H5，不动后端" class="headerlink" title="修复：只改 H5，不动后端"></a>修复：只改 H5，不动后端</h2><p>修复方案确定为 H5 侧兼容，理由很直接：公共认证组件是多个系统共用的，为一个前端改它，爆炸半径太大；而且 <code>/user/app/info</code> 本来就返回完整用户信息，<code>loginUser</code> 本质上是一份冗余。改动集中在 <code>src/store/module/user.js</code> 一处。</p>
+<p><strong>登录响应兼容</strong>：<code>/user/login</code> 未返回 <code>loginUser</code> 时，保留已取得的 token，清掉可能残留的旧 <code>login_u</code>（避免串用上一个用户的数据），不再解析、也不再判登录失败：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (!res.<span class="property">loginUser</span>) &#123;</span><br><span class="line">  <span class="variable language_">localStorage</span>.<span class="title function_">removeItem</span>(<span class="string">&#x27;login_u&#x27;</span>)</span><br><span class="line">  <span class="title function_">resolve</span>(<span class="literal">null</span>)</span><br><span class="line">  <span class="keyword">return</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>用户信息初始化兼容</strong>：<code>login_u</code> 存在时按旧格式解析（兼容老版本写入的缓存），不存在时用空对象；以 <code>/user/app/info</code> 的返回为基础用户信息，<code>login_u</code> 仅作为补充：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> loginUserRaw = <span class="variable language_">localStorage</span>.<span class="title function_">getItem</span>(<span class="string">&#x27;login_u&#x27;</span>)</span><br><span class="line"><span class="keyword">const</span> loginUserInfo = loginUserRaw</span><br><span class="line">  ? <span class="title class_">JSON</span>.<span class="title function_">parse</span>(<span class="built_in">decodeURIComponent</span>(loginUserRaw))</span><br><span class="line">  : &#123;&#125;</span><br><span class="line"><span class="keyword">const</span> userInfo = <span class="title class_">Object</span>.<span class="title function_">assign</span>(&#123;&#125;, res, loginUserInfo)</span><br></pre></td></tr></table></figure>
+
+<p>修复后的完整流程变成：钉钉取授权码 → <code>/user/login</code> 返回 token → <code>loginUser</code> 缺失则跳过解析 → <code>/user/app/info</code> 返回用户、组织和菜单 → 初始化 Vuex → 直接进入应用。</p>
+<h2 id="验证与纪律"><a href="#验证与纪律" class="headerlink" title="验证与纪律"></a>验证与纪律</h2><ul>
+<li>已执行 production build，构建成功；45 个 warning 全是项目原有的，没有新增编译错误；<code>git diff --check</code> 无空白符问题。</li>
+<li>正式提交只包含 <code>user.js</code> 的功能修复（<code>fix: 兼容钉钉免登未返回loginUser</code>），已推送 <code>origin/dev</code>。<strong>排查期间加的诊断面板和链路日志一行都没有混入功能提交</strong>，单独留在本地备份分支——调试代码和功能修复必须分开走，这是纪律。</li>
+<li>尚未完成的最后一步：本地无法模拟真实钉钉客户端身份，端到端结论需要在钉钉微应用内用测试账号复测（首次打开直进应用、退出重开自动免登、主动退出后不再自动进入）。部署清单里特意加了一条：ZIP 解压到独立新目录再切换，确认线上加载的是新的 <code>app.*.js</code>，排除浏览器和钉钉 WebView 缓存——H5 问题里，”改了但没生效”有一半是缓存的锅。</li>
+</ul>
+<h2 id="留下三条经验"><a href="#留下三条经验" class="headerlink" title="留下三条经验"></a>留下三条经验</h2><ol>
+<li><strong>“Unexpected token u” 里的 u 就是 undefined。</strong> 下次再看到 <code>JSON at position 0</code> 之类报错，先想想哪个字段可能是 <code>undefined</code>&#x2F;<code>null</code> 被直接喂给了 <code>JSON.parse</code>，这是前后端契约问题最典型的报错形态。</li>
+<li><strong>环境的差异要当成契约的一部分。</strong> 同一个接口在 dev&#x2F;test 返回 <code>loginUser</code>、prod 不返回，意味着”本地测不出来”是注定的。判断一个字段可不可靠，依据应该是生产环境的真实响应，而不是本地联调的响应。</li>
+<li><strong>“刷新后能进”不是玄学，是状态机泄露。</strong> 登录态被拆成 token 和用户信息两份存储时，任何一步中途失败都会制造半登录态。修复的方向不是”让每步都成功”，而是<strong>让任何一份数据缺失时都有明确的兜底路径</strong>。</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Vue/" rel="tag"># Vue</a>
+              <a href="/tags/%E9%92%89%E9%92%89/" rel="tag"># 钉钉</a>
+              <a href="/tags/H5/" rel="tag"># H5</a>
+              <a href="/tags/%E6%8E%92%E9%9A%9C/" rel="tag"># 排障</a>
+              <a href="/tags/%E5%89%8D%E5%90%8E%E7%AB%AF%E5%A5%91%E7%BA%A6/" rel="tag"># 前后端契约</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/08/20/%E8%B4%9F%E8%B4%A3%E4%BA%BA%E5%8F%8D%E6%9F%A5%E8%A7%92%E8%89%B2%E5%8C%96%E5%9C%B0%E5%9F%BA/" rel="prev" title="给员工 ID 算出审批人：负责人反查的角色化地基">
+                  <i class="fa fa-angle-left"></i> 给员工 ID 算出审批人：负责人反查的角色化地基
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2026/08/26/notice-jump-route-config/" rel="next" title="站内信点击跳转：从三条硬编码映射，到&quot;字段始终携带&quot;的配置驱动">
+                  站内信点击跳转：从三条硬编码映射，到"字段始终携带"的配置驱动 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  
+  <div class="comments giscus-container">
+  </div>
+  
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">zhlifeiy35</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/zhdmm35" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"zhdmm35/zhdmm35.github.io","repo_id":"R_kgDOON4bhg","category":"Announcements","category_id":"DIC_kwDOON4bhs4C3dEc","mapping":"pathname","strict":0,"reactions_enabled":1,"emit_metadata":0,"theme":"preferred_color_scheme","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+
+<script>
+document.addEventListener('page:loaded', () => {
+  if (!CONFIG.page.comments) return;
+
+  NexT.utils.loadComments('.giscus-container')
+    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
+      attributes: {
+        async                   : true,
+        crossOrigin             : 'anonymous',
+        'data-repo'             : CONFIG.giscus.repo,
+        'data-repo-id'          : CONFIG.giscus.repo_id,
+        'data-category'         : CONFIG.giscus.category,
+        'data-category-id'      : CONFIG.giscus.category_id,
+        'data-mapping'          : CONFIG.giscus.mapping,
+        'data-strict'           : CONFIG.giscus.strict,
+        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
+        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
+        'data-theme'            : CONFIG.giscus.theme,
+        'data-lang'             : CONFIG.giscus.lang,
+        'data-input-position'   : CONFIG.giscus.input_position,
+        'data-loading'          : CONFIG.giscus.loading
+      },
+      parentNode: document.querySelector('.giscus-container')
+    }));
+});
+</script>
+<script defer src="/js/blog-assistant.js" data-endpoint="https://zhlifeiy-blog-assistant.huiyaozhang07.workers.dev/ask"></script>
+
+</body>
+</html>
