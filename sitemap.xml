@@ -704,6 +704,15 @@
   </url>
   
   <url>
+    <loc>https://zhlifeiy.codes/2026/08/24/screen-playlink-evidence-chain/</loc>
+    
+    <lastmod>2026-08-24</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
     <loc>https://zhlifeiy.codes/about/index.html</loc>
     
     <lastmod>2026-02-26</lastmod>
@@ -2520,6 +2529,13 @@
   
   <url>
     <loc>https://zhlifeiy.codes/tags/URL%E7%BC%96%E7%A0%81/</loc>
+    <lastmod>2026-08-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://zhlifeiy.codes/tags/%E6%97%A5%E5%BF%97/</loc>
     <lastmod>2026-08-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>

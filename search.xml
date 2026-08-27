@@ -16740,4 +16740,56 @@ if (typeof mermaid !== 'undefined') {
         <tag>URL编码</tag>
       </tags>
   </entry>
+  <entry>
+    <title>“成功了，请拿出证据”——一次屏幕插播的四级取证，与 ROMA 查不到日志的正解</title>
+    <url>/2026/08/24/screen-playlink-evidence-chain/</url>
+    <content><![CDATA[<p>现场在发布管理页面提交了一次文字插播，随后抛来两个问题：这次到底成没成功？为什么在 ROMA 平台的设备命令日志里搜不到任何记录？第一个问题要证明”发生过”，第二个问题要证明”本来就不该有”。这次排查的价值不在结论本身，而在于<strong>用代码、配置、进程、日志四级互相独立的证据，把一次成功钉死</strong>，同时给”查不到日志”一个经得起追问的解释。</p>
+<span id="more"></span>
+
+<audio controls preload="none">
+  <source src="/audio/screen-playlink-evidence-chain/narration.mp3" type="audio/mpeg">
+  您的浏览器不支持音频播放。
+</audio>
+
+<h2 id="先回答：成功了，而且证据链闭环"><a href="#先回答：成功了，而且证据链闭环" class="headerlink" title="先回答：成功了，而且证据链闭环"></a>先回答：成功了，而且证据链闭环</h2><p>本次插播已成功提交到大华 MPS 平台：下游 HTTP 状态 <code>200</code>，业务响应 <code>success=true</code>、<code>retCode=0</code>，返回播放任务 ID <code>playId=202608241152272881</code>，目标设备为电梯厅 1 号屏。但有一个必须声明的边界：<strong>证据能确认”平台已受理并生成播放任务”，不能单独证明物理屏幕现场已经亮出来</strong>——现场显示要靠屏幕观察或设备状态确认。把成功边界说清楚，比一句笼统的”成功了”有用得多。</p>
+<p><img data-src="/images/posts/screen-playlink-evidence-chain/boundary.webp" alt="成功边界：受理≠显示"><br><em>图 1：证据链止步于”平台受理”。从受理到物理显示这最后一程，超出本次证据的覆盖范围。</em></p>
+<h2 id="完整链路：四层调用，ROMA-不在其中"><a href="#完整链路：四层调用，ROMA-不在其中" class="headerlink" title="完整链路：四层调用，ROMA 不在其中"></a>完整链路：四层调用，ROMA 不在其中</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">flowchart LR</span><br><span class="line">    A[&quot;发布管理页面&lt;br/&gt;releaseMng&quot;] --&gt;|POST /publishInfo/play_inter| B[&quot;smart-service&lt;br/&gt;保存节目(事务内)&lt;br/&gt;factory=2 大华分支&quot;]</span><br><span class="line">    B --&gt;|Feign submitPlayNow| C[&quot;integrate-iot&quot;]</span><br><span class="line">    C --&gt;|POST /dh/savePlayInfo| D[&quot;display_app.jar&lt;br/&gt;:9120&quot;]</span><br><span class="line">    D --&gt;|POST /mps/playPlan/submitPlayInfo| E[&quot;大华 MPS&lt;br/&gt;success=true retCode=0&quot;]</span><br><span class="line">    E --&gt;|playId| B</span><br><span class="line">    B --&gt; F[&quot;写入 screen_publish.play_id&lt;br/&gt;事务提交&quot;]</span><br><span class="line">    style E fill:#ffd6a0</span><br></pre></td></tr></table></figure>
+
+<p>链路里几个值得记住的细节：</p>
+<ul>
+<li>节目名在 smart 侧会<strong>追加随机数</strong>（<code>demo-text(7916325)</code>），防止下游重名；</li>
+<li>文字节目的文字内容直接写入 <code>materialIds</code>；没有 <code>beginDate</code> 时走<strong>立即插播</strong> <code>submitPlayNow</code>；</li>
+<li>下发结果为空会抛”发布失败”并<strong>回滚事务</strong>——节目记录和下发结果是同一个事务，不会出现”库里写着发布成功但屏没收到”的孤儿数据；</li>
+<li>代码层的成功判定写在 <code>DhScreenResp.success()</code> 里：<code>returnCode == 200 || retCode == 0</code>，二者居其一即为成功，<code>playId</code> 非空是任务已生成的进一步证据。</li>
+</ul>
+<h2 id="四级证据，一级都不能少"><a href="#四级证据，一级都不能少" class="headerlink" title="四级证据，一级都不能少"></a>四级证据，一级都不能少</h2><p><img data-src="/images/posts/screen-playlink-evidence-chain/evidence-layers.webp" alt="四级证据：代码、配置、进程、日志"><br><em>图 2：四级证据互相独立、互相印证——任何一级对不上，结论都不能成立。</em></p>
+<p><strong>① 代码证据</strong>：从前端 <code>addpublishInfo</code> 到 <code>ScreenPublishServiceImpl</code>，再到 <code>PublishInfoProcessor</code> 的大华分支和 <code>DhScreenClientImpl</code> 的 RestTemplate 调用，逐段确认真实调用顺序。重点核实的是 Feign 定义：<code>submitPlayNow</code> 走服务间调用（目标服务 iot），不经过外部网关。</p>
+<p><strong>② Nacos 配置证据</strong>：线上导出的 <code>integrate-iot.yml</code> 里，有效配置是：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">gateway:</span></span><br><span class="line">  <span class="attr">screen:</span></span><br><span class="line">    <span class="attr">dh:</span></span><br><span class="line">      <span class="attr">host:</span> <span class="string">http://10.152.64.7:9120</span></span><br><span class="line">      <span class="attr">rest-log-enable:</span> <span class="literal">true</span></span><br></pre></td></tr></table></figure>
+
+<p>导出配置里**还躺着一段 <code>platform.things.dh-screen</code>**，但当前代码的 <code>PlfThingsProperties</code> 根本没有 <code>dhScreen</code> 字段，仓库里也搜不到任何调用点——它是一段历史遗留的僵尸配置，不参与链路。这一步很关键：如果只看”配置里有什么”而不看”代码用了什么”，就会错误地把 ROMA 算进链路里。配置导出日期是 6 月，而 8 月 24 日的线上日志显示请求目标与导出值一致，运行时与配置快照互相印证。</p>
+<p><strong>③ 进程证据</strong>：在 <code>10.152.64.7</code> 上执行 <code>ss -lntp | grep &#39;:9120&#39;</code>，确认 9120 端口是 <code>display_app.jar</code>（启动参数 <code>-Dloader.path=/mnt/display-app/lib/</code>，工作目录 <code>/mnt/display-app</code>），不是 smart-service 也不是 integrate-iot。链条上每一环的”物理身份”都要核实，不能靠猜。</p>
+<p><strong>④ 日志证据</strong>：三段日志的时间戳严丝合缝——</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">11:53:17 integrate-iot  submitPlayNow req=programName=demo-text(7916325), deviceIds=[2]</span><br><span class="line">11:53:31 display_app    dh/savePlayInfo 收到数据</span><br><span class="line">11:53:32 display_app    POST https://192.168.0.223:8443/mps/playPlan/submitPlayInfo</span><br><span class="line">11:53:32 MPS 响应       Status=200, success=true, retCode=0, playId=202608241152272881</span><br></pre></td></tr></table></figure>
+
+<p>请求从 integrate-iot 发出 → display_app 入站 → display_app 调大华 MPS → MPS 返回成功，每一跳都有日志，首尾时间差在秒级以内。</p>
+<h2 id="ROMA-为什么查不到日志：先证明”该走哪条路”"><a href="#ROMA-为什么查不到日志：先证明”该走哪条路”" class="headerlink" title="ROMA 为什么查不到日志：先证明”该走哪条路”"></a>ROMA 为什么查不到日志：先证明”该走哪条路”</h2><p>答案现在很直白：本次请求走的是 <code>gateway.screen.dh → display_app → 大华 MPS</code>，<strong>根本没有进入 <code>platform.things → ROMA 设备命令 → MQS 响应</code> 那条通道</strong>，所以在 ROMA 的设备命令日志里搜节目名、playId 或接口路径，注定一无所获。</p>
+<p><img data-src="/images/posts/screen-playlink-evidence-chain/two-paths.webp" alt="两条路径：实际走的与没走的"><br><em>图 3：实际链路经过 display_app 直达 MPS；ROMA 通道存在于配置里，却没有代码调用它。</em></p>
+<p>这里有个方法论值得单独说：**”查不到日志”有两种完全相反的含义——没发生，或者发生在别处**。下结论之前，必须先从代码和配置出发证明”这次调用应该走哪条路”，再谈”那条路上有没有日志”。如果顺序反过来，拿着”ROMA 没日志”去推”插播没成功”，就制造了一起冤案。至于大华 MPS 内部是否还有更深一层的平台间调用，那超出本项目可见边界，需要 MPS 的负责人提供其内部链路——把”我不知道的边界”也写进报告，是取证的一部分。</p>
+<h2 id="可直接复用的复查命令"><a href="#可直接复用的复查命令" class="headerlink" title="可直接复用的复查命令"></a>可直接复用的复查命令</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># IoT 日志按节目名查最近一次插播</span></span><br><span class="line">grep -a -n -E <span class="string">&#x27;savePlayInfo|submitPlayNow&#x27;</span> iot-all.log | <span class="built_in">tail</span> -20</span><br><span class="line"></span><br><span class="line"><span class="comment"># display_app 精简查看请求与响应</span></span><br><span class="line">grep -a -E <span class="string">&#x27;HTTP请求 - URL: .*submitPlayInfo|HTTP响应 - URL: .*submitPlayInfo&#x27;</span> \</span><br><span class="line">  log_display_app.log | <span class="built_in">tail</span> -3 | <span class="built_in">cut</span> -c1-500</span><br><span class="line"></span><br><span class="line"><span class="comment"># 确认 9120 端口的真实身份</span></span><br><span class="line">ss -lntp | grep <span class="string">&#x27;:9120&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="收尾"><a href="#收尾" class="headerlink" title="收尾"></a>收尾</h2><p>这次排查最终交付的是一份可以直接回复上游的结论：插播已到达大华 MPS 并被受理（附 playId 与设备），现有链路不经 ROMA 属设计如此，ROMA 无日志是正常现象；平台受理与物理显示是两件事，后者需现场确认。四级证据里任何一级单独看都有替代解释——日志可能不全、配置可能过期、代码可能有别的分支——但<strong>四级独立证据指向同一个结论时，它就是可靠的</strong>。排障报告的说服力，从来不来自语气，而来自证据之间的互相印证。</p>
+]]></content>
+      <categories>
+        <category>项目笔记</category>
+        <category>智慧园区</category>
+      </categories>
+      <tags>
+        <tag>Nacos</tag>
+        <tag>微服务</tag>
+        <tag>排障</tag>
+        <tag>方法论</tag>
+        <tag>日志</tag>
+      </tags>
+  </entry>
 </search>
