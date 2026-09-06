@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Gemini","darkmode":true,"version":"8.28.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="Phase 5 让手机能写回 GitHub 之后，「黑曜石移动端」还剩最后一段链路：PC 侧的 Obsidian vault 改动要靠手动 git 操作才能上去，手机端也不知道什么时候该刷新。Phase 6 分两半解决——6A 做 PC 端 vaultsync 自动同步守护进程，6B 做 Android 刷新可靠性。同日完成开发、主 Agent 审查、修复与提交，PC↔GitHub↔Android">
+<meta property="og:type" content="article">
+<meta property="og:title" content="黑曜石移动端 Phase 6：PC 自动同步与手机刷新可靠性">
+<meta property="og:url" content="https://zhlifeiy.codes/2026/09/06/obsidian-mobile-phase6-sync/index.html">
+<meta property="og:site_name" content="zhlifeiy · 工程笔记">
+<meta property="og:description" content="Phase 5 让手机能写回 GitHub 之后，「黑曜石移动端」还剩最后一段链路：PC 侧的 Obsidian vault 改动要靠手动 git 操作才能上去，手机端也不知道什么时候该刷新。Phase 6 分两半解决——6A 做 PC 端 vaultsync 自动同步守护进程，6B 做 Android 刷新可靠性。同日完成开发、主 Agent 审查、修复与提交，PC↔GitHub↔Android">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/obsidian-mobile-phase6-sync.jpg">
+<meta property="article:published_time" content="2026-09-06T10:00:00.000Z">
+<meta property="article:author" content="zhlifeiy35">
+<meta property="article:tag" content="Node.js">
+<meta property="article:tag" content="Git">
+<meta property="article:tag" content="项目复盘">
+<meta property="article:tag" content="Android">
+<meta property="article:tag" content="守护进程">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/obsidian-mobile-phase6-sync.jpg">
+
+
+<link rel="canonical" href="https://zhlifeiy.codes/2026/09/06/obsidian-mobile-phase6-sync/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://zhlifeiy.codes/2026/09/06/obsidian-mobile-phase6-sync/","path":"2026/09/06/obsidian-mobile-phase6-sync/","title":"黑曜石移动端 Phase 6：PC 自动同步与手机刷新可靠性"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>黑曜石移动端 Phase 6：PC 自动同步与手机刷新可靠性 | zhlifeiy · 工程笔记</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/atom.xml" title="zhlifeiy · 工程笔记" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">zhlifeiy · 工程笔记</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">把项目里的坑，写成可以复用的答案</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-项目"><a href="/projects/" rel="section"><i class="fa fa-diagram-project fa-fw"></i>项目</a></li><li class="menu-item menu-item-简历"><a href="/resume/" rel="section"><i class="fa fa-id-card fa-fw"></i>简历</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-guestbook"><a href="/guestbook/" rel="section"><i class="fa fa-comment-dots fa-fw"></i>留言板</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B4%E4%BD%93%E5%9B%BE%E6%99%AF"><span class="nav-number">1.</span> <span class="nav-text">整体图景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Phase-6A%EF%BC%9APC-%E7%AB%AF-vaultsync-%E5%AE%88%E6%8A%A4%E8%BF%9B%E7%A8%8B"><span class="nav-number">2.</span> <span class="nav-text">Phase 6A：PC 端 vaultsync 守护进程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%A1%E6%9F%A5%E6%8A%93%E5%87%BA%E7%9A%84-2-%E4%B8%AA-P1-2-%E4%B8%AA-P2"><span class="nav-number">2.1.</span> <span class="nav-text">审查抓出的 2 个 P1 + 2 个 P2</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Phase-6B%EF%BC%9AAndroid-%E5%88%B7%E6%96%B0%E5%8F%AF%E9%9D%A0%E6%80%A7"><span class="nav-number">3.</span> <span class="nav-text">Phase 6B：Android 刷新可靠性</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%A1%E6%9F%A5%E6%8A%93%E5%87%BA%E7%9A%84%E9%97%AE%E9%A2%98%EF%BC%9A%E4%B8%80%E4%B8%AA%E3%80%8C%E6%81%92%E4%B8%BA%E7%9C%9F%E3%80%8D%E7%9A%84%E5%81%87%E6%B5%8B%E8%AF%95"><span class="nav-number">3.1.</span> <span class="nav-text">审查抓出的问题：一个「恒为真」的假测试</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%A4%E8%BD%AE%E5%AE%A1%E6%9F%A5%E7%9A%84%E6%A8%A1%E5%BC%8F"><span class="nav-number">4.</span> <span class="nav-text">两轮审查的模式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%81%97%E7%95%99%E4%BA%8B%E9%A1%B9"><span class="nav-number">5.</span> <span class="nav-text">遗留事项</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A1%B9%E7%9B%AE%E6%97%B6%E9%97%B4%E7%BA%BF%EF%BC%88%E8%87%B3%E6%AD%A4%EF%BC%89"><span class="nav-number">6.</span> <span class="nav-text">项目时间线（至此）</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zhlifeiy35</p>
+  <div class="site-description" itemprop="description">记录项目实践、问题排查与工程经验</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">82</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">256</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zhdmm35" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zhdmm35" rel="noopener me" target="_blank"><i class="fa fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/obsidian-mobile-phase6-sync.jpg" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/09/06/obsidian-mobile-phase6-sync/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="记录项目实践、问题排查与工程经验">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="黑曜石移动端 Phase 6：PC 自动同步与手机刷新可靠性 | zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          黑曜石移动端 Phase 6：PC 自动同步与手机刷新可靠性
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-09-06 18:00:00" itemprop="dateCreated datePublished" datetime="2026-09-06T18:00:00+08:00">2026-09-06</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Android-%E5%BC%80%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">Android 开发</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>Phase 5 让手机能写回 GitHub 之后，「黑曜石移动端」还剩最后一段链路：PC 侧的 Obsidian vault 改动要靠手动 git 操作才能上去，手机端也不知道什么时候该刷新。Phase 6 分两半解决——6A 做 PC 端 vaultsync 自动同步守护进程，6B 做 Android 刷新可靠性。同日完成开发、主 Agent 审查、修复与提交，PC↔GitHub↔Android 三端链路全部打通。</p>
+<span id="more"></span>
+
+<h2 id="整体图景"><a href="#整体图景" class="headerlink" title="整体图景"></a>整体图景</h2><p><img data-src="/images/posts/obsidian-mobile-phase6-sync/fig1.jpg" alt="三端同步链路"><br><em>图 1：PC（vaultsync 守护进程）↔ GitHub（唯一真相源）↔ Android（刷新可靠性）</em></p>
+<h2 id="Phase-6A：PC-端-vaultsync-守护进程"><a href="#Phase-6A：PC-端-vaultsync-守护进程" class="headerlink" title="Phase 6A：PC 端 vaultsync 守护进程"></a>Phase 6A：PC 端 vaultsync 守护进程</h2><p>交付物是 <code>tools/vaultsync/</code>——Node.js + chokidar + 系统 git CLI，约 280 行，Android 端零改动：</p>
+<ul>
+<li>Vault 文件变化 → <strong>30s debounce</strong>（持续编辑时计时重置）→ 自动 <code>add -A + commit + push</code>；</li>
+<li>每 5 分钟 periodic <code>fetch + rebase + push</code>，拉取手机端推上来的新 commit；</li>
+<li>所有触发方式（startup &#x2F; watcher &#x2F; periodic &#x2F; manual）共用单一 <code>syncOnce()</code>，进程内 Promise 链互斥锁保证单飞；</li>
+<li>rebase 冲突 → <code>--abort</code> 保留双方内容、明确报错、<strong>绝不 force</strong>；git 失败只记录不退出，下次触发自愈。</li>
+</ul>
+<h3 id="审查抓出的-2-个-P1-2-个-P2"><a href="#审查抓出的-2-个-P1-2-个-P2" class="headerlink" title="审查抓出的 2 个 P1 + 2 个 P2"></a>审查抓出的 2 个 P1 + 2 个 P2</h3><p>实现完成后由主 Agent review，发现的问题比实现本身更有记录价值：</p>
+<table>
+<thead>
+<tr>
+<th>级别</th>
+<th>问题</th>
+<th>修复</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>P1</td>
+<td>git 子进程无超时、未禁交互式凭据提示——网络半开或凭据失效会占死互斥锁，daemon 变成「活着的僵尸」：无日志、不再同步</td>
+<td>300s 超时 + <code>GIT_TERMINAL_PROMPT=0</code>，超时错误有明确日志</td>
+</tr>
+<tr>
+<td>P1</td>
+<td><code>gitErrorMessage</code> 只取 fatal 首行——remote URL 内嵌 token 时（<code>https://token@...</code>）恰好把凭据挑进日志</td>
+<td>日志输出前把 URL userinfo 脱敏为 <code>***@</code>，且先脱敏再截断，防跨截断点漏半截</td>
+</tr>
+<tr>
+<td>P2</td>
+<td>rebase 冲突 catch 里的 <code>--abort</code> 不区分 rebase 是谁启动的——可能废弃用户手动 rebase；遗留 rebase 状态会让每轮同步永久误报冲突</td>
+<td>doSync 入口检测 &#96;.git&#x2F;rebase-merge</td>
+</tr>
+<tr>
+<td>P2</td>
+<td>commit 受用户全局 <code>commit.gpgsign</code> &#x2F; pre-commit hook 影响，可能每轮永久失败</td>
+<td><code>-c commit.gpgsign=false commit --no-verify</code></td>
+</tr>
+</tbody></table>
+<p>验证：单测 9&#x2F;9（离线 bare remote 沙箱 + 真实 git，含互斥串行、冲突保双方、遗留 rebase 拒绝插手、凭据脱敏）；E2E 双向 PASS——PC→GitHub（gh API 逐字节核对），GitHub→PC（模拟手机 commit 被 periodic 拉下、本地文件到位）。daemon 常驻运行后，连 E2E 测试文件的清理 commit 都是它自己推上 GitHub 的。</p>
+<h2 id="Phase-6B：Android-刷新可靠性"><a href="#Phase-6B：Android-刷新可靠性" class="headerlink" title="Phase 6B：Android 刷新可靠性"></a>Phase 6B：Android 刷新可靠性</h2><p>架构零变动，唯一刷新入口 <code>refreshTree()</code> 不变，加的是「什么时候该刷、什么时候不该刷」的纪律：</p>
+<ul>
+<li><strong>Freshness window（30s）</strong>：刚成功过的自动刷新被静默去重（不发 HTTP、不动 UI 状态）；Failed 不置 fresh，失败后重试不被压制；</li>
+<li><strong>手动 force 直通</strong>：SyncScreen「立即刷新」&#x2F; Reader「刷新此笔记」&#x2F; Onboarding 连接仓库改 <code>force=true</code>，始终真实请求；</li>
+<li><strong>新自动触发源</strong>：回到前台（距上次成功 ≥3 分钟）+ Offline→Online 边沿（纯函数检测，每次恢复恰好一次，抖动由 window 兜底）；</li>
+<li><strong>设置门控</strong>：全部自动入口受「自动刷新」设置门控，Settings 语义文案统一。</li>
+</ul>
+<h3 id="审查抓出的问题：一个「恒为真」的假测试"><a href="#审查抓出的问题：一个「恒为真」的假测试" class="headerlink" title="审查抓出的问题：一个「恒为真」的假测试"></a>审查抓出的问题：一个「恒为真」的假测试</h3><p>这轮审查最有教育意义的是一个 P2：门控设置原本没有真正的自动化测试——原 <code>autoRefreshDisabled_manualForceStillRequests</code> 用例根本不经过门控（<code>refreshTree</code> 不读 autoRefresh 设置），恒为真，造成「门控已测」的错觉。修复是把门控抽为纯函数 <code>autoRefreshAllowed(autoRefresh, hasRepo, isOnline)</code>，startup 与 RefreshTriggers 共用，新增 4 个用例真正测上门控。</p>
+<p>另一个值得记的 P2：freshness 去重跳过与服务器 304 共用 <code>NotModified</code> 返回值——前者根本没问服务器，未来给自动刷新加结果提示时会说谎。当前安全性没问题（读返回值的调用方全是 force&#x3D;true），KDoc 注明双重含义并写入文档 Known Issues。</p>
+<p>验证：JVM 153&#x2F;153（新增 4 个门控用例）、androidTest 27&#x2F;27（MockWebServer + in-memory Room + 假时钟）、<code>assembleDebug</code> 通过。</p>
+<h2 id="两轮审查的模式"><a href="#两轮审查的模式" class="headerlink" title="两轮审查的模式"></a>两轮审查的模式</h2><p>两个子阶段都走了「先验收实现 → 审查 → 修 P1&#x2F;P2 → 补测试 → 提交」的节奏，暴露出两类规律性问题：</p>
+<ul>
+<li><strong>P1 全是「真实环境存活&#x2F;安全」类</strong>：单测全绿挡不住的问题——网络半开占死锁、凭据进日志。教训：守护进程类代码必须假设网络会「半死不活」而非干净失败；日志脱敏要在源头做，不能赌当前配置干净。</li>
+<li><strong>P2 全是「现在没事、将来咬人」的语义陷阱</strong>：abort 别人的 rebase、永真测试造成的假安全感、一个类型两个含义。教训：恢复操作（abort&#x2F;reset）必须确认作用于自己创建的状态；<strong>测试名字承诺了什么，就要真的测到什么</strong>。</li>
+</ul>
+<p>修复成本都很低（几行级），说明早期小步审查比阶段末大审查有效。</p>
+<h2 id="遗留事项"><a href="#遗留事项" class="headerlink" title="遗留事项"></a>遗留事项</h2><ol>
+<li><strong>跨设备人工 E2E 未跑</strong>：PC→GitHub→Android、Android→GitHub→PC、Offline→Online 三条链路需要真机 + PC 同时在手，步骤已写入 6B 文档；</li>
+<li>vault <code>.gitignore</code> 整目录忽略 <code>.obsidian/</code> 的既有行保留未动——与「同步 Obsidian 配置」的潜在需求冲突，取舍待定；</li>
+<li>vaultsync 目前需手动 <code>npm start</code>，开机自启是 Phase 7 候选方向之一。</li>
+</ol>
+<h2 id="项目时间线（至此）"><a href="#项目时间线（至此）" class="headerlink" title="项目时间线（至此）"></a>项目时间线（至此）</h2><ul>
+<li>Phase 1-2（09-02 ~ 09-03）：分析与纠正、骨架 + 静态 UI；</li>
+<li>Phase 3（09-03）：GitHub online-first + 缓存 + 阅读闭环；</li>
+<li>Phase 4（09-04）：Obsidian 渲染（WikiLink&#x2F;Callout&#x2F;图片&#x2F;嵌入&#x2F;Frontmatter）；</li>
+<li>Phase 5（09-04）：编辑 + GitHub 写入 + 409 两版本冲突界面，App 达到日常可用 V1；</li>
+<li><strong>Phase 6（09-04）：PC 侧自动同步闭环 + 手机刷新可靠性，三端链路全部打通。</strong></li>
+</ul>
+<p>从「手机只能看」到「PC 改完自动上云、手机自动拿到、手机改完安全写回」，整个知识库的最小可用同步环闭上了。下一步是跨设备 E2E 自动化和附件链路强化，但那是下一个阶段的事了。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Node-js/" rel="tag"># Node.js</a>
+              <a href="/tags/Git/" rel="tag"># Git</a>
+              <a href="/tags/%E9%A1%B9%E7%9B%AE%E5%A4%8D%E7%9B%98/" rel="tag"># 项目复盘</a>
+              <a href="/tags/Android/" rel="tag"># Android</a>
+              <a href="/tags/%E5%AE%88%E6%8A%A4%E8%BF%9B%E7%A8%8B/" rel="tag"># 守护进程</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/09/06/obsidian-mobile-phase5-write-back/" rel="prev" title="黑曜石移动端 Phase 5：手机第一次写回 GitHub">
+                  <i class="fa fa-angle-left"></i> 黑曜石移动端 Phase 5：手机第一次写回 GitHub
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  
+  <div class="comments giscus-container">
+  </div>
+  
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">zhlifeiy35</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/zhdmm35" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"zhdmm35/zhdmm35.github.io","repo_id":"R_kgDOON4bhg","category":"Announcements","category_id":"DIC_kwDOON4bhs4C3dEc","mapping":"pathname","strict":0,"reactions_enabled":1,"emit_metadata":0,"theme":"preferred_color_scheme","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+
+<script>
+document.addEventListener('page:loaded', () => {
+  if (!CONFIG.page.comments) return;
+
+  NexT.utils.loadComments('.giscus-container')
+    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
+      attributes: {
+        async                   : true,
+        crossOrigin             : 'anonymous',
+        'data-repo'             : CONFIG.giscus.repo,
+        'data-repo-id'          : CONFIG.giscus.repo_id,
+        'data-category'         : CONFIG.giscus.category,
+        'data-category-id'      : CONFIG.giscus.category_id,
+        'data-mapping'          : CONFIG.giscus.mapping,
+        'data-strict'           : CONFIG.giscus.strict,
+        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
+        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
+        'data-theme'            : CONFIG.giscus.theme,
+        'data-lang'             : CONFIG.giscus.lang,
+        'data-input-position'   : CONFIG.giscus.input_position,
+        'data-loading'          : CONFIG.giscus.loading
+      },
+      parentNode: document.querySelector('.giscus-container')
+    }));
+});
+</script>
+<script defer src="/js/blog-assistant.js" data-endpoint="https://zhlifeiy-blog-assistant.huiyaozhang07.workers.dev/ask"></script>
+
+</body>
+</html>

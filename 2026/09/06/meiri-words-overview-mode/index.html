@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Gemini","darkmode":true,"version":"8.28.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="「每日单词」是我用 Kotlin + Jetpack Compose + Room + 系统 TTS 做的 Android 单词学习 App：内置 500 个基础词，每天固定学 20 个新词，配合间隔复习和连续天数打卡。9 月 1 日到 9 月 6 日，我通过和 AI 编码助手的两场对话完成了第四个迭代——20 词总览学习模式。这篇记录两场对话的分工、关键设计取舍和踩过的坑。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="每日单词 App 迭代四：20 词总览模式，两场 AI 对话从计划到落地">
+<meta property="og:url" content="https://zhlifeiy.codes/2026/09/06/meiri-words-overview-mode/index.html">
+<meta property="og:site_name" content="zhlifeiy · 工程笔记">
+<meta property="og:description" content="「每日单词」是我用 Kotlin + Jetpack Compose + Room + 系统 TTS 做的 Android 单词学习 App：内置 500 个基础词，每天固定学 20 个新词，配合间隔复习和连续天数打卡。9 月 1 日到 9 月 6 日，我通过和 AI 编码助手的两场对话完成了第四个迭代——20 词总览学习模式。这篇记录两场对话的分工、关键设计取舍和踩过的坑。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/meiri-words-overview-mode.jpg">
+<meta property="article:published_time" content="2026-09-06T02:00:00.000Z">
+<meta property="article:author" content="zhlifeiy35">
+<meta property="article:tag" content="项目复盘">
+<meta property="article:tag" content="Android">
+<meta property="article:tag" content="Kotlin">
+<meta property="article:tag" content="Jetpack Compose">
+<meta property="article:tag" content="AI 辅助开发">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/meiri-words-overview-mode.jpg">
+
+
+<link rel="canonical" href="https://zhlifeiy.codes/2026/09/06/meiri-words-overview-mode/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://zhlifeiy.codes/2026/09/06/meiri-words-overview-mode/","path":"2026/09/06/meiri-words-overview-mode/","title":"每日单词 App 迭代四：20 词总览模式，两场 AI 对话从计划到落地"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>每日单词 App 迭代四：20 词总览模式，两场 AI 对话从计划到落地 | zhlifeiy · 工程笔记</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/atom.xml" title="zhlifeiy · 工程笔记" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">zhlifeiy · 工程笔记</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">把项目里的坑，写成可以复用的答案</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-项目"><a href="/projects/" rel="section"><i class="fa fa-diagram-project fa-fw"></i>项目</a></li><li class="menu-item menu-item-简历"><a href="/resume/" rel="section"><i class="fa fa-id-card fa-fw"></i>简历</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-guestbook"><a href="/guestbook/" rel="section"><i class="fa fa-comment-dots fa-fw"></i>留言板</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E6%9C%89%E6%80%BB%E8%A7%88%E6%A8%A1%E5%BC%8F"><span class="nav-number">1.</span> <span class="nav-text">为什么要有总览模式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%A4%E5%9C%BA%E5%AF%B9%E8%AF%9D%E7%9A%84%E5%88%86%E5%B7%A5%EF%BC%9A%E4%B8%80%E5%9C%BA%E4%B8%BB%E5%BB%BA%EF%BC%8C%E4%B8%80%E5%9C%BA%E4%B8%BB%E5%AE%A1"><span class="nav-number">2.</span> <span class="nav-text">两场对话的分工：一场主建，一场主审</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%B9%E8%AF%9D%E4%B8%80%EF%BC%9A%E5%85%88%E9%87%87%E8%AE%BF%EF%BC%8C%E5%86%8D%E5%8A%A8%E6%89%8B"><span class="nav-number">3.</span> <span class="nav-text">对话一：先采访，再动手</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%A4%E4%BA%92%E9%87%8D%E5%81%9A%EF%BC%9A%E6%8F%AD%E7%A4%BA%E4%B8%8E%E4%BD%9C%E7%AD%94%E8%A7%A3%E8%80%A6"><span class="nav-number">4.</span> <span class="nav-text">交互重做：揭示与作答解耦</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%B9%E8%AF%9D%E4%BA%8C%EF%BC%9A%E4%B8%80%E4%B8%AA%E7%9C%9F%E6%AD%A3%E5%80%BC%E9%92%B1%E7%9A%84%E7%BC%BA%E9%99%B7"><span class="nav-number">5.</span> <span class="nav-text">对话二：一个真正值钱的缺陷</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#9-%E6%9C%88-6-%E6%97%A5%E8%BF%BD%E5%8A%A0%EF%BC%9A%E7%82%B9%E5%87%BB%E8%87%AA%E5%8A%A8%E6%9C%97%E8%AF%BB"><span class="nav-number">6.</span> <span class="nav-text">9 月 6 日追加：点击自动朗读</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B8%A9%E5%9D%91%E8%AE%B0%E5%BD%95"><span class="nav-number">7.</span> <span class="nav-text">踩坑记录</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E5%AD%97%E7%9B%98%E7%82%B9"><span class="nav-number">8.</span> <span class="nav-text">数字盘点</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zhlifeiy35</p>
+  <div class="site-description" itemprop="description">记录项目实践、问题排查与工程经验</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">82</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">256</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zhdmm35" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zhdmm35" rel="noopener me" target="_blank"><i class="fa fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/meiri-words-overview-mode.jpg" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/09/06/meiri-words-overview-mode/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="记录项目实践、问题排查与工程经验">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="每日单词 App 迭代四：20 词总览模式，两场 AI 对话从计划到落地 | zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          每日单词 App 迭代四：20 词总览模式，两场 AI 对话从计划到落地
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-09-06 10:00:00" itemprop="dateCreated datePublished" datetime="2026-09-06T10:00:00+08:00">2026-09-06</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Android-%E5%BC%80%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">Android 开发</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>「每日单词」是我用 Kotlin + Jetpack Compose + Room + 系统 TTS 做的 Android 单词学习 App：内置 500 个基础词，每天固定学 20 个新词，配合间隔复习和连续天数打卡。9 月 1 日到 9 月 6 日，我通过和 AI 编码助手的两场对话完成了第四个迭代——20 词总览学习模式。这篇记录两场对话的分工、关键设计取舍和踩过的坑。</p>
+<span id="more"></span>
+
+<h2 id="为什么要有总览模式"><a href="#为什么要有总览模式" class="headerlink" title="为什么要有总览模式"></a>为什么要有总览模式</h2><p>原来的学习流程是逐词卡片：一次只看一个词，点「认识 &#x2F; 不认识」翻下一个。用了一段时间发现一个问题：有时候我想先扫一眼今天 20 个词的整体难度，再决定从哪里开始认真看；逐词模式强迫我按顺序一个个翻，没有「总览」的视角。</p>
+<p>于是我写了一份开发计划文档，描述一个「20 词同屏」的总览模式：整组词列表展示、行内揭示释义、作答进度与逐词模式完全打通。</p>
+<h2 id="两场对话的分工：一场主建，一场主审"><a href="#两场对话的分工：一场主建，一场主审" class="headerlink" title="两场对话的分工：一场主建，一场主审"></a>两场对话的分工：一场主建，一场主审</h2><p>这次迭代最值得记录的不是功能本身，而是协作方式。我开了两场独立的 AI 对话，交错进行：</p>
+<p><img data-src="/images/posts/meiri-words-overview-mode/fig1.jpg" alt="两场对话的分工与产物"><br><em>图 1：对话一主建、对话二主审，产物交错流动</em></p>
+<table>
+<thead>
+<tr>
+<th>对话</th>
+<th>时间</th>
+<th>职责</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>对话一：评审学习概览开发计划</td>
+<td>9&#x2F;1 晚 – 9&#x2F;2 晚</td>
+<td>按开发计划<strong>实现</strong>总览模式，随后按我的反馈重做交互</td>
+</tr>
+<tr>
+<td>对话二：审查 20 词总览学习模式代码</td>
+<td>9&#x2F;1 晚 – 9&#x2F;6 晚</td>
+<td><strong>代码审查</strong> → 修复打磨 → 提交合并 → 新增自动朗读</td>
+</tr>
+</tbody></table>
+<p>流程是这样的：对话一把功能做出来后，我把它的交付总结直接粘给对话二，要求从性能、代码简洁度、影响面、正确性四个维度审查。对话二发现的缺陷修完、提交 <code>08a2ff2</code> 之后，又回头审查了对话一后半段的交互重做，确认无问题后提交 <code>f83340d</code> 并 fast-forward 合并到 <code>main</code>。一场产出、一场把关，两边都不既当运动员又当裁判。</p>
+<h2 id="对话一：先采访，再动手"><a href="#对话一：先采访，再动手" class="headerlink" title="对话一：先采访，再动手"></a>对话一：先采访，再动手</h2><p>我把开发计划丢给 AI 时明确允许它提意见、改计划，还可以反过来采访我。它通读代码后确认计划整体健全（批次推导、只读查看口径都能覆盖），然后采访了 3 个计划里没定死的决策点：</p>
+<ol>
+<li>发音键的形态 → 我选「揭示释义后才出现小发音键」；</li>
+<li>作答按钮的位置 → 行内展开；</li>
+<li>要不要记住上次的学习模式 → 本次不做，观察实际使用后再说。</li>
+</ol>
+<p>这个「采访」环节很值：三个点都是计划文档里模糊的交互细节，与其让它猜，不如 30 秒问清楚。</p>
+<p>实现层面的核心决策是<strong>不存第二份进度</strong>：新增的 <code>LearnOverviewViewModel</code> 批次完全由现有的 <code>queue + idx</code> 派生，作答直接复用 <code>answerToday()</code>，数据库和 Repository 零改动。好处是完成页统计、连续天数结算全部免费复用，和逐词模式天然同口径。UI 上新增 <code>LearnOverviewScreen</code>（整组 20 词同屏、左侧序号色带、行内揭示、自动滚动定位当前行），导航接入 <code>learn-overview</code> 路由，首页和完成页各加入口。</p>
+<p>功能做完后在 <code>meiri_api34</code> 模拟器上用驱动脚本跑了 <strong>14 个关键状态</strong>逐屏验证，包括杀进程重启后进度完整恢复（重启后截屏与中断前逐字节一致）、20&#x2F;20 完成态与逐词模式口径一致、追加批次等。</p>
+<h2 id="交互重做：揭示与作答解耦"><a href="#交互重做：揭示与作答解耦" class="headerlink" title="交互重做：揭示与作答解耦"></a>交互重做：揭示与作答解耦</h2><p>第一版做完我发现一个不顺手的地方：为什么只有第一行能点「点击显示」？AI 解释了来龙去脉——这是计划里刻意定下的「顺序不变量」取舍（进度模型只持久化连续答到第几个），不是 bug。但它给出了两全的改法：</p>
+<ul>
+<li><strong>揭示与作答解耦</strong>：20 行全部可以自由预览&#x2F;收起释义，纯 UI 预览不写学习进度；「认识 &#x2F; 不认识」按钮仍然只出现在当前待答行。作答保持从上到下的顺序，进度数据、复习排期、连续天数完全不受影响。想自测就别点、想先看就随便看。</li>
+<li><strong>卡片样式重做</strong>：每行右侧固定浅灰圆角「点击显示」占位块，点击后同一位置原地变成中文释义；已答行常显「释义 + 已认识&#x2F;不认识」标签，淡绿&#x2F;淡红底色区分。AI 调了视觉子代理分析我发的参考截图，把布局落到代码里。</li>
+</ul>
+<p>单测从 12 例扩到 16 例，新增的两条「非当前行可预览且可收起」「预览行作答无效」把这个语义钉死。</p>
+<h2 id="对话二：一个真正值钱的缺陷"><a href="#对话二：一个真正值钱的缺陷" class="headerlink" title="对话二：一个真正值钱的缺陷"></a>对话二：一个真正值钱的缺陷</h2><p>四维度审查的结论整体不错：主题零偏离、20 行规模下性能无负担（data class 结构相等 + <code>items(key=word.id)</code>，实际只有作答行重绘）。但发现了一个真正值钱的缺陷：</p>
+<blockquote>
+<p>[!warning] 跨天缺陷（P2）<br>总览 ViewModel 只在 init 时读一次仓库状态，不订阅。如果页面在前台跨天（<code>onResume → refresh()</code> 会按新的一天重建队列），界面会停在昨天的批次上，所有点击静默失效。更要命的是老的逐词 <code>LearnViewModel</code> 有同款问题且更危险——它的 <code>answer(known)</code> 没有当前词 id 守卫，跨天后点「认识」会把答案<strong>写到新一天第一个词上</strong>，属于真实的数据污染路径。</p>
+</blockquote>
+<p>这就是「另一场对话审查」的价值：写代码的那场对话对自己的设计有路径依赖，换个视角才能看到「页面在前台跨过零点」这种边界场景。</p>
+<p>修复按根因做、不只修总览页：两个 ViewModel 都改成 <code>repo.state.collect &#123; rebuild() &#125;</code> 订阅仓库状态；逐词模式额外给 <code>answer()</code> 加当前词 id 守卫，仓库已变更而界面尚未重建的窗口期内拒绝写入。配套新增 5 个测试把跨天重建、清空→EMPTY、复习翻状态、过期作答被拒全部钉住，全套单测 89 例全绿。</p>
+<h2 id="9-月-6-日追加：点击自动朗读"><a href="#9-月-6-日追加：点击自动朗读" class="headerlink" title="9 月 6 日追加：点击自动朗读"></a>9 月 6 日追加：点击自动朗读</h2><p>我提了个体验需求：点「点击显示」展开释义的同时自动播放读音，不想再手动点喇叭。实现很克制——只改 <code>LearnOverviewScreen</code> 一个文件：把发音播放状态从喇叭键内部提升到行级，占位块点击时 <code>onReveal() + playWord()</code> 一起调，喇叭键保留作手动重听，ViewModel 和数据层零改动。</p>
+<p>验证做了三级证据：89 例单测全绿；全流程回归零失败；新增驱动脚本从 logcat 抓到点击时刻的 <code>GoogleTTSServiceImpl</code> 合成请求，配合播放中&#x2F;播完两张截图。这部分改动目前还未提交，留待审阅。</p>
+<h2 id="踩坑记录"><a href="#踩坑记录" class="headerlink" title="踩坑记录"></a>踩坑记录</h2><ul>
+<li><strong>uiautomator 冷启动超时</strong>：模拟器刚开机 + 刚装包 + <code>pm clear</code> 后，Compose 首帧能超过脚本「3 秒等待 + 6 秒重试」的窗口，第一个点击就丢、后续全链失败。解法是脚本开头主动轮询欢迎页出现再动手。</li>
+<li><strong>PowerShell 中文定位失效</strong>：命令行内联传中文给 XPath 定位时疑似被 GBK 转码导致 0 匹配，改用 <code>-File</code> 方式执行 UTF-8 脚本文件后一切正常。</li>
+<li><strong>截图分析工具的 CDN 旧缓存</strong>：同名重传的截图可能命中上一轮的缓存，把完成态误读成旧中断态。解法是改名重传 + 局部裁剪复核。</li>
+<li><strong>「脚本跑完 &#x3D; 没问题」不可靠</strong>：好几个问题（作答按钮被右侧释义区挤成竖排三行、流程中途回到欢迎页）都是靠逐张回看截图才发现的。工具输出与截图要相互印证。</li>
+</ul>
+<h2 id="数字盘点"><a href="#数字盘点" class="headerlink" title="数字盘点"></a>数字盘点</h2><p>2 个提交（<code>08a2ff2</code> 26 个文件 +1155&#x2F;-25、<code>f83340d</code>），JVM 单测 84 → 89 例全绿，模拟器 14 个关键状态逐屏验证，12+ 张证据截图，3 个可重放的驱动脚本。</p>
+<p>待办还有几项：自动朗读改动待审阅合入；「记住上次学习模式」等总览模式实际用几次后再决定；<code>SerifLg</code> 令牌语义上是「弹层标题」，现在借作行内释义，视觉没问题但语义是借用——这些小债先记着，不急着还。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E9%A1%B9%E7%9B%AE%E5%A4%8D%E7%9B%98/" rel="tag"># 项目复盘</a>
+              <a href="/tags/Android/" rel="tag"># Android</a>
+              <a href="/tags/Kotlin/" rel="tag"># Kotlin</a>
+              <a href="/tags/Jetpack-Compose/" rel="tag"># Jetpack Compose</a>
+              <a href="/tags/AI-%E8%BE%85%E5%8A%A9%E5%BC%80%E5%8F%91/" rel="tag"># AI 辅助开发</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/08/27/external-review-pitfalls/" rel="prev" title="四轮外部评审，十二条意见全部属实——afterCommit 不是异步任务">
+                  <i class="fa fa-angle-left"></i> 四轮外部评审，十二条意见全部属实——afterCommit 不是异步任务
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2026/09/06/obsidian-mobile-phase5-write-back/" rel="next" title="黑曜石移动端 Phase 5：手机第一次写回 GitHub">
+                  黑曜石移动端 Phase 5：手机第一次写回 GitHub <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  
+  <div class="comments giscus-container">
+  </div>
+  
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">zhlifeiy35</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/zhdmm35" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"zhdmm35/zhdmm35.github.io","repo_id":"R_kgDOON4bhg","category":"Announcements","category_id":"DIC_kwDOON4bhs4C3dEc","mapping":"pathname","strict":0,"reactions_enabled":1,"emit_metadata":0,"theme":"preferred_color_scheme","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+
+<script>
+document.addEventListener('page:loaded', () => {
+  if (!CONFIG.page.comments) return;
+
+  NexT.utils.loadComments('.giscus-container')
+    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
+      attributes: {
+        async                   : true,
+        crossOrigin             : 'anonymous',
+        'data-repo'             : CONFIG.giscus.repo,
+        'data-repo-id'          : CONFIG.giscus.repo_id,
+        'data-category'         : CONFIG.giscus.category,
+        'data-category-id'      : CONFIG.giscus.category_id,
+        'data-mapping'          : CONFIG.giscus.mapping,
+        'data-strict'           : CONFIG.giscus.strict,
+        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
+        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
+        'data-theme'            : CONFIG.giscus.theme,
+        'data-lang'             : CONFIG.giscus.lang,
+        'data-input-position'   : CONFIG.giscus.input_position,
+        'data-loading'          : CONFIG.giscus.loading
+      },
+      parentNode: document.querySelector('.giscus-container')
+    }));
+});
+</script>
+<script defer src="/js/blog-assistant.js" data-endpoint="https://zhlifeiy-blog-assistant.huiyaozhang07.workers.dev/ask"></script>
+
+</body>
+</html>
