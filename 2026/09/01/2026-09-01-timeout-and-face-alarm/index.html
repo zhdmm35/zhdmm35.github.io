@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Gemini","darkmode":true,"version":"8.28.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="导读 生产环境上传素材返回 200，审批也点了同意，素材列表却永远空空如也。同一天另一片场：告警人脸功能上线，规则建好了、平台却”看不到人脸”。两个故障表面毫不相干，收尾时却发现它们共用同一套排查方法论：先用最硬的证据定层，再一次只换一个变量。本篇把两条排查线完整复盘。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="接口 200 却永远没有下文：一次跨四系统的超时根修与告警人脸上线排查">
+<meta property="og:url" content="https://zhlifeiy.codes/2026/09/01/2026-09-01-timeout-and-face-alarm/index.html">
+<meta property="og:site_name" content="zhlifeiy · 工程笔记">
+<meta property="og:description" content="导读 生产环境上传素材返回 200，审批也点了同意，素材列表却永远空空如也。同一天另一片场：告警人脸功能上线，规则建好了、平台却”看不到人脸”。两个故障表面毫不相干，收尾时却发现它们共用同一套排查方法论：先用最硬的证据定层，再一次只换一个变量。本篇把两条排查线完整复盘。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/2026-09-01-timeout-and-face-alarm_001.jpg">
+<meta property="article:published_time" content="2026-09-01T14:00:00.000Z">
+<meta property="article:author" content="zhlifeiy35">
+<meta property="article:tag" content="Spring Cloud">
+<meta property="article:tag" content="RestTemplate">
+<meta property="article:tag" content="超时排查">
+<meta property="article:tag" content="人脸识别">
+<meta property="article:tag" content="方法论">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/2026-09-01-timeout-and-face-alarm_001.jpg">
+
+
+<link rel="canonical" href="https://zhlifeiy.codes/2026/09/01/2026-09-01-timeout-and-face-alarm/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://zhlifeiy.codes/2026/09/01/2026-09-01-timeout-and-face-alarm/","path":"2026/09/01/2026-09-01-timeout-and-face-alarm/","title":"接口 200 却永远没有下文：一次跨四系统的超时根修与告警人脸上线排查"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>接口 200 却永远没有下文：一次跨四系统的超时根修与告警人脸上线排查 | zhlifeiy · 工程笔记</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/atom.xml" title="zhlifeiy · 工程笔记" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">zhlifeiy · 工程笔记</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">把项目里的坑，写成可以复用的答案</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-项目"><a href="/projects/" rel="section"><i class="fa fa-diagram-project fa-fw"></i>项目</a></li><li class="menu-item menu-item-简历"><a href="/resume/" rel="section"><i class="fa fa-id-card fa-fw"></i>简历</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-guestbook"><a href="/guestbook/" rel="section"><i class="fa fa-comment-dots fa-fw"></i>留言板</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%BC%E8%AF%BB"><span class="nav-number">1.</span> <span class="nav-text">导读</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">2.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%85%E4%BA%8B%E4%B8%80%EF%BC%9A%E6%8E%A5%E5%8F%A3-200%EF%BC%8C%E7%B4%A0%E6%9D%90%E6%B0%B8%E8%BF%9C%E4%B8%8D%E5%87%BA%E7%8E%B0"><span class="nav-number">3.</span> <span class="nav-text">故事一：接口 200，素材永远不出现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%97%87%E7%8A%B6"><span class="nav-number">3.1.</span> <span class="nav-text">症状</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%93%BE%E8%B7%AF%EF%BC%9A%E5%9B%9B%E4%B8%AA%E7%B3%BB%E7%BB%9F%E4%B8%B2%E6%88%90%E4%B8%80%E6%9D%A1%EF%BC%8C%E4%B8%89%E5%A4%84%E8%A6%81%E5%AE%B3"><span class="nav-number">3.2.</span> <span class="nav-text">链路：四个系统串成一条，三处要害</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E5%B1%82%E5%8F%96%E8%AF%81%EF%BC%9A%E4%BB%8E-DB-%E4%B8%80%E8%B7%AF%E6%8C%96%E5%88%B0%E6%9C%80%E5%BA%95%E5%B1%82%E5%BC%82%E5%B8%B8"><span class="nav-number">3.3.</span> <span class="nav-text">分层取证：从 DB 一路挖到最底层异常</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%89%E4%B8%AA%E9%94%99%E8%AF%AF%E5%81%87%E8%AE%BE%E6%98%AF%E6%80%8E%E4%B9%88%E5%80%92%E4%B8%8B%E7%9A%84"><span class="nav-number">3.4.</span> <span class="nav-text">三个错误假设是怎么倒下的</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BF%AE%E5%A4%8D%EF%BC%9A%E4%B8%89%E5%A4%84%E6%94%B9%E5%8A%A8%EF%BC%8C%E6%AF%8F%E5%A4%84%E5%AF%B9%E7%9D%80%E4%B8%80%E4%B8%AA%E8%A6%81%E5%AE%B3"><span class="nav-number">3.5.</span> <span class="nav-text">修复：三处改动，每处对着一个要害</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%85%E4%BA%8B%E4%BA%8C%EF%BC%9A%E5%91%8A%E8%AD%A6%E4%BA%BA%E8%84%B8%E2%80%94%E2%80%94%E2%80%9C%E8%A7%84%E5%88%99%E5%BB%BA%E4%BA%86%E4%BD%86%E5%B9%B3%E5%8F%B0%E7%9C%8B%E4%B8%8D%E5%88%B0%E4%BA%BA%E8%84%B8%E2%80%9D"><span class="nav-number">4.</span> <span class="nav-text">故事二：告警人脸——“规则建了但平台看不到人脸”</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%B9%E6%B3%95%E8%AE%BA%E6%B2%89%E6%B7%80"><span class="nav-number">5.</span> <span class="nav-text">方法论沉淀</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%93%E8%AF%AD"><span class="nav-number">6.</span> <span class="nav-text">结语</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zhlifeiy35</p>
+  <div class="site-description" itemprop="description">记录项目实践、问题排查与工程经验</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">93</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">282</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zhdmm35" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zhdmm35" rel="noopener me" target="_blank"><i class="fa fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/2026-09-01-timeout-and-face-alarm_001.jpg" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/09/01/2026-09-01-timeout-and-face-alarm/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="记录项目实践、问题排查与工程经验">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="接口 200 却永远没有下文：一次跨四系统的超时根修与告警人脸上线排查 | zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          接口 200 却永远没有下文：一次跨四系统的超时根修与告警人脸上线排查
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-09-01 22:00:00" itemprop="dateCreated datePublished" datetime="2026-09-01T22:00:00+08:00">2026-09-01</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">项目笔记</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/" itemprop="url" rel="index"><span itemprop="name">南网</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="导读"><a href="#导读" class="headerlink" title="导读"></a>导读</h2><blockquote>
+<p>生产环境上传素材返回 200，审批也点了同意，素材列表却永远空空如也。同一天另一片场：告警人脸功能上线，规则建好了、平台却”看不到人脸”。两个故障表面毫不相干，收尾时却发现它们共用同一套排查方法论：<strong>先用最硬的证据定层，再一次只换一个变量</strong>。本篇把两条排查线完整复盘。</p>
+</blockquote>
+<span id="more"></span>
+
+<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>9 月 1 日的主线是两条：一是 smart 信息发布的素材审批在生产上”静默消失”，二是告警人脸功能上线后的第一轮排障。前者横跨 smart、bpm、iot、大华网关四个系统，后者横跨 security、through、integrate-iot 和 VPlat 平台。两个问题的代码链路最终都被证明是<strong>无辜的</strong>——真正的问题藏在超时配置、数据状态和上游平台行为里。</p>
+<h2 id="故事一：接口-200，素材永远不出现"><a href="#故事一：接口-200，素材永远不出现" class="headerlink" title="故事一：接口 200，素材永远不出现"></a>故事一：接口 200，素材永远不出现</h2><h3 id="症状"><a href="#症状" class="headerlink" title="症状"></a>症状</h3><p>页面上传素材返回 200，素材列表看不到；走完整条审批流点”同意”，列表里依然没有。当天三次上传全部复现：两段 17MB 的 mp4，一张小 jpg。</p>
+<h3 id="链路：四个系统串成一条，三处要害"><a href="#链路：四个系统串成一条，三处要害" class="headerlink" title="链路：四个系统串成一条，三处要害"></a>链路：四个系统串成一条，三处要害</h3><p>上传阶段（smart 落库 + 发起 bpm 审批）一直是对的——返回 200 只证明第一阶段成功。真正断的是后半段：审批结束 → bpm 回调 smart → smart 同步大华 → 全部做完才落 <code>audit_status=1</code>。</p>
+<p>三处要害后来都成了修复点：</p>
+<ul>
+<li><strong>外部副作用排在核心状态前面</strong>：拉文件、转换、传大华全部做完才落库，中途任何异常都跳过落库；</li>
+<li><strong>回调吞掉一切异常</strong>：bpm 侧 <code>invokeCallbackSafely</code> 捕获所有异常只记日志、不重试，失败后再没有人会试第二次；</li>
+<li><strong>读超时一刀切 15s</strong>：iot 出口的 RestTemplate 对所有接口一视同仁，包括”上传 17MB 视频给大华做同步转码”这种天然慢的操作。</li>
+</ul>
+<h3 id="分层取证：从-DB-一路挖到最底层异常"><a href="#分层取证：从-DB-一路挖到最底层异常" class="headerlink" title="分层取证：从 DB 一路挖到最底层异常"></a>分层取证：从 DB 一路挖到最底层异常</h3><p>取证顺序自上而下：先看数据，再看每一层的日志，最后才碰对端。</p>
+<p><img data-src="/images/posts/2026-09-01-timeout-and-face-alarm/fig1.jpg" alt="分层取证：数据库 → 日志 → 网络 → 靶心"><br><em>图 1：分层取证——先看最硬的数据库证据，再逐层翻日志，最后才动对端</em></p>
+<p>第一步在数据库就拿到了定性证据：三行记录 <code>audit_status=0</code> 且 <code>update_time == create_time</code>——<strong>记录从未被更新过，说明更新方从未成功执行</strong>，比任何日志都硬。之后的路线是：bpm-error.log 两次”流程结束业务回调失败 500” → smart 日志确认进了同意分支、Feign 500 → iot-error.log 最底层栈 <code>SocketTimeoutException: Read timed out</code>。最后一步是时间对账：进入审核到报错 19.5s ≈ 拉文件转发 4s + 干等 15s 读超时，数字对上，机制闭环。</p>
+<div style="background:#28251f;border-radius:12px;overflow:hidden;margin:18px 0;box-shadow:0 2px 10px rgba(0,0,0,0.10);">
+<div style="background:#3a362e;padding:8px 14px;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ff5f57;margin-right:6px;"></span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#febc2e;margin-right:6px;"></span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#28c840;margin-right:10px;"></span><span style="color:#b8b0a4;font-size:12px;font-family:Consolas,monospace;">分层取证的关键命令</span></div>
+<pre style="margin:0;padding:14px 16px;overflow-x:auto;font-family:Consolas,Menlo,monospace;font-size:13px;line-height:1.7;color:#f5f0e8;"><code>-- ① DB 定性：从未更新过 = 更新方从未成功
+SELECT id, audit_status, create_time, update_time
+FROM screen_material ORDER BY id DESC LIMIT 5;
+-- update_time == create_time，钉死在"回调链没走完"
+
+<p>– ② bpm 层：回调确实发了、确实失败了<br>grep “流程结束业务回调失败” bpm-error.log</p>
+<p>– ③ iot 层：最底层异常露面<br>– Caused by: java.net.SocketTimeoutException: Read timed out</code></pre></p>
+</div>
+
+<h3 id="三个错误假设是怎么倒下的"><a href="#三个错误假设是怎么倒下的" class="headerlink" title="三个错误假设是怎么倒下的"></a>三个错误假设是怎么倒下的</h3><p>排查中走了三条弯路，每条都是”没实测前的推断”：</p>
+<table>
+<thead>
+<tr>
+<th>错误假设</th>
+<th>被什么否掉</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>网关挂了 &#x2F; NAT 问题</td>
+<td>curl 探测：GET 与正常 POST 都活着，只有空 body 的 POST 被 RST</td>
+</tr>
+<tr>
+<td>不用带参数</td>
+<td>上游 Postman 集合里 upload 恰好没存 body，差点带沟里去；参数形态是从对方截图反推的</td>
+</tr>
+<tr>
+<td>NAT 对大包有问题</td>
+<td>对称实验：17MB mp4 原样复刻请求，200 成功，总耗时 30s+</td>
+</tr>
+</tbody></table>
+<p>决定性的一行是第三个实验：大华收到文件后会<strong>同步做 h264 转码和缩略图</strong>，大视频响应 30s+ 是常态。通道一直是通的——不是网关、不是 NAT、不是参数，就是 iot 的 15s 读超时必挂。</p>
+<blockquote>
+<p>顺带两条教训：<strong>HTTP 200 ≠ 业务成功</strong>（传输层 200、业务层照样 200027 拒绝）；对称实验”一次只换一个变量”是逐个排除假设的关键。</p>
+</blockquote>
+<h3 id="修复：三处改动，每处对着一个要害"><a href="#修复：三处改动，每处对着一个要害" class="headerlink" title="修复：三处改动，每处对着一个要害"></a>修复：三处改动，每处对着一个要害</h3><p><strong>iot 侧：上传专用长超时。</strong> 15s 对查询&#x2F;下发类接口是合理的快速失败层，全局放大等于放弃熔断，所以只给”上传”这一类天然慢的操作单独放行 180s（实测 17MB 要 30s+，留五倍余量）：</p>
+<div style="background:#28251f;border-radius:12px;overflow:hidden;margin:18px 0;box-shadow:0 2px 10px rgba(0,0,0,0.10);">
+<div style="background:#3a362e;padding:8px 14px;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ff5f57;margin-right:6px;"></span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#febc2e;margin-right:6px;"></span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#28c840;margin-right:10px;"></span><span style="color:#b8b0a4;font-size:12px;font-family:Consolas,monospace;">DhScreenClientImpl.java</span></div>
+<pre style="margin:0;padding:14px 16px;overflow-x:auto;font-family:Consolas,Menlo,monospace;font-size:13px;line-height:1.7;color:#f5f0e8;"><code>// init() 重构出工厂方法，上传专用实例放宽到 180s，其余接口维持 15s
+private RestTemplate newRestTemplate(int readTimeout) &#123;
+    SimpleClientHttpRequestFactory f = new SimpleClientHttpRequestFactory();
+    f.setConnectTimeout(10_000);
+    f.setReadTimeout(readTimeout);
+    return new RestTemplate(f);
+&#125;
+private final RestTemplate uploadRestTemplate = newRestTemplate(180_000); // 上传专用</code></pre>
+</div>
+
+<p><strong>smart 侧：审批结果无条件落库。</strong> 设备同步整段 try&#x2F;catch，失败只记日志、不再中途 return：</p>
+<div style="background:#28251f;border-radius:12px;overflow:hidden;margin:18px 0;box-shadow:0 2px 10px rgba(0,0,0,0.10);">
+<div style="background:#3a362e;padding:8px 14px;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ff5f57;margin-right:6px;"></span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#febc2e;margin-right:6px;"></span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#28c840;margin-right:10px;"></span><span style="color:#b8b0a4;font-size:12px;font-family:Consolas,monospace;">ScreenMaterialServiceImpl.java</span></div>
+<pre style="margin:0;padding:14px 16px;overflow-x:auto;font-family:Consolas,Menlo,monospace;font-size:13px;line-height:1.7;color:#f5f0e8;"><code>try &#123;
+    // aided 拉源文件 → 转 MultipartFile → 传大华 → 回填 factory_material_id
+&#125; catch (Exception e) &#123;
+    log.error("素材同步大华失败，不阻断审批落库", e); // 只记录，不 return
+&#125;
+screenMaterialMapper.updateSelective(entity); // audit_status=1 无条件执行</code></pre>
+</div>
+
+<p>取舍要说清楚：外部副作用（传设备）不应绑架核心状态（审批结果）。代价是同步失败时素材可见但 <code>factory_material_id</code> 为空，链路恢复后需重传——与”审批同意了却永远看不到素材”相比，这是可接受且可恢复的失败模式。另外顺手修了 bpm 侧一个一行 bug：审批意见取错变量，把 formBusinessId 写进了 <code>audit_reason</code>。</p>
+<h2 id="故事二：告警人脸——“规则建了但平台看不到人脸”"><a href="#故事二：告警人脸——“规则建了但平台看不到人脸”" class="headerlink" title="故事二：告警人脸——“规则建了但平台看不到人脸”"></a>故事二：告警人脸——“规则建了但平台看不到人脸”</h2><p>同一天的另一片场。结论先行：<strong>代码链路无问题</strong>，排查出的全是数据&#x2F;配置&#x2F;上游平台问题。</p>
+<p><img data-src="/images/posts/2026-09-01-timeout-and-face-alarm/fig2.jpg" alt="人脸告警链路：摄像头、队列与 AI 平台"><br><em>图 2：人脸下发链路——规则刷新决策 → 队列入库 → 同步器上传注册 → 回写 ai_face_id</em></p>
+<p>三个典型现象对应的根因：</p>
+<table>
+<thead>
+<tr>
+<th>现象</th>
+<th>根因</th>
+<th>处置</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>队列表一行都没有</td>
+<td>规则 <code>enable_status=&#39;1&#39;</code>（暂不启用）不算引用；成员照片待校验不入队</td>
+<td>启用规则 + 审批通过照片，启停一次规则触发 refresh</td>
+</tr>
+<tr>
+<td>队列有记录但”网关接口调用失败”</td>
+<td>VPlat 平台拒收图片（照片质量&#x2F;检测不到人脸），不是网络问题</td>
+<td>换正脸照重新上传审批，启停规则重试</td>
+</tr>
+<tr>
+<td>手工 UPDATE 报 Error 1175</td>
+<td>MySQL safe update mode</td>
+<td><code>SET SQL_SAFE_UPDATES=0</code> 包裹执行</td>
+</tr>
+</tbody></table>
+<p>排查顺序的核心是<strong>先怀疑决策层，再怀疑同步器</strong>：刷新决策日志里”成员数&#x3D;N，有效人员数&#x3D;N，入队数&#x3D;N”，入队为 0 说明决策层判定无有效人员，根本轮不到同步器背锅。另一个关键认知：<strong>人脸组只是容器，不承载校验规则</strong>——检测参数在摄像头策略层，”谁触发告警”在平台规则匹配层，换组不会改变校验行为，别往那个方向排查。</p>
+<h2 id="方法论沉淀"><a href="#方法论沉淀" class="headerlink" title="方法论沉淀"></a>方法论沉淀</h2><p>两条线收尾后，沉淀下来的东西是一样的：</p>
+<ol>
+<li><strong>先量总耗时、再下结论</strong>：超时类问题必须拿到对端真实行为，数字对不上时机制一定没找对；</li>
+<li><strong>update_time &#x3D;&#x3D; create_time 是最便宜的定性证据</strong>：它比任何日志都先告诉你”更新方根本没跑成”；</li>
+<li><strong>对称实验一次只换一个变量</strong>：字段照抄、文件名统一 ASCII，逐个假设排除；</li>
+<li><strong>HTTP 200 只代表传输层</strong>：业务码、回调链、副作用落库，每一层都值得单独验证；</li>
+<li><strong>外部副作用不许绑架核心状态</strong>：传设备失败可以重传，审批结果被绑架就是事故。</li>
+</ol>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>两个”看起来像代码 bug”的问题，最后都落在配置、数据和上游行为上。排查的价值不在于修好这一次，而在于把”先定层、再变量隔离”这套动作变成肌肉记忆——下一次故障来临时，它能帮你省掉前三个错误假设。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Spring-Cloud/" rel="tag"># Spring Cloud</a>
+              <a href="/tags/RestTemplate/" rel="tag"># RestTemplate</a>
+              <a href="/tags/%E8%B6%85%E6%97%B6%E6%8E%92%E6%9F%A5/" rel="tag"># 超时排查</a>
+              <a href="/tags/%E4%BA%BA%E8%84%B8%E8%AF%86%E5%88%AB/" rel="tag"># 人脸识别</a>
+              <a href="/tags/%E6%96%B9%E6%B3%95%E8%AE%BA/" rel="tag"># 方法论</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/08/27/external-review-pitfalls/" rel="prev" title="四轮外部评审，十二条意见全部属实——afterCommit 不是异步任务">
+                  <i class="fa fa-angle-left"></i> 四轮外部评审，十二条意见全部属实——afterCommit 不是异步任务
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2026/09/02/2026-09-02-1gb-upload-and-screen-push/" rel="next" title="三层墙与两段缺失：1GB 上传放行记与告警联动发布屏联调">
+                  三层墙与两段缺失：1GB 上传放行记与告警联动发布屏联调 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  
+  <div class="comments giscus-container">
+  </div>
+  
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">zhlifeiy35</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/zhdmm35" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"zhdmm35/zhdmm35.github.io","repo_id":"R_kgDOON4bhg","category":"Announcements","category_id":"DIC_kwDOON4bhs4C3dEc","mapping":"pathname","strict":0,"reactions_enabled":1,"emit_metadata":0,"theme":"preferred_color_scheme","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+
+<script>
+document.addEventListener('page:loaded', () => {
+  if (!CONFIG.page.comments) return;
+
+  NexT.utils.loadComments('.giscus-container')
+    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
+      attributes: {
+        async                   : true,
+        crossOrigin             : 'anonymous',
+        'data-repo'             : CONFIG.giscus.repo,
+        'data-repo-id'          : CONFIG.giscus.repo_id,
+        'data-category'         : CONFIG.giscus.category,
+        'data-category-id'      : CONFIG.giscus.category_id,
+        'data-mapping'          : CONFIG.giscus.mapping,
+        'data-strict'           : CONFIG.giscus.strict,
+        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
+        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
+        'data-theme'            : CONFIG.giscus.theme,
+        'data-lang'             : CONFIG.giscus.lang,
+        'data-input-position'   : CONFIG.giscus.input_position,
+        'data-loading'          : CONFIG.giscus.loading
+      },
+      parentNode: document.querySelector('.giscus-container')
+    }));
+});
+</script>
+<script defer src="/js/blog-assistant.js" data-endpoint="https://zhlifeiy-blog-assistant.huiyaozhang07.workers.dev/ask"></script>
+
+</body>
+</html>

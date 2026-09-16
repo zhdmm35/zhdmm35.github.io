@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Gemini","darkmode":true,"version":"8.28.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="导读 给自己的开源小项目 Obsidian Mobile Companion（Android 端，GitHub 同步 Markdown 仓库）做了一天的体验升级：图片全屏查看器（双指缩放 + 双击放大 + 同目录滑动切换）、AI 生成的整套品牌素材、插画空态、LazyColumn 性能收尾。真正的硬骨头有两个：手势缩放与 Pager 翻页的事件争夺，以及一个中文用户名引发的 Gradle 灵异 b">
+<meta property="og:type" content="article">
+<meta property="og:title" content="给 Obsidian 移动端伴侣加图片查看器：手势与翻页共存、AI 品牌焕新与一个 CJK 环境坑">
+<meta property="og:url" content="https://zhlifeiy.codes/2026/09/16/2026-09-16-obsidian-companion-viewer-rebrand/index.html">
+<meta property="og:site_name" content="zhlifeiy · 工程笔记">
+<meta property="og:description" content="导读 给自己的开源小项目 Obsidian Mobile Companion（Android 端，GitHub 同步 Markdown 仓库）做了一天的体验升级：图片全屏查看器（双指缩放 + 双击放大 + 同目录滑动切换）、AI 生成的整套品牌素材、插画空态、LazyColumn 性能收尾。真正的硬骨头有两个：手势缩放与 Pager 翻页的事件争夺，以及一个中文用户名引发的 Gradle 灵异 b">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/2026-09-16-obsidian-companion-viewer-rebrand_001.jpg">
+<meta property="article:published_time" content="2026-09-16T14:00:00.000Z">
+<meta property="article:author" content="zhlifeiy35">
+<meta property="article:tag" content="Android">
+<meta property="article:tag" content="Jetpack Compose">
+<meta property="article:tag" content="手势处理">
+<meta property="article:tag" content="AI绘图">
+<meta property="article:tag" content="Gradle">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/2026-09-16-obsidian-companion-viewer-rebrand_001.jpg">
+
+
+<link rel="canonical" href="https://zhlifeiy.codes/2026/09/16/2026-09-16-obsidian-companion-viewer-rebrand/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://zhlifeiy.codes/2026/09/16/2026-09-16-obsidian-companion-viewer-rebrand/","path":"2026/09/16/2026-09-16-obsidian-companion-viewer-rebrand/","title":"给 Obsidian 移动端伴侣加图片查看器：手势与翻页共存、AI 品牌焕新与一个 CJK 环境坑"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>给 Obsidian 移动端伴侣加图片查看器：手势与翻页共存、AI 品牌焕新与一个 CJK 环境坑 | zhlifeiy · 工程笔记</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/atom.xml" title="zhlifeiy · 工程笔记" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">zhlifeiy · 工程笔记</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">把项目里的坑，写成可以复用的答案</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-项目"><a href="/projects/" rel="section"><i class="fa fa-diagram-project fa-fw"></i>项目</a></li><li class="menu-item menu-item-简历"><a href="/resume/" rel="section"><i class="fa fa-id-card fa-fw"></i>简历</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-guestbook"><a href="/guestbook/" rel="section"><i class="fa fa-comment-dots fa-fw"></i>留言板</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%BC%E8%AF%BB"><span class="nav-number">1.</span> <span class="nav-text">导读</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">2.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E5%9B%BE%E7%89%87%E6%9F%A5%E7%9C%8B%E5%99%A8%EF%BC%9A%E6%89%8B%E5%8A%BF%E4%B8%8E%E7%BF%BB%E9%A1%B5%E5%A6%82%E4%BD%95%E5%85%B1%E5%AD%98"><span class="nav-number">3.</span> <span class="nav-text">一、图片查看器：手势与翻页如何共存</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E5%93%81%E7%89%8C%E7%84%95%E6%96%B0%EF%BC%9AAI-%E7%94%9F%E6%88%90-PIL-%E5%90%8E%E5%A4%84%E7%90%86%E7%9A%84%E6%B5%81%E6%B0%B4%E7%BA%BF"><span class="nav-number">4.</span> <span class="nav-text">二、品牌焕新：AI 生成 + PIL 后处理的流水线</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E6%94%B6%E5%B0%BE%EF%BC%9ALazyColumn-%E5%8C%96%E4%B8%8E%E4%B8%80%E6%AC%A1%E2%80%9D%E7%99%BD%E6%8E%92%E6%9F%A5%E2%80%9D%E7%9A%84%E4%BB%93%E5%BA%93%E6%B8%85%E7%90%86"><span class="nav-number">5.</span> <span class="nav-text">三、收尾：LazyColumn 化与一次”白排查”的仓库清理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E7%8E%AF%E5%A2%83%E5%9D%91%EF%BC%9A%E4%B8%AD%E6%96%87%E7%94%A8%E6%88%B7%E5%90%8D%E5%BC%95%E5%8F%91%E7%9A%84-Gradle-%E7%81%B5%E5%BC%82%E4%BA%8B%E4%BB%B6"><span class="nav-number">6.</span> <span class="nav-text">四、环境坑：中文用户名引发的 Gradle 灵异事件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%8F%E9%AA%8C%E6%80%BB%E7%BB%93"><span class="nav-number">7.</span> <span class="nav-text">经验总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%93%E8%AF%AD"><span class="nav-number">8.</span> <span class="nav-text">结语</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zhlifeiy35</p>
+  <div class="site-description" itemprop="description">记录项目实践、问题排查与工程经验</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">93</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">282</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zhdmm35" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zhdmm35" rel="noopener me" target="_blank"><i class="fa fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/2026-09-16-obsidian-companion-viewer-rebrand_001.jpg" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/09/16/2026-09-16-obsidian-companion-viewer-rebrand/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="记录项目实践、问题排查与工程经验">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="给 Obsidian 移动端伴侣加图片查看器：手势与翻页共存、AI 品牌焕新与一个 CJK 环境坑 | zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          给 Obsidian 移动端伴侣加图片查看器：手势与翻页共存、AI 品牌焕新与一个 CJK 环境坑
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-09-16 22:00:00" itemprop="dateCreated datePublished" datetime="2026-09-16T22:00:00+08:00">2026-09-16</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">项目笔记</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E9%BB%91%E6%9B%9C%E7%9F%B3%E7%A7%BB%E5%8A%A8%E7%AB%AF/" itemprop="url" rel="index"><span itemprop="name">黑曜石移动端</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="导读"><a href="#导读" class="headerlink" title="导读"></a>导读</h2><blockquote>
+<p>给自己的开源小项目 Obsidian Mobile Companion（Android 端，GitHub 同步 Markdown 仓库）做了一天的体验升级：图片全屏查看器（双指缩放 + 双击放大 + 同目录滑动切换）、AI 生成的整套品牌素材、插画空态、LazyColumn 性能收尾。真正的硬骨头有两个：手势缩放与 Pager 翻页的事件争夺，以及一个中文用户名引发的 Gradle 灵异 bug。</p>
+</blockquote>
+<span id="more"></span>
+
+<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>这是一个 Kotlin + Jetpack Compose 的个人项目，通过 GitHub REST API 同步 Obsidian 仓库。9 月 16 日一天产出四个 commit：图片查看器、品牌素材重制、插画空态 + 纸纹背景、LazyColumn 化。功能不大，但每一处都踩到了值得记录的点儿。</p>
+<h2 id="一、图片查看器：手势与翻页如何共存"><a href="#一、图片查看器：手势与翻页如何共存" class="headerlink" title="一、图片查看器：手势与翻页如何共存"></a>一、图片查看器：手势与翻页如何共存</h2><p>需求三入口全要：文件浏览页点开图片、Reader 内嵌图片点击放大、查看器内同目录滑动切换；缩放用双指捏合 + 双击放大&#x2F;还原；格式上<strong>不加新依赖</strong>——Coil 2.7 自带的解码能力覆盖 PNG&#x2F;JPG&#x2F;WebP&#x2F;BMP&#x2F;AVIF，GIF 在 API 28+ 自动动图，SVG 落到”暂不支持”占位。</p>
+<p><strong>核心难点是手势冲突</strong>：<code>HorizontalPager</code> 要单指横向拖动来翻页，而缩放手势也要拖动来平移。Compose 自带的 <code>detectTransformGestures</code> 会吞掉一切拖动事件，Pager 直接翻不了页。解法是自定义手势检测器，只在”该消费的时候才消费”：</p>
+<div style="background:#28251f;border-radius:12px;overflow:hidden;margin:18px 0;box-shadow:0 2px 10px rgba(0,0,0,0.10);">
+<div style="background:#3a362e;padding:8px 14px;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ff5f57;margin-right:6px;"></span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#febc2e;margin-right:6px;"></span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#28c840;margin-right:10px;"></span><span style="color:#b8b0a4;font-size:12px;font-family:Consolas,monospace;">detectPanZoomGestures 消费策略（要点）</span></div>
+<pre style="margin:0;padding:14px 16px;overflow-x:auto;font-family:Consolas,Menlo,monospace;font-size:13px;line-height:1.7;color:#f5f0e8;"><code>// 双指 → 消费（缩放）；单指且 scale &gt; 1 → 消费（平移）
+// 单指且 scale == 1 → 不消费，事件留给 Pager 翻页
+val shouldConsume = pressedCount &gt;= 2 || currentScale &gt; 1f
+// Pager 侧镜像配合：userScrollEnabled = (currentScale &lt;= 1f)
+// 不变式：scale == 1 ⇒ offset == (0,0)，靠钳制逻辑维持</code></pre>
+</div>
+
+<p><img data-src="/images/posts/2026-09-16-obsidian-companion-viewer-rebrand/fig1.jpg" alt="手势与翻页的事件争夺"><br><em>图 1：双指归查看器、1x 单指归 Pager——事件消费权按状态切换</em></p>
+<p>缩放数学抽成了纯函数 <code>ZoomTransform</code>（不碰 Compose 状态，好测）：围绕触点缩放保持不动点、边缘钳制不露空白、双击在 1x↔3x 间切换。写单测时还修了自己一处错误预期——<strong>双击靠近容器边缘的点时，钳制会牺牲不动点</strong>（offset 超出平移边界被截断），把用例改成”近中心保持不动点 + 近边缘命中钳制”两个断言，反而把行为边界钉得更清楚。最终 JVM 单测 170 个全过（新增 17：缩放数学 9 + 同目录列表 5 + findEntry 3）。</p>
+<h2 id="二、品牌焕新：AI-生成-PIL-后处理的流水线"><a href="#二、品牌焕新：AI-生成-PIL-后处理的流水线" class="headerlink" title="二、品牌焕新：AI 生成 + PIL 后处理的流水线"></a>二、品牌焕新：AI 生成 + PIL 后处理的流水线</h2><p>旧封面（橙色长阴影书）观感不行，以一张暖色扁平插画为参考风格（羊皮纸底、赭石橘&#x2F;芥末黄&#x2F;橄榄绿几何元素、翻开的书与便签）整套重制。素材全部由 MiniMax image-01 多轮生成，PIL 做后处理：</p>
+<table>
+<thead>
+<tr>
+<th>素材</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>cover.jpg</code></td>
+<td>新封面：书 → 便签飞出 → 手机的同步叙事构图</td>
+</tr>
+<tr>
+<td><code>icon-master.jpg</code></td>
+<td>启动图标：满幅 terracotta 圆角方块 + 奶油色翻开的书</td>
+</tr>
+<tr>
+<td><code>hero-welcome.jpg</code></td>
+<td>Onboarding 欢迎页主视觉（190dp 圆角卡片）</td>
+</tr>
+<tr>
+<td><code>spot-empty/search/offline.jpg</code></td>
+<td>三张空态插画</td>
+</tr>
+<tr>
+<td><code>bg-welcome.jpg</code></td>
+<td>首尾两屏的纸纹背景</td>
+</tr>
+</tbody></table>
+<p>两个后处理细节值得记。<strong>其一是图标四角</strong>：AI 生成的圆角方块四角透出浅色，第一版修角脚本用”比 tile 红 25”的阈值判断，写出来发现条件恒假（tile R&#x3D;249，上限 255），静默失败一张没修；改成<strong>采样角点颜色算距离</strong>（阈值 55²）限定角落区域填充才修干净。<strong>其二是五档 mipmap</strong>：从 1024 母图程序化生 48~192 五档密度，方形满幅 + 圆形 alpha 蒙版两套，模拟器实装确认闪屏圆形图标正确。</p>
+<p><img data-src="/images/posts/2026-09-16-obsidian-companion-viewer-rebrand/fig2.jpg" alt="品牌素材流水线：AI 生成到 PIL 后处理"><br><em>图 2：mmx 生成 → PIL 程序化修角&#x2F;切密度 → 落进 drawable 与 mipmap</em></p>
+<p>插画空态的接入方式也有讲究：<code>EmptyState</code> 新增<strong>插画版重载</strong>（<code>@DrawableRes illustration</code> 参数，132dp 圆角卡片），icon 版签名不动——存量 8 个调用点零改动，只把文件页”无索引&#x2F;空文件夹”、搜索无结果、阅读器离线四处换成插画。</p>
+<h2 id="三、收尾：LazyColumn-化与一次”白排查”的仓库清理"><a href="#三、收尾：LazyColumn-化与一次”白排查”的仓库清理" class="headerlink" title="三、收尾：LazyColumn 化与一次”白排查”的仓库清理"></a>三、收尾：LazyColumn 化与一次”白排查”的仓库清理</h2><p>文件列表从 <code>Column + forEach</code> 改成 <code>LazyColumn</code>（大文件夹不再一次性组合所有行），<code>path</code> 做稳定 key，分隔线与留白行为保持不变。</p>
+<p>仓库清理的结论有点反直觉：排查发现 <code>build5.log</code> 命中 <code>*.log</code> 忽略规则、<code>Web-Prototype.zip</code> 在 <code>.git/info/exclude</code> 里——<strong>两个文件本就不被 Git 跟踪，仓库无需任何操作</strong>。核对 zip 与对应目录内容完全一致后，只做了磁盘侧删除。教训：清理任务先验证”它真的在仓库里吗”，再动手。</p>
+<h2 id="四、环境坑：中文用户名引发的-Gradle-灵异事件"><a href="#四、环境坑：中文用户名引发的-Gradle-灵异事件" class="headerlink" title="四、环境坑：中文用户名引发的 Gradle 灵异事件"></a>四、环境坑：中文用户名引发的 Gradle 灵异事件</h2><p>当天最灵异的一幕：<code>testDebugUnitTest</code> 突然报 <code>ClassNotFoundException: GradleWorkerMain</code>——测试 worker 起不来，daemon 重启、重装分发版都没用。<code>--info</code> 日志暴露了蛛丝马迹：worker 的 classpath 参数文件路径是 <code>@C:\Users\张\.gradle\...</code>。</p>
+<div style="background:#28251f;border-radius:12px;overflow:hidden;margin:18px 0;box-shadow:0 2px 10px rgba(0,0,0,0.10);">
+<div style="background:#3a362e;padding:8px 14px;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ff5f57;margin-right:6px;"></span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#febc2e;margin-right:6px;"></span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#28c840;margin-right:10px;"></span><span style="color:#b8b0a4;font-size:12px;font-family:Consolas,monospace;">CJK 用户名 × JDK 17 argfile 编码错位</span></div>
+<pre style="margin:0;padding:14px 16px;overflow-x:auto;font-family:Consolas,Menlo,monospace;font-size:13px;line-height:1.7;color:#f5f0e8;"><code># 根因：daemon 按 UTF-8 写 argfile（gradle.properties 里 -Dfile.encoding=UTF-8），
+#       JDK 17 启动器按系统 ANSI（GBK）读 —— "张"字乱码 → classpath 失效
+# 解法：junction 一个纯 ASCII 路径
+mklink /J E:\tmp\gradle-home C:\Users\张\.gradle
+# 跑构建时带上：
+GRADLE_USER_HOME='E:\tmp\gradle-home' ./gradlew testDebugUnitTest</code></pre>
+</div>
+
+<p>用最小 Java 实验复现确认（UTF-8 argfile + CJK 路径在 GBK launcher 下必炸）后才动的手。这类”环境层”bug 的排查要点：<strong>先怀疑编码和路径，再怀疑工具本身</strong>——Gradle 没坏，是用户名里的汉字和 JDK 的默认_charset_ 撞了车。</p>
+<h2 id="经验总结"><a href="#经验总结" class="headerlink" title="经验总结"></a>经验总结</h2><ul>
+<li>手势共存的关键是<strong>消费权的精确分配</strong>：双指&#x2F;放大态归变换手势，1x 单指归 Pager，两边用同一个 scale 状态做开关；</li>
+<li>缩放数学抽纯函数，单测先写；钳制与不动点的冲突用测试钉死边界；</li>
+<li>AI 素材流水线里，<strong>后处理脚本要防静默失败</strong>——阈值判断写反了不会报错，只是什么都不修；</li>
+<li>给存量组件加能力用重载&#x2F;新参数，8 个调用点零改动；</li>
+<li>清理仓库前先验证目标是否真的被 Git 跟踪；</li>
+<li>Windows + 中文用户名 + JDK 17：Gradle 构建带上 <code>GRADLE_USER_HOME</code> 指到纯 ASCII 路径。</li>
+</ul>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>个人项目的好处是可以在一天之内把”想要”变成”有了”：查看器、品牌、空态、性能，四个 commit 全部推送。但当天最有长期价值的产出反而是那个 CJK 环境坑的解法——它已经进了长期记忆，下次换机器重装环境时，能省回一整天的排查。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Android/" rel="tag"># Android</a>
+              <a href="/tags/Jetpack-Compose/" rel="tag"># Jetpack Compose</a>
+              <a href="/tags/%E6%89%8B%E5%8A%BF%E5%A4%84%E7%90%86/" rel="tag"># 手势处理</a>
+              <a href="/tags/AI%E7%BB%98%E5%9B%BE/" rel="tag"># AI绘图</a>
+              <a href="/tags/Gradle/" rel="tag"># Gradle</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/09/14/2026-09-14-slow-query-hunting-day/" rel="prev" title="慢查询猎杀日：一天三个性能案、一个「按钮消失」案与统一的方法论">
+                  <i class="fa fa-angle-left"></i> 慢查询猎杀日：一天三个性能案、一个「按钮消失」案与统一的方法论
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  
+  <div class="comments giscus-container">
+  </div>
+  
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">zhlifeiy35</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/zhdmm35" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"zhdmm35/zhdmm35.github.io","repo_id":"R_kgDOON4bhg","category":"Announcements","category_id":"DIC_kwDOON4bhs4C3dEc","mapping":"pathname","strict":0,"reactions_enabled":1,"emit_metadata":0,"theme":"preferred_color_scheme","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+
+<script>
+document.addEventListener('page:loaded', () => {
+  if (!CONFIG.page.comments) return;
+
+  NexT.utils.loadComments('.giscus-container')
+    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
+      attributes: {
+        async                   : true,
+        crossOrigin             : 'anonymous',
+        'data-repo'             : CONFIG.giscus.repo,
+        'data-repo-id'          : CONFIG.giscus.repo_id,
+        'data-category'         : CONFIG.giscus.category,
+        'data-category-id'      : CONFIG.giscus.category_id,
+        'data-mapping'          : CONFIG.giscus.mapping,
+        'data-strict'           : CONFIG.giscus.strict,
+        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
+        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
+        'data-theme'            : CONFIG.giscus.theme,
+        'data-lang'             : CONFIG.giscus.lang,
+        'data-input-position'   : CONFIG.giscus.input_position,
+        'data-loading'          : CONFIG.giscus.loading
+      },
+      parentNode: document.querySelector('.giscus-container')
+    }));
+});
+</script>
+<script defer src="/js/blog-assistant.js" data-endpoint="https://zhlifeiy-blog-assistant.huiyaozhang07.workers.dev/ask"></script>
+
+</body>
+</html>

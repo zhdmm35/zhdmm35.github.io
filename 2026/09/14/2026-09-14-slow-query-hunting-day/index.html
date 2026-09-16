@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Gemini","darkmode":true,"version":"8.28.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="导读 9 月 14 日接连猎杀三个”慢”：巡更任务分页 5 秒卡死（三层根因叠加）、统一通知列表线上 1s+（真凶不在 SQL 层）、动环 CO 查询 21 秒（203 万行全表扫描）。外加一个番外：停车位”视频预览按钮消失”，看起来像后端挂了，其实是前端 null.length 把请求拦在了发出之前。四个案子共用同一套方法论，文末汇总。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="慢查询猎杀日：一天三个性能案、一个「按钮消失」案与统一的方法论">
+<meta property="og:url" content="https://zhlifeiy.codes/2026/09/14/2026-09-14-slow-query-hunting-day/index.html">
+<meta property="og:site_name" content="zhlifeiy · 工程笔记">
+<meta property="og:description" content="导读 9 月 14 日接连猎杀三个”慢”：巡更任务分页 5 秒卡死（三层根因叠加）、统一通知列表线上 1s+（真凶不在 SQL 层）、动环 CO 查询 21 秒（203 万行全表扫描）。外加一个番外：停车位”视频预览按钮消失”，看起来像后端挂了，其实是前端 null.length 把请求拦在了发出之前。四个案子共用同一套方法论，文末汇总。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/2026-09-14-slow-query-hunting-day_001.jpg">
+<meta property="article:published_time" content="2026-09-14T14:00:00.000Z">
+<meta property="article:author" content="zhlifeiy35">
+<meta property="article:tag" content="性能优化">
+<meta property="article:tag" content="MySQL">
+<meta property="article:tag" content="慢查询">
+<meta property="article:tag" content="索引">
+<meta property="article:tag" content="排查方法论">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/2026-09-14-slow-query-hunting-day_001.jpg">
+
+
+<link rel="canonical" href="https://zhlifeiy.codes/2026/09/14/2026-09-14-slow-query-hunting-day/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://zhlifeiy.codes/2026/09/14/2026-09-14-slow-query-hunting-day/","path":"2026/09/14/2026-09-14-slow-query-hunting-day/","title":"慢查询猎杀日：一天三个性能案、一个「按钮消失」案与统一的方法论"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>慢查询猎杀日：一天三个性能案、一个「按钮消失」案与统一的方法论 | zhlifeiy · 工程笔记</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/atom.xml" title="zhlifeiy · 工程笔记" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">zhlifeiy · 工程笔记</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">把项目里的坑，写成可以复用的答案</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-项目"><a href="/projects/" rel="section"><i class="fa fa-diagram-project fa-fw"></i>项目</a></li><li class="menu-item menu-item-简历"><a href="/resume/" rel="section"><i class="fa fa-id-card fa-fw"></i>简历</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-guestbook"><a href="/guestbook/" rel="section"><i class="fa fa-comment-dots fa-fw"></i>留言板</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%BC%E8%AF%BB"><span class="nav-number">1.</span> <span class="nav-text">导读</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">2.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A1%88%E4%BE%8B%E4%B8%80%EF%BC%9A%E5%B7%A1%E6%9B%B4%E4%BB%BB%E5%8A%A1%E5%88%86%E9%A1%B5%E2%80%94%E2%80%94%E4%B8%89%E5%B1%82%E6%A0%B9%E5%9B%A0%E5%8F%A0%E5%8A%A0%EF%BC%8C%E5%B0%91%E4%BF%AE%E4%B8%80%E5%B1%82%E9%83%BD%E7%99%BD%E6%90%AD"><span class="nav-number">3.</span> <span class="nav-text">案例一：巡更任务分页——三层根因叠加，少修一层都白搭</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A1%88%E4%BE%8B%E4%BA%8C%EF%BC%9AunifiedPage-%E7%BA%BF%E4%B8%8A-1s-%E2%80%94%E2%80%94%E7%9C%9F%E5%87%B6%E4%B8%8D%E5%9C%A8-SQL-%E5%B1%82"><span class="nav-number">4.</span> <span class="nav-text">案例二：unifiedPage 线上 1s+——真凶不在 SQL 层</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A1%88%E4%BE%8B%E4%B8%89%EF%BC%9A%E5%8A%A8%E7%8E%AF-CO-%E6%9F%A5%E8%AF%A2%E2%80%94%E2%80%9421-%E7%A7%92%E5%88%B0-0-14-%E6%AF%AB%E7%A7%92"><span class="nav-number">5.</span> <span class="nav-text">案例三：动环 CO 查询——21 秒到 0.14 毫秒</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%95%AA%E5%A4%96%EF%BC%9A%E5%81%9C%E8%BD%A6%E4%BD%8D%E2%80%9D%E6%8C%89%E9%92%AE%E6%B6%88%E5%A4%B1%E2%80%9D%E2%80%94%E2%80%94%E8%AF%B7%E6%B1%82%E6%A0%B9%E6%9C%AC%E6%B2%A1%E5%8F%91%E5%87%BA%E5%8E%BB"><span class="nav-number">6.</span> <span class="nav-text">番外：停车位”按钮消失”——请求根本没发出去</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%B9%E6%B3%95%E8%AE%BA%E6%B1%87%E6%80%BB"><span class="nav-number">7.</span> <span class="nav-text">方法论汇总</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%93%E8%AF%AD"><span class="nav-number">8.</span> <span class="nav-text">结语</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zhlifeiy35</p>
+  <div class="site-description" itemprop="description">记录项目实践、问题排查与工程经验</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">93</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">282</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zhdmm35" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zhdmm35" rel="noopener me" target="_blank"><i class="fa fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/2026-09-14-slow-query-hunting-day_001.jpg" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/09/14/2026-09-14-slow-query-hunting-day/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="记录项目实践、问题排查与工程经验">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="慢查询猎杀日：一天三个性能案、一个「按钮消失」案与统一的方法论 | zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          慢查询猎杀日：一天三个性能案、一个「按钮消失」案与统一的方法论
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-09-14 22:00:00" itemprop="dateCreated datePublished" datetime="2026-09-14T22:00:00+08:00">2026-09-14</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">项目笔记</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/" itemprop="url" rel="index"><span itemprop="name">南网</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="导读"><a href="#导读" class="headerlink" title="导读"></a>导读</h2><blockquote>
+<p>9 月 14 日接连猎杀三个”慢”：巡更任务分页 5 秒卡死（三层根因叠加）、统一通知列表线上 1s+（真凶不在 SQL 层）、动环 CO 查询 21 秒（203 万行全表扫描）。外加一个番外：停车位”视频预览按钮消失”，看起来像后端挂了，其实是前端 <code>null.length</code> 把请求拦在了发出之前。四个案子共用同一套方法论，文末汇总。</p>
+</blockquote>
+<span id="more"></span>
+
+<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>性能问题有个共同点：用户只会说”卡”，而”卡”可以被翻译成非常具体的证据——哪条 SQL、跑了多久、扫了多少行。这一天的三个慢查询案和一个前端案，每个都从”卡”开始，以数字收尾：5s→300ms、1s+→预期 200ms、21s→0.14ms。</p>
+<h2 id="案例一：巡更任务分页——三层根因叠加，少修一层都白搭"><a href="#案例一：巡更任务分页——三层根因叠加，少修一层都白搭" class="headerlink" title="案例一：巡更任务分页——三层根因叠加，少修一层都白搭"></a>案例一：巡更任务分页——三层根因叠加，少修一层都白搭</h2><p>现象：巡更任务列表（51 万行表）首次进入尚可，<strong>来回切页就卡死</strong>。前端两个页面共用同一接口，都慢。</p>
+<p><strong>第一层：<code>delete_flag = 0</code> 废掉联合索引。</strong> 09-12 已经加过 <code>idx_patrol_task_list(task_type, delete_flag, create_time)</code>，但接口照慢。根因：<code>delete_flag</code> 是 <code>varchar(1)</code>，XML 里硬编码 <code>delete_flag = 0</code>（数字）→ 列侧隐式类型转换 → 联合索引第二列断链，<code>EXPLAIN type=ALL</code>。改成 <code>&#39;0&#39;</code> 后 42 万行实测：主查询 1060ms → <strong>2.3ms</strong>。⚠️ 同款写法在 property 20 个 mapper 还有 60+ 处——<strong>以后给任何带 delete_flag 的表加索引，必须连条件一起改</strong>。</p>
+<p><strong>第二层：分页拦截器的包裹式 count——“越刷越卡”的真凶。</strong> 修好第一层部署后仍”反复切换就卡”。processlist 现场抓到唯一在跑的 SQL：</p>
+<div style="background:#28251f;border-radius:12px;overflow:hidden;margin:18px 0;box-shadow:0 2px 10px rgba(0,0,0,0.10);">
+<div style="background:#3a362e;padding:8px 14px;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ff5f57;margin-right:6px;"></span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#febc2e;margin-right:6px;"></span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#28c840;margin-right:10px;"></span><span style="color:#b8b0a4;font-size:12px;font-family:Consolas,monospace;">拦截器包裹式 count（反编译框架 jar 确认）</span></div>
+<pre style="margin:0;padding:14px 16px;overflow-x:auto;font-family:Consolas,Menlo,monospace;font-size:13px;line-height:1.7;color:#f5f0e8;"><code>select count(1) from (SELECT ... ORDER BY create_time DESC ...) t
+-- ORDER BY 不剥离：51 万行物化 + filesort ≈ 5s，每个分页请求固定跑一次
+-- 逃生口（字节码 497-511）：totalCount == -1 && autoCount 才执行 count
+-- → 外部预填 totalCount 即跳过</code></pre>
+</div>
+
+<p>修复：手写与 listByPage 条件<strong>逐字一致</strong>的裸 count（注意 mapper 里原有的 count 查询缺条件，不能直接用），Service 预填 <code>totalCount</code> 跳过拦截器。放大器在前端：<code>request.js</code> 切页不取消旧请求，5s 的 count 并发堆积——“越刷越卡”就是这么来的。</p>
+<p><strong>第三层：零选择性 IN + 覆盖索引。</strong> 线上 status 分布 98.99% 是已归档，Controller 默认塞的 <code>statusList(1,2,3)</code> 是全字典值、零选择性——任何形态的 count 都要数 51 万行。新增 count 专用覆盖索引 <code>idx_patrol_task_count(task_type, delete_flag, status)</code>：count 从 20s → <strong>154ms</strong>（纯覆盖不回表）。</p>
+<p><img data-src="/images/posts/2026-09-14-slow-query-hunting-day/fig1.jpg" alt="三层根因：逐层剥开，逐层修复"><br><em>图 1：三层叠加——废索引的写法、拦截器包裹 count、零选择性 IN，每层独立修复</em></p>
+<p>验证矩阵（本地 41.9 万行同构表实测）最能说明”少修一层都白搭”：</p>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>count</th>
+<th>主查询 LIMIT 10</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>无索引</td>
+<td>943ms</td>
+<td>1060ms（filesort）</td>
+</tr>
+<tr>
+<td>list 索引 + <code>= 0</code>（09-12 的实际效果）</td>
+<td>1027ms</td>
+<td>1155ms（索引不生效）</td>
+</tr>
+<tr>
+<td>list 索引 + <code>= &#39;0&#39;</code>（第一层修复）</td>
+<td>~1s</td>
+<td><strong>2.3ms</strong></td>
+</tr>
+<tr>
+<td>+ 预填跳过拦截器（第二层）</td>
+<td>裸 count ~1s</td>
+<td>2.3ms</td>
+</tr>
+<tr>
+<td>+ count 覆盖索引（第三层）</td>
+<td><strong>154ms</strong></td>
+<td>2.3ms</td>
+</tr>
+</tbody></table>
+<h2 id="案例二：unifiedPage-线上-1s-——真凶不在-SQL-层"><a href="#案例二：unifiedPage-线上-1s-——真凶不在-SQL-层" class="headerlink" title="案例二：unifiedPage 线上 1s+——真凶不在 SQL 层"></a>案例二：unifiedPage 线上 1s+——真凶不在 SQL 层</h2><p>延续 9 月 11 日的统一通知功能。SQL 层前两轮优化（延迟关联、分支候选封顶）经复查确认到位，但线上接口仍 1s+。按排查顺序：</p>
+<ol>
+<li><strong>查索引</strong>：information_schema 确认四个索引都在，排除漏执行；</li>
+<li><strong>buffer pool</strong>：<code>@@innodb_buffer_pool_size</code> &#x3D; <strong>128M</strong>——docker 默认值，跑在 30G 内存的机器上。<code>SET PERSIST</code> 在线调到 512M；</li>
+<li><strong>分段慢日志立功</strong>：之前埋的 <code>permissionMs/countMs/listMs/receiverMs</code> 分段日志直接把嫌疑钉在 countMs&#x2F;listMs；</li>
+<li><strong>真凶</strong>：<code>totalCount=348877</code> − pushing 104,732 &#x3D; <strong>message_notice 24.4 万行</strong>（2023 年至今真实业务积累）。count 每条回表查 delete_flag，list 分支 24 万行收集 + filesort 取 10 行。</li>
+</ol>
+<p>修复：覆盖索引 <code>idx_mn_unified_page(delete_flag, create_time, id, biz_type)</code>——列序有讲究：delete_flag 等值前缀 + create_time&#x2F;id 让列表倒序扫 10 行即停，biz_type 放末尾走 ICP 让 count 全程不回表。</p>
+<blockquote>
+<p>这个案子最贵的教训：<strong>验证数据要生产保真</strong>。本地 message_notice 只有 74 行，同结构的查询在小数据上什么索引缺失都暴露不出来。性能验证第一步，先拉生产行数和分布。</p>
+</blockquote>
+<h2 id="案例三：动环-CO-查询——21-秒到-0-14-毫秒"><a href="#案例三：动环-CO-查询——21-秒到-0-14-毫秒" class="headerlink" title="案例三：动环 CO 查询——21 秒到 0.14 毫秒"></a>案例三：动环 CO 查询——21 秒到 0.14 毫秒</h2><p>停车场 CO 概况接口，页面卡片加载慢。原查询按 <code>monitoring_time DESC</code> 取最新记录，但表只有主键索引，且<strong>接口只用 <code>ddc_co1</code> 一个字段却 SELECT 整行几十个字段</strong>。测试库 203 万行实测：全表扫描 → 过滤 37 万条再排序 → 单次约 <strong>21 秒</strong>。</p>
+<p>修复三件套：</p>
+<div style="background:#28251f;border-radius:12px;overflow:hidden;margin:18px 0;box-shadow:0 2px 10px rgba(0,0,0,0.10);">
+<div style="background:#3a362e;padding:8px 14px;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ff5f57;margin-right:6px;"></span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#febc2e;margin-right:6px;"></span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#28c840;margin-right:10px;"></span><span style="color:#b8b0a4;font-size:12px;font-family:Consolas,monospace;">CO 查询修复（V20260914.11.00）</span></div>
+<pre style="margin:0;padding:14px 16px;overflow-x:auto;font-family:Consolas,Menlo,monospace;font-size:13px;line-height:1.7;color:#f5f0e8;"><code>-- ① 只 SELECT id, ddc_co1（减少读取与传输）
+-- ② 排序加决胜列：ORDER BY monitoring_time DESC, id DESC（同时间下 LIMIT 边界稳定）
+-- ③ 覆盖索引：
+ALTER TABLE building_monitoring_log
+  ADD INDEX idx_bml_co_recent (delete_flag, monitoring_time, id, device_no, ddc_co1);</code></pre>
+</div>
+
+<p>索引后执行计划变为覆盖索引读取，约扫 49 个索引项，<code>EXPLAIN ANALYZE</code> 约 <strong>0.14ms</strong>；新旧 SQL 返回记录与 CO 平均值（17.38）完全一致。<strong>21 秒 → 0.14 毫秒，五个数量级</strong>——这不是调参，是把”全表扫描 + 排序”换成”覆盖索引直读”。</p>
+<h2 id="番外：停车位”按钮消失”——请求根本没发出去"><a href="#番外：停车位”按钮消失”——请求根本没发出去" class="headerlink" title="番外：停车位”按钮消失”——请求根本没发出去"></a>番外：停车位”按钮消失”——请求根本没发出去</h2><p>停车位绑定摄像头后”视频预览”按钮不显示，看起来像后端或 IoT 保存失败。沿 <code>updateSelective</code> 链路排查，真因在前端空值处理：</p>
+<div style="background:#28251f;border-radius:12px;overflow:hidden;margin:18px 0;box-shadow:0 2px 10px rgba(0,0,0,0.10);">
+<div style="background:#3a362e;padding:8px 14px;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ff5f57;margin-right:6px;"></span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#febc2e;margin-right:6px;"></span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#28c840;margin-right:10px;"></span><span style="color:#b8b0a4;font-size:12px;font-family:Consolas,monospace;">confirmCamera 空值坑（修复前后）</span></div>
+<pre style="margin:0;padding:14px 16px;overflow-x:auto;font-family:Consolas,Menlo,monospace;font-size:13px;line-height:1.7;color:#f5f0e8;"><code>// ❌ 旧代码：null !== undefined 为 true，随后读 null.length 抛异常
+if (this.parkingLotForm.associatedCameraInfo !== undefined) &#123;
+  for (let i = 0; i &lt; this.parkingLotForm.associatedCameraInfo.length; i++) &#123;
+
+<p>&#x2F;&#x2F; ✅ 修复：只对数组执行重复检查，null 直接进新绑定分支<br>if (Array.isArray(this.parkingLotForm.associatedCameraInfo)) &#123;</code></pre></p>
+</div>
+
+<p>异常发生在提交前——<code>updateSelective</code> 请求<strong>根本没发出</strong>，所以后端日志干干净净，看起来像”后端没保存”。这个案子配了一个分层确认清单，值得所有前后端联调通用：请求没发出 → 看浏览器 Console；发出但失败 → 看服务日志；成功但字段丢 → 查数据库三列值；只有保存成功且按钮出现后拉流失败，才轮到 IoT 排查。</p>
+<p><img data-src="/images/posts/2026-09-14-slow-query-hunting-day/fig2.jpg" alt="按钮消失案：请求被异常拦在发出前"><br><em>图 2：分层定位——Console、网络面板、服务日志、数据库，各管一段</em></p>
+<h2 id="方法论汇总"><a href="#方法论汇总" class="headerlink" title="方法论汇总"></a>方法论汇总</h2><p>四个案子收尾，沉淀下来的通用动作：</p>
+<ol>
+<li><strong>processlist 是最好的分层证据</strong>：把”页面卡”翻译成”哪条 SQL 跑了多久”；要抓”正在卡”的瞬间（空闲时抓必扑空）；</li>
+<li><strong>无源码框架反编译字节码</strong>：<code>javap -c</code> 看 String 常量（SQL 模板的真实拼接方式）+ 关键跳转（<code>totalCount == -1</code> 逃生口），比猜快一个数量级；</li>
+<li><strong>验证数据生产保真</strong>：本地 74 行 vs 线上 24.4 万，小数据上什么索引缺失都看不出来；</li>
+<li><strong>分段慢日志让定位从猜变成看</strong>：permissionMs&#x2F;countMs&#x2F;listMs&#x2F;receiverMs 提前埋好，出事就是几条命令的事；</li>
+<li><strong>本地同构表做相对对比</strong>：buffer pool 小时绝对值会失真（FORCE INDEX 曾测出 27s 的假象），同条件下的相对对比才可信；</li>
+<li><strong>前后端联调先分层</strong>：请求发没发出、响应成没成功、字段落没落库，各段有各段的工具。</li>
+</ol>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>一天的猎杀清单：三个索引&#x2F;配置修复、一个前端空值修复、五个提交。但比修复更重要的是证据链——每个案子都留下了”从现象到数字”的完整路径。下一次再有用户说”卡”，这套动作可以直接复用。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/" rel="tag"># 性能优化</a>
+              <a href="/tags/MySQL/" rel="tag"># MySQL</a>
+              <a href="/tags/%E6%85%A2%E6%9F%A5%E8%AF%A2/" rel="tag"># 慢查询</a>
+              <a href="/tags/%E7%B4%A2%E5%BC%95/" rel="tag"># 索引</a>
+              <a href="/tags/%E6%8E%92%E6%9F%A5%E6%96%B9%E6%B3%95%E8%AE%BA/" rel="tag"># 排查方法论</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/09/11/2026-09-11-dingtalk-notice-unified/" rel="prev" title="八万行物化与八个坑：钉钉公告统一通知的全层上线实录">
+                  <i class="fa fa-angle-left"></i> 八万行物化与八个坑：钉钉公告统一通知的全层上线实录
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2026/09/16/2026-09-16-obsidian-companion-viewer-rebrand/" rel="next" title="给 Obsidian 移动端伴侣加图片查看器：手势与翻页共存、AI 品牌焕新与一个 CJK 环境坑">
+                  给 Obsidian 移动端伴侣加图片查看器：手势与翻页共存、AI 品牌焕新与一个 CJK 环境坑 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  
+  <div class="comments giscus-container">
+  </div>
+  
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">zhlifeiy35</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/zhdmm35" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"zhdmm35/zhdmm35.github.io","repo_id":"R_kgDOON4bhg","category":"Announcements","category_id":"DIC_kwDOON4bhs4C3dEc","mapping":"pathname","strict":0,"reactions_enabled":1,"emit_metadata":0,"theme":"preferred_color_scheme","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+
+<script>
+document.addEventListener('page:loaded', () => {
+  if (!CONFIG.page.comments) return;
+
+  NexT.utils.loadComments('.giscus-container')
+    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
+      attributes: {
+        async                   : true,
+        crossOrigin             : 'anonymous',
+        'data-repo'             : CONFIG.giscus.repo,
+        'data-repo-id'          : CONFIG.giscus.repo_id,
+        'data-category'         : CONFIG.giscus.category,
+        'data-category-id'      : CONFIG.giscus.category_id,
+        'data-mapping'          : CONFIG.giscus.mapping,
+        'data-strict'           : CONFIG.giscus.strict,
+        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
+        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
+        'data-theme'            : CONFIG.giscus.theme,
+        'data-lang'             : CONFIG.giscus.lang,
+        'data-input-position'   : CONFIG.giscus.input_position,
+        'data-loading'          : CONFIG.giscus.loading
+      },
+      parentNode: document.querySelector('.giscus-container')
+    }));
+});
+</script>
+<script defer src="/js/blog-assistant.js" data-endpoint="https://zhlifeiy-blog-assistant.huiyaozhang07.workers.dev/ask"></script>
+
+</body>
+</html>

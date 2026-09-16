@@ -6,7 +6,7 @@
   <link href="https://zhlifeiy.codes/atom.xml" rel="self"/>
   
   <link href="https://zhlifeiy.codes/"/>
-  <updated>2026-09-06T10:00:00.000Z</updated>
+  <updated>2026-09-16T14:00:00.000Z</updated>
   <id>https://zhlifeiy.codes/</id>
   
   <author>
@@ -15,6 +15,194 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>给 Obsidian 移动端伴侣加图片查看器：手势与翻页共存、AI 品牌焕新与一个 CJK 环境坑</title>
+    <link href="https://zhlifeiy.codes/2026/09/16/2026-09-16-obsidian-companion-viewer-rebrand/"/>
+    <id>https://zhlifeiy.codes/2026/09/16/2026-09-16-obsidian-companion-viewer-rebrand/</id>
+    <published>2026-09-16T14:00:00.000Z</published>
+    <updated>2026-09-16T14:00:00.000Z</updated>
+    
+    
+    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;blockquote&gt;
+&lt;p&gt;给自己的开源小项目 Obsidian Mobile Companion（Android 端，GitHub 同步 Markdown 仓库）做了一天的体验升级：图片全屏查看器（双指缩放 + 双击放大 + 同目录滑动切换）、AI 生成的整套品牌素材、插画空态、LazyColumn 性能收尾。真正的硬骨头有两个：手势缩放与 Pager 翻页的事件争夺，以及一个中文用户名引发的 Gradle 灵异 bug。&lt;/p&gt;
+&lt;/blockquote&gt;</summary>
+    
+    
+    
+    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
+    
+    <category term="黑曜石移动端" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E9%BB%91%E6%9B%9C%E7%9F%B3%E7%A7%BB%E5%8A%A8%E7%AB%AF/"/>
+    
+    
+    <category term="Android" scheme="https://zhlifeiy.codes/tags/Android/"/>
+    
+    <category term="Jetpack Compose" scheme="https://zhlifeiy.codes/tags/Jetpack-Compose/"/>
+    
+    <category term="手势处理" scheme="https://zhlifeiy.codes/tags/%E6%89%8B%E5%8A%BF%E5%A4%84%E7%90%86/"/>
+    
+    <category term="AI绘图" scheme="https://zhlifeiy.codes/tags/AI%E7%BB%98%E5%9B%BE/"/>
+    
+    <category term="Gradle" scheme="https://zhlifeiy.codes/tags/Gradle/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>慢查询猎杀日：一天三个性能案、一个「按钮消失」案与统一的方法论</title>
+    <link href="https://zhlifeiy.codes/2026/09/14/2026-09-14-slow-query-hunting-day/"/>
+    <id>https://zhlifeiy.codes/2026/09/14/2026-09-14-slow-query-hunting-day/</id>
+    <published>2026-09-14T14:00:00.000Z</published>
+    <updated>2026-09-14T14:00:00.000Z</updated>
+    
+    
+    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;blockquote&gt;
+&lt;p&gt;9 月 14 日接连猎杀三个”慢”：巡更任务分页 5 秒卡死（三层根因叠加）、统一通知列表线上 1s+（真凶不在 SQL 层）、动环 CO 查询 21 秒（203 万行全表扫描）。外加一个番外：停车位”视频预览按钮消失”，看起来像后端挂了，其实是前端 &lt;code&gt;null.length&lt;/code&gt; 把请求拦在了发出之前。四个案子共用同一套方法论，文末汇总。&lt;/p&gt;
+&lt;/blockquote&gt;</summary>
+    
+    
+    
+    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
+    
+    <category term="南网" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/"/>
+    
+    
+    <category term="性能优化" scheme="https://zhlifeiy.codes/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/"/>
+    
+    <category term="MySQL" scheme="https://zhlifeiy.codes/tags/MySQL/"/>
+    
+    <category term="慢查询" scheme="https://zhlifeiy.codes/tags/%E6%85%A2%E6%9F%A5%E8%AF%A2/"/>
+    
+    <category term="索引" scheme="https://zhlifeiy.codes/tags/%E7%B4%A2%E5%BC%95/"/>
+    
+    <category term="排查方法论" scheme="https://zhlifeiy.codes/tags/%E6%8E%92%E6%9F%A5%E6%96%B9%E6%B3%95%E8%AE%BA/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>八万行物化与八个坑：钉钉公告统一通知的全层上线实录</title>
+    <link href="https://zhlifeiy.codes/2026/09/11/2026-09-11-dingtalk-notice-unified/"/>
+    <id>https://zhlifeiy.codes/2026/09/11/2026-09-11-dingtalk-notice-unified/</id>
+    <published>2026-09-11T14:00:00.000Z</published>
+    <updated>2026-09-11T14:00:00.000Z</updated>
+    
+    
+    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;blockquote&gt;
+&lt;p&gt;一天之内把钉钉公告功能堆到第三层：P1 同步落库、P2 统一列表合并、P3 全员物化 + 站内信触达 + 每小时定时同步。三轮外部 review 抓出的问题全部核实属实并修复；然后是本次最有价值的部分——&lt;strong&gt;生产上线排障实录，八个坑每个都真实发生&lt;/strong&gt;。文末附一份可复用的上线部署清单。&lt;/p&gt;
+&lt;/blockquote&gt;</summary>
+    
+    
+    
+    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
+    
+    <category term="南网" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/"/>
+    
+    
+    <category term="代码审查" scheme="https://zhlifeiy.codes/tags/%E4%BB%A3%E7%A0%81%E5%AE%A1%E6%9F%A5/"/>
+    
+    <category term="钉钉集成" scheme="https://zhlifeiy.codes/tags/%E9%92%89%E9%92%89%E9%9B%86%E6%88%90/"/>
+    
+    <category term="数据物化" scheme="https://zhlifeiy.codes/tags/%E6%95%B0%E6%8D%AE%E7%89%A9%E5%8C%96/"/>
+    
+    <category term="上线部署" scheme="https://zhlifeiy.codes/tags/%E4%B8%8A%E7%BA%BF%E9%83%A8%E7%BD%B2/"/>
+    
+    <category term="MySQL" scheme="https://zhlifeiy.codes/tags/MySQL/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>把一整天的全栈开发交给 AI agent：ZCode 全周期协作体验报告</title>
+    <link href="https://zhlifeiy.codes/2026/09/10/2026-09-10-zcode-fullcycle-review/"/>
+    <id>https://zhlifeiy.codes/2026/09/10/2026-09-10-zcode-fullcycle-review/</id>
+    <published>2026-09-10T14:00:00.000Z</published>
+    <updated>2026-09-10T14:00:00.000Z</updated>
+    
+    
+    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;blockquote&gt;
+&lt;p&gt;评测 AI 编程 agent 的方式有很多，最狠的一种是：把一个真实功能从需求澄清到生产上线的&lt;strong&gt;完整一天&lt;/strong&gt;交给它。本文以”访客设备列表接真实接口”为样本——这个任务罕见地覆盖了数据普查、方案对齐、全栈开发、多层验证、外部评审处置、合并推送、生产库操作、发布物料的完整生命周期，因此能比较全面地观察 agent 在真实工程项目里的协作表现。结论先行：适合做全周期工程协作者，但有三道人工关卡必须保留。&lt;/p&gt;
+&lt;/blockquote&gt;</summary>
+    
+    
+    
+    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
+    
+    <category term="南网" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/"/>
+    
+    <category term="AI经验" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/AI%E7%BB%8F%E9%AA%8C/"/>
+    
+    
+    <category term="代码审查" scheme="https://zhlifeiy.codes/tags/%E4%BB%A3%E7%A0%81%E5%AE%A1%E6%9F%A5/"/>
+    
+    <category term="方法论" scheme="https://zhlifeiy.codes/tags/%E6%96%B9%E6%B3%95%E8%AE%BA/"/>
+    
+    <category term="ZCode" scheme="https://zhlifeiy.codes/tags/ZCode/"/>
+    
+    <category term="AI协作" scheme="https://zhlifeiy.codes/tags/AI%E5%8D%8F%E4%BD%9C/"/>
+    
+    <category term="工具评测" scheme="https://zhlifeiy.codes/tags/%E5%B7%A5%E5%85%B7%E8%AF%84%E6%B5%8B/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>从 mock 页到真表：访客设备列表的两表设计、9+1 造数与外部 review 的四个 P2</title>
+    <link href="https://zhlifeiy.codes/2026/09/09/2026-09-09-visitor-device-real-api/"/>
+    <id>https://zhlifeiy.codes/2026/09/09/2026-09-09-visitor-device-real-api/</id>
+    <published>2026-09-09T14:00:00.000Z</published>
+    <updated>2026-09-09T14:00:00.000Z</updated>
+    
+    
+    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;blockquote&gt;
+&lt;p&gt;一个纯 mock 的演示页面要接成真实接口。动手前先做数据普查——确认全系统真的没有访客设备表；然后设计”实体 + 事件”两张新表，用 9+1 的造数结构让”在线时长”不需要定时任务就能自然增长；最后外部 review 抓出四个 P2，其中一个 OGNL Date 坑在老代码里还埋着同款雷。&lt;/p&gt;
+&lt;/blockquote&gt;</summary>
+    
+    
+    
+    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
+    
+    <category term="南网" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/"/>
+    
+    
+    <category term="MyBatis" scheme="https://zhlifeiy.codes/tags/MyBatis/"/>
+    
+    <category term="代码审查" scheme="https://zhlifeiy.codes/tags/%E4%BB%A3%E7%A0%81%E5%AE%A1%E6%9F%A5/"/>
+    
+    <category term="E2E测试" scheme="https://zhlifeiy.codes/tags/E2E%E6%B5%8B%E8%AF%95/"/>
+    
+    <category term="访客系统" scheme="https://zhlifeiy.codes/tags/%E8%AE%BF%E5%AE%A2%E7%B3%BB%E7%BB%9F/"/>
+    
+    <category term="表设计" scheme="https://zhlifeiy.codes/tags/%E8%A1%A8%E8%AE%BE%E8%AE%A1/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>让演示环境像真的：离线造数 176 条的安全网与一个「只看不动」的 demo 角色</title>
+    <link href="https://zhlifeiy.codes/2026/09/08/2026-09-08-offline-seed-data-demo-role/"/>
+    <id>https://zhlifeiy.codes/2026/09/08/2026-09-08-offline-seed-data-demo-role/</id>
+    <published>2026-09-08T14:00:00.000Z</published>
+    <updated>2026-09-08T14:00:00.000Z</updated>
+    
+    
+    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;blockquote&gt;
+&lt;p&gt;演示环境要拿给客户看，面前两只拦路虎：页面上没有成规模的历史数据，也没有一个”能看全部但什么都不许动”的演示账号。9 月 8 日一天解决掉两只——造数 176 条（44 条监控申请 + 132 条回放申请）直接写进线上库，同时落地一个精确到四个”查看”能力的 demo 角色。本篇记录造数的安全网四件套、五表闭环模型，以及角色决策里那个被知情接受的副作用。&lt;/p&gt;
+&lt;/blockquote&gt;</summary>
+    
+    
+    
+    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
+    
+    <category term="南网" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/"/>
+    
+    
+    <category term="方法论" scheme="https://zhlifeiy.codes/tags/%E6%96%B9%E6%B3%95%E8%AE%BA/"/>
+    
+    <category term="MySQL" scheme="https://zhlifeiy.codes/tags/MySQL/"/>
+    
+    <category term="数据造数" scheme="https://zhlifeiy.codes/tags/%E6%95%B0%E6%8D%AE%E9%80%A0%E6%95%B0/"/>
+    
+    <category term="权限设计" scheme="https://zhlifeiy.codes/tags/%E6%9D%83%E9%99%90%E8%AE%BE%E8%AE%A1/"/>
+    
+    <category term="内网运维" scheme="https://zhlifeiy.codes/tags/%E5%86%85%E7%BD%91%E8%BF%90%E7%BB%B4/"/>
+    
+  </entry>
   
   <entry>
     <title>黑曜石移动端 Phase 6：PC 自动同步与手机刷新可靠性</title>
@@ -35,9 +223,9 @@
     
     <category term="Git" scheme="https://zhlifeiy.codes/tags/Git/"/>
     
-    <category term="项目复盘" scheme="https://zhlifeiy.codes/tags/%E9%A1%B9%E7%9B%AE%E5%A4%8D%E7%9B%98/"/>
-    
     <category term="Android" scheme="https://zhlifeiy.codes/tags/Android/"/>
+    
+    <category term="项目复盘" scheme="https://zhlifeiy.codes/tags/%E9%A1%B9%E7%9B%AE%E5%A4%8D%E7%9B%98/"/>
     
     <category term="守护进程" scheme="https://zhlifeiy.codes/tags/%E5%AE%88%E6%8A%A4%E8%BF%9B%E7%A8%8B/"/>
     
@@ -58,11 +246,11 @@
     <category term="Android 开发" scheme="https://zhlifeiy.codes/categories/Android-%E5%BC%80%E5%8F%91/"/>
     
     
-    <category term="项目复盘" scheme="https://zhlifeiy.codes/tags/%E9%A1%B9%E7%9B%AE%E5%A4%8D%E7%9B%98/"/>
-    
     <category term="Android" scheme="https://zhlifeiy.codes/tags/Android/"/>
     
     <category term="Jetpack Compose" scheme="https://zhlifeiy.codes/tags/Jetpack-Compose/"/>
+    
+    <category term="项目复盘" scheme="https://zhlifeiy.codes/tags/%E9%A1%B9%E7%9B%AE%E5%A4%8D%E7%9B%98/"/>
     
     <category term="GitHub API" scheme="https://zhlifeiy.codes/tags/GitHub-API/"/>
     
@@ -85,15 +273,170 @@
     <category term="Android 开发" scheme="https://zhlifeiy.codes/categories/Android-%E5%BC%80%E5%8F%91/"/>
     
     
-    <category term="项目复盘" scheme="https://zhlifeiy.codes/tags/%E9%A1%B9%E7%9B%AE%E5%A4%8D%E7%9B%98/"/>
-    
     <category term="Android" scheme="https://zhlifeiy.codes/tags/Android/"/>
-    
-    <category term="Kotlin" scheme="https://zhlifeiy.codes/tags/Kotlin/"/>
     
     <category term="Jetpack Compose" scheme="https://zhlifeiy.codes/tags/Jetpack-Compose/"/>
     
+    <category term="项目复盘" scheme="https://zhlifeiy.codes/tags/%E9%A1%B9%E7%9B%AE%E5%A4%8D%E7%9B%98/"/>
+    
+    <category term="Kotlin" scheme="https://zhlifeiy.codes/tags/Kotlin/"/>
+    
     <category term="AI 辅助开发" scheme="https://zhlifeiy.codes/tags/AI-%E8%BE%85%E5%8A%A9%E5%BC%80%E5%8F%91/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>「不要做任何加工」：会议室同步钉钉原始数据表落地记</title>
+    <link href="https://zhlifeiy.codes/2026/09/05/2026-09-05-dingtalk-room-raw-snapshot/"/>
+    <id>https://zhlifeiy.codes/2026/09/05/2026-09-05-dingtalk-room-raw-snapshot/</id>
+    <published>2026-09-05T14:00:00.000Z</published>
+    <updated>2026-09-05T14:00:00.000Z</updated>
+    
+    
+    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;blockquote&gt;
+&lt;p&gt;上级要看会议室同步时钉钉返回的&lt;strong&gt;完整原始数据&lt;/strong&gt;——不做任何加工。需求一句话就说完了，真正的功夫在五个关键决策上，其中一个是对”自作聪明”方案的否决。落表之后还有个意外发现：钉钉返回的会议室比业务表多出 58 间，而原始快照表成了唯一的裁判。&lt;/p&gt;
+&lt;/blockquote&gt;</summary>
+    
+    
+    
+    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
+    
+    <category term="南网" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/"/>
+    
+    
+    <category term="MyBatis" scheme="https://zhlifeiy.codes/tags/MyBatis/"/>
+    
+    <category term="钉钉集成" scheme="https://zhlifeiy.codes/tags/%E9%92%89%E9%92%89%E9%9B%86%E6%88%90/"/>
+    
+    <category term="数据快照" scheme="https://zhlifeiy.codes/tags/%E6%95%B0%E6%8D%AE%E5%BF%AB%E7%85%A7/"/>
+    
+    <category term="需求对齐" scheme="https://zhlifeiy.codes/tags/%E9%9C%80%E6%B1%82%E5%AF%B9%E9%BD%90/"/>
+    
+    <category term="Flyway" scheme="https://zhlifeiy.codes/tags/Flyway/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>四条线与一条密文：访客邀请全链路复盘与审查捡出的存量 bug</title>
+    <link href="https://zhlifeiy.codes/2026/09/04/2026-09-04-visitor-fullchain-sms-bug/"/>
+    <id>https://zhlifeiy.codes/2026/09/04/2026-09-04-visitor-fullchain-sms-bug/</id>
+    <published>2026-09-04T14:00:00.000Z</published>
+    <updated>2026-09-04T14:00:00.000Z</updated>
+    
+    
+    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;blockquote&gt;
+&lt;p&gt;把访客邀请的四条线（提交生效、出码、权限下发、通行回流）完整摊开，回答”前端拿到二维码时权限到底下发了没有”；同日审查同事的短信 mock 提交，捡出一个更让人意外的存量 bug——真实审批短信的收件手机号，可能从来都是一串加密后的乱码。&lt;/p&gt;
+&lt;/blockquote&gt;</summary>
+    
+    
+    
+    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
+    
+    <category term="南网" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/"/>
+    
+    
+    <category term="代码审查" scheme="https://zhlifeiy.codes/tags/%E4%BB%A3%E7%A0%81%E5%AE%A1%E6%9F%A5/"/>
+    
+    <category term="访客系统" scheme="https://zhlifeiy.codes/tags/%E8%AE%BF%E5%AE%A2%E7%B3%BB%E7%BB%9F/"/>
+    
+    <category term="状态机" scheme="https://zhlifeiy.codes/tags/%E7%8A%B6%E6%80%81%E6%9C%BA/"/>
+    
+    <category term="幂等" scheme="https://zhlifeiy.codes/tags/%E5%B9%82%E7%AD%89/"/>
+    
+    <category term="存量bug" scheme="https://zhlifeiy.codes/tags/%E5%AD%98%E9%87%8Fbug/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>访客邀请上线记：从星链直连到持久化异步任务链路</title>
+    <link href="https://zhlifeiy.codes/2026/09/03/2026-09-03-visitor-invite-async-adapter/"/>
+    <id>https://zhlifeiy.codes/2026/09/03/2026-09-03-visitor-invite-async-adapter/</id>
+    <published>2026-09-03T14:00:00.000Z</published>
+    <updated>2026-09-03T14:00:00.000Z</updated>
+    
+    
+    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;blockquote&gt;
+&lt;p&gt;访客邀请功能要求”提交即生效”：免审批、访客自动进通行用户、权限自动下发到魔点门禁。真正的工作量不在接口本身，而在把”审批通过后直连星链下发权限”改成一条可重试、可追踪、可人工兜底的持久化异步任务链路。本篇记录接口契约、合并冲突的坑，以及一次状态机走完一整圈的全链路模拟联调。&lt;/p&gt;
+&lt;/blockquote&gt;</summary>
+    
+    
+    
+    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
+    
+    <category term="南网" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/"/>
+    
+    
+    <category term="E2E测试" scheme="https://zhlifeiy.codes/tags/E2E%E6%B5%8B%E8%AF%95/"/>
+    
+    <category term="访客系统" scheme="https://zhlifeiy.codes/tags/%E8%AE%BF%E5%AE%A2%E7%B3%BB%E7%BB%9F/"/>
+    
+    <category term="异步任务" scheme="https://zhlifeiy.codes/tags/%E5%BC%82%E6%AD%A5%E4%BB%BB%E5%8A%A1/"/>
+    
+    <category term="状态机" scheme="https://zhlifeiy.codes/tags/%E7%8A%B6%E6%80%81%E6%9C%BA/"/>
+    
+    <category term="Git合并" scheme="https://zhlifeiy.codes/tags/Git%E5%90%88%E5%B9%B6/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>三层墙与两段缺失：1GB 上传放行记与告警联动发布屏联调</title>
+    <link href="https://zhlifeiy.codes/2026/09/02/2026-09-02-1gb-upload-and-screen-push/"/>
+    <id>https://zhlifeiy.codes/2026/09/02/2026-09-02-1gb-upload-and-screen-push/</id>
+    <published>2026-09-02T14:00:00.000Z</published>
+    <updated>2026-09-02T14:00:00.000Z</updated>
+    
+    
+    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;blockquote&gt;
+&lt;p&gt;300MB 视频上传前端直接超时，放大限制却发现墙不止一层；审批接口又被大华转码拖到超时，只能把设备同步挪出请求线程。同一天还把告警联动发布屏打通了——骨架是现成的，真正缺的是两段从没接上的代码。附一份当天沉淀的端到端测试七步配方。&lt;/p&gt;
+&lt;/blockquote&gt;</summary>
+    
+    
+    
+    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
+    
+    <category term="南网" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/"/>
+    
+    
+    <category term="Nacos" scheme="https://zhlifeiy.codes/tags/Nacos/"/>
+    
+    <category term="nginx" scheme="https://zhlifeiy.codes/tags/nginx/"/>
+    
+    <category term="异步化" scheme="https://zhlifeiy.codes/tags/%E5%BC%82%E6%AD%A5%E5%8C%96/"/>
+    
+    <category term="E2E测试" scheme="https://zhlifeiy.codes/tags/E2E%E6%B5%8B%E8%AF%95/"/>
+    
+    <category term="大华发布屏" scheme="https://zhlifeiy.codes/tags/%E5%A4%A7%E5%8D%8E%E5%8F%91%E5%B8%83%E5%B1%8F/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>接口 200 却永远没有下文：一次跨四系统的超时根修与告警人脸上线排查</title>
+    <link href="https://zhlifeiy.codes/2026/09/01/2026-09-01-timeout-and-face-alarm/"/>
+    <id>https://zhlifeiy.codes/2026/09/01/2026-09-01-timeout-and-face-alarm/</id>
+    <published>2026-09-01T14:00:00.000Z</published>
+    <updated>2026-09-01T14:00:00.000Z</updated>
+    
+    
+    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;blockquote&gt;
+&lt;p&gt;生产环境上传素材返回 200，审批也点了同意，素材列表却永远空空如也。同一天另一片场：告警人脸功能上线，规则建好了、平台却”看不到人脸”。两个故障表面毫不相干，收尾时却发现它们共用同一套排查方法论：&lt;strong&gt;先用最硬的证据定层，再一次只换一个变量&lt;/strong&gt;。本篇把两条排查线完整复盘。&lt;/p&gt;
+&lt;/blockquote&gt;</summary>
+    
+    
+    
+    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
+    
+    <category term="南网" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/"/>
+    
+    
+    <category term="Spring Cloud" scheme="https://zhlifeiy.codes/tags/Spring-Cloud/"/>
+    
+    <category term="RestTemplate" scheme="https://zhlifeiy.codes/tags/RestTemplate/"/>
+    
+    <category term="超时排查" scheme="https://zhlifeiy.codes/tags/%E8%B6%85%E6%97%B6%E6%8E%92%E6%9F%A5/"/>
+    
+    <category term="人脸识别" scheme="https://zhlifeiy.codes/tags/%E4%BA%BA%E8%84%B8%E8%AF%86%E5%88%AB/"/>
+    
+    <category term="方法论" scheme="https://zhlifeiy.codes/tags/%E6%96%B9%E6%B3%95%E8%AE%BA/"/>
     
   </entry>
   
@@ -116,11 +459,11 @@
     
     <category term="踩坑" scheme="https://zhlifeiy.codes/tags/%E8%B8%A9%E5%9D%91/"/>
     
+    <category term="线程池" scheme="https://zhlifeiy.codes/tags/%E7%BA%BF%E7%A8%8B%E6%B1%A0/"/>
+    
     <category term="Code Review" scheme="https://zhlifeiy.codes/tags/Code-Review/"/>
     
     <category term="Spring" scheme="https://zhlifeiy.codes/tags/Spring/"/>
-    
-    <category term="线程池" scheme="https://zhlifeiy.codes/tags/%E7%BA%BF%E7%A8%8B%E6%B1%A0/"/>
     
     <category term="测试" scheme="https://zhlifeiy.codes/tags/%E6%B5%8B%E8%AF%95/"/>
     
@@ -149,9 +492,9 @@
     
     <category term="钉钉" scheme="https://zhlifeiy.codes/tags/%E9%92%89%E9%92%89/"/>
     
-    <category term="线程池" scheme="https://zhlifeiy.codes/tags/%E7%BA%BF%E7%A8%8B%E6%B1%A0/"/>
-    
     <category term="深链" scheme="https://zhlifeiy.codes/tags/%E6%B7%B1%E9%93%BE/"/>
+    
+    <category term="线程池" scheme="https://zhlifeiy.codes/tags/%E7%BA%BF%E7%A8%8B%E6%B1%A0/"/>
     
   </entry>
   
@@ -205,11 +548,11 @@
     
     <category term="微服务" scheme="https://zhlifeiy.codes/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/"/>
     
+    <category term="方法论" scheme="https://zhlifeiy.codes/tags/%E6%96%B9%E6%B3%95%E8%AE%BA/"/>
+    
     <category term="排障" scheme="https://zhlifeiy.codes/tags/%E6%8E%92%E9%9A%9C/"/>
     
     <category term="日志" scheme="https://zhlifeiy.codes/tags/%E6%97%A5%E5%BF%97/"/>
-    
-    <category term="方法论" scheme="https://zhlifeiy.codes/tags/%E6%96%B9%E6%B3%95%E8%AE%BA/"/>
     
   </entry>
   
@@ -268,311 +611,6 @@
     <category term="权限设计" scheme="https://zhlifeiy.codes/tags/%E6%9D%83%E9%99%90%E8%AE%BE%E8%AE%A1/"/>
     
     <category term="BPM" scheme="https://zhlifeiy.codes/tags/BPM/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>同一天两个 500：校验的对象，和提交的对象不是同一个</title>
-    <link href="https://zhlifeiy.codes/2026/08/19/%E4%B8%A4%E4%B8%AA500%E6%A0%A1%E9%AA%8C%E5%AF%B9%E8%B1%A1%E4%B8%8E%E6%8F%90%E4%BA%A4%E5%AF%B9%E8%B1%A1/"/>
-    <id>https://zhlifeiy.codes/2026/08/19/%E4%B8%A4%E4%B8%AA500%E6%A0%A1%E9%AA%8C%E5%AF%B9%E8%B1%A1%E4%B8%8E%E6%8F%90%E4%BA%A4%E5%AF%B9%E8%B1%A1/</id>
-    <published>2026-08-19T14:00:00.000Z</published>
-    <updated>2026-08-19T14:00:00.000Z</updated>
-    
-    
-    <summary type="html">&lt;p&gt;园区平台的信息发布模块，同一天在同一个接口上连续爆出两个不同的 500：下午五点半一个 &lt;code&gt;NullPointerException&lt;/code&gt;，二十分钟后一个 &lt;code&gt;DateTimeParseException&lt;/code&gt;。表面是两个不相干的异常，根因却是同一个模式——&lt;strong&gt;前端把非法值带进了请求体，后端在关键路径上既没有校验也没有空值保护&lt;/strong&gt;，&lt;code&gt;@Transactional&lt;/code&gt; 回滚，数据未落库。这篇记录两个 bug 的完整触发链，以及那条最值得记住的结论：前端校验的对象，和最终提交的对象，根本不是同一个。&lt;/p&gt;</summary>
-    
-    
-    
-    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
-    
-    <category term="智慧园区" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E6%99%BA%E6%85%A7%E5%9B%AD%E5%8C%BA/"/>
-    
-    
-    <category term="Spring Boot" scheme="https://zhlifeiy.codes/tags/Spring-Boot/"/>
-    
-    <category term="Vue" scheme="https://zhlifeiy.codes/tags/Vue/"/>
-    
-    <category term="排障" scheme="https://zhlifeiy.codes/tags/%E6%8E%92%E9%9A%9C/"/>
-    
-    <category term="空值安全" scheme="https://zhlifeiy.codes/tags/%E7%A9%BA%E5%80%BC%E5%AE%89%E5%85%A8/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>超时升级：一条 SQL 统一两条业务线</title>
-    <link href="https://zhlifeiy.codes/2026/08/18/%E8%B6%85%E6%97%B6%E5%8D%87%E7%BA%A7%E4%B8%80%E6%9D%A1SQL%E7%BB%9F%E4%B8%80%E4%B8%A4%E6%9D%A1%E7%BA%BF/"/>
-    <id>https://zhlifeiy.codes/2026/08/18/%E8%B6%85%E6%97%B6%E5%8D%87%E7%BA%A7%E4%B8%80%E6%9D%A1SQL%E7%BB%9F%E4%B8%80%E4%B8%A4%E6%9D%A1%E7%BA%BF/</id>
-    <published>2026-08-18T13:30:00.000Z</published>
-    <updated>2026-08-18T13:30:00.000Z</updated>
-    
-    
-    <summary type="html">&lt;p&gt;告警有个期限，到期没人理，级别就往上抬——需求一句话就说完了。但落地时它分裂成两条业务线：人工确认线的期限在告警侧（告警产生时刻 + N 分钟），自动工单线的期限在 BPM 侧（审批节点配置的处理时限）。两版方案迭代下来，最终的形态是&lt;strong&gt;一条 UPDATE 语句覆盖两条线&lt;/strong&gt;，而中间踩掉的几个坑，比 SQL 本身更值得记录。&lt;/p&gt;</summary>
-    
-    
-    
-    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
-    
-    <category term="智慧园区" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E6%99%BA%E6%85%A7%E5%9B%AD%E5%8C%BA/"/>
-    
-    
-    <category term="MySQL" scheme="https://zhlifeiy.codes/tags/MySQL/"/>
-    
-    <category term="BPM" scheme="https://zhlifeiy.codes/tags/BPM/"/>
-    
-    <category term="SQL" scheme="https://zhlifeiy.codes/tags/SQL/"/>
-    
-    <category term="幂等" scheme="https://zhlifeiy.codes/tags/%E5%B9%82%E7%AD%89/"/>
-    
-    <category term="定时任务" scheme="https://zhlifeiy.codes/tags/%E5%AE%9A%E6%97%B6%E4%BB%BB%E5%8A%A1/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>跨服务工单的一致性：补偿、防线与不漂移的契约</title>
-    <link href="https://zhlifeiy.codes/2026/08/17/%E8%B7%A8%E6%9C%8D%E5%8A%A1%E5%B7%A5%E5%8D%95%E9%98%B2%E5%AD%A4%E5%84%BF%E8%AE%BE%E8%AE%A1/"/>
-    <id>https://zhlifeiy.codes/2026/08/17/%E8%B7%A8%E6%9C%8D%E5%8A%A1%E5%B7%A5%E5%8D%95%E9%98%B2%E5%AD%A4%E5%84%BF%E8%AE%BE%E8%AE%A1/</id>
-    <published>2026-08-17T14:00:00.000Z</published>
-    <updated>2026-08-17T14:00:00.000Z</updated>
-    
-    
-    <summary type="html">&lt;p&gt;把告警系统和 BPM 工单打通，听起来是”调一个发起流程的接口”就能做完的事。真正做起来才发现，难点从来不在发起，而在&lt;strong&gt;失败的那一瞬间&lt;/strong&gt;：远程流程已经发起成功、本地事务却回滚了，那条没有告警指向的孤儿工单谁来收？本文记录这次改造里三个相互咬合的设计——契约、补偿、防线——以及一个”什么都没发生”的典型 bug。&lt;/p&gt;</summary>
-    
-    
-    
-    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
-    
-    <category term="智慧园区" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E6%99%BA%E6%85%A7%E5%9B%AD%E5%8C%BA/"/>
-    
-    
-    <category term="微服务" scheme="https://zhlifeiy.codes/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/"/>
-    
-    <category term="分布式事务" scheme="https://zhlifeiy.codes/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/"/>
-    
-    <category term="BPM" scheme="https://zhlifeiy.codes/tags/BPM/"/>
-    
-    <category term="Flowable" scheme="https://zhlifeiy.codes/tags/Flowable/"/>
-    
-    <category term="网关" scheme="https://zhlifeiy.codes/tags/%E7%BD%91%E5%85%B3/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>三层断点：新功能上线的&quot;最后一百米&quot;</title>
-    <link href="https://zhlifeiy.codes/2026/08/15/%E4%B8%89%E5%B1%82%E6%96%AD%E7%82%B9-%E6%96%B0%E5%8A%9F%E8%83%BD%E4%B8%8A%E7%BA%BF%E6%9C%80%E5%90%8E%E4%B8%80%E7%99%BE%E7%B1%B3/"/>
-    <id>https://zhlifeiy.codes/2026/08/15/%E4%B8%89%E5%B1%82%E6%96%AD%E7%82%B9-%E6%96%B0%E5%8A%9F%E8%83%BD%E4%B8%8A%E7%BA%BF%E6%9C%80%E5%90%8E%E4%B8%80%E7%99%BE%E7%B1%B3/</id>
-    <published>2026-08-15T13:00:00.000Z</published>
-    <updated>2026-08-15T13:00:00.000Z</updated>
-    
-    
-    <summary type="html">&lt;p&gt;园区平台的消防设备地图功能上线那天，楼层平面图一张也显示不出来。从 dev 联调一路追到生产 Nginx，最后发现这不是一个 bug，而是&lt;strong&gt;三层断点叠在一起&lt;/strong&gt;：库表迁移没跑、前端 env 缺配置、Nginx 缺路由。任何一层单独修好，页面依然是坏的——这大概是”新功能第一次把文件服务暴露到浏览器侧”时最典型的事故形态。&lt;/p&gt;</summary>
-    
-    
-    
-    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
-    
-    <category term="智慧园区" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E6%99%BA%E6%85%A7%E5%9B%AD%E5%8C%BA/"/>
-    
-    
-    <category term="Nginx" scheme="https://zhlifeiy.codes/tags/Nginx/"/>
-    
-    <category term="Vue" scheme="https://zhlifeiy.codes/tags/Vue/"/>
-    
-    <category term="Flyway" scheme="https://zhlifeiy.codes/tags/Flyway/"/>
-    
-    <category term="排障" scheme="https://zhlifeiy.codes/tags/%E6%8E%92%E9%9A%9C/"/>
-    
-    <category term="部署" scheme="https://zhlifeiy.codes/tags/%E9%83%A8%E7%BD%B2/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>告警通知扩展到钉钉和短信：多通道路由、Token 缓存与失败隔离</title>
-    <link href="https://zhlifeiy.codes/2026/08/10/multi-channel-alarm-notification/"/>
-    <id>https://zhlifeiy.codes/2026/08/10/multi-channel-alarm-notification/</id>
-    <published>2026-08-10T11:30:00.000Z</published>
-    <updated>2026-08-10T11:30:00.000Z</updated>
-    
-    
-    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;p&gt;把原有 PC 站内通知扩展到钉钉和短信，表面上只是根据类型多调用两个接口。真正落地时却牵出四个问题：双通道重复查询用户、钉钉 Token 每次发送都重新获取、外部通道失败可能拖慢告警事务，以及“代码接入”很容易被误写成“线上已经打通”。&lt;/p&gt;
-&lt;p&gt;这篇记录一次多通道通知链路的 review：如何把共享前缀提到路由层、用进程内缓存控制 Token 请求、让各通道互不拖累，并诚实区分钉钉实测成功与短信外部环境仍阻塞的边界。&lt;/p&gt;</summary>
-    
-    
-    
-    <category term="项目复盘" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E5%A4%8D%E7%9B%98/"/>
-    
-    
-    <category term="Spring Cloud" scheme="https://zhlifeiy.codes/tags/Spring-Cloud/"/>
-    
-    <category term="性能优化" scheme="https://zhlifeiy.codes/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/"/>
-    
-    <category term="钉钉" scheme="https://zhlifeiy.codes/tags/%E9%92%89%E9%92%89/"/>
-    
-    <category term="短信" scheme="https://zhlifeiy.codes/tags/%E7%9F%AD%E4%BF%A1/"/>
-    
-    <category term="故障隔离" scheme="https://zhlifeiy.codes/tags/%E6%95%85%E9%9A%9C%E9%9A%94%E7%A6%BB/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>跨服务保存如何避免半配置：一次告警规则页的前端补偿设计</title>
-    <link href="https://zhlifeiy.codes/2026/08/07/cross-service-save-consistency/"/>
-    <id>https://zhlifeiy.codes/2026/08/07/cross-service-save-consistency/</id>
-    <published>2026-08-07T12:30:00.000Z</published>
-    <updated>2026-08-07T12:30:00.000Z</updated>
-    
-    
-    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;p&gt;一个表单页面同时编辑“监控任务”和“告警规则”，看起来只需要一个保存按钮，后端却分属两个服务，无法共享本地事务。真正危险的不是接口报错，而是第一步成功、第二步失败后留下一个已经启用却没有专属规则的任务。&lt;/p&gt;
-&lt;p&gt;这篇记录最终落地的保存协议：前端预生成业务 ID，先以禁用状态创建任务，再幂等保存规则，最后才启用任务。它没有引入分布式事务框架，但把失败窗口收敛成了可重试、不会误触发的安全状态。&lt;/p&gt;</summary>
-    
-    
-    
-    <category term="项目复盘" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E5%A4%8D%E7%9B%98/"/>
-    
-    
-    <category term="分布式事务" scheme="https://zhlifeiy.codes/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/"/>
-    
-    <category term="前端工程" scheme="https://zhlifeiy.codes/tags/%E5%89%8D%E7%AB%AF%E5%B7%A5%E7%A8%8B/"/>
-    
-    <category term="幂等设计" scheme="https://zhlifeiy.codes/tags/%E5%B9%82%E7%AD%89%E8%AE%BE%E8%AE%A1/"/>
-    
-    <category term="E2E测试" scheme="https://zhlifeiy.codes/tags/E2E%E6%B5%8B%E8%AF%95/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>告警规则任务级化：从「全类型共享一条规则」到「每个任务各管各的」</title>
-    <link href="https://zhlifeiy.codes/2026/08/06/alarm-rule-task-level/"/>
-    <id>https://zhlifeiy.codes/2026/08/06/alarm-rule-task-level/</id>
-    <published>2026-08-06T11:30:00.000Z</published>
-    <updated>2026-08-06T11:30:00.000Z</updated>
-    
-    
-    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;blockquote&gt;
-&lt;p&gt;给 AI 告警弹窗加上接收人定向后，暴露出一个结构性问题：告警规则是「类型级」共享的，同类型的所有监控任务共用一条规则，A 任务改接收人会把 B 任务的也改掉。这次把规则挂到任务级，语义是「任务优先、共享兜底」。改造中确认了三条反直觉的约束（禁用不回退、只认 ‘0’、共享查询显式隔离），顺手修了一个 threshold_status 整列写不进库的存量 bug，全部由单测 + 真实 SQL + 接口级 E2E 验证。&lt;/p&gt;
-&lt;/blockquote&gt;</summary>
-    
-    
-    
-    <category term="项目复盘" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E5%A4%8D%E7%9B%98/"/>
-    
-    
-    <category term="MyBatis" scheme="https://zhlifeiy.codes/tags/MyBatis/"/>
-    
-    <category term="Spring Cloud" scheme="https://zhlifeiy.codes/tags/Spring-Cloud/"/>
-    
-    <category term="MySQL" scheme="https://zhlifeiy.codes/tags/MySQL/"/>
-    
-    <category term="Flyway" scheme="https://zhlifeiy.codes/tags/Flyway/"/>
-    
-    <category term="告警规则" scheme="https://zhlifeiy.codes/tags/%E5%91%8A%E8%AD%A6%E8%A7%84%E5%88%99/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>本地接口级 E2E 测试配方：JDK 8、假 PATH 和请求体的三个坑</title>
-    <link href="https://zhlifeiy.codes/2026/08/06/local-api-e2e-recipe/"/>
-    <id>https://zhlifeiy.codes/2026/08/06/local-api-e2e-recipe/</id>
-    <published>2026-08-06T10:00:00.000Z</published>
-    <updated>2026-08-06T10:00:00.000Z</updated>
-    
-    
-    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;blockquote&gt;
-&lt;p&gt;给告警规则任务级化改造做接口级 E2E 时，踩了一圈环境坑——服务在 JDK 17 下「能起端口、能收请求」，错误全在运行期深处才爆；Git Bash 里 &lt;code&gt;export PATH&lt;/code&gt; 是个假动作；curl 带中文直接乱码。每个坑都有实锤报错。这篇把过程沉淀成配方，下次本地起服务测接口照抄即可。&lt;/p&gt;
-&lt;/blockquote&gt;</summary>
-    
-    
-    
-    <category term="项目复盘" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E5%A4%8D%E7%9B%98/"/>
-    
-    
-    <category term="踩坑记录" scheme="https://zhlifeiy.codes/tags/%E8%B8%A9%E5%9D%91%E8%AE%B0%E5%BD%95/"/>
-    
-    <category term="接口测试" scheme="https://zhlifeiy.codes/tags/%E6%8E%A5%E5%8F%A3%E6%B5%8B%E8%AF%95/"/>
-    
-    <category term="E2E" scheme="https://zhlifeiy.codes/tags/E2E/"/>
-    
-    <category term="JDK8" scheme="https://zhlifeiy.codes/tags/JDK8/"/>
-    
-    <category term="Spring Cloud Gateway" scheme="https://zhlifeiy.codes/tags/Spring-Cloud-Gateway/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>代码看着没毛病，但这链路从没跑过——显示屏推送排查的四次打脸</title>
-    <link href="https://zhlifeiy.codes/2026/08/05/screen-push-pipeline-investigation/"/>
-    <id>https://zhlifeiy.codes/2026/08/05/screen-push-pipeline-investigation/</id>
-    <published>2026-08-05T13:00:00.000Z</published>
-    <updated>2026-08-05T13:00:00.000Z</updated>
-    
-    
-    <summary type="html">&lt;p&gt;用户抛了一个看起来简单的问题：显示屏推送代码是不是没问题？线上能顺利保存「推送显示屏」的告警配置，但不确定真实告警触发时推不推得出去。排查后结论有点意外：&lt;strong&gt;这条链路从没真正跑过&lt;/strong&gt;。更值得记录的不是结论本身，而是排查过程中我做的四次错误推断——每一次都被事实打脸。这篇诚实复盘整个过程。&lt;/p&gt;</summary>
-    
-    
-    
-    <category term="项目复盘" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E5%A4%8D%E7%9B%98/"/>
-    
-    
-    <category term="MyBatis" scheme="https://zhlifeiy.codes/tags/MyBatis/"/>
-    
-    <category term="Spring Cloud" scheme="https://zhlifeiy.codes/tags/Spring-Cloud/"/>
-    
-    <category term="微服务" scheme="https://zhlifeiy.codes/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/"/>
-    
-    <category term="方法论" scheme="https://zhlifeiy.codes/tags/%E6%96%B9%E6%B3%95%E8%AE%BA/"/>
-    
-    <category term="排障复盘" scheme="https://zhlifeiy.codes/tags/%E6%8E%92%E9%9A%9C%E5%A4%8D%E7%9B%98/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>AI 告警 WebSocket 弹窗：从「能弹出来」到「弹对人 + 能录像截图」</title>
-    <link href="https://zhlifeiy.codes/2026/08/05/ai-alarm-websocket-popup/"/>
-    <id>https://zhlifeiy.codes/2026/08/05/ai-alarm-websocket-popup/</id>
-    <published>2026-08-05T10:30:00.000Z</published>
-    <updated>2026-08-05T10:30:00.000Z</updated>
-    
-    
-    <summary type="html">&lt;p&gt;园区安防平台有一类需求：AI 摄像头检测到人员越界，前端要能在右下角弹一个带实时视频的告警卡片。旧版代码里这套弹窗是「半幅骨架」——后端发送链路还在，但前端订阅早就下架了。这两天分两轮把它补成了完整闭环：第一轮让它「能弹出来、能播视频」，第二轮加上「只弹给指定的人」和「用户能在卡片里录一段、截一张」。这篇记录链路设计、几个关键决策，还有联调时踩的坑。&lt;/p&gt;</summary>
-    
-    
-    
-    <category term="项目复盘" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E5%A4%8D%E7%9B%98/"/>
-    
-    
-    <category term="Spring Cloud" scheme="https://zhlifeiy.codes/tags/Spring-Cloud/"/>
-    
-    <category term="Vue" scheme="https://zhlifeiy.codes/tags/Vue/"/>
-    
-    <category term="WebSocket" scheme="https://zhlifeiy.codes/tags/WebSocket/"/>
-    
-    <category term="STOMP" scheme="https://zhlifeiy.codes/tags/STOMP/"/>
-    
-    <category term="MediaRecorder" scheme="https://zhlifeiy.codes/tags/MediaRecorder/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>AI 视频分析任务的范围拆解与现实收敛：原型要的九项 API 都不支持</title>
-    <link href="https://zhlifeiy.codes/2026/08/01/ai-video-analysis-scope-reality/"/>
-    <id>https://zhlifeiy.codes/2026/08/01/ai-video-analysis-scope-reality/</id>
-    <published>2026-08-01T15:30:00.000Z</published>
-    <updated>2026-08-01T15:30:00.000Z</updated>
-    
-    
-    <summary type="html">&lt;p&gt;一个 AI 视频分析的「基本功能开发」任务，原型画得很完整：区域入侵、徘徊侦测、灵敏度调节、多边形绘制……真去对接上游 AI 网关的 API，发现原型要的九项能力一个都不支持。这篇记录任务范围怎么从「基本闭环」一步步收敛到「能跑的最小集」，以及三个联动（弹窗、信息屏、语音播报）各自的现实卡点。&lt;/p&gt;</summary>
-    
-    
-    
-    <category term="项目复盘" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E5%A4%8D%E7%9B%98/"/>
-    
-    
-    <category term="Spring Cloud" scheme="https://zhlifeiy.codes/tags/Spring-Cloud/"/>
-    
-    <category term="AI视频分析" scheme="https://zhlifeiy.codes/tags/AI%E8%A7%86%E9%A2%91%E5%88%86%E6%9E%90/"/>
-    
-    <category term="项目复盘" scheme="https://zhlifeiy.codes/tags/%E9%A1%B9%E7%9B%AE%E5%A4%8D%E7%9B%98/"/>
-    
-    <category term="需求拆解" scheme="https://zhlifeiy.codes/tags/%E9%9C%80%E6%B1%82%E6%8B%86%E8%A7%A3/"/>
     
   </entry>
   
