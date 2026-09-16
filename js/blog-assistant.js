@@ -60,6 +60,69 @@
       .map(({ title, url, text }) => ({ title, url, text: text.slice(0, 1400) }));
   };
 
+  const escapeHtml = text => text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+
+  const renderInline = text => escapeHtml(text)
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+      '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+
+  // 迷你 Markdown 渲染器：先整体转义再处理行内格式，块级只支持标题/列表/段落
+  const renderMarkdown = md => {
+    const html = [];
+    let listType = null;
+    let para = [];
+
+    const flushPara = () => {
+      if (para.length) {
+        html.push(`<p>${para.map(renderInline).join('<br>')}</p>`);
+        para = [];
+      }
+    };
+    const flushList = () => {
+      if (listType) {
+        html.push(`</${listType}>`);
+        listType = null;
+      }
+    };
+
+    for (const line of md.split(/\r?\n/)) {
+      const trimmed = line.trim();
+      const heading = trimmed.match(/^#{1,4}\s+(.*)$/);
+      const ulItem = trimmed.match(/^[-*•]\s+(.*)$/);
+      const olItem = trimmed.match(/^\d+[.、)]\s*(.*)$/);
+
+      if (!trimmed) {
+        flushPara();
+        flushList();
+      } else if (heading) {
+        flushPara();
+        flushList();
+        html.push(`<h4>${renderInline(heading[1])}</h4>`);
+      } else if (ulItem || olItem) {
+        flushPara();
+        const type = ulItem ? 'ul' : 'ol';
+        if (listType !== type) {
+          flushList();
+          html.push(`<${type}>`);
+          listType = type;
+        }
+        html.push(`<li>${renderInline((ulItem || olItem)[1])}</li>`);
+      } else {
+        flushList();
+        para.push(trimmed);
+      }
+    }
+    flushPara();
+    flushList();
+    return html.join('');
+  };
+
   document.body.insertAdjacentHTML('beforeend', `
     <button class="blog-assistant-toggle" type="button" aria-haspopup="dialog">
       <i class="fa fa-comment-dots" aria-hidden="true"></i>
@@ -124,7 +187,7 @@
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || '请求失败');
 
-      answer.textContent = data.answer;
+      answer.innerHTML = renderMarkdown(data.answer);
       sources.replaceChildren(...context.map(item => {
         const link = document.createElement('a');
         link.href = item.url;
