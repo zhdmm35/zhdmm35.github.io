@@ -18149,4 +18149,489 @@ if (typeof mermaid !== 'undefined') {
         <tag>URL编码</tag>
       </tags>
   </entry>
+  <entry>
+    <title>命令发送成功，数据却没回来：一次设备同步故障与补录设计</title>
+    <url>/2026/09/22/2026-09-22-device-sync-recovery/</url>
+    <content><![CDATA[<p>平台返回发送成功，并不代表设备数据已经同步成功。沿着命令、回程消息和时间窗口拆开排查，才能解释为什么定时任务恢复之后，历史记录仍然没有回来。</p>
+<div class="audio-player"><p>🎧 文章导读</p><audio controls preload="none" src="/audio/2026-09-22-device-sync-recovery/narration.mp3">您的浏览器不支持音频播放。</audio></div>
+
+<span id="more"></span>
+
+<h2 id="先把“成功”拆成三层"><a href="#先把“成功”拆成三层" class="headerlink" title="先把“成功”拆成三层"></a>先把“成功”拆成三层</h2><p>这次故障最容易误判的地方，是日志里同时存在两个看起来矛盾的结果：平台返回 <code>SENDMESSAGE_SUCCESS</code>，定时同步却不断失败，业务层最后只剩下一句“接口调用失败！[null]”。</p>
+<p><strong>命令被平台受理、设备执行后返回、业务数据成功入库，是三个不同的结果。</strong> 如果把第一层当成第三层，后面的排查方向就会全部偏掉。</p>
+<p>实际链路是：调度任务每 2 分钟调用业务服务；集成服务向平台发命令，拿到 <code>commandId</code>；平台将命令下发设备，再把设备回复通过消息通道推回来；原请求线程按命令编号等待，最长约 15 秒。</p>
+<p><img data-src="/images/posts/2026-09-22-device-sync-recovery/flow.svg" alt="命令去程与消息回程"><br><em>图 1：去程受理成功，只覆盖了链路前半段。故障需要沿回程消息继续定位。</em></p>
+<table>
+<thead>
+<tr>
+<th>信号</th>
+<th>能说明什么</th>
+<th>还不能说明什么</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>SENDMESSAGE_SUCCESS</code></td>
+<td>平台受理了命令</td>
+<td>设备已回复、数据已入库</td>
+</tr>
+<tr>
+<td><code>RECEIVE_FAIL</code> 超时</td>
+<td>等待期内未取得回复</td>
+<td>一定是设备故障</td>
+</tr>
+<tr>
+<td>收到成功回复、列表为空</td>
+<td>本次查询正常且无记录</td>
+<td>历史窗口之外也无记录</td>
+</tr>
+<tr>
+<td>业务入库成功</td>
+<td>数据通过了本系统校验</td>
+<td>所有历史缺口均已补齐</td>
+</tr>
+</tbody></table>
+<p>这里的 15 秒等待还是自旋实现。它值得另行优化，但这次记录没有完成该项改造，不能把性能债务和本次回程故障混为一个根因。</p>
+<h2 id="沿证据找断点，而不是沿报错文案猜"><a href="#沿证据找断点，而不是沿报错文案猜" class="headerlink" title="沿证据找断点，而不是沿报错文案猜"></a>沿证据找断点，而不是沿报错文案猜</h2><p>业务日志中的 <code>[null]</code> 实际上丢失了集成服务返回的错误信封。继续向下查，才能看到“命令已发出，但没有在预期时间内收到回复”。</p>
+<p>设备是否有问题，还要换一个观察位置。平台管理台里，设备在线，查询能够很快返回。这将怀疑范围收敛到平台向业务系统投递回复的环节。另有网络不可达日志，结合故障时间，指向平台与系统之间的网络或投递异常；<strong>这些证据支持排查方向，但不足以进一步断言某台网络设备就是根因。</strong></p>
+<p>随后按时间压缩连续成功&#x2F;失败状态，规律变得清楚：大部分夜间中断都与设备下班关机、次日开机一致，只有一个工作日白天出现异常长时间中断。规律比单条 ERROR 更有解释力。</p>
+<p>下面是适合记录在排障笔记里的脱敏时间线格式：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">08:00—17:00  正常同步</span><br><span class="line">17:30         设备本地新增登记记录</span><br><span class="line">17:32—19:30  命令受理成功，等待回复超时</span><br><span class="line">次日 08:00   同步恢复，但只查询最近两小时</span><br><span class="line">结论          恢复之后的成功请求，没有覆盖前一天的登记</span><br></pre></td></tr></table></figure>
+
+<p>这次还发现另一类设备业务的无限重试造成大量日志。它是独立问题，应保留线索单独处理；不能因为日志数量最多，就把它当成访客同步故障的直接原因。</p>
+<h2 id="两分钟执行一次，为什么仍然漏数据"><a href="#两分钟执行一次，为什么仍然漏数据" class="headerlink" title="两分钟执行一次，为什么仍然漏数据"></a>两分钟执行一次，为什么仍然漏数据</h2><p>定时任务每次拉取过去 2 小时的记录。正常情况下，一条登记大约有 60 次被查询到的机会，因此短暂网络抖动通常不会造成永久漏拉。</p>
+<p>但这个冗余只存在于有限窗口内。<strong>一旦失败持续超过窗口宽度，恢复后的任务会继续向前走，不会自动回头。</strong> “任务恢复”与“历史数据完整”因此没有必然联系。</p>
+<p><img data-src="/images/posts/2026-09-22-device-sync-recovery/boundary.svg" alt="滚动窗口与历史缺口"><br><em>图 2：窗口不断前移；故障恢复时，旧登记已经落在窗口之外。</em></p>
+<p>可以用一个简单条件理解风险：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 这是风险判断示意，不是实际调度实现。</span></span><br><span class="line">needs_recovery = (</span><br><span class="line">    outage_duration &gt; lookback_window</span><br><span class="line">    <span class="keyword">and</span> source_has_records_during_outage</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<p>其中第二个条件很重要。设备夜间关机但无人登记，和白天有人登记却回程断链，补录价值完全不同。最有力的确认方法，是直接向设备查询故障时段，先证明源数据还在，再讨论如何恢复。</p>
+<h2 id="补录入口必须同时考虑兼容、幂等和校验"><a href="#补录入口必须同时考虑兼容、幂等和校验" class="headerlink" title="补录入口必须同时考虑兼容、幂等和校验"></a>补录入口必须同时考虑兼容、幂等和校验</h2><p>这次采用的修复比较克制：给既有同步接口增加可选的 <code>startTime</code>、<code>endTime</code>。不传参数时仍然查询过去 2 小时；传参时必须成对提供，格式错误直接拒绝。</p>
+<p>以下是脱敏后的调用示意；路径和端口需替换为实际环境，接口仍应置于现有认证与运维访问控制下：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">curl --request POST \</span><br><span class="line">  <span class="string">&#x27;http://localhost:8080/internal/device-sync?startTime=2026-09-21%2000:00:00&amp;endTime=2026-09-21%2023:59:59&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p>宽窗口会重复拉到已入库记录，因此必须核对已有幂等逻辑。本次实现按设备记录标识判重，重复拉取会跳过已同步记录。推广到多设备系统时，还要检查这个标识是否只在单设备内唯一；如果是，就需要带上设备维度，不能照搬一个全局唯一假设。</p>
+<p>补录还有第二道门槛：设备允许保存的数据，不一定通过业务系统校验。本次就遇到设备侧证件字段宽松、系统侧格式与校验位严格的问题。记录拉到了，但被业务校验拒绝，仍然不能算恢复成功。</p>
+<p>因此，补录结果至少要分开记录：</p>
+<table>
+<thead>
+<tr>
+<th>结果</th>
+<th>后续处理</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>已存在</td>
+<td>幂等跳过，计入重复数</td>
+</tr>
+<tr>
+<td>新增成功</td>
+<td>核对业务列表及关联字段</td>
+</tr>
+<tr>
+<td>字段不合法</td>
+<td>保留失败原因，按业务规则修正源数据后重试</td>
+</tr>
+<tr>
+<td>请求或回程失败</td>
+<td>保留窗口与命令编号，重新确认链路</td>
+</tr>
+</tbody></table>
+<p>“校验失败就清空字段继续入库”属于数据语义变更，本次没有擅自采用。自动降级是否可接受，应由业务规则决定。</p>
+<h2 id="日志和发布过程也是修复的一部分"><a href="#日志和发布过程也是修复的一部分" class="headerlink" title="日志和发布过程也是修复的一部分"></a>日志和发布过程也是修复的一部分</h2><p>这次代码同时修复了错误透传。下层没有业务响应时，保留信封中的错误码和说明，避免在上层只剩下 <code>null</code>。理想的日志结构可以参考下面的字段；它是建议格式，不代表本次已全部实现：</p>
+<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;stage&quot;</span><span class="punctuation">:</span> <span class="string">&quot;WAIT_DEVICE_REPLY&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;commandId&quot;</span><span class="punctuation">:</span> <span class="string">&quot;example-command-id&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;windowStart&quot;</span><span class="punctuation">:</span> <span class="string">&quot;2026-09-21 00:00:00&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;windowEnd&quot;</span><span class="punctuation">:</span> <span class="string">&quot;2026-09-21 23:59:59&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;result&quot;</span><span class="punctuation">:</span> <span class="string">&quot;TIMEOUT&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>修复过程还暴露了一个发布陷阱：本地代码打包部署后，没有及时进入团队统一构建来源，随后被另一轮正常发布覆盖。新接口一度又回到旧行为，宽窗口参数没有产生预期效果。</p>
+<p>遇到“刚修好又不生效”，应该先核对部署包对应提交、文件摘要和实际版本，再怀疑数据被删除。堆栈行号可以辅助识别，但不应替代版本标识。</p>
+<p>据原始记录，本次新增的控制器、错误透传和提供方相关测试共 6 条通过；补录曾完成一条合法样本的端到端验证。这些是当时的工程记录，本篇整理没有重新操作设备，也没有把后续待发布事项写成已完成。</p>
+<p>这次最值得留下的经验是：<strong>同步故障要同时回答“链路恢复了吗”和“数据补齐了吗”。</strong> 前者靠分层观测，后者靠明确窗口、幂等恢复以及逐条业务结果。</p>
+<h2 id="延伸阅读"><a href="#延伸阅读" class="headerlink" title="延伸阅读"></a>延伸阅读</h2><ul>
+<li><a href="https://zhlifeiy.codes/2026/09/22/2026-09-22-websocket-ticket-auth/">把 WebSocket 长期密钥移出前端：短期票据改造与上线闭环</a></li>
+<li><a href="https://zhlifeiy.codes/2026/10/21/2026-10-21-alarm-workflow-design/">从一条告警到真正闭环：规则、站内信、工单与权限的整合实践</a></li>
+<li><a href="https://zhlifeiy.codes/2026/10/22/2026-10-22-flow-statistics-window-sql/">8.7 秒到 231 毫秒：保留统计口径的 MySQL 窗口函数优化</a></li>
+<li><a href="https://zhlifeiy.codes/2026/10/22/2026-10-22-large-upload-streaming/">上传上限放到 1GB，为什么仍然 OOM：附件复用与流式传输实践</a></li>
+</ul>
+<hr>
+<p><em>本文根据 2026 年 9 月 22 日至 10 月 22 日的工程笔记整理。账号、凭证、地址和业务样本已脱敏；通用示例已在正文标明，历史验证结果以原记录为准。</em></p>
+]]></content>
+      <categories>
+        <category>工程实践</category>
+      </categories>
+      <tags>
+        <tag>幂等</tag>
+        <tag>故障排查</tag>
+        <tag>数据同步</tag>
+        <tag>可观测性</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>把 WebSocket 长期密钥移出前端：短期票据改造与上线闭环</title>
+    <url>/2026/09/22/2026-09-22-websocket-ticket-auth/</url>
+    <content><![CDATA[<p>关闭 Source Map 不能让浏览器中的长期密钥变得安全。本文复盘一次 STOMP 鉴权改造：登录后签发短期票据、服务端兼容旧框架，再通过负向测试和密钥轮换完成上线闭环。</p>
+<div class="audio-player"><p>🎧 文章导读</p><audio controls preload="none" src="/audio/2026-09-22-websocket-ticket-auth/narration.mp3">您的浏览器不支持音频播放。</audio></div>
+
+<span id="more"></span>
+
+<h2 id="前端环境变量，不是密钥保险箱"><a href="#前端环境变量，不是密钥保险箱" class="headerlink" title="前端环境变量，不是密钥保险箱"></a>前端环境变量，不是密钥保险箱</h2><p>这次排查的入口，是生产前端环境文件里的 WebSocket 固定凭证。它随着构建进入 JavaScript，再作为 STOMP <code>CONNECT</code> 头发送到服务端。只要浏览器需要使用它，用户就能够从资源或运行过程里取得它。</p>
+<p>关闭 Source Map 可以减少源码暴露，混淆可以增加阅读成本；两者都不能让发送给浏览器的长期密钥保密。修复方向应是：<strong>长期密钥留在服务端，浏览器只拿短期、限定用途的连接票据。</strong></p>
+<p><img data-src="/images/posts/2026-09-22-websocket-ticket-auth/flow.svg" alt="短期票据连接链路"><br><em>图 1：票据由已登录用户申请；长期凭证不再随前端构建分发。</em></p>
+<p>这篇复盘记录的是一次兼容既有框架的增量改造，示例中的凭证、用户和服务名称均做了替换，不包含原环境的真实密钥。</p>
+<h2 id="先划清-HTTP-握手与-STOMP-CONNECT"><a href="#先划清-HTTP-握手与-STOMP-CONNECT" class="headerlink" title="先划清 HTTP 握手与 STOMP CONNECT"></a>先划清 HTTP 握手与 STOMP CONNECT</h2><p>WebSocket 建连成功，不等于 STOMP 认证通过，更不等于用户有权订阅任意主题。排查时至少要区分三个层次：HTTP&#x2F;SockJS 传输、STOMP 连接认证、后续消息与目的地授权。</p>
+<p>浏览器原生 WebSocket 和 SockJS 对自定义 HTTP 请求头存在限制。Spring 官方给出的一个接入方式是，在 STOMP 连接帧中传认证信息，再通过 <code>ChannelInterceptor</code> 处理。这里应当理解为<strong>消息协议层的头</strong>，不要与握手 HTTP 头混用。参见 <a href="https://docs.spring.io/spring-framework/reference/web/websocket/stomp/authentication-token-based.html">Spring Token Authentication</a>。</p>
+<p>脱敏后的前端示意如下。<code>getWsTicket</code> 必须使用已有登录态，生产传输应使用 HTTPS&#x2F;WSS：</p>
+<figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="keyword">async</span> <span class="keyword">function</span> <span class="title function_">connectAlarmChannel</span>(<span class="params">stompClient</span>) &#123;</span><br><span class="line">  <span class="keyword">const</span> &#123; ticket &#125; = <span class="keyword">await</span> <span class="title function_">getWsTicket</span>(&#123; <span class="attr">audience</span>: <span class="string">&#x27;alarm&#x27;</span> &#125;);</span><br><span class="line">  stompClient.<span class="title function_">connect</span>(&#123; <span class="attr">wsTicket</span>: ticket &#125;, onConnected, onConnectError);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 每次重连重新申请，避免重复使用已经过期的票据。</span></span><br></pre></td></tr></table></figure>
+
+<p>握手路径的放行也要和协议层认证配合。本次曾遇到一个服务的 SockJS 路径没有进入预期白名单，导致请求还没走到票据拦截器就被挡住。修复路径规则时，应逐项确认传输与消息认证仍然存在，不能用“一律放开 WebSocket”替代鉴权。</p>
+<h2 id="票据校验，要检查的不只是签名"><a href="#票据校验，要检查的不只是签名" class="headerlink" title="票据校验，要检查的不只是签名"></a>票据校验，要检查的不只是签名</h2><p>本次票据由用户标识、服务用途、过期时间和 HMAC-SHA256 签名组成，默认有效期 5 分钟。它是项目自定义格式，不应直接称为标准 JWT。</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">payload = userId + &quot;.&quot; + audience + &quot;.&quot; + expiresAt</span><br><span class="line">signature = HMAC_SHA256(serverSecret, payload)</span><br><span class="line">ticket = payload + &quot;.&quot; + signature</span><br></pre></td></tr></table></figure>
+
+<p>这只是字段结构示意，实际实现还需约定编码、分隔符和时间单位。服务端校验应包含格式、签名、过期时间和用途；用户身份来自受保护的签发接口，不能由浏览器随意指定。</p>
+<table>
+<thead>
+<tr>
+<th>检查项</th>
+<th>解决的问题</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>签发接口要求登录</td>
+<td>匿名用户不能直接申请票据</td>
+</tr>
+<tr>
+<td>签名验证</td>
+<td>字段不能被随意修改</td>
+</tr>
+<tr>
+<td><code>expiresAt</code></td>
+<td>缩短被窃取票据的可用时间</td>
+</tr>
+<tr>
+<td><code>audience</code></td>
+<td>一个服务的票据不能直接用于另一个服务</td>
+</tr>
+<tr>
+<td>常量时间比较</td>
+<td>降低签名比较引入的时序差异</td>
+</tr>
+</tbody></table>
+<p>短 TTL 只缩短重放窗口，不意味着一次性消费。本次没有实现 nonce 去重或主动吊销，也没有在这次记录中证明所有订阅主题都已按用户隔离。<strong>连接认证和业务授权仍须分别检查。</strong></p>
+<h2 id="没有框架源码，怎样渐进接入"><a href="#没有框架源码，怎样渐进接入" class="headerlink" title="没有框架源码，怎样渐进接入"></a>没有框架源码，怎样渐进接入</h2><p>原认证逻辑封装在既有框架 jar 内，按配置中的静态客户端凭证校验。直接替换框架不在此次范围内，所以业务层注册优先执行的拦截器：先校验票据，再在服务端内部补齐旧框架需要的认证头，让已有后续流程继续工作。</p>
+<p>这里最重要的约束是“服务端内部”。长期密钥不能出现在取票接口响应，也不能回写给前端。适配层的执行顺序则必须用实际配置和测试证明，不能只看到一个 <code>@Order</code> 注解就认为一定正确。</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 适配思路示意：省略具体框架 API 和异常处理。</span></span><br><span class="line"><span class="keyword">if</span> (isConnectFrame(message)) &#123;</span><br><span class="line">    <span class="type">TicketClaims</span> <span class="variable">claims</span> <span class="operator">=</span> ticketCodec.verify(ticket, expectedAudience);</span><br><span class="line">    attachAuthenticatedIdentity(message, claims.getUserId());</span><br><span class="line">    supplyLegacyHeadersInsideServer(message, serverCredentials);</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">return</span> message;</span><br></pre></td></tr></table></figure>
+
+<p>上面是便于解释的伪代码，不能直接当成可复制的完整实现。项目里的真实改动还涉及可变消息头和原框架拦截器兼容；迁移到其他 Spring 版本时，应重新验证注册顺序与消息头生命周期。</p>
+<p><img data-src="/images/posts/2026-09-22-websocket-ticket-auth/boundary.svg" alt="兼容期与密钥轮换边界"><br><em>图 2：新前端上线只是中间节点，关闭旧认证和轮换泄露密钥才形成闭环。</em></p>
+<h2 id="上线最容易漏掉的是密钥轮换"><a href="#上线最容易漏掉的是密钥轮换" class="headerlink" title="上线最容易漏掉的是密钥轮换"></a>上线最容易漏掉的是密钥轮换</h2><p>本次为了渐进发布，提供了旧凭证兼容开关。先上线支持票据的后端，再升级前端，观察旧认证回落日志是否仍出现，最后关闭旧认证。</p>
+<p>但还有一步不能漏：<strong>轮换已经暴露过的长期密钥。</strong> 本次历史设计复用该密钥进行票据 HMAC 签名；如果只从前端删掉它，知道旧密钥的人仍可能签出合法外观的票据。</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 示例配置，不包含真实凭证。</span></span><br><span class="line"><span class="attr">websocket:</span></span><br><span class="line">  <span class="attr">ticket:</span></span><br><span class="line">    <span class="attr">ttl-seconds:</span> <span class="number">300</span></span><br><span class="line">    <span class="attr">legacy-enabled:</span> <span class="literal">false</span></span><br><span class="line"><span class="comment"># 签名密钥通过服务端安全配置注入，不写进前端环境文件。</span></span><br></pre></td></tr></table></figure>
+
+<p>稳妥的发布顺序是：后端兼容上线、前端取票上线、确认连接和业务消息、观察旧客户端、关闭兼容并轮换密钥、再次验证。若准备回滚，也应明确恢复旧认证会重新引入什么风险，不能把兼容开关永远留在打开状态。</p>
+<p>原笔记列出的 E2E 检查包含匿名取票拒绝、两服务取票和连接、旧凭证兼容、假票据、空凭证、跨服务票据与篡改票据等，记录为 10&#x2F;10 通过；另外验证了关闭兼容后的行为。本篇未重新运行这些业务测试。</p>
+<h2 id="连接正常，为什么还是没有告警弹窗"><a href="#连接正常，为什么还是没有告警弹窗" class="headerlink" title="连接正常，为什么还是没有告警弹窗"></a>连接正常，为什么还是没有告警弹窗</h2><p>最后一个排障转折很有代表性：浏览器取票成功、连接成功，界面却没有弹窗。继续查看发现，规则中的弹窗接收人名单并不包含测试用户，前端因此正确过滤了消息。</p>
+<p>所以验收不能只看“连上了”，也不能只看“没弹窗”。应逐层确认：取票结果、协议连接、业务事件生成、通知接收人、消息到达与页面展示。WebSocket 连接修复，不会自动修好一条错误的通知名单。</p>
+<p>这次改造记录了编码、测试与合并，但上线关闭兼容、轮换密钥仍列为待办。写博客时保留这一状态，比一句“安全整改完成”更有价值：它提醒我们，凭证整改需要走完分发、校验、迁移和撤销的完整生命周期。</p>
+<h2 id="延伸阅读"><a href="#延伸阅读" class="headerlink" title="延伸阅读"></a>延伸阅读</h2><ul>
+<li><a href="https://zhlifeiy.codes/2026/09/22/2026-09-22-device-sync-recovery/">命令发送成功，数据却没回来：一次设备同步故障与补录设计</a></li>
+<li><a href="https://zhlifeiy.codes/2026/10/21/2026-10-21-alarm-workflow-design/">从一条告警到真正闭环：规则、站内信、工单与权限的整合实践</a></li>
+<li><a href="https://zhlifeiy.codes/2026/10/22/2026-10-22-flow-statistics-window-sql/">8.7 秒到 231 毫秒：保留统计口径的 MySQL 窗口函数优化</a></li>
+<li><a href="https://zhlifeiy.codes/2026/10/22/2026-10-22-large-upload-streaming/">上传上限放到 1GB，为什么仍然 OOM：附件复用与流式传输实践</a></li>
+</ul>
+<hr>
+<p><em>本文根据 2026 年 9 月 22 日至 10 月 22 日的工程笔记整理。账号、凭证、地址和业务样本已脱敏；通用示例已在正文标明，历史验证结果以原记录为准。</em></p>
+]]></content>
+      <categories>
+        <category>工程实践</category>
+      </categories>
+      <tags>
+        <tag>WebSocket</tag>
+        <tag>STOMP</tag>
+        <tag>Spring</tag>
+        <tag>安全</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>从一条告警到真正闭环：规则、站内信、工单与权限的整合实践</title>
+    <url>/2026/10/21/2026-10-21-alarm-workflow-design/</url>
+    <content><![CDATA[<p>告警列表能显示数据，只是闭环的起点。把候选事件、规则判断、持久化通知、真实审批和统一入口接起来，还要处理事务时机、页内待办匹配以及不同角色的数据范围。</p>
+<div class="audio-player"><p>🎧 文章导读</p><audio controls preload="none" src="/audio/2026-10-21-alarm-workflow-design/narration.mp3">您的浏览器不支持音频播放。</audio></div>
+
+<span id="more"></span>
+
+<h2 id="统一页面之前，先统一业务事实"><a href="#统一页面之前，先统一业务事实" class="headerlink" title="统一页面之前，先统一业务事实"></a>统一页面之前，先统一业务事实</h2><p>告警系统很容易被拆成几个互不相连的功能：设备上报一张表，通知一套接口，工单一个列表，页面再拼起来。看起来每个功能都“完成了”，真正发生告警时，却没人能回答这条记录最终有没有被处理。</p>
+<p>这次实践先把环境告警接到既有规则、站内信和 BPM 能力，再增加统一规则与全业务告警入口。关键选择是：<strong>统一入口读取同一份规则，不复制规则数据；告警记录、通知和工单也各自保留明确职责。</strong></p>
+<p><img data-src="/images/posts/2026-10-21-alarm-workflow-design/flow.svg" alt="从候选事件到告警闭环"><br><em>图 1：规则命中后产生告警；通知和建单是两条后续分支，不能互相代替。</em></p>
+<p>环境入口与统一入口维护同一规则 ID，修改备注后另一入口能够读到同一结果。统一页面不重置阈值、联动与接收人，也没有把其他业务的所有执行链路改造成环境业务的实现。</p>
+<h2 id="候选事件、规则命中和自动建单，是三个阶段"><a href="#候选事件、规则命中和自动建单，是三个阶段" class="headerlink" title="候选事件、规则命中和自动建单，是三个阶段"></a>候选事件、规则命中和自动建单，是三个阶段</h2><p>采集侧负责提供测量值或状态，并生成候选事件；规则侧决定启停、执行时间和阈值；只有通过判断，才生成或合并告警。</p>
+<p>数值型与状态型不能强行套成同一语义。例如 CO 可以比较测量值与阈值，某些空调故障则由上游状态位触发。规则的“跳过通用阈值比较”标记，不是设备正在告警的状态值。</p>
+<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;businessType&quot;</span><span class="punctuation">:</span> <span class="string">&quot;ENVIRONMENT&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;alarmType&quot;</span><span class="punctuation">:</span> <span class="string">&quot;CO_HIGH&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;measuredValue&quot;</span><span class="punctuation">:</span> <span class="number">15</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;parkId&quot;</span><span class="punctuation">:</span> <span class="string">&quot;example-park&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;occurredAt&quot;</span><span class="punctuation">:</span> <span class="string">&quot;2026-10-20T14:00:00+08:00&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>上面是候选事件的脱敏概念示意，不是项目接口原样定义。事件中的园区维度很重要：规则编辑接口按园区限制访问，并不能证明运行时匹配也按园区隔离。两个入口要分别追踪和验证。</p>
+<p>规则命中后，还要检查是否是未关闭告警的重复发生。本次已有逻辑会合并次数与最后发生时间，避免同一活动告警反复产生新工单。</p>
+<p>告警产生也不等于自动建单。没有绑定工单联动时，它可以保持待处理；自动建单失败时，保留告警，供管理员补单。这样业务事实不会随着外围流程调用失败而消失。</p>
+<h2 id="通知要落库，还要选对事务时机"><a href="#通知要落库，还要选对事务时机" class="headerlink" title="通知要落库，还要选对事务时机"></a>通知要落库，还要选对事务时机</h2><p>环境规则中的 PC 通知复用现有站内信能力：先有持久化消息，再通过 WebSocket 提醒接收人。刷新后仍能查看，点击后能标已读，并定位到目标告警。</p>
+<p>本次在告警事务提交后发送通知，避免页面收到提醒时，目标记录尚未提交。下面是设计顺序示意：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 伪代码：描述事务边界，不是完整的可靠消息实现。</span></span><br><span class="line">transaction(() -&gt; &#123;</span><br><span class="line">    <span class="type">Alarm</span> <span class="variable">alarm</span> <span class="operator">=</span> saveAlarm(event);</span><br><span class="line">    afterCommit(() -&gt; sendPersistedNotice(alarm));</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>这里也存在明确边界：<code>afterCommit</code> 解决提交前发送的问题，不能保证进程崩溃时通知必达。原实现对失败记录日志并保留告警；如果业务要求可靠补发，还需另行评估事务消息表、重试和幂等机制，本次没有实现这一扩展。</p>
+<p>实际接入还修复了 Redis 消息的 JSON 解码问题。原始 JSON 和被包裹成字符串的 JSON 需要按结构解析；直接删除反斜杠，会破坏嵌套内容、引号与换行。</p>
+<p>通知跳转也不是保存一个 URL 就结束了。目标告警可能被页面上一次留下的时间或状态筛选挡住。本次在收到新的目标告警编号时重置旧筛选，后续用户手工筛选则不被反复清空。</p>
+<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;jumpRoute&quot;</span><span class="punctuation">:</span> <span class="string">&quot;/alarms/environment&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;alarmCode&quot;</span><span class="punctuation">:</span> <span class="string">&quot;EXAMPLE-ALARM-001&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;formBusinessId&quot;</span><span class="punctuation">:</span> <span class="string">&quot;example-alarm-id&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>这同样是示意结构。通知携带定位信息，不授予查看权限；页面查询仍须经过后端数据范围检查。</p>
+<h2 id="三种人、两类权限，必须分开检查"><a href="#三种人、两类权限，必须分开检查" class="headerlink" title="三种人、两类权限，必须分开检查"></a>三种人、两类权限，必须分开检查</h2><p>最常见的混淆是把“通知接收人”当成“流程处理人”。前者决定谁收到消息，后者由 BPM 流程节点决定；菜单和功能授权再决定能否进入页面、执行操作。</p>
+<p><img data-src="/images/posts/2026-10-21-alarm-workflow-design/boundary.svg" alt="通知、工单与权限的边界"><br><em>图 2：收到提醒不等于拥有处理权；能看菜单也不等于有编辑权。</em></p>
+<table>
+<thead>
+<tr>
+<th>角色或配置</th>
+<th>负责回答的问题</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>规则接收人</td>
+<td>谁收到站内信或其他通知</td>
+</tr>
+<tr>
+<td>BPM 节点处理人</td>
+<td>谁能完成当前待办</td>
+</tr>
+<tr>
+<td>菜单与功能授权</td>
+<td>谁可进入入口、编辑规则</td>
+</tr>
+<tr>
+<td>告警数据范围</td>
+<td>谁能看哪条告警、统计和导出</td>
+</tr>
+</tbody></table>
+<p>普通用户的告警列表还有分页问题：先把所有工单分页，再过滤出环境告警，会出现空页与总数失真。此次实现以告警业务分页为入口，再用当前页告警 ID 批量补充本人待办信息；本人待办&#x2F;已办的数据收敛仍由服务端业务条件保证，不能用页内补充替代权限过滤。</p>
+<p>统一入口验证时，还检查了列表、统计、详情、导出与写接口。前端隐藏按钮只能改善交互，后端仍要拒绝无编辑授权的直接请求。只读账号则应能查看审批历史，不能因为查询路径里含有 <code>handle</code> 就被粗略识别成写操作。</p>
+<h2 id="验收看业务证据，迁移看目标环境"><a href="#验收看业务证据，迁移看目标环境" class="headerlink" title="验收看业务证据，迁移看目标环境"></a>验收看业务证据，迁移看目标环境</h2><p>“提交成功”的提示不足以证明 BPM 真正结束。本次同时核对了运行中任务消失、流程历史结束时间、业务流程状态和告警状态回写：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">运行时待办：没有该实例残留任务</span><br><span class="line">流程历史：结束时间非空</span><br><span class="line">流程业务：已完成</span><br><span class="line">告警记录：已处理，且关联原工单</span><br></pre></td></tr></table></figure>
+
+<p>这些证据必须来自同一个业务样本。直接写库的演示数据只能证明页面展示，不能证明采集、规则或审批链路。</p>
+<p>按笔记记录，环境闭环完成了本机单园区的多角色和真实 BPM 验证；后续统一入口合并后，相关后端 41 项、前端 21 项目标测试以及构建通过。这不是整个仓库全量测试通过。环境通知阶段还记录了两条原有文案断言失败，也没有被隐去。</p>
+<p>上线还要核对数据库迁移的执行方式。本项目采用服务器 Flyway CLI，服务启动不会自动补齐字段；规则结构、菜单和授权属于不同目标库，必须按依赖顺序检查。</p>
+<p>一次 <code>INSERT ... SELECT</code> 执行成功也可能插入零行，因为它依赖的旧菜单不存在。幂等脚本则只保证“不重复”，不保证初始化对象正确：本次就曾从存量规则里的测试园区补出不需要的规则。因此上线前除了迁移历史，还要核对园区来源与预期新增资源。</p>
+<p>原始记录尚未完成生产部署、现场设备复测及多园区运行隔离验证。统一入口的价值已经明确：让规则与记录更容易维护；完整闭环的可信度，则来自状态、权限、事务和部署证据逐项对应。</p>
+<h2 id="延伸阅读"><a href="#延伸阅读" class="headerlink" title="延伸阅读"></a>延伸阅读</h2><ul>
+<li><a href="https://zhlifeiy.codes/2026/09/22/2026-09-22-device-sync-recovery/">命令发送成功，数据却没回来：一次设备同步故障与补录设计</a></li>
+<li><a href="https://zhlifeiy.codes/2026/09/22/2026-09-22-websocket-ticket-auth/">把 WebSocket 长期密钥移出前端：短期票据改造与上线闭环</a></li>
+<li><a href="https://zhlifeiy.codes/2026/10/22/2026-10-22-flow-statistics-window-sql/">8.7 秒到 231 毫秒：保留统计口径的 MySQL 窗口函数优化</a></li>
+<li><a href="https://zhlifeiy.codes/2026/10/22/2026-10-22-large-upload-streaming/">上传上限放到 1GB，为什么仍然 OOM：附件复用与流式传输实践</a></li>
+</ul>
+<hr>
+<p><em>本文根据 2026 年 9 月 22 日至 10 月 22 日的工程笔记整理。账号、凭证、地址和业务样本已脱敏；通用示例已在正文标明，历史验证结果以原记录为准。</em></p>
+]]></content>
+      <categories>
+        <category>工程实践</category>
+      </categories>
+      <tags>
+        <tag>BPM</tag>
+        <tag>告警系统</tag>
+        <tag>权限</tag>
+        <tag>数据库迁移</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>8.7 秒到 231 毫秒：保留统计口径的 MySQL 窗口函数优化</title>
+    <url>/2026/10/22/2026-10-22-flow-statistics-window-sql/</url>
+    <content><![CDATA[<p>有索引的统计 SQL 也可能很慢。这次优化把两次全历史最新状态判断合并为一次窗口计算，生产只读对比快约 37.6 倍；真正难的是保留重复键、空时间和跨天在场的原有口径。</p>
+<div class="audio-player"><p>🎧 文章导读</p><audio controls preload="none" src="/audio/2026-10-22-flow-statistics-window-sql/narration.mp3">您的浏览器不支持音频播放。</audio></div>
+
+<span id="more"></span>
+
+<h2 id="先限定这次“快了-37-6-倍”的范围"><a href="#先限定这次“快了-37-6-倍”的范围" class="headerlink" title="先限定这次“快了 37.6 倍”的范围"></a>先限定这次“快了 37.6 倍”的范围</h2><p>人流量统计页面等待约 8 秒，浏览器内容下载却不到 1 毫秒。这个信号说明主要时间在服务端响应之前，但不能据此直接认定数据库就是唯一原因。</p>
+<p>随后单独测量 SQL，发现两条全历史状态查询确实占了主要时间。在同一生产数据只读快照、固定统计时刻下，对比结果如下：</p>
+<table>
+<thead>
+<tr>
+<th>查询</th>
+<th align="right">耗时</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>旧在场及滞留统计</td>
+<td align="right">4605.58 ms</td>
+</tr>
+<tr>
+<td>旧累计离场统计</td>
+<td align="right">4089.68 ms</td>
+</tr>
+<tr>
+<td>旧两条合计</td>
+<td align="right"><strong>8695.26 ms</strong></td>
+</tr>
+<tr>
+<td>新合并统计</td>
+<td align="right"><strong>231.31 ms</strong></td>
+</tr>
+</tbody></table>
+<p>约 37.6 倍是<strong>这组统计 SQL 的耗时对比</strong>，不是完整接口已从 8.7 秒降到 231 毫秒。原接口共有 5 条查询，改造后为 4 条；服务发布后仍要验证完整响应。</p>
+<p><img data-src="/images/posts/2026-10-22-flow-statistics-window-sql/flow.svg" alt="重复反查与一次状态计算"><br><em>图 1：优化的核心是减少重复计算，不是给已有索引再起一个新名字。</em></p>
+<h2 id="索引已经存在，慢在哪里"><a href="#索引已经存在，慢在哪里" class="headerlink" title="索引已经存在，慢在哪里"></a>索引已经存在，慢在哪里</h2><p>现场 MySQL 为 8.0.27，流水表按通行时间做 RANGE 分区，共 97 个分区，元数据估算约 395 万行。已有人员、有效标记与时间相关索引，因此“缺人员索引”不是正确结论。</p>
+<p>旧查询对每条候选流水做一次 <code>NOT EXISTS</code> 判断：同一人是否还有更晚的有效记录？如果没有，就把这条记录视为当前状态。在场统计做一遍，离场统计又做一遍。</p>
+<p>下面是去掉业务过滤条件后的逻辑骨架。实际等价改写必须保证内外层使用原有的设备、有效状态及删除条件：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> r.<span class="operator">*</span></span><br><span class="line"><span class="keyword">FROM</span> access_record r</span><br><span class="line"><span class="keyword">WHERE</span> <span class="keyword">NOT</span> <span class="keyword">EXISTS</span> (</span><br><span class="line">    <span class="keyword">SELECT</span> <span class="number">1</span></span><br><span class="line">    <span class="keyword">FROM</span> access_record newer</span><br><span class="line">    <span class="keyword">WHERE</span> newer.person_id <span class="operator">=</span> r.person_id</span><br><span class="line">      <span class="keyword">AND</span> (</span><br><span class="line">          newer.event_time <span class="operator">&gt;</span> r.event_time</span><br><span class="line">          <span class="keyword">OR</span> (newer.event_time <span class="operator">=</span> r.event_time <span class="keyword">AND</span> newer.id <span class="operator">&gt;</span> r.id)</span><br><span class="line">      )</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<p>执行计划显示，最慢的两条查询涉及全部分区，反关联虽使用了索引，仍需反复定位和过滤。表已经分区不代表查询就能裁剪到当天；而业务本来要统计跨天仍在场的人，也不能为了裁剪，直接把候选数据限制成当天。</p>
+<p>这是优化的第一条边界：<strong>查询慢可以改实现，统计口径不能顺手改掉。</strong></p>
+<h2 id="一次排名，复用同一批最新状态"><a href="#一次排名，复用同一批最新状态" class="headerlink" title="一次排名，复用同一批最新状态"></a>一次排名，复用同一批最新状态</h2><p>新实现对有效候选记录按人员分组，按时间、ID 倒序排名，再从最新记录同时聚合在场、离场和滞留分桶。</p>
+<p>下面的 SQL 使用通用表名和方向字段展示算法，省略业务设备集合；生产实现的进出方向来自设备映射，而非这个示例字段：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">WITH</span> ranked <span class="keyword">AS</span> (</span><br><span class="line">    <span class="keyword">SELECT</span> person_id, id, event_time, direction,</span><br><span class="line">           <span class="built_in">DENSE_RANK</span>() <span class="keyword">OVER</span> (</span><br><span class="line">               <span class="keyword">PARTITION</span> <span class="keyword">BY</span> person_id</span><br><span class="line">               <span class="keyword">ORDER</span> <span class="keyword">BY</span> event_time <span class="keyword">DESC</span>, id <span class="keyword">DESC</span></span><br><span class="line">           ) <span class="keyword">AS</span> latest_rank</span><br><span class="line">    <span class="keyword">FROM</span> access_record</span><br><span class="line">    <span class="keyword">WHERE</span> person_id <span class="keyword">IS</span> <span class="keyword">NOT NULL</span></span><br><span class="line">      <span class="keyword">AND</span> valid_flag <span class="operator">=</span> <span class="string">&#x27;1&#x27;</span></span><br><span class="line">      <span class="keyword">AND</span> recognition_status <span class="operator">=</span> <span class="string">&#x27;0&#x27;</span></span><br><span class="line">      <span class="keyword">AND</span> delete_flag <span class="operator">=</span> <span class="string">&#x27;0&#x27;</span></span><br><span class="line">), latest <span class="keyword">AS</span> (</span><br><span class="line">    <span class="keyword">SELECT</span> direction,</span><br><span class="line">           TIMESTAMPDIFF(<span class="keyword">HOUR</span>, event_time, <span class="variable">@as_of</span>) <span class="keyword">AS</span> stay_hours</span><br><span class="line">    <span class="keyword">FROM</span> ranked</span><br><span class="line">    <span class="keyword">WHERE</span> latest_rank <span class="operator">=</span> <span class="number">1</span> <span class="keyword">OR</span> event_time <span class="keyword">IS</span> <span class="keyword">NULL</span></span><br><span class="line">)</span><br><span class="line"><span class="keyword">SELECT</span> <span class="built_in">COALESCE</span>(<span class="built_in">SUM</span>(direction <span class="operator">=</span> <span class="string">&#x27;IN&#x27;</span>), <span class="number">0</span>) <span class="keyword">AS</span> present,</span><br><span class="line">       <span class="built_in">COALESCE</span>(<span class="built_in">SUM</span>(direction <span class="operator">=</span> <span class="string">&#x27;OUT&#x27;</span>), <span class="number">0</span>) <span class="keyword">AS</span> exited,</span><br><span class="line">       <span class="built_in">COALESCE</span>(<span class="built_in">SUM</span>(direction <span class="operator">=</span> <span class="string">&#x27;IN&#x27;</span> <span class="keyword">AND</span> stay_hours <span class="operator">&lt;</span> <span class="number">12</span>), <span class="number">0</span>) <span class="keyword">AS</span> stay_lt_12,</span><br><span class="line">       <span class="built_in">COALESCE</span>(<span class="built_in">SUM</span>(direction <span class="operator">=</span> <span class="string">&#x27;IN&#x27;</span> <span class="keyword">AND</span> stay_hours <span class="operator">&gt;=</span> <span class="number">12</span></span><br><span class="line">                    <span class="keyword">AND</span> stay_hours <span class="operator">&lt;</span> <span class="number">24</span>), <span class="number">0</span>) <span class="keyword">AS</span> stay_12_to_24,</span><br><span class="line">       <span class="built_in">COALESCE</span>(<span class="built_in">SUM</span>(direction <span class="operator">=</span> <span class="string">&#x27;IN&#x27;</span> <span class="keyword">AND</span> stay_hours <span class="operator">&gt;=</span> <span class="number">24</span>), <span class="number">0</span>) <span class="keyword">AS</span> stay_ge_24,</span><br><span class="line">       <span class="built_in">COALESCE</span>(<span class="built_in">SUM</span>(direction <span class="operator">=</span> <span class="string">&#x27;IN&#x27;</span> <span class="keyword">AND</span> stay_hours <span class="keyword">IS</span> <span class="keyword">NULL</span>), <span class="number">0</span>) <span class="keyword">AS</span> unknown_time</span><br><span class="line"><span class="keyword">FROM</span> latest;</span><br></pre></td></tr></table></figure>
+
+<p><code>@as_of</code> 要在对比前固定，例如 <code>SET @as_of = &#39;2026-10-22 17:00:00&#39;</code>。真实接口可使用当前时刻；新旧比较时不应让时间边界随两次查询漂移。</p>
+<p>Service 从这次结果读取新增的内部离场聚合字段，去掉独立的离场查询调用。外部响应字段保持不变，本次也没有新增索引或表结构迁移。</p>
+<h2 id="最难的两处语义：并列记录与-NULL"><a href="#最难的两处语义：并列记录与-NULL" class="headerlink" title="最难的两处语义：并列记录与 NULL"></a>最难的两处语义：并列记录与 NULL</h2><p>为什么不用最常见的 <code>ROW_NUMBER()</code>？因为原表的 <code>id</code> 在整个分区表范围内不是单列唯一约束。原查询里，如果两条记录的时间和 ID 都相同，它们互相都不属于“更晚记录”，因此可能同时保留。</p>
+<p><code>ROW_NUMBER()</code> 会对并列行分别编号；<code>DENSE_RANK()</code> 则为同排序值的行赋予同一排名。这个差异见 <a href="https://dev.mysql.com/doc/refman/8.0/en/window-function-descriptions.html">MySQL 8.0 窗口函数说明</a>。在此次兼容优化中，保留并列行才符合原口径。</p>
+<p>空时间也不能丢。旧反关联中的时间比较遇到 NULL，不会得到 TRUE，因而这些记录可能全部通过 <code>NOT EXISTS</code>。只保留 <code>latest_rank = 1</code> 会漏掉某些空时间记录，所以新实现还显式保留 <code>event_time IS NULL</code>。</p>
+<p><img data-src="/images/posts/2026-10-22-flow-statistics-window-sql/boundary.svg" alt="必须保留的统计语义"><br><em>图 2：并列、空时间与跨天状态决定了优化是否等价，不能仅比较普通样本。</em></p>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>必须保持的行为</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>同人、不同时间</td>
+<td>按最新时间决定状态</td>
+</tr>
+<tr>
+<td>同人、同时间、不同 ID</td>
+<td>用 ID 决定先后</td>
+</tr>
+<tr>
+<td>时间与 ID 都相同</td>
+<td>保留原有并列记录</td>
+</tr>
+<tr>
+<td>空时间</td>
+<td>保留原 NULL 语义，进入未知时间分桶</td>
+</tr>
+<tr>
+<td>昨天进场、今天没有流水</td>
+<td>仍可能计入当前在场</td>
+</tr>
+<tr>
+<td>恰好 12 &#x2F; 24 小时</td>
+<td>分别进入 <code>[12,24)</code>、<code>[24,+∞)</code></td>
+</tr>
+</tbody></table>
+<p>因此，“在场人数”这个产品名称，在历史异常数据下可能仍体现记录计数语义。若要强制“一人一条”或治理空时间，应作为另一项业务调整，不能藏在性能优化里。</p>
+<h2 id="用同一快照证明结果，再谈性能"><a href="#用同一快照证明结果，再谈性能" class="headerlink" title="用同一快照证明结果，再谈性能"></a>用同一快照证明结果，再谈性能</h2><p>验证顺序是先构造边界样本，再比较真实数据。本地相关用例覆盖空集、方向变化、跨天、时间边界、重复键、空时间、无效及删除记录，同时约束 Service 不再调用独立离场查询。</p>
+<p>真实数据对比采用固定时刻和同一只读快照。下面只展示事务边界，需将完整旧、新查询放到相应位置；运行前应先评估查询负载与限时：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SET</span> <span class="variable">@as_of</span> <span class="operator">=</span> <span class="string">&#x27;2026-10-22 17:00:00&#x27;</span>;</span><br><span class="line"><span class="keyword">START</span> TRANSACTION <span class="keyword">WITH</span> CONSISTENT SNAPSHOT, READ <span class="keyword">ONLY</span>;</span><br><span class="line"><span class="comment">-- 执行旧统计，并保留各分桶及耗时。</span></span><br><span class="line"><span class="comment">-- 执行新统计，逐字段比较，而非仅比较总人数。</span></span><br><span class="line"><span class="keyword">COMMIT</span>;</span><br></pre></td></tr></table></figure>
+
+<p>当时生产样本的在场 296、离场 510，以及各滞留分桶新旧完全一致，脚本输出 <code>all_counts_match = 1</code>。本地另有 5 万条模拟流水对比，结果同样一致；模拟性能不能替代生产性能。</p>
+<p>按原笔记，11 个相关测试通过，代码已推送并打包，但当时尚未发布服务。本篇整理没有重新运行生产查询，也没有把这组数字写成所有数据规模下的保证。</p>
+<p>窗口函数不是天然比反关联快。它同样有排序和中间结果成本，数据分布改变后仍需看执行计划。这次有效，是因为它把两次重复的全历史最新状态判断合并成一次，并且用边界测试与同快照对比守住了原有统计语义。</p>
+<h2 id="延伸阅读"><a href="#延伸阅读" class="headerlink" title="延伸阅读"></a>延伸阅读</h2><ul>
+<li><a href="https://zhlifeiy.codes/2026/09/22/2026-09-22-device-sync-recovery/">命令发送成功，数据却没回来：一次设备同步故障与补录设计</a></li>
+<li><a href="https://zhlifeiy.codes/2026/09/22/2026-09-22-websocket-ticket-auth/">把 WebSocket 长期密钥移出前端：短期票据改造与上线闭环</a></li>
+<li><a href="https://zhlifeiy.codes/2026/10/21/2026-10-21-alarm-workflow-design/">从一条告警到真正闭环：规则、站内信、工单与权限的整合实践</a></li>
+<li><a href="https://zhlifeiy.codes/2026/10/22/2026-10-22-large-upload-streaming/">上传上限放到 1GB，为什么仍然 OOM：附件复用与流式传输实践</a></li>
+</ul>
+<hr>
+<p><em>本文根据 2026 年 9 月 22 日至 10 月 22 日的工程笔记整理。账号、凭证、地址和业务样本已脱敏；通用示例已在正文标明，历史验证结果以原记录为准。</em></p>
+]]></content>
+      <categories>
+        <category>工程实践</category>
+      </categories>
+      <tags>
+        <tag>MySQL</tag>
+        <tag>SQL优化</tag>
+        <tag>窗口函数</tag>
+        <tag>回归测试</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>上传上限放到 1GB，为什么仍然 OOM：附件复用与流式传输实践</title>
+    <url>/2026/10/22/2026-10-22-large-upload-streaming/</url>
+    <content><![CDATA[<p>组件提示上传成功，点击确定却发生 Java 堆溢出，问题藏在二次上传和 multipart 内存编码里。本文从异常栈还原链路，再用附件 ID 复用、磁盘中转和流式发送控制资源占用。</p>
+<div class="audio-player"><p>🎧 文章导读</p><audio controls preload="none" src="/audio/2026-10-22-large-upload-streaming/narration.mp3">您的浏览器不支持音频播放。</audio></div>
+
+<span id="more"></span>
+
+<h2 id="“上传成功”之后，才发生第二次上传"><a href="#“上传成功”之后，才发生第二次上传" class="headerlink" title="“上传成功”之后，才发生第二次上传"></a>“上传成功”之后，才发生第二次上传</h2><p>用户选择大文件后，组件显示上传成功；点击确定，页面却提示系统繁忙，素材列表也找不到新记录。这不是矛盾，而是页面把两个阶段压缩成了一个词。</p>
+<p>旧链路中，组件先将文件上传到附件服务。点击确定时，前端又把原始文件放进 <code>FormData</code> 发给业务服务，业务服务再通过 Feign multipart 转发一次，之后才发起审批、保存素材。</p>
+<p>异常栈正好落在第二次转发的编码阶段：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">java.lang.OutOfMemoryError: Java heap space</span><br><span class="line">    at java.util.Arrays.copyOf(...)</span><br><span class="line">    at java.io.ByteArrayOutputStream.grow(...)</span><br><span class="line">    at feign.form.MultipartFormContentProcessor.process(...)</span><br><span class="line">    at feign.form.spring.SpringFormEncoder.encode(...)</span><br><span class="line">    at ...AttachmentClient.uploadFile(...)</span><br><span class="line">    at ...MaterialService.addMaterial(...)</span><br></pre></td></tr></table></figure>
+
+<p>这段证据把问题收敛到 multipart 内存编码。调用还没走到后面的流程和入库，因此这次提交没有产生新素材记录。</p>
+<p><img data-src="/images/posts/2026-10-22-large-upload-streaming/flow.svg" alt="二次传输与附件复用"><br><em>图 1：复用第一次上传得到的附件 ID，避免业务提交再次携带文件。</em></p>
+<p>同时间段还有其他消息监听与设备同步错误，但没有匹配请求标识，不能把它们都归到这次上传。HTTP 200 也只说明 HTTP 层正常返回，仍需看业务响应体。</p>
+<h2 id="接收上限解决不了整文件缓冲"><a href="#接收上限解决不了整文件缓冲" class="headerlink" title="接收上限解决不了整文件缓冲"></a>接收上限解决不了整文件缓冲</h2><p>前期曾把前端、网关及后端允许的文件大小放宽到 1GB。这个配置解决的是“请求会不会被拒绝”，不是“后端处理时会占多少堆”。</p>
+<p>multipart 编码使用 <code>ByteArrayOutputStream</code> 时，文件可能被完整装进堆，扩容还伴随复制。业务本身、并发请求和其他缓冲也要占内存，所以不能用“文件小于 <code>-Xmx</code>”推导它一定安全。</p>
+<p>更麻烦的是审批后的设备同步：旧链路把下载内容转成内存中的 <code>MultipartFile</code>，再发给集成服务。只修新增入口，会把同一类 OOM 留到审批通过之后。</p>
+<table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>真正需要核对的事</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>前端与网关</td>
+<td>文件限制还是整个请求体限制</td>
+</tr>
+<tr>
+<td>multipart 编码</td>
+<td>是否聚合成完整字节数组</td>
+</tr>
+<tr>
+<td>HTTP 客户端</td>
+<td>是否缓冲请求或响应体</td>
+</tr>
+<tr>
+<td>日志拦截器</td>
+<td>是否读取正文后重新构造缓冲</td>
+</tr>
+<tr>
+<td>审批后同步</td>
+<td>是否再次下载、转换、转发整文件</td>
+</tr>
+</tbody></table>
+<p>历史上的流式预览提交也被检查过。它没有修改本次上传方法，因此不能因为提交名称里有“大文件”，就把它当成上传 OOM 的直接原因。本次保留了预览能力，修正实际命中的上传链路。</p>
+<h2 id="新增素材：提交附件引用，并验证元数据"><a href="#新增素材：提交附件引用，并验证元数据" class="headerlink" title="新增素材：提交附件引用，并验证元数据"></a>新增素材：提交附件引用，并验证元数据</h2><p>新页面第一次上传拿到附件 ID，点击确定时只提交附件 ID 与素材信息。下面是通用示意，具体字段以业务接口为准：</p>
+<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;attachmentId&quot;</span><span class="punctuation">:</span> <span class="string">&quot;example-file-id&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;name&quot;</span><span class="punctuation">:</span> <span class="string">&quot;大厅宣传视频&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;VIDEO&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;vendor&quot;</span><span class="punctuation">:</span> <span class="string">&quot;example-vendor&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>后端不能因为拿到一个 ID，就认为它是用户有权使用的素材。此次复用既有附件查询接口，检查当前上传人、业务类型、受控路径前缀和大小，使用服务端元数据保存素材，不信任浏览器自报的路径或文件大小。</p>
+<p>原文件参数仍保留以兼容旧客户端。但这也意味着旧页面继续走旧提交形式时，仍可能进入二进制编码链路；发布不能只更新后端就宣称新增入口已经彻底避开风险。</p>
+<p>另外，文件大小在新增时直接写入素材记录，避免依赖设备同步成功之后才回填。提示语也按阶段区分：文件上传完成、素材提交审批、审批后可见。失败后保留已上传附件和重试机会，避免用户重复传输大文件。</p>
+<h2 id="设备同步：用磁盘承接容量，用流传递内容"><a href="#设备同步：用磁盘承接容量，用流传递内容" class="headerlink" title="设备同步：用磁盘承接容量，用流传递内容"></a>设备同步：用磁盘承接容量，用流传递内容</h2><p>审批通过后，业务服务只向集成服务发送系统内受控素材路径。集成服务把内容下载到临时文件，再以文件资源流式上传设备平台。</p>
+<p>这里的“路径”不是允许用户任意指定外网 URL。它必须限定在系统可验证的素材来源，避免把接口变成任意地址下载器。</p>
+<p><img data-src="/images/posts/2026-10-22-large-upload-streaming/boundary.svg" alt="流式传输的资源边界"><br><em>图 2：小缓冲承担传输，临时磁盘承担文件容量；日志也必须避免整包读取。</em></p>
+<p>对于本次所处的 Spring 5.x 客户端配置，可参考如下方式关闭请求体缓冲；<a href="https://docs.spring.io/spring-framework/docs/5.3.39/javadoc-api/org/springframework/http/client/SimpleClientHttpRequestFactory.html">Spring 5.3.39 API 文档</a>说明了该开关的用途。其他版本和 HTTP 客户端应检查各自实际行为。</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="type">SimpleClientHttpRequestFactory</span> <span class="variable">factory</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">SimpleClientHttpRequestFactory</span>();</span><br><span class="line">factory.setBufferRequestBody(<span class="literal">false</span>);</span><br><span class="line"></span><br><span class="line"><span class="type">RestTemplate</span> <span class="variable">client</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">RestTemplate</span>(factory);</span><br><span class="line">MultiValueMap&lt;String, Object&gt; body = <span class="keyword">new</span> <span class="title class_">LinkedMultiValueMap</span>&lt;&gt;();</span><br><span class="line">body.add(<span class="string">&quot;file&quot;</span>, <span class="keyword">new</span> <span class="title class_">FileSystemResource</span>(tempFile));</span><br><span class="line"><span class="comment">// 补齐 multipart 请求头、鉴权与业务参数后，再调用上传接口。</span></span><br></pre></td></tr></table></figure>
+
+<p>这段代码只展示关键配置，不是完整上传器。若外挂读取整个请求体的日志拦截器，或者把文件先变成 <code>byte[]</code>，仍会破坏流式目标。本次为下载使用独立客户端及 <code>NoOpLogger</code>，避免 Feign FULL 日志重新缓冲完整响应。</p>
+<p>临时文件的收尾也要保留原始异常。清理失败应记录路径与告警，不能盖住上传失败的原因，更不能把已经上传成功改成失败：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">    downloadToFile(sourcePath, tempFile);</span><br><span class="line">    uploadFromFile(tempFile);</span><br><span class="line">&#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        Files.deleteIfExists(tempFile.toPath());</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IOException cleanupError) &#123;</span><br><span class="line">        log.warn(<span class="string">&quot;Temporary file cleanup failed: &#123;&#125;&quot;</span>, tempFile, cleanupError);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>磁盘中转把容量压力从 Java 堆转到了磁盘。每个活动同步都可能占一份完整文件；多实例和多任务下必须按并发计算空间，不能只看单实例线程数。</p>
+<h2 id="验证要让文件比堆大，还要检查隐藏缓冲"><a href="#验证要让文件比堆大，还要检查隐藏缓冲" class="headerlink" title="验证要让文件比堆大，还要检查隐藏缓冲"></a>验证要让文件比堆大，还要检查隐藏缓冲</h2><p>这次大文件验证在 <code>-Xmx128m</code> 下，用生成的 1GB 数据流完成下载落盘，再上传到本地模拟设备接口，核对传输量与临时文件清理。测试环境同时开启全局 Feign FULL 日志，检查独立下载客户端没有重新缓冲完整响应。</p>
+<p>这是比“小文件上传成功”更有针对性的验证：它能暴露整文件入堆的实现。但它没有证明真实设备的转码吞吐，也不代表所有并发场景都安全。</p>
+<p>根据原始记录，最终相关后端 13 个测试、前端 11 个测试及改动文件 ESLint 通过；发布与真实设备验证仍待进行。本篇没有再次执行 1GB 传输测试。</p>
+<p>上线还要核对两个容易忽略的配置：一是 multipart 有额外字段与边界，完整请求体上限应高于单文件上限；二是外层等待时间要覆盖下载、上传与设备处理全过程。不能未经核实，就把已有较长超时改成一个看似合理的较短值。</p>
+<p>本次推荐顺序是先发布集成服务，再业务服务，最后前端；附件服务需已具备原来的流式下载能力。发布后分别验收新增、审批、设备同步与预览，而不是只看到“文件上传完成”就结束。</p>
+<p>这次修复留下的原则很具体：<strong>先减少不必要的文件传输，再确认每一段都没有整包缓冲。</strong> 大文件能力取决于完整链路的资源使用方式，不是一个上传上限配置。</p>
+<h2 id="延伸阅读"><a href="#延伸阅读" class="headerlink" title="延伸阅读"></a>延伸阅读</h2><ul>
+<li><a href="https://zhlifeiy.codes/2026/09/22/2026-09-22-device-sync-recovery/">命令发送成功，数据却没回来：一次设备同步故障与补录设计</a></li>
+<li><a href="https://zhlifeiy.codes/2026/09/22/2026-09-22-websocket-ticket-auth/">把 WebSocket 长期密钥移出前端：短期票据改造与上线闭环</a></li>
+<li><a href="https://zhlifeiy.codes/2026/10/21/2026-10-21-alarm-workflow-design/">从一条告警到真正闭环：规则、站内信、工单与权限的整合实践</a></li>
+<li><a href="https://zhlifeiy.codes/2026/10/22/2026-10-22-flow-statistics-window-sql/">8.7 秒到 231 毫秒：保留统计口径的 MySQL 窗口函数优化</a></li>
+</ul>
+<hr>
+<p><em>本文根据 2026 年 9 月 22 日至 10 月 22 日的工程笔记整理。账号、凭证、地址和业务样本已脱敏；通用示例已在正文标明，历史验证结果以原记录为准。</em></p>
+]]></content>
+      <categories>
+        <category>工程实践</category>
+      </categories>
+      <tags>
+        <tag>Feign</tag>
+        <tag>Java</tag>
+        <tag>文件上传</tag>
+        <tag>OOM</tag>
+      </tags>
+  </entry>
 </search>

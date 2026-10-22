@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Gemini","darkmode":true,"version":"8.28.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="组件提示上传成功，点击确定却发生 Java 堆溢出，问题藏在二次上传和 multipart 内存编码里。本文从异常栈还原链路，再用附件 ID 复用、磁盘中转和流式发送控制资源占用。 🎧 文章导读您的浏览器不支持音频播放。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="上传上限放到 1GB，为什么仍然 OOM：附件复用与流式传输实践">
+<meta property="og:url" content="https://zhlifeiy.codes/2026/10/22/2026-10-22-large-upload-streaming/index.html">
+<meta property="og:site_name" content="zhlifeiy · 工程笔记">
+<meta property="og:description" content="组件提示上传成功，点击确定却发生 Java 堆溢出，问题藏在二次上传和 multipart 内存编码里。本文从异常栈还原链路，再用附件 ID 复用、磁盘中转和流式发送控制资源占用。 🎧 文章导读您的浏览器不支持音频播放。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/2026-10-22-large-upload-streaming.jpg">
+<meta property="article:published_time" content="2026-10-22T13:00:00.000Z">
+<meta property="article:author" content="zhlifeiy35">
+<meta property="article:tag" content="Feign">
+<meta property="article:tag" content="Java">
+<meta property="article:tag" content="文件上传">
+<meta property="article:tag" content="OOM">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/2026-10-22-large-upload-streaming.jpg">
+
+
+<link rel="canonical" href="https://zhlifeiy.codes/2026/10/22/2026-10-22-large-upload-streaming/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://zhlifeiy.codes/2026/10/22/2026-10-22-large-upload-streaming/","path":"2026/10/22/2026-10-22-large-upload-streaming/","title":"上传上限放到 1GB，为什么仍然 OOM：附件复用与流式传输实践"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>上传上限放到 1GB，为什么仍然 OOM：附件复用与流式传输实践 | zhlifeiy · 工程笔记</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/atom.xml" title="zhlifeiy · 工程笔记" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">zhlifeiy · 工程笔记</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">把项目里的坑，写成可以复用的答案</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-项目"><a href="/projects/" rel="section"><i class="fa fa-diagram-project fa-fw"></i>项目</a></li><li class="menu-item menu-item-简历"><a href="/resume/" rel="section"><i class="fa fa-id-card fa-fw"></i>简历</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-guestbook"><a href="/guestbook/" rel="section"><i class="fa fa-comment-dots fa-fw"></i>留言板</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E2%80%9C%E4%B8%8A%E4%BC%A0%E6%88%90%E5%8A%9F%E2%80%9D%E4%B9%8B%E5%90%8E%EF%BC%8C%E6%89%8D%E5%8F%91%E7%94%9F%E7%AC%AC%E4%BA%8C%E6%AC%A1%E4%B8%8A%E4%BC%A0"><span class="nav-number">1.</span> <span class="nav-text">“上传成功”之后，才发生第二次上传</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8E%A5%E6%94%B6%E4%B8%8A%E9%99%90%E8%A7%A3%E5%86%B3%E4%B8%8D%E4%BA%86%E6%95%B4%E6%96%87%E4%BB%B6%E7%BC%93%E5%86%B2"><span class="nav-number">2.</span> <span class="nav-text">接收上限解决不了整文件缓冲</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%B0%E5%A2%9E%E7%B4%A0%E6%9D%90%EF%BC%9A%E6%8F%90%E4%BA%A4%E9%99%84%E4%BB%B6%E5%BC%95%E7%94%A8%EF%BC%8C%E5%B9%B6%E9%AA%8C%E8%AF%81%E5%85%83%E6%95%B0%E6%8D%AE"><span class="nav-number">3.</span> <span class="nav-text">新增素材：提交附件引用，并验证元数据</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%BE%E5%A4%87%E5%90%8C%E6%AD%A5%EF%BC%9A%E7%94%A8%E7%A3%81%E7%9B%98%E6%89%BF%E6%8E%A5%E5%AE%B9%E9%87%8F%EF%BC%8C%E7%94%A8%E6%B5%81%E4%BC%A0%E9%80%92%E5%86%85%E5%AE%B9"><span class="nav-number">4.</span> <span class="nav-text">设备同步：用磁盘承接容量，用流传递内容</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%AA%8C%E8%AF%81%E8%A6%81%E8%AE%A9%E6%96%87%E4%BB%B6%E6%AF%94%E5%A0%86%E5%A4%A7%EF%BC%8C%E8%BF%98%E8%A6%81%E6%A3%80%E6%9F%A5%E9%9A%90%E8%97%8F%E7%BC%93%E5%86%B2"><span class="nav-number">5.</span> <span class="nav-text">验证要让文件比堆大，还要检查隐藏缓冲</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BB%B6%E4%BC%B8%E9%98%85%E8%AF%BB"><span class="nav-number">6.</span> <span class="nav-text">延伸阅读</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zhlifeiy35</p>
+  <div class="site-description" itemprop="description">记录项目实践、问题排查与工程经验</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">98</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">18</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">293</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zhdmm35" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zhdmm35" rel="noopener me" target="_blank"><i class="fa fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/2026-10-22-large-upload-streaming.jpg" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/10/22/2026-10-22-large-upload-streaming/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="记录项目实践、问题排查与工程经验">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="上传上限放到 1GB，为什么仍然 OOM：附件复用与流式传输实践 | zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          上传上限放到 1GB，为什么仍然 OOM：附件复用与流式传输实践
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-10-22 21:00:00" itemprop="dateCreated datePublished" datetime="2026-10-22T21:00:00+08:00">2026-10-22</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" itemprop="url" rel="index"><span itemprop="name">工程实践</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>组件提示上传成功，点击确定却发生 Java 堆溢出，问题藏在二次上传和 multipart 内存编码里。本文从异常栈还原链路，再用附件 ID 复用、磁盘中转和流式发送控制资源占用。</p>
+<div class="audio-player"><p>🎧 文章导读</p><audio controls preload="none" src="/audio/2026-10-22-large-upload-streaming/narration.mp3">您的浏览器不支持音频播放。</audio></div>
+
+<span id="more"></span>
+
+<h2 id="“上传成功”之后，才发生第二次上传"><a href="#“上传成功”之后，才发生第二次上传" class="headerlink" title="“上传成功”之后，才发生第二次上传"></a>“上传成功”之后，才发生第二次上传</h2><p>用户选择大文件后，组件显示上传成功；点击确定，页面却提示系统繁忙，素材列表也找不到新记录。这不是矛盾，而是页面把两个阶段压缩成了一个词。</p>
+<p>旧链路中，组件先将文件上传到附件服务。点击确定时，前端又把原始文件放进 <code>FormData</code> 发给业务服务，业务服务再通过 Feign multipart 转发一次，之后才发起审批、保存素材。</p>
+<p>异常栈正好落在第二次转发的编码阶段：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">java.lang.OutOfMemoryError: Java heap space</span><br><span class="line">    at java.util.Arrays.copyOf(...)</span><br><span class="line">    at java.io.ByteArrayOutputStream.grow(...)</span><br><span class="line">    at feign.form.MultipartFormContentProcessor.process(...)</span><br><span class="line">    at feign.form.spring.SpringFormEncoder.encode(...)</span><br><span class="line">    at ...AttachmentClient.uploadFile(...)</span><br><span class="line">    at ...MaterialService.addMaterial(...)</span><br></pre></td></tr></table></figure>
+
+<p>这段证据把问题收敛到 multipart 内存编码。调用还没走到后面的流程和入库，因此这次提交没有产生新素材记录。</p>
+<p><img data-src="/images/posts/2026-10-22-large-upload-streaming/flow.svg" alt="二次传输与附件复用"><br><em>图 1：复用第一次上传得到的附件 ID，避免业务提交再次携带文件。</em></p>
+<p>同时间段还有其他消息监听与设备同步错误，但没有匹配请求标识，不能把它们都归到这次上传。HTTP 200 也只说明 HTTP 层正常返回，仍需看业务响应体。</p>
+<h2 id="接收上限解决不了整文件缓冲"><a href="#接收上限解决不了整文件缓冲" class="headerlink" title="接收上限解决不了整文件缓冲"></a>接收上限解决不了整文件缓冲</h2><p>前期曾把前端、网关及后端允许的文件大小放宽到 1GB。这个配置解决的是“请求会不会被拒绝”，不是“后端处理时会占多少堆”。</p>
+<p>multipart 编码使用 <code>ByteArrayOutputStream</code> 时，文件可能被完整装进堆，扩容还伴随复制。业务本身、并发请求和其他缓冲也要占内存，所以不能用“文件小于 <code>-Xmx</code>”推导它一定安全。</p>
+<p>更麻烦的是审批后的设备同步：旧链路把下载内容转成内存中的 <code>MultipartFile</code>，再发给集成服务。只修新增入口，会把同一类 OOM 留到审批通过之后。</p>
+<table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>真正需要核对的事</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>前端与网关</td>
+<td>文件限制还是整个请求体限制</td>
+</tr>
+<tr>
+<td>multipart 编码</td>
+<td>是否聚合成完整字节数组</td>
+</tr>
+<tr>
+<td>HTTP 客户端</td>
+<td>是否缓冲请求或响应体</td>
+</tr>
+<tr>
+<td>日志拦截器</td>
+<td>是否读取正文后重新构造缓冲</td>
+</tr>
+<tr>
+<td>审批后同步</td>
+<td>是否再次下载、转换、转发整文件</td>
+</tr>
+</tbody></table>
+<p>历史上的流式预览提交也被检查过。它没有修改本次上传方法，因此不能因为提交名称里有“大文件”，就把它当成上传 OOM 的直接原因。本次保留了预览能力，修正实际命中的上传链路。</p>
+<h2 id="新增素材：提交附件引用，并验证元数据"><a href="#新增素材：提交附件引用，并验证元数据" class="headerlink" title="新增素材：提交附件引用，并验证元数据"></a>新增素材：提交附件引用，并验证元数据</h2><p>新页面第一次上传拿到附件 ID，点击确定时只提交附件 ID 与素材信息。下面是通用示意，具体字段以业务接口为准：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;attachmentId&quot;</span><span class="punctuation">:</span> <span class="string">&quot;example-file-id&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;name&quot;</span><span class="punctuation">:</span> <span class="string">&quot;大厅宣传视频&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;VIDEO&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;vendor&quot;</span><span class="punctuation">:</span> <span class="string">&quot;example-vendor&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>后端不能因为拿到一个 ID，就认为它是用户有权使用的素材。此次复用既有附件查询接口，检查当前上传人、业务类型、受控路径前缀和大小，使用服务端元数据保存素材，不信任浏览器自报的路径或文件大小。</p>
+<p>原文件参数仍保留以兼容旧客户端。但这也意味着旧页面继续走旧提交形式时，仍可能进入二进制编码链路；发布不能只更新后端就宣称新增入口已经彻底避开风险。</p>
+<p>另外，文件大小在新增时直接写入素材记录，避免依赖设备同步成功之后才回填。提示语也按阶段区分：文件上传完成、素材提交审批、审批后可见。失败后保留已上传附件和重试机会，避免用户重复传输大文件。</p>
+<h2 id="设备同步：用磁盘承接容量，用流传递内容"><a href="#设备同步：用磁盘承接容量，用流传递内容" class="headerlink" title="设备同步：用磁盘承接容量，用流传递内容"></a>设备同步：用磁盘承接容量，用流传递内容</h2><p>审批通过后，业务服务只向集成服务发送系统内受控素材路径。集成服务把内容下载到临时文件，再以文件资源流式上传设备平台。</p>
+<p>这里的“路径”不是允许用户任意指定外网 URL。它必须限定在系统可验证的素材来源，避免把接口变成任意地址下载器。</p>
+<p><img data-src="/images/posts/2026-10-22-large-upload-streaming/boundary.svg" alt="流式传输的资源边界"><br><em>图 2：小缓冲承担传输，临时磁盘承担文件容量；日志也必须避免整包读取。</em></p>
+<p>对于本次所处的 Spring 5.x 客户端配置，可参考如下方式关闭请求体缓冲；<a target="_blank" rel="noopener" href="https://docs.spring.io/spring-framework/docs/5.3.39/javadoc-api/org/springframework/http/client/SimpleClientHttpRequestFactory.html">Spring 5.3.39 API 文档</a>说明了该开关的用途。其他版本和 HTTP 客户端应检查各自实际行为。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">SimpleClientHttpRequestFactory</span> <span class="variable">factory</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">SimpleClientHttpRequestFactory</span>();</span><br><span class="line">factory.setBufferRequestBody(<span class="literal">false</span>);</span><br><span class="line"></span><br><span class="line"><span class="type">RestTemplate</span> <span class="variable">client</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">RestTemplate</span>(factory);</span><br><span class="line">MultiValueMap&lt;String, Object&gt; body = <span class="keyword">new</span> <span class="title class_">LinkedMultiValueMap</span>&lt;&gt;();</span><br><span class="line">body.add(<span class="string">&quot;file&quot;</span>, <span class="keyword">new</span> <span class="title class_">FileSystemResource</span>(tempFile));</span><br><span class="line"><span class="comment">// 补齐 multipart 请求头、鉴权与业务参数后，再调用上传接口。</span></span><br></pre></td></tr></table></figure>
+
+<p>这段代码只展示关键配置，不是完整上传器。若外挂读取整个请求体的日志拦截器，或者把文件先变成 <code>byte[]</code>，仍会破坏流式目标。本次为下载使用独立客户端及 <code>NoOpLogger</code>，避免 Feign FULL 日志重新缓冲完整响应。</p>
+<p>临时文件的收尾也要保留原始异常。清理失败应记录路径与告警，不能盖住上传失败的原因，更不能把已经上传成功改成失败：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">    downloadToFile(sourcePath, tempFile);</span><br><span class="line">    uploadFromFile(tempFile);</span><br><span class="line">&#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        Files.deleteIfExists(tempFile.toPath());</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IOException cleanupError) &#123;</span><br><span class="line">        log.warn(<span class="string">&quot;Temporary file cleanup failed: &#123;&#125;&quot;</span>, tempFile, cleanupError);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>磁盘中转把容量压力从 Java 堆转到了磁盘。每个活动同步都可能占一份完整文件；多实例和多任务下必须按并发计算空间，不能只看单实例线程数。</p>
+<h2 id="验证要让文件比堆大，还要检查隐藏缓冲"><a href="#验证要让文件比堆大，还要检查隐藏缓冲" class="headerlink" title="验证要让文件比堆大，还要检查隐藏缓冲"></a>验证要让文件比堆大，还要检查隐藏缓冲</h2><p>这次大文件验证在 <code>-Xmx128m</code> 下，用生成的 1GB 数据流完成下载落盘，再上传到本地模拟设备接口，核对传输量与临时文件清理。测试环境同时开启全局 Feign FULL 日志，检查独立下载客户端没有重新缓冲完整响应。</p>
+<p>这是比“小文件上传成功”更有针对性的验证：它能暴露整文件入堆的实现。但它没有证明真实设备的转码吞吐，也不代表所有并发场景都安全。</p>
+<p>根据原始记录，最终相关后端 13 个测试、前端 11 个测试及改动文件 ESLint 通过；发布与真实设备验证仍待进行。本篇没有再次执行 1GB 传输测试。</p>
+<p>上线还要核对两个容易忽略的配置：一是 multipart 有额外字段与边界，完整请求体上限应高于单文件上限；二是外层等待时间要覆盖下载、上传与设备处理全过程。不能未经核实，就把已有较长超时改成一个看似合理的较短值。</p>
+<p>本次推荐顺序是先发布集成服务，再业务服务，最后前端；附件服务需已具备原来的流式下载能力。发布后分别验收新增、审批、设备同步与预览，而不是只看到“文件上传完成”就结束。</p>
+<p>这次修复留下的原则很具体：<strong>先减少不必要的文件传输，再确认每一段都没有整包缓冲。</strong> 大文件能力取决于完整链路的资源使用方式，不是一个上传上限配置。</p>
+<h2 id="延伸阅读"><a href="#延伸阅读" class="headerlink" title="延伸阅读"></a>延伸阅读</h2><ul>
+<li><a href="https://zhlifeiy.codes/2026/09/22/2026-09-22-device-sync-recovery/">命令发送成功，数据却没回来：一次设备同步故障与补录设计</a></li>
+<li><a href="https://zhlifeiy.codes/2026/09/22/2026-09-22-websocket-ticket-auth/">把 WebSocket 长期密钥移出前端：短期票据改造与上线闭环</a></li>
+<li><a href="https://zhlifeiy.codes/2026/10/21/2026-10-21-alarm-workflow-design/">从一条告警到真正闭环：规则、站内信、工单与权限的整合实践</a></li>
+<li><a href="https://zhlifeiy.codes/2026/10/22/2026-10-22-flow-statistics-window-sql/">8.7 秒到 231 毫秒：保留统计口径的 MySQL 窗口函数优化</a></li>
+</ul>
+<hr>
+<p><em>本文根据 2026 年 9 月 22 日至 10 月 22 日的工程笔记整理。账号、凭证、地址和业务样本已脱敏；通用示例已在正文标明，历史验证结果以原记录为准。</em></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Feign/" rel="tag"># Feign</a>
+              <a href="/tags/Java/" rel="tag"># Java</a>
+              <a href="/tags/%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0/" rel="tag"># 文件上传</a>
+              <a href="/tags/OOM/" rel="tag"># OOM</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/10/22/2026-10-22-flow-statistics-window-sql/" rel="prev" title="8.7 秒到 231 毫秒：保留统计口径的 MySQL 窗口函数优化">
+                  <i class="fa fa-angle-left"></i> 8.7 秒到 231 毫秒：保留统计口径的 MySQL 窗口函数优化
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  
+  <div class="comments giscus-container">
+  </div>
+  
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">zhlifeiy35</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/zhdmm35" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"zhdmm35/zhdmm35.github.io","repo_id":"R_kgDOON4bhg","category":"Announcements","category_id":"DIC_kwDOON4bhs4C3dEc","mapping":"pathname","strict":0,"reactions_enabled":1,"emit_metadata":0,"theme":"preferred_color_scheme","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+
+<script>
+document.addEventListener('page:loaded', () => {
+  if (!CONFIG.page.comments) return;
+
+  NexT.utils.loadComments('.giscus-container')
+    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
+      attributes: {
+        async                   : true,
+        crossOrigin             : 'anonymous',
+        'data-repo'             : CONFIG.giscus.repo,
+        'data-repo-id'          : CONFIG.giscus.repo_id,
+        'data-category'         : CONFIG.giscus.category,
+        'data-category-id'      : CONFIG.giscus.category_id,
+        'data-mapping'          : CONFIG.giscus.mapping,
+        'data-strict'           : CONFIG.giscus.strict,
+        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
+        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
+        'data-theme'            : CONFIG.giscus.theme,
+        'data-lang'             : CONFIG.giscus.lang,
+        'data-input-position'   : CONFIG.giscus.input_position,
+        'data-loading'          : CONFIG.giscus.loading
+      },
+      parentNode: document.querySelector('.giscus-container')
+    }));
+});
+</script>
+<script defer src="/js/blog-assistant.js" data-endpoint="https://zhlifeiy-blog-assistant.huiyaozhang07.workers.dev/ask"></script>
+
+</body>
+</html>
