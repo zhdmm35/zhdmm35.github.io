@@ -18634,4 +18634,183 @@ if (typeof mermaid !== 'undefined') {
         <tag>OOM</tag>
       </tags>
   </entry>
+  <entry>
+    <title>先听懂歌，再画第一帧：一支四分钟手绘 MV 的完整制作复盘</title>
+    <url>/2026/10/31/2026-10-31-ai-music-mv-workflow/</url>
+    <content><![CDATA[<p>给一首 4 分 08 秒的歌做整曲 MV，真正难的不是渲染 5958 帧画面，而是在动手之前回答：这首歌到底在讲什么？这次我把 J.Sheon 的《别问很可怕》从表面的”等待与甜蜜”重新理解为”看见秘密却不敢问破”，再用现实、记忆、内心推演三层叙事规则约束九章五十二镜，用 p5.js + Headless Chrome + ffmpeg 逐帧渲染到成片。文章记录从歌词校对、音频分析、分镜设计到全曲验收的完整过程，以及图层透明度、p5 全局变量、章节接缝这些实际踩过的坑。</p>
+<div class="audio-player"><p>🎧 文章导读</p><audio controls preload="none" src="/audio/2026-10-31-ai-music-mv-workflow/narration.mp3">您的浏览器不支持音频播放。</audio></div>
+
+<span id="more"></span>
+
+<h2 id="先看成片"><a href="#先看成片" class="headerlink" title="先看成片"></a>先看成片</h2><p>成片 1920×1080、24 FPS、248.25 秒，九章五十二镜，47 行逐字卡拉 OK 字幕，音乐为 J.Sheon《别问很可怕》（仅作个人学习与展示）：</p>
+<video controls preload="metadata" poster="/videos/2026-10-31-ai-music-mv-workflow/poster.jpg" style="width: 100%; border-radius: 8px;">
+  <source src="/videos/2026-10-31-ai-music-mv-workflow/full-mv.mp4" type="video/mp4">
+  您的浏览器不支持视频播放。
+</video>
+
+<p><em>全曲成片《别问很可怕》：现实、记忆与内心推演三层叙事，九章五十二镜。</em></p>
+<p>技术栈很朴素：p5.js 和 p5.brush 负责手绘画面，Puppeteer 驱动 Headless Chrome 逐帧截图，ffmpeg 把帧序列和原始音频合成 MP4。没有 3D、没有视频生成模型，每一帧都是代码画出来的水彩风格 2D 动画。</p>
+<p>真正决定这支 MV 成色的，是画面之外的三件事：<strong>歌曲理解、叙事规则、验收方式。</strong>下面按制作顺序展开。</p>
+<h2 id="第一步不是画画：把歌曲理解做成证据链"><a href="#第一步不是画画：把歌曲理解做成证据链" class="headerlink" title="第一步不是画画：把歌曲理解做成证据链"></a>第一步不是画画：把歌曲理解做成证据链</h2><h3 id="Whisper-给时间轴，不给歌词"><a href="#Whisper-给时间轴，不给歌词" class="headerlink" title="Whisper 给时间轴，不给歌词"></a>Whisper 给时间轴，不给歌词</h3><p>第一反应是用 Whisper 转写拿歌词。实际跑下来发现它对这类 R&amp;B 伴奏加演唱的音频幻觉明显：人名凭空出现、大量错词，换更大的模型也没有本质改善。所以这次给 Whisper 的定位收窄为——<strong>只提供初始时间分段</strong>，转写结果单独存为 <code>lyrics_whisper_raw.srt</code> 只作审计参考；正式字幕的文本用 KKBOX 歌词逐行校对，时间轴再以原音频内嵌的 LRC 时间为参考复核，最终落到 <code>lyrics.srt</code>。</p>
+<p>这样链路里每个环节都有明确职责：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Whisper 原始转写（lyrics_whisper_raw.srt）→ 只取时间分段</span><br><span class="line">原音频内嵌 LRC + KKBOX 歌词                → 文本与时间逐行校对</span><br><span class="line">lyrics.srt                                → 47 行正式卡拉OK字幕</span><br></pre></td></tr></table></figure>
+
+<h3 id="五种解读与一次关键转向"><a href="#五种解读与一次关键转向" class="headerlink" title="五种解读与一次关键转向"></a>五种解读与一次关键转向</h3><p>拿着校对过的歌词去检索乐评、专辑介绍和听众评论，归纳出五种有来源的理解：已经看见变心证据却无法装作没看见；”别问”不是恐怖而是害怕答案；猫和一年份饲料这样的共同生活让人走不了；”装忙””全都当屁”是反向防御；音乐上是克制中突然漏出痛，而不是持续嘶喊。</p>
+<p>把它们收敛成一句主题和一条情绪曲线：</p>
+<p><strong>明知亲密关系中存在不能问破的秘密，仍用逃避、嘴硬和麻木拖延面对真相。</strong></p>
+<p>这是本次最重要的转折。如果停在表面的”等待与甜蜜”，MV 会做成一支可爱恋爱短片——手机、花、猫都会只是装饰。理解改成”不敢问破”之后，这些意象才长出叙事功能：手机变成证据，花变成关系的温度计，猫变成走不了的阻力。</p>
+<h3 id="librosa：节拍、重音和一次-backtrack-踩坑"><a href="#librosa：节拍、重音和一次-backtrack-踩坑" class="headerlink" title="librosa：节拍、重音和一次 backtrack 踩坑"></a>librosa：节拍、重音和一次 backtrack 踩坑</h3><p>音频分析用 librosa：123.0469 BPM、500 个节拍点、明显的三拍子律动，所以动作按三连拍组织，不做四拍舞曲式的机械弹跳。段落结构结合歌词时间和音频能量标注：前奏 0–23.9 秒，主歌 1 到 41.99 秒，第一段副歌 63.4–93 秒，间奏后主歌 2 从 115.38 秒进入，桥段”装忙”在 162–183.5 秒，尾奏从 229.2 秒衰减到 248.25 秒。</p>
+<p>这里踩了一个值得记下的坑：<strong>librosa 的 onset 检测开了 <code>backtrack=True</code> 之后，onset 会回退到局部低能量帧</strong>，导致末端 onset 强度全是 0，直接拿”最后一个 onset”对齐结尾会完全失准。改用 <code>backtrack=False</code> 才得到有效候选——最后一个达到保守重音强度的 onset 在 227.138 秒。结论是”节拍点””onset 位置””onset 强度””低能量停顿””最后有效重音”必须分开记录，不能互相冒充。</p>
+<p>理解阶段沉淀下来的文件后来贯穿全项目：<code>SONG_ANALYSIS.md</code>（主题、情绪、结构、来源）、<code>audio_analysis.json</code>（BPM、节拍、onset、停顿、末重音）、两份歌词文件。后面每一章分镜都直接引用这些数字，不再凭耳朵重新感觉。</p>
+<h2 id="叙事规则：现实、记忆、内心推演"><a href="#叙事规则：现实、记忆、内心推演" class="headerlink" title="叙事规则：现实、记忆、内心推演"></a>叙事规则：现实、记忆、内心推演</h2><p>歌曲理解定了”不敢问破”的主题后，紧接着的问题是：MV 里拍到的画面，哪些是真发生的？</p>
+<p>这次把九章明确分成三层：</p>
+<table>
+<thead>
+<tr>
+<th>章节</th>
+<th>内容</th>
+<th>叙事层级</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>C01 &#x2F; C03</td>
+<td>期待、手机证据、秘密与逃避</td>
+<td>现实</td>
+</tr>
+<tr>
+<td>C02 &#x2F; C06</td>
+<td>原以为、失效的同一个笑话</td>
+<td>记忆</td>
+</tr>
+<tr>
+<td>C04 &#x2F; C08</td>
+<td>浪漫给了别人、答案已经在那里</td>
+<td><strong>内心推演</strong></td>
+</tr>
+<tr>
+<td>C05 &#x2F; C07</td>
+<td>猫与饲料、装忙过载</td>
+<td>现实</td>
+</tr>
+<tr>
+<td>C09</td>
+<td>没有真正结束</td>
+<td>现实（尾声）</td>
+</tr>
+</tbody></table>
+<p>关键在 C04 和 C08：她与第三者的相处，是主角根据手机上的证据在脑子里推演的画面，不是他亲眼跟踪、更不是现实对质。定这条规则，是因为歌的核心是”别问”——<strong>高潮可以发生在内心，但现实中的他自始至终没有问出口，结尾就不能突然拍成摊牌或和解。</strong>内心场景统一用紫灰双重曝光、记忆边框和更软的颗粒，与现实拉开视觉距离。</p>
+<h3 id="母题：建立—重复—变义"><a href="#母题：建立—重复—变义" class="headerlink" title="母题：建立—重复—变义"></a>母题：建立—重复—变义</h3><p>视觉设计上克制地只用了一组母题，让每个都经历”建立、重复、变义”三个阶段：</p>
+<ul>
+<li><strong>手机</strong>：从期待的联系，变成藏着双心的证据。实现上把手机所有者 <code>owner</code> 和来电者 <code>caller</code> 分开编码——“她来电”和”自己打给她的未接来电”是两个完全不同的叙事事实，不能共用同一种身份颜色。</li>
+<li><strong>共享笑话</strong>：同一种抬手、倾斜、跳动的笨拙动作，先属于主角与她（”只有她能懂”），后来原样出现在她与第三者之间，形成反噬。三个角色共用同一个动作函数 <code>sharedJoke(..., who)</code>，不是三段近似姿势的手绘模仿。</li>
+<li><strong>花</strong>：从准备时的期待，到记忆里的盛开，到最后垂下、被放在猫旁边。</li>
+<li><strong>猫</strong>：不是卖萌装饰，是”刚订了一年份饲料”的共同生活，是人物走不掉的现实阻力。</li>
+<li><strong>首尾同机位</strong>：尾声回到开场那间公寓，人、猫、手机都在，但状态已经变了——生活继续，问题没解决。</li>
+</ul>
+<p>判断标准可以总结成一句话：<strong>同一个母题至少要经历”建立—重复—变义”三个阶段，才值得贯穿全曲；否则只是不断添加新意象。</strong></p>
+<p><img data-src="/images/posts/2026-10-31-ai-music-mv-workflow/shared-models.jpg" alt="共享角色与场景模型"><br><em>图 1：共享模型在四个时间点的一致性检查——同一间公寓、同一批角色，靠参数而不是重画来演变。</em></p>
+<p><img data-src="/images/posts/2026-10-31-ai-music-mv-workflow/joke-strip.jpg" alt="共享笑话动作逐帧采样"><br><em>图 2：共享笑话动作的逐帧采样。主角、她、第三者走的是同一个动作函数，保证”反噬”成立。</em></p>
+<p>所有共享角色和场景集中在一个 <code>full_set.js</code> 里，暴露 <code>room</code> &#x2F; <code>phone</code> &#x2F; <code>her</code> &#x2F; <code>other</code> &#x2F; <code>cat</code> &#x2F; <code>flower</code> &#x2F; <code>sharedJoke</code> 这类无状态绘制接口，九章只读调用。这样”她与第三者动作一致”这类跨章节约束才有单一实现可查。</p>
+<h2 id="分镜：九章五十二镜，时间精确到小数"><a href="#分镜：九章五十二镜，时间精确到小数" class="headerlink" title="分镜：九章五十二镜，时间精确到小数"></a>分镜：九章五十二镜，时间精确到小数</h2><p>分镜写在任何章节代码之前。每镜要回答六个问题：起止时间与对应歌词、叙事层级（现实&#x2F;记忆&#x2F;内心）、镜头内真正发生什么变化、情绪推进了什么、用到哪个母题、出入点怎么衔接。以 C01 开头几镜为例：</p>
+<table>
+<thead>
+<tr>
+<th>时间</th>
+<th>歌词</th>
+<th>画面与事件</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0–5.80</td>
+<td>前奏</td>
+<td>靛蓝公寓，手机黑屏，主角无聊等待；雨与三拍子律动让房间活着</td>
+</tr>
+<tr>
+<td>11.60–17.50</td>
+<td>前奏</td>
+<td>他准备一束花，猫好奇拨弄包装纸，他笑着救下花</td>
+</tr>
+<tr>
+<td>23.94–28.99</td>
+<td>每天都想可以快点见到她拉她的手</td>
+<td>想象变暖：两人沿小路牵手，步伐从生疏到同步</td>
+</tr>
+<tr>
+<td>29.98–34.39</td>
+<td>猜是她的未接来电来了好几通</td>
+<td>回到现实：手机连续亮起，他以为都是她</td>
+</tr>
+<tr>
+<td>37.75–41.99</td>
+<td>意外发现她的手机没带</td>
+<td>门口没人；桌上手机带着她的花标记——未接来电其实来自他。花垂下</td>
+</tr>
+</tbody></table>
+<p>注意最后一镜：C01 的结尾就是全曲主题的第一次落地——他以为的”她的来电”，其实是他自己打给她手机的未接来电。这个反转只有在”理解成不敢问破”之后才设计得出来。</p>
+<h3 id="试片要选有歌词、有情绪的十秒"><a href="#试片要选有歌词、有情绪的十秒" class="headerlink" title="试片要选有歌词、有情绪的十秒"></a>试片要选有歌词、有情绪的十秒</h3><p>全曲渲染前先做 10 秒试片，选段不是纯器乐的开头，而是副歌里最有代表性的 69.033–79.033 秒，对齐 librosa 节拍点，包含”唉，为何你的秘密不删”和”唉，现在已经麻痹无感”两句。<strong>试片的目的是验证创作方向，不是验证能导出视频</strong>——所以它必须带正式风格、角色、字幕和关键母题。方向被确认后再铺开全曲，避免 5958 帧渲染完才发现叙事误读。</p>
+<h2 id="技术实现：让每一帧都是-t-的纯函数"><a href="#技术实现：让每一帧都是-t-的纯函数" class="headerlink" title="技术实现：让每一帧都是 t 的纯函数"></a>技术实现：让每一帧都是 t 的纯函数</h2><h3 id="渲染架构与最硬的一条约束"><a href="#渲染架构与最硬的一条约束" class="headerlink" title="渲染架构与最硬的一条约束"></a>渲染架构与最硬的一条约束</h3><p>渲染链路是 Puppeteer 起 Headless Chrome，把 p5.js 画布按 24 FPS 逐帧截图到帧序列，最后 ffmpeg 合成。这条链路可能跳帧、并行、从任意时间点重渲，所以整个项目遵守最硬的一条约束：<strong>每一帧都只能是时间 t 的纯函数。</strong></p>
+<ul>
+<li>不用 <code>Math.random()</code>，稳定变化用固定种子的 <code>hash()</code>，手绘抖动用 <code>boilSeed()</code> &#x2F; <code>jit()</code>；</li>
+<li>不跨帧保存位置、透明度或物理状态，运动轨迹直接由 t 计算；</li>
+<li>共享角色和场景只提供无状态绘制接口。</li>
+</ul>
+<p>违反这条约束的代价很典型：单机预览一切正常，多 worker 正式渲染时闪烁、跳位、无法复现。</p>
+<h3 id="图层透明度要作用于整层，还要测中间值"><a href="#图层透明度要作用于整层，还要测中间值" class="headerlink" title="图层透明度要作用于整层，还要测中间值"></a>图层透明度要作用于整层，还要测中间值</h3><p>“回忆半透明叠加”这类效果，只降低填色的 alpha 是不够的——描边可能仍然不透明。正确做法是先以完整不透明度画进离屏图层，再对整个图层统一合成：</p>
+<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="keyword">const</span> layer = <span class="title function_">createFramebuffer</span>(&#123; <span class="attr">width</span>: W, <span class="attr">height</span>: H &#125;);</span><br><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">  layer.<span class="title function_">begin</span>();        <span class="comment">// 离屏完整绘制</span></span><br><span class="line">  <span class="title function_">drawScene</span>(t);</span><br><span class="line">  layer.<span class="title function_">end</span>();</span><br><span class="line">  <span class="title function_">tint</span>(<span class="number">255</span>, alpha * <span class="number">255</span>);   <span class="comment">// 透明度作用于整层</span></span><br><span class="line">  <span class="title function_">image</span>(layer.<span class="property">texture</span>, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">  <span class="title function_">noTint</span>();</span><br><span class="line">&#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">  layer.<span class="title function_">remove</span>();       <span class="comment">// 临时缓冲必须释放</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>临时 Framebuffer 泄漏在静帧里完全看不出来，表现为渲染若干分钟后显存耗尽崩溃。所以验收不能只测 <code>alpha: 0</code> 和 <code>alpha: 1</code> 两个端点，要测 <code>.35</code>、<code>.5</code> 这类中间值，并连续渲染多帧观察资源数量是否增长——本次用连续 20 帧、累计 80 次临时合成确认 Framebuffer 数量保持稳定。</p>
+<h3 id="p5-会覆盖你的全局变量"><a href="#p5-会覆盖你的全局变量" class="headerlink" title="p5 会覆盖你的全局变量"></a>p5 会覆盖你的全局变量</h3><p>p5 在 setup 后会把一些”看起来很安全”的全局名覆盖掉。本次共享模型挂在 <code>window.FULL</code> 上，setup 之后被 p5 覆盖成了字符串常量，章节里直接报 <code>FULL.room is not a function</code>。修复约定很简单：每章在 p5 setup 之前把引用存下来，之后只走这个别名。</p>
+<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="keyword">const</span> <span class="variable constant_">API</span> = <span class="variable language_">window</span>.<span class="property">FULL</span>;   <span class="comment">// 必须在 p5 setup 之前</span></span><br><span class="line"><span class="comment">// 之后一律 API.room(...)、API.cat(...)</span></span><br></pre></td></tr></table></figure>
+
+<p>配套的还有脚本加载顺序：共享脚本必须先于所有章节脚本同步加载。这类约定写进了章节接口文档，而不是只留在某次修复的聊天记录里。</p>
+<h3 id="章节时长必须自包含"><a href="#章节时长必须自包含" class="headerlink" title="章节时长必须自包含"></a>章节时长必须自包含</h3><p>如果末镜的结束时间靠”下一章的起点”来算，单独开发某一章时，末镜会被延长到全曲末尾。每章都应该知道自己明确的起止秒数——既能独立渲染调试，也能在全曲里保持同样的时长。同理，章节接缝不能只分别看两章的首尾静帧，必须在所有章节都注册之后，检查真实边界前后的连续帧。</p>
+<h3 id="“越来越快”要写进时间结构"><a href="#“越来越快”要写进时间结构" class="headerlink" title="“越来越快”要写进时间结构"></a>“越来越快”要写进时间结构</h3><p>C07 装忙桥段初版做了四段家务蒙太奇，每段等长、动作频率一致——看起来完全没在加速。修复不是加镜头，而是让每段做<strong>相同次数</strong>的动作、段长依次缩短：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">1.820 s → 1.540 s → 1.260 s → 0.980 s</span><br></pre></td></tr></table></figure>
+
+<p>可复用的原则：<strong>节奏变化必须进入时间参数本身</strong>，靠文案、切镜数量或”感觉快一点”都不算数。类似地，水彩灰化这类视觉算法除了中间值，还要测 0、接近 1 和恰好 1 的极端——本次灰化接近 1 时 wash 与 fill 颜色收敛出现大片斑驳，靠单变量测试定位后限制了最大混合幅度。参数合法不代表视觉结果稳定。</p>
+<h2 id="验收：静帧说明不了任何事"><a href="#验收：静帧说明不了任何事" class="headerlink" title="验收：静帧说明不了任何事"></a>验收：静帧说明不了任何事</h2><p>动画的问题几乎不出现在”某一帧”，而是出现在<strong>动作中间、透明度中间值、章节接缝和最后几秒</strong>。所以验收从静帧升级成完整证据链，全部产物落在 <code>out/check/full/</code> 目录：</p>
+<p><img data-src="/images/posts/2026-10-31-ai-music-mv-workflow/timeline.jpg" alt="全曲时间线采样"><br><em>图 3：全曲时间线采样，每 5 秒一帧共 51 帧。整体色彩弧线一眼可见：靛蓝等待 → 暖赭期待 → 深褐记忆 → 玫瑰红秘密 → 灰蓝麻木 → 居家暖绿 → 紫灰忙碌 → 冷暖对峙 → 纸色尾声。</em></p>
+<p><img data-src="/images/posts/2026-10-31-ai-music-mv-workflow/boundary-seam.jpg" alt="章节接缝连续帧"><br><em>图 4：C04→C05 真实章节边界前后一秒的逐帧条。接缝是设计过的节拍切镜，猫与枕头的连续性跨章保持。</em></p>
+<p><img data-src="/images/posts/2026-10-31-ai-music-mv-workflow/ending-strip.jpg" alt="结尾收束逐帧"><br><em>图 5：全曲最后两秒的逐帧条——iris 圆形光圈从完整画面收到针尖再到黑场，无跳帧、无残帧。</em></p>
+<p>最终一轮验收做了这些事：5958 帧完整渲染；51 帧时间线检查整体色彩与叙事弧线；8 条真实章节边界逐一检查前后连续帧；单独检查最后一段和最后一帧的收束；帧序列数量正确、编号连续；ffmpeg 完整解码成片确认退出码为 0，并核对分辨率、帧率、时长、音频采样率和声道。</p>
+<p>把验收清单压缩成下次可以直接勾选的版本：</p>
+<p><strong>渲染前：</strong> 试片含实际演唱与代表性情绪；歌词已校对且原始转写分开保存；主题、情绪曲线、三层叙事规则写清；分镜时间连续无空洞；共享模型与身份编码统一；每镜有 contact sheet、关键动作有连续 strip；透明度与离屏资源做过中间值和重复渲染测试。</p>
+<p><strong>渲染后：</strong> 生成全曲时间线采样图；每条真实章节边界看连续帧；单独检查最后一段与最后一帧；帧数编号正确；ffmpeg 完整解码退出码 0；参数逐一核对；既有试片与原始音频未被覆盖。</p>
+<h2 id="留下的改进项"><a href="#留下的改进项" class="headerlink" title="留下的改进项"></a>留下的改进项</h2><p>复盘也如实记录没做好的地方：</p>
+<ul>
+<li>C05 的行李始终没有被真正提起或拖动，”走不了”是靠猫卧箱顶、人物停步和垂肩暗示的。下次类似的关键动作，应该补握把 anticipation 和少量真实位移。</li>
+<li>字幕字体依赖 Google Fonts，已生成的 MP4 不受影响，但离线重渲可能回退到默认字体。字体应该在项目启动时就本地化。</li>
+<li>多代理审查报告只代表审查通过，不等于创作方向被认可——方向认可以用户看过试片后的反馈为准。</li>
+</ul>
+<p>项目最终保留的结构，是一个可以直接复用的模板：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">SONG_ANALYSIS.md              # 歌曲理解、来源、结构分析</span><br><span class="line">STORYBOARD.md                 # 全曲分镜与叙事规则</span><br><span class="line">CHAPTER_BRIEF.md              # 章节接口、时间和共享约定</span><br><span class="line">lyrics_whisper_raw.srt        # Whisper 原始转写（审计用）</span><br><span class="line">lyrics.srt                    # 校对后的正式字幕</span><br><span class="line">audio_analysis.json           # librosa 分析结果</span><br><span class="line">src/full_set.js               # 共享角色、场景与道具</span><br><span class="line">src/scenes/full/              # 九章实现</span><br><span class="line">out/check/full/               # 时间线、接缝、动作和日志</span><br><span class="line">out/full_mv.mp4               # 最终成片</span><br></pre></td></tr></table></figure>
+
+<h2 id="写在最后"><a href="#写在最后" class="headerlink" title="写在最后"></a>写在最后</h2><p>下次做同类 MV，主线可以直接复用：<strong>读技能指导 → 锁定原音频 → Whisper 初转写 → 可靠歌词校对 → 检索多种解读 → 音频结构分析 → 写主题与叙事规则 → 写分镜 → 做带人声的十秒试片 → 确认方向 → 建共享模型 → 分章制作 → 连续帧与接缝验收 → 全帧渲染 → 完整解码与参数核验。</strong></p>
+<p>其中最值得坚持的是三点：</p>
+<ol>
+<li><strong>先理解再画，不用视觉风格掩盖叙事误读。</strong></li>
+<li><strong>先做有代表性的短试片，把创作反馈放在昂贵渲染之前。</strong></li>
+<li><strong>保留从原始分析到最终成片的证据链，让下一次复用不必重新踩坑。</strong></li>
+</ol>
+<h2 id="延伸阅读"><a href="#延伸阅读" class="headerlink" title="延伸阅读"></a>延伸阅读</h2><ul>
+<li><a href="https://zhlifeiy.codes/2026/03/02/%E8%AE%A9AI%E5%86%99%E5%87%BA%E4%BA%A7%E5%93%81%E7%BA%A7%E5%89%8D%E7%AB%AF%EF%BC%9Afrontend-design-skill%E5%AE%9E%E6%88%98%E5%AF%B9%E6%AF%94/">让 AI 写出产品级前端：frontend-design skill 实战对比</a></li>
+<li><a href="https://zhlifeiy.codes/2026/03/14/%E6%99%BA%E8%B0%B1GLM-Coding%E6%8A%A2%E8%B4%AD%E6%9C%BA%E5%99%A8%E4%BA%BA%E5%AE%9E%E6%88%98/">智谱 GLM Coding 抢购机器人实战</a></li>
+<li><a href="https://zhlifeiy.codes/2026/03/24/%E5%A4%9AAgent%E5%8D%8F%E4%BD%9C%E5%BC%80%E5%8F%91Android%E5%BA%94%E7%94%A8%E5%AE%9E%E6%88%98%E6%80%BB%E7%BB%93/">多 Agent 协作开发 Android 应用：Agent Team Lab 实战总结</a></li>
+</ul>
+<hr>
+<p><em>本文根据 2026 年 10 月 30 日至 31 日《别问很可怕》MV 项目的创作复盘笔记整理。成片音乐为 J.Sheon《别问很可怕》，仅作个人学习与展示；文中代码为讲解用的简化示意，完整实现以项目仓库为准。</em></p>
+]]></content>
+      <categories>
+        <category>AI经验</category>
+      </categories>
+      <tags>
+        <tag>音乐MV</tag>
+        <tag>AI创作</tag>
+        <tag>p5.js</tag>
+        <tag>动画</tag>
+        <tag>工作流</tag>
+        <tag>Whisper</tag>
+        <tag>ffmpeg</tag>
+      </tags>
+  </entry>
 </search>

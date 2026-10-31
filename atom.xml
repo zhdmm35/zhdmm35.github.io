@@ -6,7 +6,7 @@
   <link href="https://zhlifeiy.codes/atom.xml" rel="self"/>
   
   <link href="https://zhlifeiy.codes/"/>
-  <updated>2026-10-22T13:00:00.000Z</updated>
+  <updated>2026-10-31T05:00:00.000Z</updated>
   <id>https://zhlifeiy.codes/</id>
   
   <author>
@@ -15,6 +15,38 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>先听懂歌，再画第一帧：一支四分钟手绘 MV 的完整制作复盘</title>
+    <link href="https://zhlifeiy.codes/2026/10/31/2026-10-31-ai-music-mv-workflow/"/>
+    <id>https://zhlifeiy.codes/2026/10/31/2026-10-31-ai-music-mv-workflow/</id>
+    <published>2026-10-31T05:00:00.000Z</published>
+    <updated>2026-10-31T05:00:00.000Z</updated>
+    
+    
+    <summary type="html">&lt;p&gt;给一首 4 分 08 秒的歌做整曲 MV，真正难的不是渲染 5958 帧画面，而是在动手之前回答：这首歌到底在讲什么？这次我把 J.Sheon 的《别问很可怕》从表面的”等待与甜蜜”重新理解为”看见秘密却不敢问破”，再用现实、记忆、内心推演三层叙事规则约束九章五十二镜，用 p5.js + Headless Chrome + ffmpeg 逐帧渲染到成片。文章记录从歌词校对、音频分析、分镜设计到全曲验收的完整过程，以及图层透明度、p5 全局变量、章节接缝这些实际踩过的坑。&lt;/p&gt;
+&lt;div class=&quot;audio-player&quot;&gt;&lt;p&gt;🎧 文章导读&lt;/p&gt;&lt;audio controls preload=&quot;none&quot; src=&quot;/audio/2026-10-31-ai-music-mv-workflow/narration.mp3&quot;&gt;您的浏览器不支持音频播放。&lt;/audio&gt;&lt;/div&gt;</summary>
+    
+    
+    
+    <category term="AI经验" scheme="https://zhlifeiy.codes/categories/AI%E7%BB%8F%E9%AA%8C/"/>
+    
+    
+    <category term="音乐MV" scheme="https://zhlifeiy.codes/tags/%E9%9F%B3%E4%B9%90MV/"/>
+    
+    <category term="AI创作" scheme="https://zhlifeiy.codes/tags/AI%E5%88%9B%E4%BD%9C/"/>
+    
+    <category term="p5.js" scheme="https://zhlifeiy.codes/tags/p5-js/"/>
+    
+    <category term="动画" scheme="https://zhlifeiy.codes/tags/%E5%8A%A8%E7%94%BB/"/>
+    
+    <category term="工作流" scheme="https://zhlifeiy.codes/tags/%E5%B7%A5%E4%BD%9C%E6%B5%81/"/>
+    
+    <category term="Whisper" scheme="https://zhlifeiy.codes/tags/Whisper/"/>
+    
+    <category term="ffmpeg" scheme="https://zhlifeiy.codes/tags/ffmpeg/"/>
+    
+  </entry>
   
   <entry>
     <title>上传上限放到 1GB，为什么仍然 OOM：附件复用与流式传输实践</title>
@@ -567,35 +599,6 @@
     <category term="人脸识别" scheme="https://zhlifeiy.codes/tags/%E4%BA%BA%E8%84%B8%E8%AF%86%E5%88%AB/"/>
     
     <category term="方法论" scheme="https://zhlifeiy.codes/tags/%E6%96%B9%E6%B3%95%E8%AE%BA/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>四轮外部评审，十二条意见全部属实——afterCommit 不是异步任务</title>
-    <link href="https://zhlifeiy.codes/2026/08/27/external-review-pitfalls/"/>
-    <id>https://zhlifeiy.codes/2026/08/27/external-review-pitfalls/</id>
-    <published>2026-08-27T14:00:00.000Z</published>
-    <updated>2026-08-27T14:00:00.000Z</updated>
-    
-    
-    <summary type="html">&lt;p&gt;人脸审批钉钉卡片功能做完后，交给外部评审挑刺。四轮下来共十二条意见，我们逐条核实——&lt;strong&gt;全部属实&lt;/strong&gt;，然后逐条修复。评审意见全对这种事并不常见，更难得的是其中几条属于”教科书不会讲、不炸一次不会信”的坑：afterCommit 根本不异步、vant Toast 是单例、surefire 版本太老会让测试”假装通过”。逐条记录。&lt;/p&gt;</summary>
-    
-    
-    
-    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
-    
-    <category term="智慧园区" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E6%99%BA%E6%85%A7%E5%9B%AD%E5%8C%BA/"/>
-    
-    
-    <category term="踩坑" scheme="https://zhlifeiy.codes/tags/%E8%B8%A9%E5%9D%91/"/>
-    
-    <category term="线程池" scheme="https://zhlifeiy.codes/tags/%E7%BA%BF%E7%A8%8B%E6%B1%A0/"/>
-    
-    <category term="Code Review" scheme="https://zhlifeiy.codes/tags/Code-Review/"/>
-    
-    <category term="Spring" scheme="https://zhlifeiy.codes/tags/Spring/"/>
-    
-    <category term="测试" scheme="https://zhlifeiy.codes/tags/%E6%B5%8B%E8%AF%95/"/>
     
   </entry>
   
