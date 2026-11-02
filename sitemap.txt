@@ -97,6 +97,10 @@ https://zhlifeiy.codes/2026/10/21/2026-10-21-alarm-workflow-design/
 https://zhlifeiy.codes/2026/10/22/2026-10-22-flow-statistics-window-sql/
 https://zhlifeiy.codes/2026/10/22/2026-10-22-large-upload-streaming/
 https://zhlifeiy.codes/2026/10/31/2026-10-31-ai-music-mv-workflow/
+https://zhlifeiy.codes/2026/11/02/2026-11-02-access-command-layered-failure/
+https://zhlifeiy.codes/2026/11/02/2026-11-02-pump-machine-alarm-reuse/
+https://zhlifeiy.codes/2026/11/02/2026-11-02-car-record-ciphertext-rollback/
+https://zhlifeiy.codes/2026/11/02/2026-11-02-revocable-long-lived-session/
 https://zhlifeiy.codes/404.html
 https://zhlifeiy.codes/categories/index.html
 https://zhlifeiy.codes/guestbook/index.html
@@ -405,6 +409,10 @@ https://zhlifeiy.codes/tags/%E5%8A%A8%E7%94%BB/
 https://zhlifeiy.codes/tags/%E5%B7%A5%E4%BD%9C%E6%B5%81/
 https://zhlifeiy.codes/tags/Whisper/
 https://zhlifeiy.codes/tags/ffmpeg/
+https://zhlifeiy.codes/tags/%E9%97%A8%E7%A6%81/
+https://zhlifeiy.codes/tags/%E4%BA%8B%E5%8A%A1/
+https://zhlifeiy.codes/tags/RabbitMQ/
+https://zhlifeiy.codes/tags/%E4%BC%9A%E8%AF%9D%E7%AE%A1%E7%90%86/
 https://zhlifeiy.codes/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/
 https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/
 https://zhlifeiy.codes/categories/%E5%85%B6%E4%BB%96/

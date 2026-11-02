@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="650" viewBox="0 0 1200 650" role="img" aria-labelledby="title desc">
+  <title id="title">门禁授权命令的去程与回程</title>
+  <desc id="desc">页面授权经业务服务、接入服务、物联网平台和设备接入程序到门禁，回程外层传输成功但内层业务失败，设备执行细节待取证。</desc>
+  <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 Z" fill="#476581"/></marker><marker id="redarrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 Z" fill="#C65757"/></marker></defs>
+  <style>
+    .title{font:700 30px 'Microsoft YaHei','PingFang SC',sans-serif;fill:#18324b}.label{font:700 22px 'Microsoft YaHei','PingFang SC',sans-serif;fill:#18324b}.text{font:20px 'Microsoft YaHei','PingFang SC',sans-serif;fill:#42576b}.box{stroke:#476581;stroke-width:2}.line{stroke:#476581;stroke-width:3;fill:none;marker-end:url(#arrow)}.unknown{stroke:#C65757;stroke-width:3;stroke-dasharray:9 7;fill:none;marker-end:url(#redarrow)}
+  </style>
+  <rect width="1200" height="650" rx="24" fill="#F5F8FC"/>
+  <text x="600" y="55" text-anchor="middle" class="title">授权结果必须沿去程与回程分别核对</text>
+  <rect x="25" y="125" width="155" height="100" rx="16" fill="#D9ECF7" class="box"/><text x="102" y="168" text-anchor="middle" class="label">页面授权</text><text x="102" y="201" text-anchor="middle" class="text">发起请求</text>
+  <rect x="220" y="125" width="155" height="100" rx="16" fill="#E8E1F2" class="box"/><text x="297" y="168" text-anchor="middle" class="label">业务服务</text><text x="297" y="201" text-anchor="middle" class="text">生成任务</text>
+  <rect x="415" y="125" width="155" height="100" rx="16" fill="#FFF0D9" class="box"/><text x="492" y="168" text-anchor="middle" class="label">接入服务</text><text x="492" y="201" text-anchor="middle" class="text">组装命令</text>
+  <rect x="610" y="125" width="155" height="100" rx="16" fill="#D9ECF7" class="box"/><text x="687" y="168" text-anchor="middle" class="label">物联网平台</text><text x="687" y="201" text-anchor="middle" class="text">传输命令</text>
+  <rect x="805" y="125" width="155" height="100" rx="16" fill="#FCE7DE" class="box"/><text x="882" y="168" text-anchor="middle" class="label">接入程序</text><text x="882" y="201" text-anchor="middle" class="text">调用设备</text>
+  <rect x="1000" y="125" width="155" height="100" rx="16" fill="#E4F3EA" class="box"/><text x="1077" y="168" text-anchor="middle" class="label">门禁设备</text><text x="1077" y="201" text-anchor="middle" class="text">实际执行</text>
+  <path d="M180 175 L220 175" class="line"/><path d="M375 175 L415 175" class="line"/><path d="M570 175 L610 175" class="line"/><path d="M765 175 L805 175" class="line"/><path d="M960 175 L1000 175" class="unknown"/>
+  <text x="980" y="270" text-anchor="middle" class="text" fill="#C65757">最后一段原始错误尚未取得</text>
+  <path d="M882 225 C882 350 760 355 687 355" class="unknown"/>
+  <rect x="565" y="320" width="245" height="80" rx="16" fill="#FCE7DE" class="box"/><text x="687" y="352" text-anchor="middle" class="label">内层业务失败</text><text x="687" y="382" text-anchor="middle" class="text">returnCode = 500</text>
+  <path d="M565 360 L492 360" class="line"/>
+  <rect x="285" y="320" width="207" height="80" rx="16" fill="#E4F3EA" class="box"/><text x="388" y="352" text-anchor="middle" class="label">外层传输成功</text><text x="388" y="382" text-anchor="middle" class="text">SUCCESS</text>
+  <path d="M297 400 C297 490 250 500 180 500" class="line"/>
+  <rect x="25" y="465" width="260" height="75" rx="16" fill="#E8E1F2" class="box"/><text x="155" y="497" text-anchor="middle" class="label">保存执行失败状态</text><text x="155" y="526" text-anchor="middle" class="text">页面再查询执行记录</text>
+  <rect x="390" y="575" width="420" height="45" rx="14" fill="#FFFFFF"/><text x="600" y="605" text-anchor="middle" class="text">外层成功不能覆盖内层业务结果</text>
+</svg>

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="540" viewBox="0 0 1200 540" role="img" aria-labelledby="title desc">
+  <title id="title">手机号密文长度冲突导致事务回滚</title>
+  <desc id="desc">64 位密文写入 11 位字段，数据库报字段超长，接口返回 500，接收事务整体回滚。</desc>
+  <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 Z" fill="#476581"/></marker></defs>
+  <style>
+    .title{font:700 30px 'Microsoft YaHei','PingFang SC',sans-serif;fill:#18324b}.label{font:700 24px 'Microsoft YaHei','PingFang SC',sans-serif;fill:#18324b}.text{font:20px 'Microsoft YaHei','PingFang SC',sans-serif;fill:#42576b}.box{stroke:#476581;stroke-width:2}.line{stroke:#476581;stroke-width:3;fill:none;marker-end:url(#arrow)}
+  </style>
+  <rect width="1200" height="540" rx="24" fill="#F5F8FC"/>
+  <text x="600" y="58" text-anchor="middle" class="title">一个字段冲突，带走整笔接收事务</text>
+  <rect x="30" y="145" width="190" height="125" rx="18" fill="#D9ECF7" class="box"/><text x="125" y="195" text-anchor="middle" class="label">64 位密文</text><text x="125" y="232" text-anchor="middle" class="text">来自本地车辆档案</text>
+  <rect x="270" y="145" width="190" height="125" rx="18" fill="#FFF0D9" class="box"/><text x="365" y="195" text-anchor="middle" class="label">VARCHAR(11)</text><text x="365" y="232" text-anchor="middle" class="text">目标联系电话字段</text>
+  <rect x="510" y="145" width="190" height="125" rx="18" fill="#FCE7DE" class="box"/><text x="605" y="195" text-anchor="middle" class="label">Data too long</text><text x="605" y="232" text-anchor="middle" class="text">新增在场车辆失败</text>
+  <rect x="750" y="145" width="190" height="125" rx="18" fill="#FCE7DE" class="box"/><text x="845" y="195" text-anchor="middle" class="label">Feign 500</text><text x="845" y="232" text-anchor="middle" class="text">接收接口异常</text>
+  <rect x="990" y="145" width="180" height="125" rx="18" fill="#E8E1F2" class="box"/><text x="1080" y="195" text-anchor="middle" class="label">事务回滚</text><text x="1080" y="232" text-anchor="middle" class="text">三类写入均未保留</text>
+  <path d="M220 208 L270 208" class="line"/><path d="M460 208 L510 208" class="line"/><path d="M700 208 L750 208" class="line"/><path d="M940 208 L990 208" class="line"/>
+  <rect x="160" y="355" width="880" height="105" rx="20" fill="#E4F3EA" class="box"/>
+  <text x="600" y="400" text-anchor="middle" class="label">针对根因的最小修复</text><text x="600" y="438" text-anchor="middle" class="text">两列扩容至 64 位 + 两个实体的长度校验同步调整</text>
+</svg>

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="560" viewBox="0 0 1200 560" role="img" aria-labelledby="title desc">
+  <title id="title">数值型与状态型告警规则的区别</title>
+  <desc id="desc">threshold_status 为 0 时使用数值阈值，为 1 时沿用状态型处理，该字段不是设备实时告警状态。</desc>
+  <style>
+    .title{font:700 30px 'Microsoft YaHei','PingFang SC',sans-serif;fill:#18324b}.label{font:700 26px 'Microsoft YaHei','PingFang SC',sans-serif;fill:#18324b}.text{font:22px 'Microsoft YaHei','PingFang SC',sans-serif;fill:#42576b}.code{font:22px Consolas,monospace;fill:#18324b}.box{stroke:#476581;stroke-width:2}
+  </style>
+  <rect width="1200" height="560" rx="24" fill="#F5F8FC"/>
+  <text x="600" y="58" text-anchor="middle" class="title">复用页面，不等于统一告警语义</text>
+  <rect x="55" y="105" width="510" height="330" rx="24" fill="#D9ECF7" class="box"/>
+  <text x="310" y="160" text-anchor="middle" class="label">数值型规则</text>
+  <rect x="160" y="190" width="300" height="55" rx="12" fill="#FFFFFF"/>
+  <text x="310" y="226" text-anchor="middle" class="code">threshold_status = 0</text>
+  <text x="310" y="295" text-anchor="middle" class="text">配置比较符与数值阈值</text>
+  <text x="310" y="340" text-anchor="middle" class="text">例如：压力 &gt; 20</text>
+  <text x="310" y="385" text-anchor="middle" class="text">20 不触发，21 触发</text>
+  <rect x="635" y="105" width="510" height="330" rx="24" fill="#E4F3EA" class="box"/>
+  <text x="890" y="160" text-anchor="middle" class="label">状态型规则</text>
+  <rect x="740" y="190" width="300" height="55" rx="12" fill="#FFFFFF"/>
+  <text x="890" y="226" text-anchor="middle" class="code">threshold_status = 1</text>
+  <text x="890" y="295" text-anchor="middle" class="text">沿用原状态处理逻辑</text>
+  <text x="890" y="340" text-anchor="middle" class="text">不编辑数值阈值</text>
+  <text x="890" y="385" text-anchor="middle" class="text">设备异常状态可生成记录</text>
+  <rect x="205" y="465" width="790" height="55" rx="16" fill="#FCE7DE"/>
+  <text x="600" y="501" text-anchor="middle" class="label">注意：该配置字段不是设备实时告警状态</text>
+</svg>

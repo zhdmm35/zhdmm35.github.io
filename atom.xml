@@ -6,7 +6,7 @@
   <link href="https://zhlifeiy.codes/atom.xml" rel="self"/>
   
   <link href="https://zhlifeiy.codes/"/>
-  <updated>2026-10-31T05:00:00.000Z</updated>
+  <updated>2026-11-02T03:39:24.000Z</updated>
   <id>https://zhlifeiy.codes/</id>
   
   <author>
@@ -15,6 +15,110 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>平台显示 SUCCESS，为什么 6 台门禁仍下发失败</title>
+    <link href="https://zhlifeiy.codes/2026/11/02/2026-11-02-access-command-layered-failure/"/>
+    <id>https://zhlifeiy.codes/2026/11/02/2026-11-02-access-command-layered-failure/</id>
+    <published>2026-11-02T03:39:24.000Z</published>
+    <updated>2026-11-02T03:39:24.000Z</updated>
+    
+    
+    <summary type="html">&lt;p&gt;同一批门禁授权，平台命令记录一片绿色 &lt;code&gt;SUCCESS&lt;/code&gt;，响应正文却都是 &lt;code&gt;returnCode: 500&lt;/code&gt;。这不是矛盾：前者表示命令响应传输成功，后者才是接入端返回的业务失败。真正尚未拿到的，是接入程序到设备这一段原始错误。&lt;/p&gt;
+&lt;div class=&quot;audio-player&quot;&gt;&lt;p&gt;🎧 文章导读&lt;/p&gt;&lt;audio controls preload=&quot;none&quot; src=&quot;/audio/2026-11-02-access-command-layered-failure/narration.mp3&quot;&gt;您的浏览器不支持音频播放。&lt;/audio&gt;&lt;/div&gt;</summary>
+    
+    
+    
+    <category term="工程实践" scheme="https://zhlifeiy.codes/categories/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/"/>
+    
+    
+    <category term="物联网" scheme="https://zhlifeiy.codes/tags/%E7%89%A9%E8%81%94%E7%BD%91/"/>
+    
+    <category term="故障排查" scheme="https://zhlifeiy.codes/tags/%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5/"/>
+    
+    <category term="可观测性" scheme="https://zhlifeiy.codes/tags/%E5%8F%AF%E8%A7%82%E6%B5%8B%E6%80%A7/"/>
+    
+    <category term="门禁" scheme="https://zhlifeiy.codes/tags/%E9%97%A8%E7%A6%81/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>两套页面，同一套规则：水泵房与机房接入统一告警的边界</title>
+    <link href="https://zhlifeiy.codes/2026/11/02/2026-11-02-pump-machine-alarm-reuse/"/>
+    <id>https://zhlifeiy.codes/2026/11/02/2026-11-02-pump-machine-alarm-reuse/</id>
+    <published>2026-11-02T03:39:24.000Z</published>
+    <updated>2026-11-02T03:39:24.000Z</updated>
+    
+    
+    <summary type="html">&lt;p&gt;给水泵房和机房各加一套告警页面，最省事的做法可能是复制页面、复制规则，再复制一份后端逻辑。真正难维护的也正是这些副本。这次接入选择另一条路：页面只做薄包装，规则 ID、关联配置、记录处置和权限继续复用统一告警实现。&lt;/p&gt;
+&lt;div class=&quot;audio-player&quot;&gt;&lt;p&gt;🎧 文章导读&lt;/p&gt;&lt;audio controls preload=&quot;none&quot; src=&quot;/audio/2026-11-02-pump-machine-alarm-reuse/narration.mp3&quot;&gt;您的浏览器不支持音频播放。&lt;/audio&gt;&lt;/div&gt;</summary>
+    
+    
+    
+    <category term="工程实践" scheme="https://zhlifeiy.codes/categories/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/"/>
+    
+    
+    <category term="代码复用" scheme="https://zhlifeiy.codes/tags/%E4%BB%A3%E7%A0%81%E5%A4%8D%E7%94%A8/"/>
+    
+    <category term="告警系统" scheme="https://zhlifeiy.codes/tags/%E5%91%8A%E8%AD%A6%E7%B3%BB%E7%BB%9F/"/>
+    
+    <category term="权限" scheme="https://zhlifeiy.codes/tags/%E6%9D%83%E9%99%90/"/>
+    
+    <category term="数据库迁移" scheme="https://zhlifeiy.codes/tags/%E6%95%B0%E6%8D%AE%E5%BA%93%E8%BF%81%E7%A7%BB/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>一条 64 位密文，如何让车辆进场记录整笔回滚</title>
+    <link href="https://zhlifeiy.codes/2026/11/02/2026-11-02-car-record-ciphertext-rollback/"/>
+    <id>https://zhlifeiy.codes/2026/11/02/2026-11-02-car-record-ciphertext-rollback/</id>
+    <published>2026-11-02T03:39:24.000Z</published>
+    <updated>2026-11-02T03:39:24.000Z</updated>
+    
+    
+    <summary type="html">&lt;p&gt;车辆平台有进场记录，本地页面却缺数据。最后定位到的原因不是 MQ 没推送，而是车辆档案里的 64 位手机号密文被原样复制进 &lt;code&gt;VARCHAR(11)&lt;/code&gt; 字段；一次字段超长异常，让接收流水、在场车辆和通行记录一起回滚。&lt;/p&gt;
+&lt;div class=&quot;audio-player&quot;&gt;&lt;p&gt;🎧 文章导读&lt;/p&gt;&lt;audio controls preload=&quot;none&quot; src=&quot;/audio/2026-11-02-car-record-ciphertext-rollback/narration.mp3&quot;&gt;您的浏览器不支持音频播放。&lt;/audio&gt;&lt;/div&gt;</summary>
+    
+    
+    
+    <category term="工程实践" scheme="https://zhlifeiy.codes/categories/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/"/>
+    
+    
+    <category term="故障排查" scheme="https://zhlifeiy.codes/tags/%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5/"/>
+    
+    <category term="数据库迁移" scheme="https://zhlifeiy.codes/tags/%E6%95%B0%E6%8D%AE%E5%BA%93%E8%BF%81%E7%A7%BB/"/>
+    
+    <category term="事务" scheme="https://zhlifeiy.codes/tags/%E4%BA%8B%E5%8A%A1/"/>
+    
+    <category term="RabbitMQ" scheme="https://zhlifeiy.codes/tags/RabbitMQ/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>长效登录不是改长 JWT：Cookie、Redis 与撤销的一致性设计</title>
+    <link href="https://zhlifeiy.codes/2026/11/02/2026-11-02-revocable-long-lived-session/"/>
+    <id>https://zhlifeiy.codes/2026/11/02/2026-11-02-revocable-long-lived-session/</id>
+    <published>2026-11-02T03:39:24.000Z</published>
+    <updated>2026-11-02T03:39:24.000Z</updated>
+    
+    
+    <summary type="html">&lt;p&gt;展示页面长时间不操作，刷新后却回到登录页。只把 JWT 有效期改长通常不够，因为 Cookie 和 Redis 会话可能更早过期；更难的是，长效会话仍必须支持主动退出、强制下线和配置关闭后的立即撤销。&lt;/p&gt;
+&lt;div class=&quot;audio-player&quot;&gt;&lt;p&gt;🎧 文章导读&lt;/p&gt;&lt;audio controls preload=&quot;none&quot; src=&quot;/audio/2026-11-02-revocable-long-lived-session/narration.mp3&quot;&gt;您的浏览器不支持音频播放。&lt;/audio&gt;&lt;/div&gt;</summary>
+    
+    
+    
+    <category term="工程实践" scheme="https://zhlifeiy.codes/categories/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/"/>
+    
+    
+    <category term="JWT" scheme="https://zhlifeiy.codes/tags/JWT/"/>
+    
+    <category term="Redis" scheme="https://zhlifeiy.codes/tags/Redis/"/>
+    
+    <category term="网关" scheme="https://zhlifeiy.codes/tags/%E7%BD%91%E5%85%B3/"/>
+    
+    <category term="会话管理" scheme="https://zhlifeiy.codes/tags/%E4%BC%9A%E8%AF%9D%E7%AE%A1%E7%90%86/"/>
+    
+  </entry>
   
   <entry>
     <title>先听懂歌，再画第一帧：一支四分钟手绘 MV 的完整制作复盘</title>
@@ -475,130 +579,6 @@
     <category term="需求对齐" scheme="https://zhlifeiy.codes/tags/%E9%9C%80%E6%B1%82%E5%AF%B9%E9%BD%90/"/>
     
     <category term="Flyway" scheme="https://zhlifeiy.codes/tags/Flyway/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>四条线与一条密文：访客邀请全链路复盘与审查捡出的存量 bug</title>
-    <link href="https://zhlifeiy.codes/2026/09/04/2026-09-04-visitor-fullchain-sms-bug/"/>
-    <id>https://zhlifeiy.codes/2026/09/04/2026-09-04-visitor-fullchain-sms-bug/</id>
-    <published>2026-09-04T14:00:00.000Z</published>
-    <updated>2026-09-04T14:00:00.000Z</updated>
-    
-    
-    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;blockquote&gt;
-&lt;p&gt;把访客邀请的四条线（提交生效、出码、权限下发、通行回流）完整摊开，回答”前端拿到二维码时权限到底下发了没有”；同日审查同事的短信 mock 提交，捡出一个更让人意外的存量 bug——真实审批短信的收件手机号，可能从来都是一串加密后的乱码。&lt;/p&gt;
-&lt;/blockquote&gt;</summary>
-    
-    
-    
-    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
-    
-    <category term="南网" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/"/>
-    
-    
-    <category term="代码审查" scheme="https://zhlifeiy.codes/tags/%E4%BB%A3%E7%A0%81%E5%AE%A1%E6%9F%A5/"/>
-    
-    <category term="访客系统" scheme="https://zhlifeiy.codes/tags/%E8%AE%BF%E5%AE%A2%E7%B3%BB%E7%BB%9F/"/>
-    
-    <category term="状态机" scheme="https://zhlifeiy.codes/tags/%E7%8A%B6%E6%80%81%E6%9C%BA/"/>
-    
-    <category term="幂等" scheme="https://zhlifeiy.codes/tags/%E5%B9%82%E7%AD%89/"/>
-    
-    <category term="存量bug" scheme="https://zhlifeiy.codes/tags/%E5%AD%98%E9%87%8Fbug/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>访客邀请上线记：从星链直连到持久化异步任务链路</title>
-    <link href="https://zhlifeiy.codes/2026/09/03/2026-09-03-visitor-invite-async-adapter/"/>
-    <id>https://zhlifeiy.codes/2026/09/03/2026-09-03-visitor-invite-async-adapter/</id>
-    <published>2026-09-03T14:00:00.000Z</published>
-    <updated>2026-09-03T14:00:00.000Z</updated>
-    
-    
-    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;blockquote&gt;
-&lt;p&gt;访客邀请功能要求”提交即生效”：免审批、访客自动进通行用户、权限自动下发到魔点门禁。真正的工作量不在接口本身，而在把”审批通过后直连星链下发权限”改成一条可重试、可追踪、可人工兜底的持久化异步任务链路。本篇记录接口契约、合并冲突的坑，以及一次状态机走完一整圈的全链路模拟联调。&lt;/p&gt;
-&lt;/blockquote&gt;</summary>
-    
-    
-    
-    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
-    
-    <category term="南网" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/"/>
-    
-    
-    <category term="E2E测试" scheme="https://zhlifeiy.codes/tags/E2E%E6%B5%8B%E8%AF%95/"/>
-    
-    <category term="访客系统" scheme="https://zhlifeiy.codes/tags/%E8%AE%BF%E5%AE%A2%E7%B3%BB%E7%BB%9F/"/>
-    
-    <category term="异步任务" scheme="https://zhlifeiy.codes/tags/%E5%BC%82%E6%AD%A5%E4%BB%BB%E5%8A%A1/"/>
-    
-    <category term="状态机" scheme="https://zhlifeiy.codes/tags/%E7%8A%B6%E6%80%81%E6%9C%BA/"/>
-    
-    <category term="Git合并" scheme="https://zhlifeiy.codes/tags/Git%E5%90%88%E5%B9%B6/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>三层墙与两段缺失：1GB 上传放行记与告警联动发布屏联调</title>
-    <link href="https://zhlifeiy.codes/2026/09/02/2026-09-02-1gb-upload-and-screen-push/"/>
-    <id>https://zhlifeiy.codes/2026/09/02/2026-09-02-1gb-upload-and-screen-push/</id>
-    <published>2026-09-02T14:00:00.000Z</published>
-    <updated>2026-09-02T14:00:00.000Z</updated>
-    
-    
-    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;blockquote&gt;
-&lt;p&gt;300MB 视频上传前端直接超时，放大限制却发现墙不止一层；审批接口又被大华转码拖到超时，只能把设备同步挪出请求线程。同一天还把告警联动发布屏打通了——骨架是现成的，真正缺的是两段从没接上的代码。附一份当天沉淀的端到端测试七步配方。&lt;/p&gt;
-&lt;/blockquote&gt;</summary>
-    
-    
-    
-    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
-    
-    <category term="南网" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/"/>
-    
-    
-    <category term="Nacos" scheme="https://zhlifeiy.codes/tags/Nacos/"/>
-    
-    <category term="异步化" scheme="https://zhlifeiy.codes/tags/%E5%BC%82%E6%AD%A5%E5%8C%96/"/>
-    
-    <category term="nginx" scheme="https://zhlifeiy.codes/tags/nginx/"/>
-    
-    <category term="E2E测试" scheme="https://zhlifeiy.codes/tags/E2E%E6%B5%8B%E8%AF%95/"/>
-    
-    <category term="大华发布屏" scheme="https://zhlifeiy.codes/tags/%E5%A4%A7%E5%8D%8E%E5%8F%91%E5%B8%83%E5%B1%8F/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>接口 200 却永远没有下文：一次跨四系统的超时根修与告警人脸上线排查</title>
-    <link href="https://zhlifeiy.codes/2026/09/01/2026-09-01-timeout-and-face-alarm/"/>
-    <id>https://zhlifeiy.codes/2026/09/01/2026-09-01-timeout-and-face-alarm/</id>
-    <published>2026-09-01T14:00:00.000Z</published>
-    <updated>2026-09-01T14:00:00.000Z</updated>
-    
-    
-    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;blockquote&gt;
-&lt;p&gt;生产环境上传素材返回 200，审批也点了同意，素材列表却永远空空如也。同一天另一片场：告警人脸功能上线，规则建好了、平台却”看不到人脸”。两个故障表面毫不相干，收尾时却发现它们共用同一套排查方法论：&lt;strong&gt;先用最硬的证据定层，再一次只换一个变量&lt;/strong&gt;。本篇把两条排查线完整复盘。&lt;/p&gt;
-&lt;/blockquote&gt;</summary>
-    
-    
-    
-    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
-    
-    <category term="南网" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/"/>
-    
-    
-    <category term="Spring Cloud" scheme="https://zhlifeiy.codes/tags/Spring-Cloud/"/>
-    
-    <category term="RestTemplate" scheme="https://zhlifeiy.codes/tags/RestTemplate/"/>
-    
-    <category term="超时排查" scheme="https://zhlifeiy.codes/tags/%E8%B6%85%E6%97%B6%E6%8E%92%E6%9F%A5/"/>
-    
-    <category term="人脸识别" scheme="https://zhlifeiy.codes/tags/%E4%BA%BA%E8%84%B8%E8%AF%86%E5%88%AB/"/>
-    
-    <category term="方法论" scheme="https://zhlifeiy.codes/tags/%E6%96%B9%E6%B3%95%E8%AE%BA/"/>
     
   </entry>
   

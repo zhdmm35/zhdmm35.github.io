@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="610" viewBox="0 0 1200 610" role="img" aria-labelledby="title desc">
+  <title id="title">门禁命令状态的分层含义</title>
+  <desc id="desc">HTTP 成功、查询成功、平台外层成功与接入端业务失败分别属于不同层次。</desc>
+  <style>
+    .title{font:700 30px 'Microsoft YaHei','PingFang SC',sans-serif;fill:#18324b}.label{font:700 24px 'Microsoft YaHei','PingFang SC',sans-serif;fill:#18324b}.text{font:21px 'Microsoft YaHei','PingFang SC',sans-serif;fill:#42576b}.box{stroke:#476581;stroke-width:2}
+  </style>
+  <rect width="1200" height="610" rx="24" fill="#F5F8FC"/>
+  <text x="600" y="55" text-anchor="middle" class="title">每层状态，只回答本层的问题</text>
+  <rect x="70" y="95" width="1060" height="90" rx="18" fill="#D9ECF7" class="box"/><text x="105" y="132" class="label">浏览器 HTTP</text><text x="105" y="164" class="text">请求得到了 HTTP 成功响应</text><text x="1090" y="151" text-anchor="end" class="label">≠ 授权成功</text>
+  <rect x="70" y="205" width="1060" height="90" rx="18" fill="#E8E1F2" class="box"/><text x="105" y="242" class="label">执行记录查询</text><text x="105" y="274" class="text">查询接口成功返回一条执行记录</text><text x="1090" y="261" text-anchor="end" class="label">≠ 执行结果成功</text>
+  <rect x="70" y="315" width="1060" height="90" rx="18" fill="#E4F3EA" class="box"/><text x="105" y="352" class="label">平台外层状态</text><text x="105" y="384" class="text">SUCCESS / SENDMESSAGE_SUCCESS</text><text x="1090" y="371" text-anchor="end" class="label">＝ 响应传输成功</text>
+  <rect x="70" y="425" width="1060" height="90" rx="18" fill="#FCE7DE" class="box"/><text x="105" y="462" class="label">接入端业务结果</text><text x="105" y="494" class="text">returnCode = 500，设备操作异常</text><text x="1090" y="481" text-anchor="end" class="label">＝ 本次业务失败</text>
+  <text x="600" y="565" text-anchor="middle" class="text">继续向接入程序与设备侧取证，不能停在最外层的绿色状态</text>
+</svg>

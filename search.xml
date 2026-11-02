@@ -18813,4 +18813,323 @@ if (typeof mermaid !== 'undefined') {
         <tag>ffmpeg</tag>
       </tags>
   </entry>
+  <entry>
+    <title>平台显示 SUCCESS，为什么 6 台门禁仍下发失败</title>
+    <url>/2026/11/02/2026-11-02-access-command-layered-failure/</url>
+    <content><![CDATA[<p>同一批门禁授权，平台命令记录一片绿色 <code>SUCCESS</code>，响应正文却都是 <code>returnCode: 500</code>。这不是矛盾：前者表示命令响应传输成功，后者才是接入端返回的业务失败。真正尚未拿到的，是接入程序到设备这一段原始错误。</p>
+<div class="audio-player"><p>🎧 文章导读</p><audio controls preload="none" src="/audio/2026-11-02-access-command-layered-failure/narration.mp3">您的浏览器不支持音频播放。</audio></div>
+
+<span id="more"></span>
+
+<h2 id="先把四种“成功”拆开"><a href="#先把四种“成功”拆开" class="headerlink" title="先把四种“成功”拆开"></a>先把四种“成功”拆开</h2><p>这次有 6 台门禁无法下发人员通行权限。页面、查询接口、消息平台和接入端分别使用不同状态，混在一句“下发成功”里就会误判。</p>
+<table>
+<thead>
+<tr>
+<th>观察层</th>
+<th>实际状态</th>
+<th>能说明什么</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>浏览器请求</td>
+<td>HTTP 成功</td>
+<td>请求得到响应，不代表授权成功</td>
+</tr>
+<tr>
+<td>执行记录查询</td>
+<td>业务查询成功</td>
+<td>查到了记录，不代表记录结果为成功</td>
+</tr>
+<tr>
+<td>授权执行状态</td>
+<td>失败</td>
+<td>业务系统已保存本次执行失败</td>
+</tr>
+<tr>
+<td>平台外层</td>
+<td><code>SUCCESS</code> &#x2F; <code>SENDMESSAGE_SUCCESS</code></td>
+<td>命令响应传输流程成功</td>
+</tr>
+<tr>
+<td>接入端内层</td>
+<td><code>returnCode=500</code></td>
+<td>设备操作业务失败</td>
+</tr>
+</tbody></table>
+<p>代表性回包去掉设备标识后，关键结构如下：</p>
+<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;commandResponseCode&quot;</span><span class="punctuation">:</span> <span class="string">&quot;success&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;commandResponse&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;returnCode&quot;</span><span class="punctuation">:</span> <span class="number">500</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;returnMsg&quot;</span><span class="punctuation">:</span> <span class="string">&quot;设备操作异常: unknown&quot;</span></span><br><span class="line">  <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;msg&quot;</span><span class="punctuation">:</span> <span class="string">&quot;SENDMESSAGE_SUCCESS.&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>这里的 500 是命令正文中的业务码，不是 HTTP 500。绿色平台状态和内层业务失败可以同时成立。</p>
+<p><img data-src="/images/posts/2026-11-02-access-command-layered-failure/flow.svg" alt="门禁授权命令的去程与回程"><br><em>图 1：页面状态来自整条回程链路，接入程序到设备的执行细节仍需单独取证。</em></p>
+<p>能登录人脸机 Web 也不能补齐这段证据。它只证明当前电脑到设备 Web 服务可达，不能证明接入程序所在主机到设备控制通道可用，更不能证明 <code>addUser</code> 已执行成功。</p>
+<h2 id="同人员对照，缩小范围但不提前结案"><a href="#同人员对照，缩小范围但不提前结案" class="headerlink" title="同人员对照，缩小范围但不提前结案"></a>同人员对照，缩小范围但不提前结案</h2><p>为了排除人员参数和照片问题，原记录选取了同一人员在两组设备上的任务：营地目标设备全部失败，另一台仓库设备成功。两条任务使用同一接入端、同一服务方法，照片 Base64 长度和摘要相同，数据库保存的非照片参数除设备编号外一致，有效期也覆盖测试时间。</p>
+<p>这组对照说明：至少不能用一个统一的“照片为空”“人员参数非法”或“该接入端完全不可用”解释全部现象，排查重点应转向设备相关差异。</p>
+<p>但它仍不是严格证明：</p>
+<ul>
+<li>两次测试相隔约 42 分钟，不是同时执行，间歇性连接问题尚未排除。</li>
+<li>比较的是数据库任务参数，不是最终网络报文；执行时还会补充接入端信息。</li>
+<li>后续复制的所谓“失败命令”仍带着成功记录的编号和设备编号，不能拿这段重复文本证明两次实际下发报文完全一致。</li>
+</ul>
+<p>因此，严谨结论是“同一组已保存人员参数在另一设备上被接受”，而不是“我方链路完全没有问题”。</p>
+<p><img data-src="/images/posts/2026-11-02-access-command-layered-failure/status-layers.svg" alt="平台状态与业务结果的分层判断"><br><em>图 2：每一层只回答自己的问题，外层成功不能替代内层业务结果。</em></p>
+<h2 id="代码里发现问题，也不等于找到本次根因"><a href="#代码里发现问题，也不等于找到本次根因" class="headerlink" title="代码里发现问题，也不等于找到本次根因"></a>代码里发现问题，也不等于找到本次根因</h2><p>排查过程中还看到几处值得单独修复或继续核实的实现：</p>
+<ol>
+<li>批量远程开门实现没有逐设备检查业务返回，最后可能直接返回成功，所以页面“下发成功”不足以证明门已打开。</li>
+<li>开门弹窗还会查询校验方式并轮询门状态，“先成功后报错”可能来自另一个独立请求。</li>
+<li>某处性别转换使用了读取系统属性的 API，而不是解析整数的 API；但成功与失败任务都没有携带对应字段，不能把它认定为本次原因。</li>
+<li>设备在线状态的计算依赖状态上报和编号匹配，不能把它当成控制通道健康检查。</li>
+<li>物联网调用正常返回业务失败时，不一定自动回退到直连网关。</li>
+</ol>
+<p>这些问题影响可观测性或潜在正确性，却没有一个能直接解释当前 6 台设备的全部证据。把它们写进“待办”比写成“根因”更有用。</p>
+<h2 id="下一步不是再试一次，而是补齐设备侧日志"><a href="#下一步不是再试一次，而是补齐设备侧日志" class="headerlink" title="下一步不是再试一次，而是补齐设备侧日志"></a>下一步不是再试一次，而是补齐设备侧日志</h2><p>当前断点已经清楚：系统收到了接入端业务失败回包，但还没有接入程序到人脸机这一段原始执行日志。下一步应先定位接入程序及部署主机，再选一台失败设备核对：</p>
+<ul>
+<li>接入配置中映射的实际地址、控制端口、序列号和登录配置；</li>
+<li>对应时间窗内 <code>userManager/addUser</code> 的失败步骤，以及原始 SDK 或协议错误码；</li>
+<li>与成功设备的型号、固件、连接和登录状态差异；</li>
+<li>在日志可观测后，保持人员参数不变，对失败与成功设备做接近时间的对照测试。</li>
+</ul>
+<p>还要先把平台失败记录的命令 ID 与具体设备逐一关联。当前同批 6 条失败响应不能直接按顺序指定给某台设备；不同系统的原始时间也应保留，时钟未核实前不要自行换算成确定时间。</p>
+<p>远程开门是否实际动作，需要现场单独确认；查询校验方式的独立 HTTP 500 和批量开门结果传播问题，也应作为另一条缺陷链处理，不与授权业务 500 混为一谈。</p>
+<h2 id="运维取证本身也要避免制造新问题"><a href="#运维取证本身也要避免制造新问题" class="headerlink" title="运维取证本身也要避免制造新问题"></a>运维取证本身也要避免制造新问题</h2><p>原记录里，MQS 回包位于 INFO 日志，只搜 ERROR 或堆栈会漏掉；部分日志被工具识别为二进制，需要相应文本匹配选项。按未索引的授权字段筛选并排序曾造成慢查询，后续改为已知主键或有限主键范围定位。</p>
+<p>这些细节和门禁协议无关，却决定排查能否继续。证据不足时，最有价值的交付不是一句“设备问题”，而是一份可交接的协查材料：失败时间窗、接入端标识、同批命令、内外层状态、成功对照，以及尚待核实的设备映射。</p>
+<p>这次故障尚未定位最终根因，也没有执行代码修复或生产数据调整。已经确认的是状态语义和证据断点：平台绿色 <code>SUCCESS</code> 只说明外层响应成功，6 台门禁的业务失败要继续向接入程序和设备侧追。</p>
+<h2 id="延伸阅读"><a href="#延伸阅读" class="headerlink" title="延伸阅读"></a>延伸阅读</h2><ul>
+<li><a href="https://zhlifeiy.codes/2026/09/22/2026-09-22-device-sync-recovery/">命令发送成功，数据却没回来：一次设备同步故障与补录设计</a></li>
+<li><a href="https://zhlifeiy.codes/2026/11/02/2026-11-02-car-record-ciphertext-rollback/">一条 64 位密文，如何让车辆进场记录整笔回滚</a></li>
+<li><a href="https://zhlifeiy.codes/2026/11/02/2026-11-02-pump-machine-alarm-reuse/">两套页面，同一套规则：水泵房与机房接入统一告警的边界</a></li>
+</ul>
+<hr>
+<p><em>本文根据 2026 年 10 月 28 日工程笔记及当时截图整理。人员、设备编号、网关标识和内部地址已脱敏；截图只代表当时平台状态，本次整理未登录生产平台或接入主机。</em></p>
+]]></content>
+      <categories>
+        <category>工程实践</category>
+      </categories>
+      <tags>
+        <tag>物联网</tag>
+        <tag>故障排查</tag>
+        <tag>可观测性</tag>
+        <tag>门禁</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>两套页面，同一套规则：水泵房与机房接入统一告警的边界</title>
+    <url>/2026/11/02/2026-11-02-pump-machine-alarm-reuse/</url>
+    <content><![CDATA[<p>给水泵房和机房各加一套告警页面，最省事的做法可能是复制页面、复制规则，再复制一份后端逻辑。真正难维护的也正是这些副本。这次接入选择另一条路：页面只做薄包装，规则 ID、关联配置、记录处置和权限继续复用统一告警实现。</p>
+<div class="audio-player"><p>🎧 文章导读</p><audio controls preload="none" src="/audio/2026-11-02-pump-machine-alarm-reuse/narration.mp3">您的浏览器不支持音频播放。</audio></div>
+
+<span id="more"></span>
+
+<h2 id="复用不是把旧页面换个菜单名"><a href="#复用不是把旧页面换个菜单名" class="headerlink" title="复用不是把旧页面换个菜单名"></a>复用不是把旧页面换个菜单名</h2><p>这次需求是在水泵房监测、机房监控下分别增加“告警规则”和“告警记录”，同时保留原环境监控及统一告警入口。两个新业务分别使用固定的业务范围参数，列表、统计、详情、导出和站内信跳转都必须沿同一范围收敛。</p>
+<p><img data-src="/images/posts/2026-11-02-pump-machine-alarm-reuse/flow.svg" alt="两个业务入口复用统一告警能力"><br><em>图 1：新增的是业务入口，不是另一套规则数据和处置链路。</em></p>
+<p>前端复用环境监控的共用组件，各业务只保留薄包装页面；后端继续走共享规则和统一告警记录接口。校验的重点不只是“传了业务范围”，还包括园区、规则级归属和可编辑字段：保存规则时不能借修改接口篡改规则身份或业务类型。</p>
+<p>规则仍使用原 ID，也不重新初始化一套水泵房、机房规则。这意味着原来配置的流程、设备、预置位、显示屏和通知接收人都能保留，统一入口与新业务入口看到的是同一份事实。</p>
+<p>这也带来一条验收标准：不能只看新页面“有数据”。还要确认原入口数据没有翻倍，编辑后另一个入口读到的是同一规则，导出结果不会混入其他业务。</p>
+<h2 id="数值型与状态型，不能共用一个阈值解释"><a href="#数值型与状态型，不能共用一个阈值解释" class="headerlink" title="数值型与状态型，不能共用一个阈值解释"></a>数值型与状态型，不能共用一个阈值解释</h2><p>接入时有一个很容易误读的字段：<code>threshold_status</code>。在本次规则配置里，它决定编辑和判断方式，不是设备上报的“当前告警状态”。</p>
+<p><img data-src="/images/posts/2026-11-02-pump-machine-alarm-reuse/rule-types.svg" alt="数值型与状态型规则的语义边界"><br><em>图 2：配置模型不同，不能为了复用页面而强行统一成数值比较。</em></p>
+<ul>
+<li><code>threshold_status=0</code>：按数值阈值配置和比较，例如压力、温度或湿度上限。</li>
+<li><code>threshold_status=1</code>：沿用状态型告警处理，不提供数值阈值编辑，例如某些设备异常状态。</li>
+</ul>
+<p>原记录中的边界样本很能说明问题：压力规则为 <code>&gt;20</code> 时，19 和 20 不触发，21 触发；连续 22 会合并到未关闭告警，计数变为 2。停用规则或不在执行时间内，同样不应触发。状态型样本则不需要数值阈值，也能生成记录。</p>
+<p>规则原值也不能在接入时顺手“修正”。导出配置中有一条机房湿度规则的单位写成了温度单位，语义明显可疑，但本次只记录并保留原值，等待业务确认。复用存量规则意味着连历史问题一起继承，不意味着开发者可以替业务改阈值。</p>
+<h2 id="权限与通知要沿链路验证"><a href="#权限与通知要沿链路验证" class="headerlink" title="权限与通知要沿链路验证"></a>权限与通知要沿链路验证</h2><p>新页面沿用现有的处理、忽略、工单、导出和数据权限逻辑。只读角色可以查看，但应优先拒绝写操作；普通用户则按既有分派和处理权限执行。前端不显示按钮只是交互表现，直接调用后端接口仍必须被拒绝。</p>
+<p>站内信接入现有持久化链路后，还要验证两个动作：刷新页面消息仍在，点击后进入对应业务的告警记录，并携带告警编号定位。只验证“弹出来了”，覆盖不到持久化和跳转；只验证通知存在，也证明不了接收人拥有处置权限。</p>
+<p>原笔记记录了完整链路的本机验证：从真实接收入口送入“已经接收、解析后”的模拟事件，后续规则匹配、告警记录、站内信和 BPM 都走真实实现。相关检查包括 41 项接口&#x2F;数据库检查、14 项浏览器检查，并补做只读角色页面验证；后续精简和合并主分支后，相关后端 36 项、前端 13 项测试及改动文件 ESLint 通过。</p>
+<p>这些数字都有边界。测试没有启动上游 MQ、物联网或环境服务，也没有验证设备状态位的产生过程；BPM 完成动作由有权限的处理人调用真实接口执行，不是浏览器点击。它们证明的是本机目标链路，不是生产端到端验收。</p>
+<h2 id="上线清单里最容易混淆的四件事"><a href="#上线清单里最容易混淆的四件事" class="headerlink" title="上线清单里最容易混淆的四件事"></a>上线清单里最容易混淆的四件事</h2><p>这次新增迁移只负责菜单和编辑功能点，不创建告警业务表，不新增业务字段，也不初始化新规则。目标环境若尚未具备此前环境告警和统一告警的迁移，不能只执行这一个菜单脚本。</p>
+<table>
+<thead>
+<tr>
+<th>事项</th>
+<th>原记录中的状态</th>
+<th>不能推导出的结论</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>前后端源码</td>
+<td>已合并并推送项目远端主分支</td>
+<td>不等于生产服务已更新</td>
+</tr>
+<tr>
+<td>菜单迁移</td>
+<td>已有可重复执行的脚本</td>
+<td>不等于目标库已经执行</td>
+</tr>
+<tr>
+<td>本机规则数据</td>
+<td>只补入目标规则及关联用于验证</td>
+<td>不应导入生产，也不能替代生产配置</td>
+</tr>
+<tr>
+<td>生产运行包</td>
+<td>最终合并版本未重新制作部署包</td>
+<td>旧运行包不包含最后精简优化</td>
+</tr>
+</tbody></table>
+<p>这里尤其要把“代码推送”和“最终包部署”分开。初轮本机运行包包含通知修复，后续优化虽然完成编译、测试和提交，却没有重新打包并重启到最终主分支版本。上线时应从最新主分支重新构建，而不是拿本机现有包凑数。</p>
+<p>这次接入的价值不在于少了几个前端文件，而在于避免了规则、权限和处置流程的多份真相。相应的验收也不能停在页面可见：同 ID、业务隔离、只读拒绝、通知定位、迁移前置和部署包版本，缺一项都可能让“复用成功”变成误判。</p>
+<h2 id="延伸阅读"><a href="#延伸阅读" class="headerlink" title="延伸阅读"></a>延伸阅读</h2><ul>
+<li><a href="https://zhlifeiy.codes/2026/10/21/2026-10-21-alarm-workflow-design/">从一条告警到真正闭环：规则、站内信、工单与权限的整合实践</a></li>
+<li><a href="https://zhlifeiy.codes/2026/09/22/2026-09-22-device-sync-recovery/">命令发送成功，数据却没回来：一次设备同步故障与补录设计</a></li>
+<li><a href="https://zhlifeiy.codes/2026/11/02/2026-11-02-access-command-layered-failure/">平台显示 SUCCESS，为什么 6 台门禁仍下发失败</a></li>
+</ul>
+<hr>
+<p><em>本文根据 2026 年 10 月 23 日工程笔记整理。业务标识和内部路径已省略；测试结果均为原记录结果，本次整理未重新执行业务测试或生产部署。</em></p>
+]]></content>
+      <categories>
+        <category>工程实践</category>
+      </categories>
+      <tags>
+        <tag>代码复用</tag>
+        <tag>告警系统</tag>
+        <tag>权限</tag>
+        <tag>数据库迁移</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>一条 64 位密文，如何让车辆进场记录整笔回滚</title>
+    <url>/2026/11/02/2026-11-02-car-record-ciphertext-rollback/</url>
+    <content><![CDATA[<p>车辆平台有进场记录，本地页面却缺数据。最后定位到的原因不是 MQ 没推送，而是车辆档案里的 64 位手机号密文被原样复制进 <code>VARCHAR(11)</code> 字段；一次字段超长异常，让接收流水、在场车辆和通行记录一起回滚。</p>
+<div class="audio-player"><p>🎧 文章导读</p><audio controls preload="none" src="/audio/2026-11-02-car-record-ciphertext-rollback/narration.mp3">您的浏览器不支持音频播放。</audio></div>
+
+<span id="more"></span>
+
+<h2 id="页面少数据，先确认页面查的是谁"><a href="#页面少数据，先确认页面查的是谁" class="headerlink" title="页面少数据，先确认页面查的是谁"></a>页面少数据，先确认页面查的是谁</h2><p>这次页面查询的是本地车辆通行表，不是实时查询上游平台。接收链路如下：</p>
+<p><img data-src="/images/posts/2026-11-02-car-record-ciphertext-rollback/flow.svg" alt="车辆消息从接收到本地查询的链路"><br><em>图 1：上游有记录只证明上游事实，本地页面还依赖消费、服务调用和事务提交。</em></p>
+<p>因此，“上游有、本地没有”只是排查起点。中间任何一步失败，都可能造成页面缺数。</p>
+<p>时间字段也要先分清：通行时间来自上游消息时间戳，本地创建时间是保存时间。两者语义不同；设备、上游、应用服务器和截图电脑的时钟未对齐前，不能直接拿差值判断传输延迟，更不能把页面看到的最新时间当作数据库最大时间。</p>
+<h2 id="重复推送会淹没真正有用的样本"><a href="#重复推送会淹没真正有用的样本" class="headerlink" title="重复推送会淹没真正有用的样本"></a>重复推送会淹没真正有用的样本</h2><p>接收流水里，同一源 ID 大约每几分钟重复出现一次。最初直接取最近 30 行，结果几乎全是重复数据。改为按源 ID、方向、车牌和事件时间分组后，才有可用的对照样本。</p>
+<p>这里还发现了另一类独立问题：部分出场消息因为找不到对应进场记录而被跳过。它能解释某些“没有出场业务记录”的样本，却解释不了本次重点追查的进场缺失，所以没有被强行合并成同一个根因，也没有在这次修复中顺手修改。</p>
+<p>排查日志时还有两个实用细节：</p>
+<ul>
+<li>原始消息带有大段 Base64 图片，先移除图片，再看源 ID、车牌和时间，否则关键字段很容易被淹没。</li>
+<li>正常消息正文日志受开关控制，固定错误关键词没有命中，不等于消息没到达，也不等于接收成功。</li>
+</ul>
+<p>真正推进定位的是一条完整的证据链：缺失样本已经到达接入服务，并发起对通行服务的调用；随后出现 Feign 500。</p>
+<h2 id="500-不是根因，堆栈里的字段才是"><a href="#500-不是根因，堆栈里的字段才是" class="headerlink" title="500 不是根因，堆栈里的字段才是"></a>500 不是根因，堆栈里的字段才是</h2><p>接收方法带有事务，异常时会回滚。由此可以解释一个容易误判的现象：为什么连“接收流水”也查不到？因为流水不是在一个已经独立提交的安全岛上，后续写入失败时，它也可能一起消失。</p>
+<p>通行服务的异常堆栈最终给出了具体位置：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">DataIntegrityViolationException</span><br><span class="line">Data truncation: Data too long for column &#x27;contact_number&#x27; at row 1</span><br><span class="line">INSERT INTO through_vehicles_present (...)</span><br></pre></td></tr></table></figure>
+
+<p>失败发生在“新增在场车辆”，早于最后的车辆通行记录写入。于是同一次接收中的接收流水、在场记录和通行记录都没有留下。</p>
+<p>继续交叉核对表结构和代码，冲突变得明确：</p>
+<table>
+<thead>
+<tr>
+<th>数据位置</th>
+<th>手机号存储情况</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>本地车辆档案</td>
+<td><code>VARCHAR(64)</code>，保存 64 位密文</td>
+</tr>
+<tr>
+<td>在场车辆联系电话</td>
+<td>原为 <code>VARCHAR(11)</code></td>
+</tr>
+<tr>
+<td>车辆通行记录联系电话</td>
+<td>原为 <code>VARCHAR(11)</code></td>
+</tr>
+</tbody></table>
+<p>车辆档案写入链路会对手机号加密；接收上游进场消息时，消息本身并没有联系电话字段。接收服务只是把本地档案的密文原样复制到另外两个字段，展示层本来也支持解密后脱敏。</p>
+<p>所以正确修复不是截断密文，更不是改回明文，而是统一存储长度。</p>
+<p><img data-src="/images/posts/2026-11-02-car-record-ciphertext-rollback/evidence.svg" alt="密文长度冲突导致事务回滚的证据链"><br><em>图 2：字段长度冲突发生在本地写入阶段，500 与记录缺失都是后续表现。</em></p>
+<h2 id="最小修复：两列扩容，同步实体校验"><a href="#最小修复：两列扩容，同步实体校验" class="headerlink" title="最小修复：两列扩容，同步实体校验"></a>最小修复：两列扩容，同步实体校验</h2><p>本次迁移只调整两张目标表：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">ALTER TABLE</span> `through_vehicles_present`</span><br><span class="line">    MODIFY <span class="keyword">COLUMN</span> `contact_number` <span class="type">VARCHAR</span>(<span class="number">64</span>) <span class="keyword">DEFAULT</span> <span class="keyword">NULL</span> COMMENT <span class="string">&#x27;联系电话&#x27;</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">ALTER TABLE</span> `through_car_record`</span><br><span class="line">    MODIFY <span class="keyword">COLUMN</span> `contact_number` <span class="type">VARCHAR</span>(<span class="number">64</span>) <span class="keyword">DEFAULT</span> <span class="keyword">NULL</span> COMMENT <span class="string">&#x27;联系电话&#x27;</span>;</span><br></pre></td></tr></table></figure>
+
+<p>两个实体的 <code>@Length</code> 上限也同步从 11 改为 64。只改数据库而漏掉校验，仍可能在进入 SQL 前被拒绝；只改实体而不改表，则继续触发数据库异常。Mapper 已按字符串读写，不需要额外转换。</p>
+<p>这次没有改 MQ 消费方式、接收事务边界、出场关联逻辑或时间处理，也没有改写、截断、解密历史号码。改动范围与已经证实的根因保持一致。</p>
+<h2 id="回归验证要覆盖旧结构和边界值"><a href="#回归验证要覆盖旧结构和边界值" class="headerlink" title="回归验证要覆盖旧结构和边界值"></a>回归验证要覆盖旧结构和边界值</h2><p>原记录中的 3 项回归测试先基于历史表结构确认 64 位密文会被拒绝，再执行新增迁移，验证两张表都能完整保存密文，同时保留原 11 位号码和空值行为。实体测试覆盖 11 位明文、64 位密文和 65 位拒绝，另检查明文与密文展示时的脱敏结果。</p>
+<p>当时 Maven 目标测试结果为 <code>Tests run: 3, Failures: 0, Errors: 0</code>，reactor 构建成功。数据库回归使用的是 H2 MySQL 兼容模式，不是生产 MySQL 迁移后的接收实测。</p>
+<p>这项区分很重要：测试证明修复针对已定位的字段冲突有效，但不证明所有历史差异都已消失。</p>
+<h2 id="修复完成，不等于历史记录已经恢复"><a href="#修复完成，不等于历史记录已经恢复" class="headerlink" title="修复完成，不等于历史记录已经恢复"></a>修复完成，不等于历史记录已经恢复</h2><p>原笔记结束时的状态是源码修复和本地验证完成，生产迁移、服务部署、历史补数仍待执行。上线后至少还要核对：</p>
+<ol>
+<li>两列在目标库均为 <code>VARCHAR(64)</code>，服务包含同步后的实体校验。</li>
+<li>受影响车辆的新消息不再因该字段返回 500，页面可以查询到对应记录。</li>
+<li>从上游或保留的原始消息重推、补回失败记录，并逐条对账；不能假定重复推送会一直存在。</li>
+<li>继续追查未闭环样本、出场缺少对应进场的问题，以及各系统时钟差异。</li>
+</ol>
+<p>这次排查最值得复用的方法，是把“平台有数据”拆成消息到达、服务调用、具体写入和事务提交四层证据。根因最终只是一处长度不一致，但只有完整链路才能解释为什么一个字段会带走整笔车辆记录。</p>
+<h2 id="延伸阅读"><a href="#延伸阅读" class="headerlink" title="延伸阅读"></a>延伸阅读</h2><ul>
+<li><a href="https://zhlifeiy.codes/2026/09/22/2026-09-22-device-sync-recovery/">命令发送成功，数据却没回来：一次设备同步故障与补录设计</a></li>
+<li><a href="https://zhlifeiy.codes/2026/11/02/2026-11-02-access-command-layered-failure/">平台显示 SUCCESS，为什么 6 台门禁仍下发失败</a></li>
+<li><a href="https://zhlifeiy.codes/2026/10/22/2026-10-22-flow-statistics-window-sql/">8.7 秒到 231 毫秒：保留统计口径的 MySQL 窗口函数优化</a></li>
+</ul>
+<hr>
+<p><em>本文根据 2026 年 10 月 23 日工程笔记整理。车牌、人员、主机和内部地址已脱敏；验证结果来自原记录，本次整理未执行生产迁移、消息重推或历史补数。</em></p>
+]]></content>
+      <categories>
+        <category>工程实践</category>
+      </categories>
+      <tags>
+        <tag>故障排查</tag>
+        <tag>数据库迁移</tag>
+        <tag>事务</tag>
+        <tag>RabbitMQ</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>长效登录不是改长 JWT：Cookie、Redis 与撤销的一致性设计</title>
+    <url>/2026/11/02/2026-11-02-revocable-long-lived-session/</url>
+    <content><![CDATA[<p>展示页面长时间不操作，刷新后却回到登录页。只把 JWT 有效期改长通常不够，因为 Cookie 和 Redis 会话可能更早过期；更难的是，长效会话仍必须支持主动退出、强制下线和配置关闭后的立即撤销。</p>
+<div class="audio-player"><p>🎧 文章导读</p><audio controls preload="none" src="/audio/2026-11-02-revocable-long-lived-session/narration.mp3">您的浏览器不支持音频播放。</audio></div>
+
+<span id="more"></span>
+
+<h2 id="需求不是“永久-Token”，而是可控制的长会话"><a href="#需求不是“永久-Token”，而是可控制的长会话" class="headerlink" title="需求不是“永久 Token”，而是可控制的长会话"></a>需求不是“永久 Token”，而是可控制的长会话</h2><p>这次只给指定展示账号开启长效登录，其他账号继续使用原规则。账号管理页面提供开关，配置保存到数据库，不使用额外白名单；默认长期有效期为 10 年，由网关配置控制，不在页面暴露。</p>
+<p>行为定义里有几条很容易漏掉：</p>
+<ul>
+<li>开启开关只对下一次登录生效，当前普通会话不会自动变长。</li>
+<li>关闭开关要撤销该账号现有全部长效会话。</li>
+<li>主动退出和强制下线仍然有效。</li>
+<li>旧客户端不传开关字段时，保留数据库原值，不能意外关闭或撤销。</li>
+<li>沿用原编辑用户权限，不新增权限点。</li>
+</ul>
+<p>因此，目标不是让 Token 永远有效，而是让一类账号获得可配置、可撤销、与普通账号隔离的长会话。</p>
+<h2 id="三处有效期必须一起考虑"><a href="#三处有效期必须一起考虑" class="headerlink" title="三处有效期必须一起考虑"></a>三处有效期必须一起考虑</h2><p>现有登录状态同时依赖 JWT、浏览器 Cookie 和 Redis 登录缓存。任何一处先过期，另外两处再长也没有用。</p>
+<p><img data-src="/images/posts/2026-11-02-revocable-long-lived-session/flow.svg" alt="账号开关、网关会话与浏览器 Cookie 协同"><br><em>图 1：长效登录是三段协作，不是一次 JWT 参数修改。</em></p>
+<p>账号侧新增 <code>long_lived_login</code> 字段，默认 <code>&#39;0&#39;</code>。登录响应把账号配置传给网关；网关仅对明确开启且用户 ID 有效的账号重签长效 JWT，延长相关会话 TTL，并返回 <code>tokenExpiresIn</code>；前端使用该秒数设置 Cookie 有效期。普通账号没有返回值时，继续使用原默认 Cookie 行为。</p>
+<p>数据库改动也不能只加实体和查询映射。审查中曾发现“页面保存成功但数据库没更新”的风险：动态 SQL 的 <code>updateSelective</code> 没有同步加入新字段。后续通过真实 MyBatis <code>BoundSql</code> 测试覆盖 <code>&#39;0&#39;→&#39;1&#39;</code>、<code>&#39;1&#39;→&#39;0&#39;</code>、<code>null</code> 保留原值和新增字段，避免 Mock 验证漏掉实际更新语句。</p>
+<h2 id="登录时延长，还可能被后续续期缩回去"><a href="#登录时延长，还可能被后续续期缩回去" class="headerlink" title="登录时延长，还可能被后续续期缩回去"></a>登录时延长，还可能被后续续期缩回去</h2><p>长效 JWT 带有专门的用户标识，并保留登录序列。网关在登录成功后维护 Token、Token 索引和登录序列之间的映射，同时删除原普通 Token 的缓存映射，避免同一次登录留下普通与长效两个有效入口。</p>
+<p>更隐蔽的问题发生在后续请求：框架的自动续期可能按普通会话配置重新设置 Redis TTL，把登录时刚延长的有效期缩回去。</p>
+<p>为此，长效会话过滤器识别对应请求，在请求完成后恢复登录序列、Token 和索引的长期 TTL。普通 Token 不进入这段逻辑。如果登录序列已经不存在，说明会话已退出或被强制下线，过滤器不再续期，并清理残留 Token 与索引。</p>
+<p>主动退出也不能只依赖框架默认清理。登出入口额外执行长会话退出，显式删除登录序列、实际 Token 和 Token 索引，避免旧 Token 在退出后仍能重放。</p>
+<h2 id="关闭开关，难在事务与并发"><a href="#关闭开关，难在事务与并发" class="headerlink" title="关闭开关，难在事务与并发"></a>关闭开关，难在事务与并发</h2><p>撤销操作放在数据库事务成功提交之后。否则数据库一旦回滚，就会出现“配置仍开启，但会话已经删掉”的不一致。</p>
+<p>但只调整时机还不够。考虑这个竞态：某个登录请求在关闭前已经读到旧账号快照，等数据库关闭提交后才进入网关签发长会话。如果没有额外防线，它可能把刚清掉的长会话重新写回来。</p>
+<p>本次设计使用禁用标记堵住这条路径：</p>
+<p><img data-src="/images/posts/2026-11-02-revocable-long-lived-session/revocation.svg" alt="关闭长效登录后的撤销顺序"><br><em>图 2：先禁止新长会话，再清存量；鉴权前复验用于兜住清理遗漏。</em></p>
+<ol>
+<li>数据库关闭事务提交后，先写入该用户的禁用标记。</li>
+<li>再清理现有长会话；网关签发长 Token 前复验标记，旧快照登录只能保持普通会话。</li>
+<li>长效请求进入后续鉴权链之前也检查标记，发现禁用便统一返回 401，不再进入下游或续期。</li>
+<li>重新开启时，在事务提交后删除禁用标记；旧 Token 不恢复，必须重新登录。</li>
+</ol>
+<p>最后一道鉴权前检查很重要：即使 Redis 清理异常遗漏，旧长效 Token 也不能继续使用。</p>
+<h2 id="多会话撤销，不能依赖一个看似方便的批量-API"><a href="#多会话撤销，不能依赖一个看似方便的批量-API" class="headerlink" title="多会话撤销，不能依赖一个看似方便的批量 API"></a>多会话撤销，不能依赖一个看似方便的批量 API</h2><p>同一账号可能在多处登录，只清当前 Token 不够。最初的框架批量缓存方法还存在两个实现问题：按键模式获取时可能漏键；读取带前缀的完整键时又重复拼接前缀，导致实际取不到目标值。</p>
+<p>最终方案改为完整枚举实际键，并用 <code>SCAN</code> 代替阻塞式 <code>KEYS</code>。每批提示数量为 256，扫描结果先放入 <code>HashSet</code> 去重，关闭游标后再删除，避免边扫描边改变键空间。</p>
+<p>撤销只扫描目标用户的会话键模式，同时处理 Token 索引和登录序列。即使索引已经缺失，也仍能删除残留登录序列；其他账号的键不匹配，不应被清理。</p>
+<p>这里也有一个值得推广的审查方法：不要只看方法名像不像“批量删除”，要沿真实框架实现确认键是否完整、前缀是否一致、遍历是否可靠。</p>
+<h2 id="验证结果与上线边界"><a href="#验证结果与上线边界" class="headerlink" title="验证结果与上线边界"></a>验证结果与上线边界</h2><p>原笔记记录的最新代码验证为：admin 71 项、gateway 13 项、前端相关 7 项测试通过，改动文件 ESLint 和前端生产构建通过。多会话测试使用真实缓存服务配合内存模拟的底层 Redis，尚未完成真实 Redis、数据库和浏览器联调。</p>
+<p>前端全量测试当时另有 1 个未改动模块失败，原因是测试中的 <code>$store</code> 未初始化；全量 lint 也有其他未改动页面的既有格式问题。目标测试通过不等于全仓检查全绿。</p>
+<p>真实环境验收至少要覆盖：普通账号行为不变；开启后重新登录才获得长会话；关闭后所有登录位置返回 401；重新开启不复活旧 Token；主动退出后旧 Token 不可用；多处登录能全部撤销且不影响其他账号。</p>
+<p>原记录中的功能提交仍只在本地功能分支，数据库迁移、部署和浏览器联调均未执行。长效登录的核心也不是“10 年”这个数字，而是三条一致性：三处有效期一致、退出与续期一致、数据库配置与可撤销性一致。</p>
+<h2 id="延伸阅读"><a href="#延伸阅读" class="headerlink" title="延伸阅读"></a>延伸阅读</h2><ul>
+<li><a href="https://zhlifeiy.codes/2026/09/22/2026-09-22-websocket-ticket-auth/">把 WebSocket 长期密钥移出前端：短期票据改造与上线闭环</a></li>
+<li><a href="https://zhlifeiy.codes/2026/11/02/2026-11-02-pump-machine-alarm-reuse/">两套页面，同一套规则：水泵房与机房接入统一告警的边界</a></li>
+<li><a href="https://zhlifeiy.codes/2026/11/02/2026-11-02-access-command-layered-failure/">平台显示 SUCCESS，为什么 6 台门禁仍下发失败</a></li>
+</ul>
+<hr>
+<p><em>本文根据 2026 年 10 月 29 日工程笔记整理。内部账号、分支和配置细节已按公开阅读需要简化；测试结果为原记录结果，本次整理未重新构建业务项目或执行上线。</em></p>
+]]></content>
+      <categories>
+        <category>工程实践</category>
+      </categories>
+      <tags>
+        <tag>JWT</tag>
+        <tag>Redis</tag>
+        <tag>网关</tag>
+        <tag>会话管理</tag>
+      </tags>
+  </entry>
 </search>

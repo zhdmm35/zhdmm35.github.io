@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Gemini","darkmode":true,"version":"8.28.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="车辆平台有进场记录，本地页面却缺数据。最后定位到的原因不是 MQ 没推送，而是车辆档案里的 64 位手机号密文被原样复制进 VARCHAR(11) 字段；一次字段超长异常，让接收流水、在场车辆和通行记录一起回滚。 🎧 文章导读您的浏览器不支持音频播放。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="一条 64 位密文，如何让车辆进场记录整笔回滚">
+<meta property="og:url" content="https://zhlifeiy.codes/2026/11/02/2026-11-02-car-record-ciphertext-rollback/index.html">
+<meta property="og:site_name" content="zhlifeiy · 工程笔记">
+<meta property="og:description" content="车辆平台有进场记录，本地页面却缺数据。最后定位到的原因不是 MQ 没推送，而是车辆档案里的 64 位手机号密文被原样复制进 VARCHAR(11) 字段；一次字段超长异常，让接收流水、在场车辆和通行记录一起回滚。 🎧 文章导读您的浏览器不支持音频播放。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/2026-11-02-car-record-ciphertext-rollback.jpg">
+<meta property="article:published_time" content="2026-11-02T03:39:24.000Z">
+<meta property="article:author" content="zhlifeiy35">
+<meta property="article:tag" content="故障排查">
+<meta property="article:tag" content="数据库迁移">
+<meta property="article:tag" content="事务">
+<meta property="article:tag" content="RabbitMQ">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/2026-11-02-car-record-ciphertext-rollback.jpg">
+
+
+<link rel="canonical" href="https://zhlifeiy.codes/2026/11/02/2026-11-02-car-record-ciphertext-rollback/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://zhlifeiy.codes/2026/11/02/2026-11-02-car-record-ciphertext-rollback/","path":"2026/11/02/2026-11-02-car-record-ciphertext-rollback/","title":"一条 64 位密文，如何让车辆进场记录整笔回滚"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>一条 64 位密文，如何让车辆进场记录整笔回滚 | zhlifeiy · 工程笔记</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/atom.xml" title="zhlifeiy · 工程笔记" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">zhlifeiy · 工程笔记</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">把项目里的坑，写成可以复用的答案</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-项目"><a href="/projects/" rel="section"><i class="fa fa-diagram-project fa-fw"></i>项目</a></li><li class="menu-item menu-item-简历"><a href="/resume/" rel="section"><i class="fa fa-id-card fa-fw"></i>简历</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-guestbook"><a href="/guestbook/" rel="section"><i class="fa fa-comment-dots fa-fw"></i>留言板</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A1%B5%E9%9D%A2%E5%B0%91%E6%95%B0%E6%8D%AE%EF%BC%8C%E5%85%88%E7%A1%AE%E8%AE%A4%E9%A1%B5%E9%9D%A2%E6%9F%A5%E7%9A%84%E6%98%AF%E8%B0%81"><span class="nav-number">1.</span> <span class="nav-text">页面少数据，先确认页面查的是谁</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%87%8D%E5%A4%8D%E6%8E%A8%E9%80%81%E4%BC%9A%E6%B7%B9%E6%B2%A1%E7%9C%9F%E6%AD%A3%E6%9C%89%E7%94%A8%E7%9A%84%E6%A0%B7%E6%9C%AC"><span class="nav-number">2.</span> <span class="nav-text">重复推送会淹没真正有用的样本</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#500-%E4%B8%8D%E6%98%AF%E6%A0%B9%E5%9B%A0%EF%BC%8C%E5%A0%86%E6%A0%88%E9%87%8C%E7%9A%84%E5%AD%97%E6%AE%B5%E6%89%8D%E6%98%AF"><span class="nav-number">3.</span> <span class="nav-text">500 不是根因，堆栈里的字段才是</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%80%E5%B0%8F%E4%BF%AE%E5%A4%8D%EF%BC%9A%E4%B8%A4%E5%88%97%E6%89%A9%E5%AE%B9%EF%BC%8C%E5%90%8C%E6%AD%A5%E5%AE%9E%E4%BD%93%E6%A0%A1%E9%AA%8C"><span class="nav-number">4.</span> <span class="nav-text">最小修复：两列扩容，同步实体校验</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9E%E5%BD%92%E9%AA%8C%E8%AF%81%E8%A6%81%E8%A6%86%E7%9B%96%E6%97%A7%E7%BB%93%E6%9E%84%E5%92%8C%E8%BE%B9%E7%95%8C%E5%80%BC"><span class="nav-number">5.</span> <span class="nav-text">回归验证要覆盖旧结构和边界值</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%AE%E5%A4%8D%E5%AE%8C%E6%88%90%EF%BC%8C%E4%B8%8D%E7%AD%89%E4%BA%8E%E5%8E%86%E5%8F%B2%E8%AE%B0%E5%BD%95%E5%B7%B2%E7%BB%8F%E6%81%A2%E5%A4%8D"><span class="nav-number">6.</span> <span class="nav-text">修复完成，不等于历史记录已经恢复</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BB%B6%E4%BC%B8%E9%98%85%E8%AF%BB"><span class="nav-number">7.</span> <span class="nav-text">延伸阅读</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zhlifeiy35</p>
+  <div class="site-description" itemprop="description">记录项目实践、问题排查与工程经验</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">103</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">18</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">304</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zhdmm35" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zhdmm35" rel="noopener me" target="_blank"><i class="fa fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/2026-11-02-car-record-ciphertext-rollback.jpg" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/11/02/2026-11-02-car-record-ciphertext-rollback/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="记录项目实践、问题排查与工程经验">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="一条 64 位密文，如何让车辆进场记录整笔回滚 | zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          一条 64 位密文，如何让车辆进场记录整笔回滚
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-11-02 11:39:24" itemprop="dateCreated datePublished" datetime="2026-11-02T11:39:24+08:00">2026-11-02</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" itemprop="url" rel="index"><span itemprop="name">工程实践</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>车辆平台有进场记录，本地页面却缺数据。最后定位到的原因不是 MQ 没推送，而是车辆档案里的 64 位手机号密文被原样复制进 <code>VARCHAR(11)</code> 字段；一次字段超长异常，让接收流水、在场车辆和通行记录一起回滚。</p>
+<div class="audio-player"><p>🎧 文章导读</p><audio controls preload="none" src="/audio/2026-11-02-car-record-ciphertext-rollback/narration.mp3">您的浏览器不支持音频播放。</audio></div>
+
+<span id="more"></span>
+
+<h2 id="页面少数据，先确认页面查的是谁"><a href="#页面少数据，先确认页面查的是谁" class="headerlink" title="页面少数据，先确认页面查的是谁"></a>页面少数据，先确认页面查的是谁</h2><p>这次页面查询的是本地车辆通行表，不是实时查询上游平台。接收链路如下：</p>
+<p><img data-src="/images/posts/2026-11-02-car-record-ciphertext-rollback/flow.svg" alt="车辆消息从接收到本地查询的链路"><br><em>图 1：上游有记录只证明上游事实，本地页面还依赖消费、服务调用和事务提交。</em></p>
+<p>因此，“上游有、本地没有”只是排查起点。中间任何一步失败，都可能造成页面缺数。</p>
+<p>时间字段也要先分清：通行时间来自上游消息时间戳，本地创建时间是保存时间。两者语义不同；设备、上游、应用服务器和截图电脑的时钟未对齐前，不能直接拿差值判断传输延迟，更不能把页面看到的最新时间当作数据库最大时间。</p>
+<h2 id="重复推送会淹没真正有用的样本"><a href="#重复推送会淹没真正有用的样本" class="headerlink" title="重复推送会淹没真正有用的样本"></a>重复推送会淹没真正有用的样本</h2><p>接收流水里，同一源 ID 大约每几分钟重复出现一次。最初直接取最近 30 行，结果几乎全是重复数据。改为按源 ID、方向、车牌和事件时间分组后，才有可用的对照样本。</p>
+<p>这里还发现了另一类独立问题：部分出场消息因为找不到对应进场记录而被跳过。它能解释某些“没有出场业务记录”的样本，却解释不了本次重点追查的进场缺失，所以没有被强行合并成同一个根因，也没有在这次修复中顺手修改。</p>
+<p>排查日志时还有两个实用细节：</p>
+<ul>
+<li>原始消息带有大段 Base64 图片，先移除图片，再看源 ID、车牌和时间，否则关键字段很容易被淹没。</li>
+<li>正常消息正文日志受开关控制，固定错误关键词没有命中，不等于消息没到达，也不等于接收成功。</li>
+</ul>
+<p>真正推进定位的是一条完整的证据链：缺失样本已经到达接入服务，并发起对通行服务的调用；随后出现 Feign 500。</p>
+<h2 id="500-不是根因，堆栈里的字段才是"><a href="#500-不是根因，堆栈里的字段才是" class="headerlink" title="500 不是根因，堆栈里的字段才是"></a>500 不是根因，堆栈里的字段才是</h2><p>接收方法带有事务，异常时会回滚。由此可以解释一个容易误判的现象：为什么连“接收流水”也查不到？因为流水不是在一个已经独立提交的安全岛上，后续写入失败时，它也可能一起消失。</p>
+<p>通行服务的异常堆栈最终给出了具体位置：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">DataIntegrityViolationException</span><br><span class="line">Data truncation: Data too long for column &#x27;contact_number&#x27; at row 1</span><br><span class="line">INSERT INTO through_vehicles_present (...)</span><br></pre></td></tr></table></figure>
+
+<p>失败发生在“新增在场车辆”，早于最后的车辆通行记录写入。于是同一次接收中的接收流水、在场记录和通行记录都没有留下。</p>
+<p>继续交叉核对表结构和代码，冲突变得明确：</p>
+<table>
+<thead>
+<tr>
+<th>数据位置</th>
+<th>手机号存储情况</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>本地车辆档案</td>
+<td><code>VARCHAR(64)</code>，保存 64 位密文</td>
+</tr>
+<tr>
+<td>在场车辆联系电话</td>
+<td>原为 <code>VARCHAR(11)</code></td>
+</tr>
+<tr>
+<td>车辆通行记录联系电话</td>
+<td>原为 <code>VARCHAR(11)</code></td>
+</tr>
+</tbody></table>
+<p>车辆档案写入链路会对手机号加密；接收上游进场消息时，消息本身并没有联系电话字段。接收服务只是把本地档案的密文原样复制到另外两个字段，展示层本来也支持解密后脱敏。</p>
+<p>所以正确修复不是截断密文，更不是改回明文，而是统一存储长度。</p>
+<p><img data-src="/images/posts/2026-11-02-car-record-ciphertext-rollback/evidence.svg" alt="密文长度冲突导致事务回滚的证据链"><br><em>图 2：字段长度冲突发生在本地写入阶段，500 与记录缺失都是后续表现。</em></p>
+<h2 id="最小修复：两列扩容，同步实体校验"><a href="#最小修复：两列扩容，同步实体校验" class="headerlink" title="最小修复：两列扩容，同步实体校验"></a>最小修复：两列扩容，同步实体校验</h2><p>本次迁移只调整两张目标表：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ALTER TABLE</span> `through_vehicles_present`</span><br><span class="line">    MODIFY <span class="keyword">COLUMN</span> `contact_number` <span class="type">VARCHAR</span>(<span class="number">64</span>) <span class="keyword">DEFAULT</span> <span class="keyword">NULL</span> COMMENT <span class="string">&#x27;联系电话&#x27;</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">ALTER TABLE</span> `through_car_record`</span><br><span class="line">    MODIFY <span class="keyword">COLUMN</span> `contact_number` <span class="type">VARCHAR</span>(<span class="number">64</span>) <span class="keyword">DEFAULT</span> <span class="keyword">NULL</span> COMMENT <span class="string">&#x27;联系电话&#x27;</span>;</span><br></pre></td></tr></table></figure>
+
+<p>两个实体的 <code>@Length</code> 上限也同步从 11 改为 64。只改数据库而漏掉校验，仍可能在进入 SQL 前被拒绝；只改实体而不改表，则继续触发数据库异常。Mapper 已按字符串读写，不需要额外转换。</p>
+<p>这次没有改 MQ 消费方式、接收事务边界、出场关联逻辑或时间处理，也没有改写、截断、解密历史号码。改动范围与已经证实的根因保持一致。</p>
+<h2 id="回归验证要覆盖旧结构和边界值"><a href="#回归验证要覆盖旧结构和边界值" class="headerlink" title="回归验证要覆盖旧结构和边界值"></a>回归验证要覆盖旧结构和边界值</h2><p>原记录中的 3 项回归测试先基于历史表结构确认 64 位密文会被拒绝，再执行新增迁移，验证两张表都能完整保存密文，同时保留原 11 位号码和空值行为。实体测试覆盖 11 位明文、64 位密文和 65 位拒绝，另检查明文与密文展示时的脱敏结果。</p>
+<p>当时 Maven 目标测试结果为 <code>Tests run: 3, Failures: 0, Errors: 0</code>，reactor 构建成功。数据库回归使用的是 H2 MySQL 兼容模式，不是生产 MySQL 迁移后的接收实测。</p>
+<p>这项区分很重要：测试证明修复针对已定位的字段冲突有效，但不证明所有历史差异都已消失。</p>
+<h2 id="修复完成，不等于历史记录已经恢复"><a href="#修复完成，不等于历史记录已经恢复" class="headerlink" title="修复完成，不等于历史记录已经恢复"></a>修复完成，不等于历史记录已经恢复</h2><p>原笔记结束时的状态是源码修复和本地验证完成，生产迁移、服务部署、历史补数仍待执行。上线后至少还要核对：</p>
+<ol>
+<li>两列在目标库均为 <code>VARCHAR(64)</code>，服务包含同步后的实体校验。</li>
+<li>受影响车辆的新消息不再因该字段返回 500，页面可以查询到对应记录。</li>
+<li>从上游或保留的原始消息重推、补回失败记录，并逐条对账；不能假定重复推送会一直存在。</li>
+<li>继续追查未闭环样本、出场缺少对应进场的问题，以及各系统时钟差异。</li>
+</ol>
+<p>这次排查最值得复用的方法，是把“平台有数据”拆成消息到达、服务调用、具体写入和事务提交四层证据。根因最终只是一处长度不一致，但只有完整链路才能解释为什么一个字段会带走整笔车辆记录。</p>
+<h2 id="延伸阅读"><a href="#延伸阅读" class="headerlink" title="延伸阅读"></a>延伸阅读</h2><ul>
+<li><a href="https://zhlifeiy.codes/2026/09/22/2026-09-22-device-sync-recovery/">命令发送成功，数据却没回来：一次设备同步故障与补录设计</a></li>
+<li><a href="https://zhlifeiy.codes/2026/11/02/2026-11-02-access-command-layered-failure/">平台显示 SUCCESS，为什么 6 台门禁仍下发失败</a></li>
+<li><a href="https://zhlifeiy.codes/2026/10/22/2026-10-22-flow-statistics-window-sql/">8.7 秒到 231 毫秒：保留统计口径的 MySQL 窗口函数优化</a></li>
+</ul>
+<hr>
+<p><em>本文根据 2026 年 10 月 23 日工程笔记整理。车牌、人员、主机和内部地址已脱敏；验证结果来自原记录，本次整理未执行生产迁移、消息重推或历史补数。</em></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5/" rel="tag"># 故障排查</a>
+              <a href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93%E8%BF%81%E7%A7%BB/" rel="tag"># 数据库迁移</a>
+              <a href="/tags/%E4%BA%8B%E5%8A%A1/" rel="tag"># 事务</a>
+              <a href="/tags/RabbitMQ/" rel="tag"># RabbitMQ</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/11/02/2026-11-02-revocable-long-lived-session/" rel="prev" title="长效登录不是改长 JWT：Cookie、Redis 与撤销的一致性设计">
+                  <i class="fa fa-angle-left"></i> 长效登录不是改长 JWT：Cookie、Redis 与撤销的一致性设计
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2026/11/02/2026-11-02-pump-machine-alarm-reuse/" rel="next" title="两套页面，同一套规则：水泵房与机房接入统一告警的边界">
+                  两套页面，同一套规则：水泵房与机房接入统一告警的边界 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  
+  <div class="comments giscus-container">
+  </div>
+  
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">zhlifeiy35</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/zhdmm35" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"zhdmm35/zhdmm35.github.io","repo_id":"R_kgDOON4bhg","category":"Announcements","category_id":"DIC_kwDOON4bhs4C3dEc","mapping":"pathname","strict":0,"reactions_enabled":1,"emit_metadata":0,"theme":"preferred_color_scheme","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+
+<script>
+document.addEventListener('page:loaded', () => {
+  if (!CONFIG.page.comments) return;
+
+  NexT.utils.loadComments('.giscus-container')
+    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
+      attributes: {
+        async                   : true,
+        crossOrigin             : 'anonymous',
+        'data-repo'             : CONFIG.giscus.repo,
+        'data-repo-id'          : CONFIG.giscus.repo_id,
+        'data-category'         : CONFIG.giscus.category,
+        'data-category-id'      : CONFIG.giscus.category_id,
+        'data-mapping'          : CONFIG.giscus.mapping,
+        'data-strict'           : CONFIG.giscus.strict,
+        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
+        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
+        'data-theme'            : CONFIG.giscus.theme,
+        'data-lang'             : CONFIG.giscus.lang,
+        'data-input-position'   : CONFIG.giscus.input_position,
+        'data-loading'          : CONFIG.giscus.loading
+      },
+      parentNode: document.querySelector('.giscus-container')
+    }));
+});
+</script>
+<script defer src="/js/blog-assistant.js" data-endpoint="https://zhlifeiy-blog-assistant.huiyaozhang07.workers.dev/ask"></script>
+
+</body>
+</html>

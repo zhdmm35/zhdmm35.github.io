@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="570" viewBox="0 0 1200 570" role="img" aria-labelledby="title desc">
+  <title id="title">车辆消息接收与本地查询链路</title>
+  <desc id="desc">上游推送经过 MQ 和消费服务、Feign 接收接口、本地事务写入，最后由页面查询本地数据库。</desc>
+  <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 Z" fill="#476581"/></marker></defs>
+  <style>
+    .title{font:700 30px 'Microsoft YaHei','PingFang SC',sans-serif;fill:#18324b}.label{font:700 24px 'Microsoft YaHei','PingFang SC',sans-serif;fill:#18324b}.text{font:21px 'Microsoft YaHei','PingFang SC',sans-serif;fill:#42576b}.box{stroke:#476581;stroke-width:2}.line{stroke:#476581;stroke-width:3;fill:none;marker-end:url(#arrow)}
+  </style>
+  <rect width="1200" height="570" rx="24" fill="#F5F8FC"/>
+  <text x="600" y="58" text-anchor="middle" class="title">页面少数据，要沿接收链路逐层核对</text>
+  <rect x="35" y="140" width="180" height="115" rx="18" fill="#D9ECF7" class="box"/><text x="125" y="188" text-anchor="middle" class="label">上游平台</text><text x="125" y="225" text-anchor="middle" class="text">车辆事件</text>
+  <rect x="265" y="140" width="180" height="115" rx="18" fill="#E8E1F2" class="box"/><text x="355" y="188" text-anchor="middle" class="label">MQ / 消费</text><text x="355" y="225" text-anchor="middle" class="text">解析并接收</text>
+  <rect x="495" y="140" width="180" height="115" rx="18" fill="#FFF0D9" class="box"/><text x="585" y="188" text-anchor="middle" class="label">Feign 调用</text><text x="585" y="225" text-anchor="middle" class="text">接收接口</text>
+  <rect x="725" y="105" width="220" height="280" rx="18" fill="#FCE7DE" class="box"/><text x="835" y="155" text-anchor="middle" class="label">本地事务</text><text x="835" y="210" text-anchor="middle" class="text">接收流水</text><text x="835" y="260" text-anchor="middle" class="text">在场车辆</text><text x="835" y="310" text-anchor="middle" class="text">通行记录</text><text x="835" y="355" text-anchor="middle" class="text">任一步失败可回滚</text>
+  <rect x="995" y="140" width="170" height="115" rx="18" fill="#E4F3EA" class="box"/><text x="1080" y="188" text-anchor="middle" class="label">页面查询</text><text x="1080" y="225" text-anchor="middle" class="text">本地数据库</text>
+  <path d="M215 198 L265 198" class="line"/><path d="M445 198 L495 198" class="line"/><path d="M675 198 L725 198" class="line"/><path d="M945 198 L995 198" class="line"/>
+  <rect x="180" y="440" width="840" height="70" rx="18" fill="#FFFFFF" stroke="#9BB2C8" stroke-width="2"/>
+  <text x="600" y="470" text-anchor="middle" class="text">通行时间来自上游事件；创建时间来自本地保存</text><text x="600" y="498" text-anchor="middle" class="text">时钟未对齐前，不用二者差值判断传输延迟</text>
+</svg>

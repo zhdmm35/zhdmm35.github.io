@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600" role="img" aria-labelledby="title desc">
+  <title id="title">长效登录的三段协作</title>
+  <desc id="desc">账号数据库保存开关，网关重签长效 JWT 并维护 Redis TTL，前端按后端有效期保存 Cookie。</desc>
+  <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 Z" fill="#476581"/></marker></defs>
+  <style>
+    .title{font:700 30px 'Microsoft YaHei','PingFang SC',sans-serif;fill:#18324b}.label{font:700 25px 'Microsoft YaHei','PingFang SC',sans-serif;fill:#18324b}.text{font:21px 'Microsoft YaHei','PingFang SC',sans-serif;fill:#42576b}.box{stroke:#476581;stroke-width:2}.line{stroke:#476581;stroke-width:3;fill:none;marker-end:url(#arrow)}
+  </style>
+  <rect width="1200" height="600" rx="24" fill="#F5F8FC"/>
+  <text x="600" y="58" text-anchor="middle" class="title">长效会话需要三处有效期协同</text>
+  <rect x="55" y="135" width="300" height="285" rx="24" fill="#E8E1F2" class="box"/>
+  <text x="205" y="190" text-anchor="middle" class="label">账号侧：保存开关</text><text x="205" y="250" text-anchor="middle" class="text">数据库默认关闭</text><text x="205" y="295" text-anchor="middle" class="text">登录响应携带配置</text><text x="205" y="340" text-anchor="middle" class="text">旧客户端传空值时保留</text>
+  <rect x="450" y="105" width="300" height="345" rx="24" fill="#D9ECF7" class="box"/>
+  <text x="600" y="160" text-anchor="middle" class="label">网关侧：维护会话</text><text x="600" y="220" text-anchor="middle" class="text">重签长效 JWT</text><text x="600" y="265" text-anchor="middle" class="text">延长 Redis 会话 TTL</text><text x="600" y="310" text-anchor="middle" class="text">防止自动续期缩短</text><text x="600" y="355" text-anchor="middle" class="text">返回 tokenExpiresIn</text>
+  <rect x="845" y="135" width="300" height="285" rx="24" fill="#E4F3EA" class="box"/>
+  <text x="995" y="190" text-anchor="middle" class="label">前端侧：保存 Cookie</text><text x="995" y="250" text-anchor="middle" class="text">使用后端返回的秒数</text><text x="995" y="295" text-anchor="middle" class="text">换算 Cookie 有效期</text><text x="995" y="340" text-anchor="middle" class="text">普通账号沿用原默认值</text>
+  <path d="M355 278 L450 278" class="line"/><path d="M750 278 L845 278" class="line"/>
+  <rect x="190" y="495" width="820" height="60" rx="18" fill="#FFF0D9"/>
+  <text x="600" y="533" text-anchor="middle" class="text">任何一处先过期，另外两处的长有效期都无法单独维持登录</text>
+</svg>
