@@ -171,7 +171,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">103</span>
+          <span class="site-state-item-count">106</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -182,7 +182,7 @@
       </div>
       <div class="site-state-item site-state-tags">
           <a href="/tags/">
-        <span class="site-state-item-count">304</span>
+        <span class="site-state-item-count">311</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -204,6 +204,279 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/clickhouse-monitoring-rollup-performance.jpg" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/11/09/clickhouse-monitoring-rollup-performance/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="记录项目实践、问题排查与工程经验">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content=" | zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2026/11/09/clickhouse-monitoring-rollup-performance/" class="post-title-link" itemprop="url">从重复扫描到分钟汇总：ClickHouse 监控页面的分层性能优化</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-11-09 21:33:16" itemprop="dateCreated datePublished" datetime="2026-11-09T21:33:16+08:00">2026-11-09</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" itemprop="url" rel="index"><span itemprop="name">工程实践</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>一个监控页面变慢，不能只用“数据有几亿行”解释，也不能一上来就分库分表。这次优化沿着四层展开：先消除 SQL 自己制造的中间结果，再合并重复查询，用分钟汇总承接高频统计，最后取消前端已经不需要的请求。高密度隔离样本中的六组 SQL 快约 3.39～11.20 倍，但低密度样本里有查询反而变慢；这两个结果同样重要。</p>
+<div class="audio-player"><p>🎧 文章导读</p><audio controls preload="none" src="/audio/clickhouse-monitoring-rollup-performance/narration.mp3">您的浏览器不支持音频播放。</audio></div>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2026/11/09/clickhouse-monitoring-rollup-performance/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/concurrent-checkin-consistency.jpg" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/11/09/concurrent-checkin-consistency/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="记录项目实践、问题排查与工程经验">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content=" | zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2026/11/09/concurrent-checkin-consistency/" class="post-title-link" itemprop="url">同秒签到冲突之后：用唯一键、事务和条件更新守住一致性</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-11-09 21:33:16" itemprop="dateCreated datePublished" datetime="2026-11-09T21:33:16+08:00">2026-11-09</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" itemprop="url" rel="index"><span itemprop="name">工程实践</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>四个不同组长在同一秒签到，两人成功、两人失败；更麻烦的是，失败请求也留下了在岗记录，装备被占用却没有完整绑定。这不是一个“编号重复”就能概括的问题，而是业务编号、事务边界和状态竞争同时存在缺陷。修复也不只改一行编号生成代码，而是让整次签到真正做到唯一、原子、可回滚。</p>
+<div class="audio-player"><p>🎧 文章导读</p><audio controls preload="none" src="/audio/concurrent-checkin-consistency/narration.mp3">您的浏览器不支持音频播放。</audio></div>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2026/11/09/concurrent-checkin-consistency/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/load-test-long-tail-rate-limit.jpg" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/11/09/load-test-long-tail-rate-limit/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="记录项目实践、问题排查与工程经验">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content=" | zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2026/11/09/load-test-long-tail-rate-limit/" class="post-title-link" itemprop="url">压测出现 19 秒长尾，为什么还不能怪后端：一次查询与登录限流摸底</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-11-09 21:33:16" itemprop="dateCreated datePublished" datetime="2026-11-09T21:33:16+08:00">2026-11-09</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" itemprop="url" rel="index"><span itemprop="name">工程实践</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>同一套服务，局域网压测出现 9～19 秒长尾，测试机回环的短时对照却只有十几到二十几毫秒的 P95。这个差异提示应优先排查网络与压测端路径，但还不能直接排除服务端偶发停顿。同轮登录专项还暴露了另一件事：每分钟 5 次的单 IP 限流，在 200 并发下实际放行了 20 个请求，说明计数存在竞争，而“被限流”也不能被当作登录容量结果。</p>
+<div class="audio-player"><p>🎧 文章导读</p><audio controls preload="none" src="/audio/load-test-long-tail-rate-limit/narration.mp3">您的浏览器不支持音频播放。</audio></div>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2026/11/09/load-test-long-tail-rate-limit/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -820,279 +1093,6 @@
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2026/10/22/2026-10-22-flow-statistics-window-sql/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
-    
-    <div class="post-gallery-image">
-      <img src="/images/covers/2026-10-21-alarm-workflow-design.jpg" itemprop="contentUrl">
-    </div>
-    </div>
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/10/21/2026-10-21-alarm-workflow-design/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="zhlifeiy35">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="zhlifeiy · 工程笔记">
-      <meta itemprop="description" content="记录项目实践、问题排查与工程经验">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content=" | zhlifeiy · 工程笔记">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2026/10/21/2026-10-21-alarm-workflow-design/" class="post-title-link" itemprop="url">从一条告警到真正闭环：规则、站内信、工单与权限的整合实践</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">发表于</span>
-
-      <time title="创建时间：2026-10-21 22:00:00" itemprop="dateCreated datePublished" datetime="2026-10-21T22:00:00+08:00">2026-10-21</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-folder"></i>
-      </span>
-      <span class="post-meta-item-text">分类于</span>
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" itemprop="url" rel="index"><span itemprop="name">工程实践</span></a>
-        </span>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>告警列表能显示数据，只是闭环的起点。把候选事件、规则判断、持久化通知、真实审批和统一入口接起来，还要处理事务时机、页内待办匹配以及不同角色的数据范围。</p>
-<div class="audio-player"><p>🎧 文章导读</p><audio controls preload="none" src="/audio/2026-10-21-alarm-workflow-design/narration.mp3">您的浏览器不支持音频播放。</audio></div>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2026/10/21/2026-10-21-alarm-workflow-design/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
-    
-    <div class="post-gallery-image">
-      <img src="/images/covers/2026-09-22-websocket-ticket-auth.jpg" itemprop="contentUrl">
-    </div>
-    </div>
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/09/22/2026-09-22-websocket-ticket-auth/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="zhlifeiy35">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="zhlifeiy · 工程笔记">
-      <meta itemprop="description" content="记录项目实践、问题排查与工程经验">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content=" | zhlifeiy · 工程笔记">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2026/09/22/2026-09-22-websocket-ticket-auth/" class="post-title-link" itemprop="url">把 WebSocket 长期密钥移出前端：短期票据改造与上线闭环</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">发表于</span>
-
-      <time title="创建时间：2026-09-22 22:00:00" itemprop="dateCreated datePublished" datetime="2026-09-22T22:00:00+08:00">2026-09-22</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-folder"></i>
-      </span>
-      <span class="post-meta-item-text">分类于</span>
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" itemprop="url" rel="index"><span itemprop="name">工程实践</span></a>
-        </span>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>关闭 Source Map 不能让浏览器中的长期密钥变得安全。本文复盘一次 STOMP 鉴权改造：登录后签发短期票据、服务端兼容旧框架，再通过负向测试和密钥轮换完成上线闭环。</p>
-<div class="audio-player"><p>🎧 文章导读</p><audio controls preload="none" src="/audio/2026-09-22-websocket-ticket-auth/narration.mp3">您的浏览器不支持音频播放。</audio></div>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2026/09/22/2026-09-22-websocket-ticket-auth/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
-    
-    <div class="post-gallery-image">
-      <img src="/images/covers/2026-09-22-device-sync-recovery.jpg" itemprop="contentUrl">
-    </div>
-    </div>
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/09/22/2026-09-22-device-sync-recovery/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="zhlifeiy35">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="zhlifeiy · 工程笔记">
-      <meta itemprop="description" content="记录项目实践、问题排查与工程经验">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content=" | zhlifeiy · 工程笔记">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2026/09/22/2026-09-22-device-sync-recovery/" class="post-title-link" itemprop="url">命令发送成功，数据却没回来：一次设备同步故障与补录设计</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">发表于</span>
-
-      <time title="创建时间：2026-09-22 21:00:00" itemprop="dateCreated datePublished" datetime="2026-09-22T21:00:00+08:00">2026-09-22</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-folder"></i>
-      </span>
-      <span class="post-meta-item-text">分类于</span>
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" itemprop="url" rel="index"><span itemprop="name">工程实践</span></a>
-        </span>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>平台返回发送成功，并不代表设备数据已经同步成功。沿着命令、回程消息和时间窗口拆开排查，才能解释为什么定时任务恢复之后，历史记录仍然没有回来。</p>
-<div class="audio-player"><p>🎧 文章导读</p><audio controls preload="none" src="/audio/2026-09-22-device-sync-recovery/narration.mp3">您的浏览器不支持音频播放。</audio></div>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2026/09/22/2026-09-22-device-sync-recovery/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>

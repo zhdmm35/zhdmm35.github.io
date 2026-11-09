@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Gemini","darkmode":true,"version":"8.28.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="一个监控页面变慢，不能只用“数据有几亿行”解释，也不能一上来就分库分表。这次优化沿着四层展开：先消除 SQL 自己制造的中间结果，再合并重复查询，用分钟汇总承接高频统计，最后取消前端已经不需要的请求。高密度隔离样本中的六组 SQL 快约 3.39～11.20 倍，但低密度样本里有查询反而变慢；这两个结果同样重要。 🎧 文章导读您的浏览器不支持音频播放。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="从重复扫描到分钟汇总：ClickHouse 监控页面的分层性能优化">
+<meta property="og:url" content="https://zhlifeiy.codes/2026/11/09/clickhouse-monitoring-rollup-performance/index.html">
+<meta property="og:site_name" content="zhlifeiy · 工程笔记">
+<meta property="og:description" content="一个监控页面变慢，不能只用“数据有几亿行”解释，也不能一上来就分库分表。这次优化沿着四层展开：先消除 SQL 自己制造的中间结果，再合并重复查询，用分钟汇总承接高频统计，最后取消前端已经不需要的请求。高密度隔离样本中的六组 SQL 快约 3.39～11.20 倍，但低密度样本里有查询反而变慢；这两个结果同样重要。 🎧 文章导读您的浏览器不支持音频播放。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/clickhouse-monitoring-rollup-performance.jpg">
+<meta property="article:published_time" content="2026-11-09T13:33:16.000Z">
+<meta property="article:author" content="zhlifeiy35">
+<meta property="article:tag" content="性能优化">
+<meta property="article:tag" content="SQL优化">
+<meta property="article:tag" content="ClickHouse">
+<meta property="article:tag" content="数据汇总">
+<meta property="article:tag" content="前端性能">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/clickhouse-monitoring-rollup-performance.jpg">
+
+
+<link rel="canonical" href="https://zhlifeiy.codes/2026/11/09/clickhouse-monitoring-rollup-performance/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://zhlifeiy.codes/2026/11/09/clickhouse-monitoring-rollup-performance/","path":"2026/11/09/clickhouse-monitoring-rollup-performance/","title":"从重复扫描到分钟汇总：ClickHouse 监控页面的分层性能优化"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>从重复扫描到分钟汇总：ClickHouse 监控页面的分层性能优化 | zhlifeiy · 工程笔记</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/atom.xml" title="zhlifeiy · 工程笔记" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">zhlifeiy · 工程笔记</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">把项目里的坑，写成可以复用的答案</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-项目"><a href="/projects/" rel="section"><i class="fa fa-diagram-project fa-fw"></i>项目</a></li><li class="menu-item menu-item-简历"><a href="/resume/" rel="section"><i class="fa fa-id-card fa-fw"></i>简历</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-guestbook"><a href="/guestbook/" rel="section"><i class="fa fa-comment-dots fa-fw"></i>留言板</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%88%E7%95%8C%E5%AE%9A%E9%97%AE%E9%A2%98%EF%BC%9A%E5%87%A0%E4%BA%BF%E8%A1%8C%E4%B8%8D%E6%98%AF%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8%E7%9A%84%E5%85%85%E5%88%86%E6%9D%A1%E4%BB%B6"><span class="nav-number">1.</span> <span class="nav-text">先界定问题：几亿行不是分库分表的充分条件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E5%B1%82%EF%BC%9A%E5%85%88%E6%B6%88%E9%99%A4-SQL-%E8%87%AA%E5%B7%B1%E5%88%B6%E9%80%A0%E7%9A%84%E4%B8%AD%E9%97%B4%E7%BB%93%E6%9E%9C"><span class="nav-number">2.</span> <span class="nav-text">第一层：先消除 SQL 自己制造的中间结果</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E4%BA%8C%E5%B1%82%EF%BC%9A%E5%BD%93%E5%89%8D%E5%80%BC%E5%92%8C%E7%8E%AF%E6%AF%94%EF%BC%8C%E4%B8%8D%E5%BF%85%E5%88%86%E4%B8%A4%E6%AC%A1%E9%87%8D%E5%A4%8D%E6%89%AB%E6%8F%8F"><span class="nav-number">3.</span> <span class="nav-text">第二层：当前值和环比，不必分两次重复扫描</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E4%B8%89%E5%B1%82%EF%BC%9A%E8%AE%A9%E5%88%86%E9%92%9F%E6%B1%87%E6%80%BB%E6%89%BF%E6%8B%85%E9%AB%98%E9%A2%91%E7%BB%9F%E8%AE%A1"><span class="nav-number">4.</span> <span class="nav-text">第三层：让分钟汇总承担高频统计</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B9%B3%E5%9D%87%E5%80%BC%E4%B8%8E%E6%AF%94%E7%8E%87%EF%BC%9A%E4%BF%9D%E5%AD%98%E5%88%86%E5%AD%90%E5%88%86%E6%AF%8D%EF%BC%8C%E4%B8%8D%E5%B9%B3%E5%9D%87%E5%90%84%E5%88%86%E9%92%9F%E5%B9%B3%E5%9D%87%E5%80%BC"><span class="nav-number">5.</span> <span class="nav-text">平均值与比率：保存分子分母，不平均各分钟平均值</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B2%BE%E7%A1%AE%E6%BB%9A%E5%8A%A8%E7%AA%97%E5%8F%A3%EF%BC%9A%E5%AE%8C%E6%95%B4%E5%88%86%E9%92%9F%E8%B5%B0%E6%B1%87%E6%80%BB%EF%BC%8C%E8%BE%B9%E7%95%8C%E5%88%86%E9%92%9F%E5%9B%9E%E6%9F%A5%E6%98%8E%E7%BB%86"><span class="nav-number">6.</span> <span class="nav-text">精确滚动窗口：完整分钟走汇总，边界分钟回查明细</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9D%83%E9%99%90%E4%B8%8E%E6%9F%A5%E8%AF%A2%E8%8C%83%E5%9B%B4%E4%B8%8D%E8%83%BD%E5%9B%A0%E5%8A%A0%E9%80%9F%E8%80%8C%E6%89%A9%E5%A4%A7"><span class="nav-number">7.</span> <span class="nav-text">权限与查询范围不能因加速而扩大</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B9%8B%E5%A4%96%EF%BC%9A%E5%87%8F%E5%B0%91%E7%82%B9%E6%95%B0%E3%80%81%E9%87%8D%E5%A4%8D%E6%9D%83%E9%99%90%E8%A7%A3%E6%9E%90%E5%92%8C%E6%97%A0%E6%95%88%E7%AD%89%E5%BE%85"><span class="nav-number">8.</span> <span class="nav-text">数据库之外：减少点数、重复权限解析和无效等待</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%A7%E8%83%BD%E7%BB%93%E6%9E%9C%EF%BC%9A%E9%AB%98%E5%AF%86%E5%BA%A6%E6%98%8E%E6%98%BE%E5%8F%97%E7%9B%8A%EF%BC%8C%E4%BD%8E%E5%AF%86%E5%BA%A6%E5%AD%98%E5%9C%A8%E5%8F%8D%E4%BE%8B"><span class="nav-number">9.</span> <span class="nav-text">性能结果：高密度明显受益，低密度存在反例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%AD%A3%E7%A1%AE%E6%80%A7%E9%AA%8C%E8%AF%81%E4%B8%8E%E6%B5%8B%E8%AF%95%E5%BA%93%E8%BF%81%E7%A7%BB%E5%88%86%E5%88%AB%E8%AF%81%E6%98%8E%E4%BA%86%E4%BB%80%E4%B9%88"><span class="nav-number">10.</span> <span class="nav-text">正确性验证与测试库迁移分别证明了什么</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8A%E7%BA%BF%E9%A1%BA%E5%BA%8F%E4%B8%8E%E5%9B%9E%E9%80%80%EF%BC%9A%E5%85%88%E8%BF%81%E7%A7%BB%EF%BC%8C%E5%86%8D%E6%89%93%E5%BC%80%E6%96%B0%E8%AF%BB%E5%8F%96%E8%B7%AF%E5%BE%84"><span class="nav-number">11.</span> <span class="nav-text">上线顺序与回退：先迁移，再打开新读取路径</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8B%E4%B8%80%E8%BD%AE%E8%AF%A5%E6%94%B6%E9%9B%86%E4%BB%80%E4%B9%88"><span class="nav-number">12.</span> <span class="nav-text">下一轮该收集什么</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BB%B6%E4%BC%B8%E9%98%85%E8%AF%BB"><span class="nav-number">13.</span> <span class="nav-text">延伸阅读</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zhlifeiy35</p>
+  <div class="site-description" itemprop="description">记录项目实践、问题排查与工程经验</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">106</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">18</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">311</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zhdmm35" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zhdmm35" rel="noopener me" target="_blank"><i class="fa fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/clickhouse-monitoring-rollup-performance.jpg" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/11/09/clickhouse-monitoring-rollup-performance/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="记录项目实践、问题排查与工程经验">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="从重复扫描到分钟汇总：ClickHouse 监控页面的分层性能优化 | zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          从重复扫描到分钟汇总：ClickHouse 监控页面的分层性能优化
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-11-09 21:33:16" itemprop="dateCreated datePublished" datetime="2026-11-09T21:33:16+08:00">2026-11-09</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" itemprop="url" rel="index"><span itemprop="name">工程实践</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>一个监控页面变慢，不能只用“数据有几亿行”解释，也不能一上来就分库分表。这次优化沿着四层展开：先消除 SQL 自己制造的中间结果，再合并重复查询，用分钟汇总承接高频统计，最后取消前端已经不需要的请求。高密度隔离样本中的六组 SQL 快约 3.39～11.20 倍，但低密度样本里有查询反而变慢；这两个结果同样重要。</p>
+<div class="audio-player"><p>🎧 文章导读</p><audio controls preload="none" src="/audio/clickhouse-monitoring-rollup-performance/narration.mp3">您的浏览器不支持音频播放。</audio></div>
+
+<span id="more"></span>
+
+<h2 id="先界定问题：几亿行不是分库分表的充分条件"><a href="#先界定问题：几亿行不是分库分表的充分条件" class="headerlink" title="先界定问题：几亿行不是分库分表的充分条件"></a>先界定问题：几亿行不是分库分表的充分条件</h2><p>这次改造的是某用户体验监控项目的主区域，包括总览、性能趋势、错误趋势和操作失败统计。现场主要表的快照如下，行数表示采集事件记录，不是真实用户数，也不能把多张表相加后当成独立事件数。</p>
+<table>
+<thead>
+<tr>
+<th>表</th>
+<th align="right">当时行数</th>
+<th align="right">占用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ty_trace_raw</code></td>
+<td align="right">3.84 亿</td>
+<td align="right">53.1 GB</td>
+</tr>
+<tr>
+<td><code>brs_ajax_data</code></td>
+<td align="right">4.86 亿</td>
+<td align="right">26.7 GB</td>
+</tr>
+<tr>
+<td><code>brs_ajax_trace_data</code></td>
+<td align="right">6235 万</td>
+<td align="right">12.3 GB</td>
+</tr>
+<tr>
+<td><code>brs_jserr_trace_data</code></td>
+<td align="right">1021 万</td>
+<td align="right">12.2 GB</td>
+</tr>
+<tr>
+<td><code>brs_page_data</code></td>
+<td align="right">9618 万</td>
+<td align="right">4.95 GB</td>
+</tr>
+</tbody></table>
+<p>监控系统持续产生事件本来就是业务特征。是否需要扩容或分片，要看每日增量、保留周期、单次查询扫描量、并发、写入吞吐和机器资源，而不是只看总行数。原始表已经按天分区，但“同一张表内按天分区”和“跨节点分片”是两回事。</p>
+<p>还有一个容易被忽略的背景：现场当时只剩约两天高峰期数据，是此前因为查询慢而持续删除历史的结果，并不是经过确认的长期保留策略。优化可以减少以后的扫描压力，却不能恢复已经删除的历史。上线初期的长周期统计与环比缺失，必须先按数据缺失去解释，而不是当成业务指标下降。</p>
+<p>因此，本轮目标不是重做存储架构，而是回答一个更具体的问题：<strong>在保留原始明细和现有统计口径的前提下，页面统计能不能少做无效工作、少读数据？</strong></p>
+<h2 id="第一层：先消除-SQL-自己制造的中间结果"><a href="#第一层：先消除-SQL-自己制造的中间结果" class="headerlink" title="第一层：先消除 SQL 自己制造的中间结果"></a>第一层：先消除 SQL 自己制造的中间结果</h2><p>总览性能同时需要页面加载指标和网络请求指标。旧查询直接组合两张分钟表，却没有用分钟或应用等条件把对应行配对。假设页面分钟结果有 100 行、请求分钟结果有 80 行，组合后会先形成 8000 个中间行，再做后续聚合。</p>
+<p>这类问题的重点不是“数据库处理 8000 行一定很慢”，而是数据量被人为放大了：真实分钟数增长时，中间结果按乘法增长，CPU、内存和临时数据开销也会随之增加。</p>
+<p><img data-src="/images/posts/clickhouse-monitoring-rollup-performance/cartesian.svg" alt="分钟行直接组合与单行结果组合的对比"><br><em>图 1：先把两张分钟表分别压成单行，再组合结果，避免 M × N 的中间膨胀。</em></p>
+<p>新 SQL 的思路是先让两个子查询各自完成聚合，再组合两个单行结果。下面是去掉业务字段和过滤条件后的逻辑示意：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">FROM</span> (</span><br><span class="line">    <span class="keyword">SELECT</span> <span class="built_in">sum</span>(page_duration) <span class="keyword">AS</span> duration_sum,</span><br><span class="line">           <span class="built_in">sum</span>(page_count) <span class="keyword">AS</span> page_count</span><br><span class="line">    <span class="keyword">FROM</span> agg_page_minute</span><br><span class="line">    <span class="keyword">WHERE</span> ts_minute <span class="operator">&gt;=</span> &#123;<span class="keyword">start</span>&#125; <span class="keyword">AND</span> ts_minute <span class="operator">&lt;</span> &#123;<span class="keyword">end</span>&#125;</span><br><span class="line">) p</span><br><span class="line"><span class="keyword">CROSS</span> <span class="keyword">JOIN</span> (</span><br><span class="line">    <span class="keyword">SELECT</span> <span class="built_in">sum</span>(network_time) <span class="keyword">AS</span> network_sum,</span><br><span class="line">           <span class="built_in">sum</span>(network_count) <span class="keyword">AS</span> network_count</span><br><span class="line">    <span class="keyword">FROM</span> agg_request_minute</span><br><span class="line">    <span class="keyword">WHERE</span> ts_minute <span class="operator">&gt;=</span> &#123;<span class="keyword">start</span>&#125; <span class="keyword">AND</span> ts_minute <span class="operator">&lt;</span> &#123;<span class="keyword">end</span>&#125;</span><br><span class="line">) r;</span><br></pre></td></tr></table></figure>
+
+<p>注意，新 SQL 仍然可以保留 <code>CROSS JOIN</code>。优化点不是机械地删掉这个关键字，而是让它处理 <code>1 × 1</code>，不再处理 <code>M × N</code>。如果业务确实需要按分钟或应用逐组对应，则应补上明确的配对键，而不是依赖笛卡尔组合后再聚合。</p>
+<p>这也是 SQL 优化里值得先做的检查：<strong>在讨论索引之前，先看查询是否正在生成本来不需要的数据。</strong></p>
+<h2 id="第二层：当前值和环比，不必分两次重复扫描"><a href="#第二层：当前值和环比，不必分两次重复扫描" class="headerlink" title="第二层：当前值和环比，不必分两次重复扫描"></a>第二层：当前值和环比，不必分两次重复扫描</h2><p>页面既要显示当前周期，也要显示上一周期。旧实现分别调用查询，性能、错误率和移动端三部分最多产生 6 次 SQL。改造后在同一个覆盖两个周期的窗口里使用条件聚合，一次取出两组值：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span></span><br><span class="line">    sumIf(<span class="keyword">value</span>, ts <span class="operator">&gt;=</span> &#123;currentStart&#125; <span class="keyword">AND</span> ts <span class="operator">&lt;</span> &#123;currentEnd&#125;) <span class="keyword">AS</span> current_value,</span><br><span class="line">    sumIf(<span class="keyword">value</span>, ts <span class="operator">&gt;=</span> &#123;previousStart&#125; <span class="keyword">AND</span> ts <span class="operator">&lt;</span> &#123;previousEnd&#125;) <span class="keyword">AS</span> previous_value</span><br><span class="line"><span class="keyword">FROM</span> monitoring_source</span><br><span class="line"><span class="keyword">WHERE</span> ts <span class="operator">&gt;=</span> &#123;previousStart&#125; <span class="keyword">AND</span> ts <span class="operator">&lt;</span> &#123;currentEnd&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>这段 SQL 同样只展示算法。真实实现要保留应用、权限、指标类型等过滤条件，并确保两个周期的边界互不重叠。</p>
+<p>合并后总览最多由 6 次 SQL 降为 3 次。后续在“开启新汇总且有省份或用户过滤”的特定总览路径上，性能与错误率又共用一次用户分钟汇总扫描和一次边界补读，加上移动端查询后，这条路径进一步由 3 次降为 2 次。其他查询路径不能套用这个数字。</p>
+<p>SQL 次数减半也不等于接口耗时减半：两个周期的数据仍然要读，接口里还有权限解析、序列化和网络传输。减少的是重复扫描与数据库往返，最终收益仍要测量完整链路。</p>
+<h2 id="第三层：让分钟汇总承担高频统计"><a href="#第三层：让分钟汇总承担高频统计" class="headerlink" title="第三层：让分钟汇总承担高频统计"></a>第三层：让分钟汇总承担高频统计</h2><p>前两层减少了无效组合和重复查询，但权限过滤场景仍可能反复扫描原始事件、提取 JSON 指标并做相同计算。本轮因此新增两级分钟汇总：</p>
+<table>
+<thead>
+<tr>
+<th>对象</th>
+<th>粒度与内容</th>
+<th>保留期</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>agg_monitoring_user_minute</code></td>
+<td>用户、应用、分钟；18 项计数与耗时累加量</td>
+<td>30 天</td>
+</tr>
+<tr>
+<td><code>agg_monitoring_minute</code></td>
+<td>应用、分钟；页面数、失败页面数、JS 错误数</td>
+<td>90 天</td>
+</tr>
+<tr>
+<td><code>vw_monitoring_user_minute</code></td>
+<td>原始事件插入时生成用户分钟统计</td>
+<td>随插入触发</td>
+</tr>
+<tr>
+<td><code>vw_monitoring_minute</code></td>
+<td>用户汇总插入块继续生成应用分钟统计</td>
+<td>随插入触发</td>
+</tr>
+</tbody></table>
+<p><img data-src="/images/posts/clickhouse-monitoring-rollup-performance/rollup.svg" alt="两级分钟汇总写入链"><br><em>图 2：实时写入和历史回填共用同一条链路，应用汇总不能再次独立回填。</em></p>
+<p>项目脚本针对 ClickHouse 23.11，汇总表使用 <code>AggregatingMergeTree</code> 和 <code>SimpleAggregateFunction(sum, ...)</code> 保存可累加指标。下面仅保留表结构要点，18 个指标中的其余字段已省略：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE TABLE</span> IF <span class="keyword">NOT</span> <span class="keyword">EXISTS</span> agg_monitoring_user_minute</span><br><span class="line">(</span><br><span class="line">    ts_minute DateTime,</span><br><span class="line">    app_id UInt32,</span><br><span class="line">    user_id String,</span><br><span class="line">    page_count SimpleAggregateFunction(sum, UInt64),</span><br><span class="line">    fcp_sum SimpleAggregateFunction(sum, UInt64),</span><br><span class="line">    fcp_count SimpleAggregateFunction(sum, UInt64)</span><br><span class="line">    <span class="comment">-- 其余计数与累加字段省略</span></span><br><span class="line">)</span><br><span class="line">ENGINE <span class="operator">=</span> AggregatingMergeTree</span><br><span class="line"><span class="keyword">PARTITION</span> <span class="keyword">BY</span> toYYYYMMDD(ts_minute)</span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> (user_id, app_id, ts_minute)</span><br><span class="line">TTL ts_minute <span class="operator">+</span> <span class="type">INTERVAL</span> <span class="number">30</span> <span class="keyword">DAY</span>;</span><br></pre></td></tr></table></figure>
+
+<p>用户分钟视图从原始事件中计算 <code>countIf</code>、<code>sumIf</code> 等指标；应用分钟视图再按应用和分钟聚合用户汇总。历史回填只插入用户汇总表，让下游视图自动累计应用汇总。如果再对应用表独立执行一次回填，同一批历史就会被算两遍。</p>
+<p>这条链路的收益来自三个方面：</p>
+<ol>
+<li>查询读取的是较小的分钟结果，而不是每次重新读取全部匹配事件。</li>
+<li>JSON 提取和指标分类在写入或回填时完成，不在每次页面刷新时重复执行。</li>
+<li>原始明细仍然保留，操作失败明细、影响用户列表等下钻能力不必被迫迁走。</li>
+</ol>
+<p>代价也同样明确：物化视图会增加写入计算、存储与后台合并开销。用户基数越大，“用户 × 应用 × 活跃分钟”的组合越多，汇总表就越可能接近明细规模。因此它不是无成本的缓存，更不是所有数据分布下都必然更快的开关。</p>
+<h2 id="平均值与比率：保存分子分母，不平均各分钟平均值"><a href="#平均值与比率：保存分子分母，不平均各分钟平均值" class="headerlink" title="平均值与比率：保存分子分母，不平均各分钟平均值"></a>平均值与比率：保存分子分母，不平均各分钟平均值</h2><p>分钟汇总如果只保存“这一分钟的平均 FCP”，查询七天的平均值时就无法正确还原总量。假设第一分钟有两个样本 100、200，第二分钟只有一个样本 900：</p>
+<ul>
+<li>直接平均两个分钟均值：<code>(150 + 900) / 2 = 525</code>；</li>
+<li>按全部样本计算：<code>(100 + 200 + 900) / 3 = 400</code>。</li>
+</ul>
+<p>两者不同，因为每分钟样本数不同。正确做法是保存 <code>fcp_sum</code> 与 <code>fcp_count</code>，查询时先分别求和，再用 <code>Σfcp_sum / Σfcp_count</code>。错误率、失败率同理，先累加失败数和总数，再相除。</p>
+<p>本轮还刻意保留了一处既有权限态错误率分母口径。它与无省份过滤时的公式存在差异，可能值得业务上重新确认，但性能改造不能顺手把报表公式改掉，否则新旧结果不一致时，将无法区分“实现错误”和“口径变化”。</p>
+<h2 id="精确滚动窗口：完整分钟走汇总，边界分钟回查明细"><a href="#精确滚动窗口：完整分钟走汇总，边界分钟回查明细" class="headerlink" title="精确滚动窗口：完整分钟走汇总，边界分钟回查明细"></a>精确滚动窗口：完整分钟走汇总，边界分钟回查明细</h2><p>“过去一天”或“过去七天”通常是精确到秒的滚动窗口，不一定从整分钟开始。如果直接按整分钟读取汇总，就可能多算起点前的事件，或漏掉结束分钟内的事件。</p>
+<p>新查询把窗口拆成两类数据：</p>
+<ul>
+<li>完整分钟区间读取分钟汇总；</li>
+<li>起点、当前&#x2F;上一周期分界、结束位置的不完整分钟读取原始秒数据，最多三个边界分钟。</li>
+</ul>
+<p><img data-src="/images/posts/clickhouse-monitoring-rollup-performance/boundary.svg" alt="滚动窗口的汇总读取与边界补读"><br><em>图 3：汇总与原始秒数据各管一段，既减少扫描，也避免重复和遗漏。</em></p>
+<p>这意味着“使用汇总”不等于“完全不读原始表”。边界查询仍可能访问相关分区，需要检查实际扫描行数和字节数。</p>
+<p>它还带来一个保留期约束：七天环比会涉及最近十四天。如果原始数据只保留七天，上一周期末端附近的精确边界可能无法回查。新汇总表保留更久并不能自动补齐已经删除的原始秒数据；需要另行调整保留策略，或设计能支持精确边界的更细粒度摘要。本轮没有修改原始 TTL。</p>
+<h2 id="权限与查询范围不能因加速而扩大"><a href="#权限与查询范围不能因加速而扩大" class="headerlink" title="权限与查询范围不能因加速而扩大"></a>权限与查询范围不能因加速而扩大</h2><p>权限态查询仍按当前解析出的用户列表过滤，授权为空时返回空范围，不因为存在应用级汇总就读取全量数据。无省份过滤的总览错误率可以使用应用分钟汇总；有省份或用户过滤时，性能、错误率、两类趋势和操作失败统计使用用户分钟汇总。</p>
+<p>本轮受益的接口前缀为 <code>/monitoring/analysis</code>，具体包括：</p>
+<table>
+<thead>
+<tr>
+<th>接口</th>
+<th>新路径适用范围</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>/overview</code></td>
+<td>权限过滤时性能与错误率走用户汇总；无省份过滤时错误率可走应用汇总</td>
+</tr>
+<tr>
+<td><code>/performance-trend</code></td>
+<td>有省份或用户过滤时走用户分钟汇总</td>
+</tr>
+<tr>
+<td><code>/error-rate-trend</code></td>
+<td>有省份或用户过滤时走用户分钟汇总</td>
+</tr>
+<tr>
+<td><code>/operation-failures</code></td>
+<td>有省份或用户过滤时走用户分钟汇总</td>
+</tr>
+</tbody></table>
+<p>移动端总览部分、用户旅程、操作失败明细和影响用户列表没有在本轮获得同等改造。不能把一张接口表扩展成“整个监控系统都快了”的结论。</p>
+<h2 id="数据库之外：减少点数、重复权限解析和无效等待"><a href="#数据库之外：减少点数、重复权限解析和无效等待" class="headerlink" title="数据库之外：减少点数、重复权限解析和无效等待"></a>数据库之外：减少点数、重复权限解析和无效等待</h2><p>页面性能不只由 SQL 决定，这次还处理了几项前后端工作。</p>
+<p><strong>趋势降采样。</strong> 一天保留分钟点，多天按小时聚合。连续七天的分钟桶最多为 10080 个，小时桶为 168 个，能同时减少数据库分组、响应传输和 ECharts 绘制压力。实际返回点数取决于数据，不是每次请求都恰好有这些点。</p>
+<p><strong>权限解析 single-flight。</strong> 相同“登录用户 + 排序后的省份组合”的并发调用共享一次正在执行的权限解析，完成后立即移除，异常不缓存。它不是持久权限缓存；不同用户和不同省份仍独立执行，避免为了复用而串用权限。</p>
+<p><strong>取消旧请求。</strong> 前端使用 <code>AbortController</code>，在筛选变化或组件卸载时中止不再需要的请求，同时保留竞态保护，避免较慢的旧结果覆盖新筛选。查询期间禁止重复提交，刷新时保留旧图表，减少空白闪烁。</p>
+<p><strong>局部失败隔离。</strong> 四个主区域使用 <code>Promise.allSettled</code> 和独立加载、错误状态。一个区域失败不再拖垮整个主区域，但这只是交互韧性，不能把失败请求包装成成功。</p>
+<p><strong>路由懒加载。</strong> 五个页面改为 <code>React.lazy</code> 独立分包。当日构建记录中主 JS 约从 2.61 MB 降至 2.51 MB，这是加载侧改善，不直接改善后端 SQL。</p>
+<h2 id="性能结果：高密度明显受益，低密度存在反例"><a href="#性能结果：高密度明显受益，低密度存在反例" class="headerlink" title="性能结果：高密度明显受益，低密度存在反例"></a>性能结果：高密度明显受益，低密度存在反例</h2><p>下面的数字来自测试服务器隔离 ClickHouse 库。旧、新 SQL 交错执行 3 次取中位数，单次查询限制 2 线程、256 MiB。它们测量的是 <strong>SQL 执行时间</strong>，不是完整 HTTP 接口耗时，也不是 P95。</p>
+<p>高密度负载样本包含 1000 万条数据、10 个应用和 20 个模拟用户，约 5 万条&#x2F;分钟，覆盖约 200 分钟；另有 2430 条跨十四天的边界回归数据。用户分钟汇总约 4.19 万行，应用分钟汇总约 2042 行。</p>
+<table>
+<thead>
+<tr>
+<th>SQL 场景</th>
+<th align="right">优化前</th>
+<th align="right">优化后</th>
+<th align="right">旧耗时 ÷ 新耗时</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>总览性能部分，有用户过滤</td>
+<td align="right">1035.0 ms</td>
+<td align="right">92.4 ms</td>
+<td align="right">11.20 倍</td>
+</tr>
+<tr>
+<td>总览错误率部分，有用户过滤</td>
+<td align="right">252.8 ms</td>
+<td align="right">74.5 ms</td>
+<td align="right">3.39 倍</td>
+</tr>
+<tr>
+<td>性能趋势，有用户过滤</td>
+<td align="right">484.5 ms</td>
+<td align="right">93.1 ms</td>
+<td align="right">5.20 倍</td>
+</tr>
+<tr>
+<td>错误趋势，有用户过滤</td>
+<td align="right">351.0 ms</td>
+<td align="right">90.8 ms</td>
+<td align="right">3.87 倍</td>
+</tr>
+<tr>
+<td>操作失败，有用户过滤</td>
+<td align="right">303.0 ms</td>
+<td align="right">89.4 ms</td>
+<td align="right">3.39 倍</td>
+</tr>
+<tr>
+<td>总览错误率部分，无省份过滤</td>
+<td align="right">260.3 ms</td>
+<td align="right">76.3 ms</td>
+<td align="right">3.41 倍</td>
+</tr>
+</tbody></table>
+<p>低密度样本则有 200 万行，约 100 条&#x2F;分钟，用户汇总约 17.4 万行，应用汇总约 16.7 万行。结果并不是全面加速：</p>
+<table>
+<thead>
+<tr>
+<th>SQL 场景</th>
+<th align="right">优化前</th>
+<th align="right">优化后</th>
+<th>观察</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>总览性能部分，有用户过滤</td>
+<td align="right">390.4 ms</td>
+<td align="right">130.1 ms</td>
+<td>仍然受益</td>
+</tr>
+<tr>
+<td>总览错误率部分，有用户过滤</td>
+<td align="right">99.5 ms</td>
+<td align="right">138.4 ms</td>
+<td>反而变慢</td>
+</tr>
+<tr>
+<td>性能趋势，有用户过滤</td>
+<td align="right">105.0 ms</td>
+<td align="right">115.2 ms</td>
+<td>反而变慢</td>
+</tr>
+<tr>
+<td>错误趋势，有用户过滤</td>
+<td align="right">86.9 ms</td>
+<td align="right">113.7 ms</td>
+<td>反而变慢</td>
+</tr>
+<tr>
+<td>操作失败，有用户过滤</td>
+<td align="right">80.1 ms</td>
+<td align="right">112.9 ms</td>
+<td>反而变慢</td>
+</tr>
+<tr>
+<td>总览错误率部分，无省份过滤</td>
+<td align="right">121.8 ms</td>
+<td align="right">110.1 ms</td>
+<td>小幅改善</td>
+</tr>
+</tbody></table>
+<p>原因不神秘：汇总读取、联合查询和边界校正都有固定成本。高压缩比时，少扫描明细能覆盖这部分成本；低密度或低压缩比时，固定成本可能大于节省下来的工作。</p>
+<p>高密度样本只接近“十亿条 &#x2F; 十四天”的平均事件速率，并没有真正写入十亿行，也没有模拟完整生产用户基数、完整十四天数据、并发以及全部既有物化视图的写入开销。真实用户数远大于 20 个模拟用户，同样的明细行数可能形成更多用户分钟组合，压缩比和权限过滤成本都会改变。因此不能把表格外推成“生产必然快 3～11 倍”。</p>
+<h2 id="正确性验证与测试库迁移分别证明了什么"><a href="#正确性验证与测试库迁移分别证明了什么" class="headerlink" title="正确性验证与测试库迁移分别证明了什么"></a>正确性验证与测试库迁移分别证明了什么</h2><p>原记录中的验证分为几层：</p>
+<ul>
+<li>Java 定向测试 10 项通过；隔离 ClickHouse 集成测试完成 126 组新旧结果对比，覆盖应用、权限、空数据、一天&#x2F;七天、精确秒边界、历史回填与实时写入。</li>
+<li>回填工具最初 8 项 Python 标准库测试通过；增加一键建表和日期范围后，相关 15 项测试通过。</li>
+<li>默认开启调整后，重新运行 6 项 Mapper SQL 测试和 4 项 Service 测试，合计 10 项通过。该次默认值调整没有改 SQL，因此没有重复执行数据库性能测试。</li>
+<li>测试业务库完成十三天建表与回填，逐日均为 <code>verified: true</code>；另按用户、应用、分钟逐组对比 18 项累计指标，4813 组全部一致；应用、分钟维度的 4486 组三项计数也全部一致。原始表迁移前后均为 51807 行，时间范围未变。</li>
+</ul>
+<p>这些结果分别证明查询路由、汇总公式、回填核对和该测试库的数据一致性。它们不等于新版本接口已经上线加速。按 2026 年 11 月 5 日记录，测试业务库迁移完成，但新业务版本尚未部署，生产环境尚未迁移；测试消费者原本禁用，也保持原状态。</p>
+<h2 id="上线顺序与回退：先迁移，再打开新读取路径"><a href="#上线顺序与回退：先迁移，再打开新读取路径" class="headerlink" title="上线顺序与回退：先迁移，再打开新读取路径"></a>上线顺序与回退：先迁移，再打开新读取路径</h2><p>最终代码默认开启汇总查询，所以部署顺序不能反：</p>
+<ol>
+<li>保持旧版本运行，记录相同条件的原接口结果与耗时，检查没有遗留的关闭开关覆盖值。</li>
+<li>评估真实用户分钟组合数、磁盘余量和回填资源开销。</li>
+<li>在低峰窗口暂停所有原始表写入消费者，确认 Kafka 积压空间和保留时间足够；同时避免历史清理任务继续删除回填源数据。</li>
+<li>建表并按现存日期回填，只写用户汇总，逐日核对页面数、失败数和 JS 错误数。</li>
+<li>恢复消费者，确认积压正常消化、实时汇总持续更新，再部署默认开启汇总的新版本。</li>
+<li>验收全部&#x2F;单应用、单省&#x2F;多省&#x2F;空授权、一天&#x2F;七天、当前&#x2F;上一周期，记录完整接口 P50&#x2F;P95、扫描量、CPU、内存、磁盘与写入延迟。</li>
+</ol>
+<p>回填工具默认只检查，实际写入必须同时提供 <code>--apply --ingest-paused</code>。目标日期已有数据会拒绝重复回填，不自动覆盖或重试。ClickHouse 回填不是跨日期、跨表事务，超时或部分失败后可能已经写入部分块，不能直接重跑整段 <code>INSERT</code>。</p>
+<p>需要回退读取路径时，设置 <code>MONITORING_AGGREGATE_ENABLED=false</code> 并重启即可，无需删表。但这个开关只控制读取，物化视图仍会继续写入，新汇总的资源开销不会随回退消失。</p>
+<p>暂停采集期间页面新增数据会延迟，回填也会争用数据库资源，所以这不是“全程无影响”的在线迁移。把影响说清楚，比承诺一个无法验证的无感上线更可靠。</p>
+<h2 id="下一轮该收集什么"><a href="#下一轮该收集什么" class="headerlink" title="下一轮该收集什么"></a>下一轮该收集什么</h2><p>本轮给出的不是最终容量答案，而是一条可验证的优化路径。后续最值得持续收集的是：</p>
+<ul>
+<li>每日事件增量、真实活跃用户数、用户应用分钟组合数；</li>
+<li>典型省份授权用户数和汇总压缩比；</li>
+<li>各接口 P50&#x2F;P95、扫描行数与字节数；</li>
+<li>查询并发、写入吞吐、物化视图延迟与磁盘增长；</li>
+<li>原始数据实际保留期能否满足十四天精确边界。</li>
+</ul>
+<p>如果用户分钟表接近明细规模，应先看真实扫描和权限范围，再评估排序键、查询路径或更粗的汇总粒度；如果单机资源持续成为瓶颈，再讨论 ClickHouse 多节点分片与副本。架构升级应当由这些证据触发，而不是由“几亿行”这个数字单独触发。</p>
+<h2 id="延伸阅读"><a href="#延伸阅读" class="headerlink" title="延伸阅读"></a>延伸阅读</h2><ul>
+<li><a href="https://zhlifeiy.codes/2026/10/22/2026-10-22-flow-statistics-window-sql/">8.7 秒到 231 毫秒：保留统计口径的 MySQL 窗口函数优化</a></li>
+<li><a href="/2026/11/09/load-test-long-tail-rate-limit/">压测出现 19 秒长尾，为什么还不能怪后端：一次查询与登录限流摸底</a></li>
+<li><a href="/2026/11/09/concurrent-checkin-consistency/">同秒签到冲突之后：用唯一键、事务和条件更新守住一致性</a></li>
+</ul>
+<hr>
+<p><em>本文根据 2026 年 11 月 5 日工程笔记、项目 DDL 与迁移记录整理。项目名称、内网地址、账号和本机路径已省略；性能与测试结果均为原记录结果，本次整理未重新执行业务压测、数据库迁移或生产部署。</em></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/" rel="tag"># 性能优化</a>
+              <a href="/tags/SQL%E4%BC%98%E5%8C%96/" rel="tag"># SQL优化</a>
+              <a href="/tags/ClickHouse/" rel="tag"># ClickHouse</a>
+              <a href="/tags/%E6%95%B0%E6%8D%AE%E6%B1%87%E6%80%BB/" rel="tag"># 数据汇总</a>
+              <a href="/tags/%E5%89%8D%E7%AB%AF%E6%80%A7%E8%83%BD/" rel="tag"># 前端性能</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/11/09/concurrent-checkin-consistency/" rel="prev" title="同秒签到冲突之后：用唯一键、事务和条件更新守住一致性">
+                  <i class="fa fa-angle-left"></i> 同秒签到冲突之后：用唯一键、事务和条件更新守住一致性
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  
+  <div class="comments giscus-container">
+  </div>
+  
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">zhlifeiy35</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/zhdmm35" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"zhdmm35/zhdmm35.github.io","repo_id":"R_kgDOON4bhg","category":"Announcements","category_id":"DIC_kwDOON4bhs4C3dEc","mapping":"pathname","strict":0,"reactions_enabled":1,"emit_metadata":0,"theme":"preferred_color_scheme","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+
+<script>
+document.addEventListener('page:loaded', () => {
+  if (!CONFIG.page.comments) return;
+
+  NexT.utils.loadComments('.giscus-container')
+    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
+      attributes: {
+        async                   : true,
+        crossOrigin             : 'anonymous',
+        'data-repo'             : CONFIG.giscus.repo,
+        'data-repo-id'          : CONFIG.giscus.repo_id,
+        'data-category'         : CONFIG.giscus.category,
+        'data-category-id'      : CONFIG.giscus.category_id,
+        'data-mapping'          : CONFIG.giscus.mapping,
+        'data-strict'           : CONFIG.giscus.strict,
+        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
+        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
+        'data-theme'            : CONFIG.giscus.theme,
+        'data-lang'             : CONFIG.giscus.lang,
+        'data-input-position'   : CONFIG.giscus.input_position,
+        'data-loading'          : CONFIG.giscus.loading
+      },
+      parentNode: document.querySelector('.giscus-container')
+    }));
+});
+</script>
+<script defer src="/js/blog-assistant.js" data-endpoint="https://zhlifeiy-blog-assistant.huiyaozhang07.workers.dev/ask"></script>
+
+</body>
+</html>

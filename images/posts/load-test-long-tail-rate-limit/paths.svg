@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="650" viewBox="0 0 1200 650" role="img" aria-labelledby="title desc">
+  <title id="title">压测路径对照与证据边界</title>
+  <desc id="desc">误经本机代理的测试作废；直连局域网出现九到十九秒长尾，需要继续分段定位；测试机回环短时对照无错误且较快，但不能代替正式验收。</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" fill="#287d8e"/></marker>
+    <style>
+      .bg{fill:#f7f4ee}.title{font:700 30px 'Microsoft YaHei',sans-serif;fill:#183746}.h{font:700 21px 'Microsoft YaHei',sans-serif;fill:#183746}.t{font:17px 'Microsoft YaHei',sans-serif;fill:#284652}.s{font:15px 'Microsoft YaHei',sans-serif;fill:#58707a}.box{fill:#fff;stroke:#9db8c1;stroke-width:2}.line{stroke:#287d8e;stroke-width:3;fill:none;marker-end:url(#arrow)}.bad{fill:#fff0eb;stroke:#c85f55}.warn{fill:#fff3e7;stroke:#d88a55}.ok{fill:#edf7f3;stroke:#58a58b}
+    </style>
+  </defs>
+  <rect class="bg" width="1200" height="650" rx="24"/>
+  <text class="title" x="55" y="55">同一系统，三条压测路径不能混为一谈</text>
+  <rect class="box bad" x="55" y="100" width="1090" height="125" rx="17"/>
+  <text class="h" x="85" y="140">已作废：请求误经本机代理</text>
+  <rect class="box" x="85" y="158" width="170" height="45" rx="10"/><text class="t" x="170" y="187" text-anchor="middle">压测端</text>
+  <path class="line" d="M255 180H355"/><rect class="box" x="355" y="158" width="200" height="45" rx="10"/><text class="t" x="455" y="187" text-anchor="middle">本机代理</text>
+  <path class="line" d="M555 180H655"/><rect class="box" x="655" y="158" width="220" height="45" rx="10"/><text class="t" x="765" y="187" text-anchor="middle">连接耗尽</text>
+  <text class="h" x="965" y="187" text-anchor="middle">结果剔除</text>
+  <rect class="box warn" x="55" y="250" width="1090" height="140" rx="17"/>
+  <text class="h" x="85" y="290">正式样本：本机直连局域网测试机</text>
+  <rect class="box" x="85" y="310" width="170" height="45" rx="10"/><text class="t" x="170" y="339" text-anchor="middle">压测端</text>
+  <path class="line" d="M255 332H355"/><rect class="box" x="355" y="310" width="200" height="45" rx="10"/><text class="t" x="455" y="339" text-anchor="middle">局域网路径</text>
+  <path class="line" d="M555 332H655"/><rect class="box" x="655" y="310" width="200" height="45" rx="10"/><text class="t" x="755" y="339" text-anchor="middle">服务与数据库</text>
+  <text class="h" x="895" y="328">出现 9–19 秒长尾</text><text class="s" x="895" y="357">继续分段定位</text>
+  <rect class="box ok" x="55" y="415" width="1090" height="125" rx="17"/>
+  <text class="h" x="85" y="455">短时对照：测试机本机回环</text>
+  <rect class="box" x="85" y="473" width="200" height="45" rx="10"/><text class="t" x="185" y="502" text-anchor="middle">同机压测端</text>
+  <path class="line" d="M285 495H385"/><rect class="box" x="385" y="473" width="220" height="45" rx="10"/><text class="t" x="495" y="502" text-anchor="middle">服务与数据库</text>
+  <text class="h" x="665" y="491">60 秒样本无错误</text><text class="s" x="665" y="520">提示排查网络与压测端，但不排除服务端偶发停顿</text>
+  <rect x="120" y="575" width="960" height="45" rx="13" fill="#e7eef0"/>
+  <text class="t" x="600" y="605" text-anchor="middle">对照实验提供排查方向，不单独提供根因结论；不同时长也不是严格等价负载</text>
+</svg>

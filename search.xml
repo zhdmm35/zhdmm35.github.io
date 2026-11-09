@@ -19132,4 +19132,570 @@ if (typeof mermaid !== 'undefined') {
         <tag>会话管理</tag>
       </tags>
   </entry>
+  <entry>
+    <title>从重复扫描到分钟汇总：ClickHouse 监控页面的分层性能优化</title>
+    <url>/2026/11/09/clickhouse-monitoring-rollup-performance/</url>
+    <content><![CDATA[<p>一个监控页面变慢，不能只用“数据有几亿行”解释，也不能一上来就分库分表。这次优化沿着四层展开：先消除 SQL 自己制造的中间结果，再合并重复查询，用分钟汇总承接高频统计，最后取消前端已经不需要的请求。高密度隔离样本中的六组 SQL 快约 3.39～11.20 倍，但低密度样本里有查询反而变慢；这两个结果同样重要。</p>
+<div class="audio-player"><p>🎧 文章导读</p><audio controls preload="none" src="/audio/clickhouse-monitoring-rollup-performance/narration.mp3">您的浏览器不支持音频播放。</audio></div>
+
+<span id="more"></span>
+
+<h2 id="先界定问题：几亿行不是分库分表的充分条件"><a href="#先界定问题：几亿行不是分库分表的充分条件" class="headerlink" title="先界定问题：几亿行不是分库分表的充分条件"></a>先界定问题：几亿行不是分库分表的充分条件</h2><p>这次改造的是某用户体验监控项目的主区域，包括总览、性能趋势、错误趋势和操作失败统计。现场主要表的快照如下，行数表示采集事件记录，不是真实用户数，也不能把多张表相加后当成独立事件数。</p>
+<table>
+<thead>
+<tr>
+<th>表</th>
+<th align="right">当时行数</th>
+<th align="right">占用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ty_trace_raw</code></td>
+<td align="right">3.84 亿</td>
+<td align="right">53.1 GB</td>
+</tr>
+<tr>
+<td><code>brs_ajax_data</code></td>
+<td align="right">4.86 亿</td>
+<td align="right">26.7 GB</td>
+</tr>
+<tr>
+<td><code>brs_ajax_trace_data</code></td>
+<td align="right">6235 万</td>
+<td align="right">12.3 GB</td>
+</tr>
+<tr>
+<td><code>brs_jserr_trace_data</code></td>
+<td align="right">1021 万</td>
+<td align="right">12.2 GB</td>
+</tr>
+<tr>
+<td><code>brs_page_data</code></td>
+<td align="right">9618 万</td>
+<td align="right">4.95 GB</td>
+</tr>
+</tbody></table>
+<p>监控系统持续产生事件本来就是业务特征。是否需要扩容或分片，要看每日增量、保留周期、单次查询扫描量、并发、写入吞吐和机器资源，而不是只看总行数。原始表已经按天分区，但“同一张表内按天分区”和“跨节点分片”是两回事。</p>
+<p>还有一个容易被忽略的背景：现场当时只剩约两天高峰期数据，是此前因为查询慢而持续删除历史的结果，并不是经过确认的长期保留策略。优化可以减少以后的扫描压力，却不能恢复已经删除的历史。上线初期的长周期统计与环比缺失，必须先按数据缺失去解释，而不是当成业务指标下降。</p>
+<p>因此，本轮目标不是重做存储架构，而是回答一个更具体的问题：<strong>在保留原始明细和现有统计口径的前提下，页面统计能不能少做无效工作、少读数据？</strong></p>
+<h2 id="第一层：先消除-SQL-自己制造的中间结果"><a href="#第一层：先消除-SQL-自己制造的中间结果" class="headerlink" title="第一层：先消除 SQL 自己制造的中间结果"></a>第一层：先消除 SQL 自己制造的中间结果</h2><p>总览性能同时需要页面加载指标和网络请求指标。旧查询直接组合两张分钟表，却没有用分钟或应用等条件把对应行配对。假设页面分钟结果有 100 行、请求分钟结果有 80 行，组合后会先形成 8000 个中间行，再做后续聚合。</p>
+<p>这类问题的重点不是“数据库处理 8000 行一定很慢”，而是数据量被人为放大了：真实分钟数增长时，中间结果按乘法增长，CPU、内存和临时数据开销也会随之增加。</p>
+<p><img data-src="/images/posts/clickhouse-monitoring-rollup-performance/cartesian.svg" alt="分钟行直接组合与单行结果组合的对比"><br><em>图 1：先把两张分钟表分别压成单行，再组合结果，避免 M × N 的中间膨胀。</em></p>
+<p>新 SQL 的思路是先让两个子查询各自完成聚合，再组合两个单行结果。下面是去掉业务字段和过滤条件后的逻辑示意：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">FROM</span> (</span><br><span class="line">    <span class="keyword">SELECT</span> <span class="built_in">sum</span>(page_duration) <span class="keyword">AS</span> duration_sum,</span><br><span class="line">           <span class="built_in">sum</span>(page_count) <span class="keyword">AS</span> page_count</span><br><span class="line">    <span class="keyword">FROM</span> agg_page_minute</span><br><span class="line">    <span class="keyword">WHERE</span> ts_minute <span class="operator">&gt;=</span> &#123;<span class="keyword">start</span>&#125; <span class="keyword">AND</span> ts_minute <span class="operator">&lt;</span> &#123;<span class="keyword">end</span>&#125;</span><br><span class="line">) p</span><br><span class="line"><span class="keyword">CROSS</span> <span class="keyword">JOIN</span> (</span><br><span class="line">    <span class="keyword">SELECT</span> <span class="built_in">sum</span>(network_time) <span class="keyword">AS</span> network_sum,</span><br><span class="line">           <span class="built_in">sum</span>(network_count) <span class="keyword">AS</span> network_count</span><br><span class="line">    <span class="keyword">FROM</span> agg_request_minute</span><br><span class="line">    <span class="keyword">WHERE</span> ts_minute <span class="operator">&gt;=</span> &#123;<span class="keyword">start</span>&#125; <span class="keyword">AND</span> ts_minute <span class="operator">&lt;</span> &#123;<span class="keyword">end</span>&#125;</span><br><span class="line">) r;</span><br></pre></td></tr></table></figure>
+
+<p>注意，新 SQL 仍然可以保留 <code>CROSS JOIN</code>。优化点不是机械地删掉这个关键字，而是让它处理 <code>1 × 1</code>，不再处理 <code>M × N</code>。如果业务确实需要按分钟或应用逐组对应，则应补上明确的配对键，而不是依赖笛卡尔组合后再聚合。</p>
+<p>这也是 SQL 优化里值得先做的检查：<strong>在讨论索引之前，先看查询是否正在生成本来不需要的数据。</strong></p>
+<h2 id="第二层：当前值和环比，不必分两次重复扫描"><a href="#第二层：当前值和环比，不必分两次重复扫描" class="headerlink" title="第二层：当前值和环比，不必分两次重复扫描"></a>第二层：当前值和环比，不必分两次重复扫描</h2><p>页面既要显示当前周期，也要显示上一周期。旧实现分别调用查询，性能、错误率和移动端三部分最多产生 6 次 SQL。改造后在同一个覆盖两个周期的窗口里使用条件聚合，一次取出两组值：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span></span><br><span class="line">    sumIf(<span class="keyword">value</span>, ts <span class="operator">&gt;=</span> &#123;currentStart&#125; <span class="keyword">AND</span> ts <span class="operator">&lt;</span> &#123;currentEnd&#125;) <span class="keyword">AS</span> current_value,</span><br><span class="line">    sumIf(<span class="keyword">value</span>, ts <span class="operator">&gt;=</span> &#123;previousStart&#125; <span class="keyword">AND</span> ts <span class="operator">&lt;</span> &#123;previousEnd&#125;) <span class="keyword">AS</span> previous_value</span><br><span class="line"><span class="keyword">FROM</span> monitoring_source</span><br><span class="line"><span class="keyword">WHERE</span> ts <span class="operator">&gt;=</span> &#123;previousStart&#125; <span class="keyword">AND</span> ts <span class="operator">&lt;</span> &#123;currentEnd&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>这段 SQL 同样只展示算法。真实实现要保留应用、权限、指标类型等过滤条件，并确保两个周期的边界互不重叠。</p>
+<p>合并后总览最多由 6 次 SQL 降为 3 次。后续在“开启新汇总且有省份或用户过滤”的特定总览路径上，性能与错误率又共用一次用户分钟汇总扫描和一次边界补读，加上移动端查询后，这条路径进一步由 3 次降为 2 次。其他查询路径不能套用这个数字。</p>
+<p>SQL 次数减半也不等于接口耗时减半：两个周期的数据仍然要读，接口里还有权限解析、序列化和网络传输。减少的是重复扫描与数据库往返，最终收益仍要测量完整链路。</p>
+<h2 id="第三层：让分钟汇总承担高频统计"><a href="#第三层：让分钟汇总承担高频统计" class="headerlink" title="第三层：让分钟汇总承担高频统计"></a>第三层：让分钟汇总承担高频统计</h2><p>前两层减少了无效组合和重复查询，但权限过滤场景仍可能反复扫描原始事件、提取 JSON 指标并做相同计算。本轮因此新增两级分钟汇总：</p>
+<table>
+<thead>
+<tr>
+<th>对象</th>
+<th>粒度与内容</th>
+<th>保留期</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>agg_monitoring_user_minute</code></td>
+<td>用户、应用、分钟；18 项计数与耗时累加量</td>
+<td>30 天</td>
+</tr>
+<tr>
+<td><code>agg_monitoring_minute</code></td>
+<td>应用、分钟；页面数、失败页面数、JS 错误数</td>
+<td>90 天</td>
+</tr>
+<tr>
+<td><code>vw_monitoring_user_minute</code></td>
+<td>原始事件插入时生成用户分钟统计</td>
+<td>随插入触发</td>
+</tr>
+<tr>
+<td><code>vw_monitoring_minute</code></td>
+<td>用户汇总插入块继续生成应用分钟统计</td>
+<td>随插入触发</td>
+</tr>
+</tbody></table>
+<p><img data-src="/images/posts/clickhouse-monitoring-rollup-performance/rollup.svg" alt="两级分钟汇总写入链"><br><em>图 2：实时写入和历史回填共用同一条链路，应用汇总不能再次独立回填。</em></p>
+<p>项目脚本针对 ClickHouse 23.11，汇总表使用 <code>AggregatingMergeTree</code> 和 <code>SimpleAggregateFunction(sum, ...)</code> 保存可累加指标。下面仅保留表结构要点，18 个指标中的其余字段已省略：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">CREATE TABLE</span> IF <span class="keyword">NOT</span> <span class="keyword">EXISTS</span> agg_monitoring_user_minute</span><br><span class="line">(</span><br><span class="line">    ts_minute DateTime,</span><br><span class="line">    app_id UInt32,</span><br><span class="line">    user_id String,</span><br><span class="line">    page_count SimpleAggregateFunction(sum, UInt64),</span><br><span class="line">    fcp_sum SimpleAggregateFunction(sum, UInt64),</span><br><span class="line">    fcp_count SimpleAggregateFunction(sum, UInt64)</span><br><span class="line">    <span class="comment">-- 其余计数与累加字段省略</span></span><br><span class="line">)</span><br><span class="line">ENGINE <span class="operator">=</span> AggregatingMergeTree</span><br><span class="line"><span class="keyword">PARTITION</span> <span class="keyword">BY</span> toYYYYMMDD(ts_minute)</span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> (user_id, app_id, ts_minute)</span><br><span class="line">TTL ts_minute <span class="operator">+</span> <span class="type">INTERVAL</span> <span class="number">30</span> <span class="keyword">DAY</span>;</span><br></pre></td></tr></table></figure>
+
+<p>用户分钟视图从原始事件中计算 <code>countIf</code>、<code>sumIf</code> 等指标；应用分钟视图再按应用和分钟聚合用户汇总。历史回填只插入用户汇总表，让下游视图自动累计应用汇总。如果再对应用表独立执行一次回填，同一批历史就会被算两遍。</p>
+<p>这条链路的收益来自三个方面：</p>
+<ol>
+<li>查询读取的是较小的分钟结果，而不是每次重新读取全部匹配事件。</li>
+<li>JSON 提取和指标分类在写入或回填时完成，不在每次页面刷新时重复执行。</li>
+<li>原始明细仍然保留，操作失败明细、影响用户列表等下钻能力不必被迫迁走。</li>
+</ol>
+<p>代价也同样明确：物化视图会增加写入计算、存储与后台合并开销。用户基数越大，“用户 × 应用 × 活跃分钟”的组合越多，汇总表就越可能接近明细规模。因此它不是无成本的缓存，更不是所有数据分布下都必然更快的开关。</p>
+<h2 id="平均值与比率：保存分子分母，不平均各分钟平均值"><a href="#平均值与比率：保存分子分母，不平均各分钟平均值" class="headerlink" title="平均值与比率：保存分子分母，不平均各分钟平均值"></a>平均值与比率：保存分子分母，不平均各分钟平均值</h2><p>分钟汇总如果只保存“这一分钟的平均 FCP”，查询七天的平均值时就无法正确还原总量。假设第一分钟有两个样本 100、200，第二分钟只有一个样本 900：</p>
+<ul>
+<li>直接平均两个分钟均值：<code>(150 + 900) / 2 = 525</code>；</li>
+<li>按全部样本计算：<code>(100 + 200 + 900) / 3 = 400</code>。</li>
+</ul>
+<p>两者不同，因为每分钟样本数不同。正确做法是保存 <code>fcp_sum</code> 与 <code>fcp_count</code>，查询时先分别求和，再用 <code>Σfcp_sum / Σfcp_count</code>。错误率、失败率同理，先累加失败数和总数，再相除。</p>
+<p>本轮还刻意保留了一处既有权限态错误率分母口径。它与无省份过滤时的公式存在差异，可能值得业务上重新确认，但性能改造不能顺手把报表公式改掉，否则新旧结果不一致时，将无法区分“实现错误”和“口径变化”。</p>
+<h2 id="精确滚动窗口：完整分钟走汇总，边界分钟回查明细"><a href="#精确滚动窗口：完整分钟走汇总，边界分钟回查明细" class="headerlink" title="精确滚动窗口：完整分钟走汇总，边界分钟回查明细"></a>精确滚动窗口：完整分钟走汇总，边界分钟回查明细</h2><p>“过去一天”或“过去七天”通常是精确到秒的滚动窗口，不一定从整分钟开始。如果直接按整分钟读取汇总，就可能多算起点前的事件，或漏掉结束分钟内的事件。</p>
+<p>新查询把窗口拆成两类数据：</p>
+<ul>
+<li>完整分钟区间读取分钟汇总；</li>
+<li>起点、当前&#x2F;上一周期分界、结束位置的不完整分钟读取原始秒数据，最多三个边界分钟。</li>
+</ul>
+<p><img data-src="/images/posts/clickhouse-monitoring-rollup-performance/boundary.svg" alt="滚动窗口的汇总读取与边界补读"><br><em>图 3：汇总与原始秒数据各管一段，既减少扫描，也避免重复和遗漏。</em></p>
+<p>这意味着“使用汇总”不等于“完全不读原始表”。边界查询仍可能访问相关分区，需要检查实际扫描行数和字节数。</p>
+<p>它还带来一个保留期约束：七天环比会涉及最近十四天。如果原始数据只保留七天，上一周期末端附近的精确边界可能无法回查。新汇总表保留更久并不能自动补齐已经删除的原始秒数据；需要另行调整保留策略，或设计能支持精确边界的更细粒度摘要。本轮没有修改原始 TTL。</p>
+<h2 id="权限与查询范围不能因加速而扩大"><a href="#权限与查询范围不能因加速而扩大" class="headerlink" title="权限与查询范围不能因加速而扩大"></a>权限与查询范围不能因加速而扩大</h2><p>权限态查询仍按当前解析出的用户列表过滤，授权为空时返回空范围，不因为存在应用级汇总就读取全量数据。无省份过滤的总览错误率可以使用应用分钟汇总；有省份或用户过滤时，性能、错误率、两类趋势和操作失败统计使用用户分钟汇总。</p>
+<p>本轮受益的接口前缀为 <code>/monitoring/analysis</code>，具体包括：</p>
+<table>
+<thead>
+<tr>
+<th>接口</th>
+<th>新路径适用范围</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>/overview</code></td>
+<td>权限过滤时性能与错误率走用户汇总；无省份过滤时错误率可走应用汇总</td>
+</tr>
+<tr>
+<td><code>/performance-trend</code></td>
+<td>有省份或用户过滤时走用户分钟汇总</td>
+</tr>
+<tr>
+<td><code>/error-rate-trend</code></td>
+<td>有省份或用户过滤时走用户分钟汇总</td>
+</tr>
+<tr>
+<td><code>/operation-failures</code></td>
+<td>有省份或用户过滤时走用户分钟汇总</td>
+</tr>
+</tbody></table>
+<p>移动端总览部分、用户旅程、操作失败明细和影响用户列表没有在本轮获得同等改造。不能把一张接口表扩展成“整个监控系统都快了”的结论。</p>
+<h2 id="数据库之外：减少点数、重复权限解析和无效等待"><a href="#数据库之外：减少点数、重复权限解析和无效等待" class="headerlink" title="数据库之外：减少点数、重复权限解析和无效等待"></a>数据库之外：减少点数、重复权限解析和无效等待</h2><p>页面性能不只由 SQL 决定，这次还处理了几项前后端工作。</p>
+<p><strong>趋势降采样。</strong> 一天保留分钟点，多天按小时聚合。连续七天的分钟桶最多为 10080 个，小时桶为 168 个，能同时减少数据库分组、响应传输和 ECharts 绘制压力。实际返回点数取决于数据，不是每次请求都恰好有这些点。</p>
+<p><strong>权限解析 single-flight。</strong> 相同“登录用户 + 排序后的省份组合”的并发调用共享一次正在执行的权限解析，完成后立即移除，异常不缓存。它不是持久权限缓存；不同用户和不同省份仍独立执行，避免为了复用而串用权限。</p>
+<p><strong>取消旧请求。</strong> 前端使用 <code>AbortController</code>，在筛选变化或组件卸载时中止不再需要的请求，同时保留竞态保护，避免较慢的旧结果覆盖新筛选。查询期间禁止重复提交，刷新时保留旧图表，减少空白闪烁。</p>
+<p><strong>局部失败隔离。</strong> 四个主区域使用 <code>Promise.allSettled</code> 和独立加载、错误状态。一个区域失败不再拖垮整个主区域，但这只是交互韧性，不能把失败请求包装成成功。</p>
+<p><strong>路由懒加载。</strong> 五个页面改为 <code>React.lazy</code> 独立分包。当日构建记录中主 JS 约从 2.61 MB 降至 2.51 MB，这是加载侧改善，不直接改善后端 SQL。</p>
+<h2 id="性能结果：高密度明显受益，低密度存在反例"><a href="#性能结果：高密度明显受益，低密度存在反例" class="headerlink" title="性能结果：高密度明显受益，低密度存在反例"></a>性能结果：高密度明显受益，低密度存在反例</h2><p>下面的数字来自测试服务器隔离 ClickHouse 库。旧、新 SQL 交错执行 3 次取中位数，单次查询限制 2 线程、256 MiB。它们测量的是 <strong>SQL 执行时间</strong>，不是完整 HTTP 接口耗时，也不是 P95。</p>
+<p>高密度负载样本包含 1000 万条数据、10 个应用和 20 个模拟用户，约 5 万条&#x2F;分钟，覆盖约 200 分钟；另有 2430 条跨十四天的边界回归数据。用户分钟汇总约 4.19 万行，应用分钟汇总约 2042 行。</p>
+<table>
+<thead>
+<tr>
+<th>SQL 场景</th>
+<th align="right">优化前</th>
+<th align="right">优化后</th>
+<th align="right">旧耗时 ÷ 新耗时</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>总览性能部分，有用户过滤</td>
+<td align="right">1035.0 ms</td>
+<td align="right">92.4 ms</td>
+<td align="right">11.20 倍</td>
+</tr>
+<tr>
+<td>总览错误率部分，有用户过滤</td>
+<td align="right">252.8 ms</td>
+<td align="right">74.5 ms</td>
+<td align="right">3.39 倍</td>
+</tr>
+<tr>
+<td>性能趋势，有用户过滤</td>
+<td align="right">484.5 ms</td>
+<td align="right">93.1 ms</td>
+<td align="right">5.20 倍</td>
+</tr>
+<tr>
+<td>错误趋势，有用户过滤</td>
+<td align="right">351.0 ms</td>
+<td align="right">90.8 ms</td>
+<td align="right">3.87 倍</td>
+</tr>
+<tr>
+<td>操作失败，有用户过滤</td>
+<td align="right">303.0 ms</td>
+<td align="right">89.4 ms</td>
+<td align="right">3.39 倍</td>
+</tr>
+<tr>
+<td>总览错误率部分，无省份过滤</td>
+<td align="right">260.3 ms</td>
+<td align="right">76.3 ms</td>
+<td align="right">3.41 倍</td>
+</tr>
+</tbody></table>
+<p>低密度样本则有 200 万行，约 100 条&#x2F;分钟，用户汇总约 17.4 万行，应用汇总约 16.7 万行。结果并不是全面加速：</p>
+<table>
+<thead>
+<tr>
+<th>SQL 场景</th>
+<th align="right">优化前</th>
+<th align="right">优化后</th>
+<th>观察</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>总览性能部分，有用户过滤</td>
+<td align="right">390.4 ms</td>
+<td align="right">130.1 ms</td>
+<td>仍然受益</td>
+</tr>
+<tr>
+<td>总览错误率部分，有用户过滤</td>
+<td align="right">99.5 ms</td>
+<td align="right">138.4 ms</td>
+<td>反而变慢</td>
+</tr>
+<tr>
+<td>性能趋势，有用户过滤</td>
+<td align="right">105.0 ms</td>
+<td align="right">115.2 ms</td>
+<td>反而变慢</td>
+</tr>
+<tr>
+<td>错误趋势，有用户过滤</td>
+<td align="right">86.9 ms</td>
+<td align="right">113.7 ms</td>
+<td>反而变慢</td>
+</tr>
+<tr>
+<td>操作失败，有用户过滤</td>
+<td align="right">80.1 ms</td>
+<td align="right">112.9 ms</td>
+<td>反而变慢</td>
+</tr>
+<tr>
+<td>总览错误率部分，无省份过滤</td>
+<td align="right">121.8 ms</td>
+<td align="right">110.1 ms</td>
+<td>小幅改善</td>
+</tr>
+</tbody></table>
+<p>原因不神秘：汇总读取、联合查询和边界校正都有固定成本。高压缩比时，少扫描明细能覆盖这部分成本；低密度或低压缩比时，固定成本可能大于节省下来的工作。</p>
+<p>高密度样本只接近“十亿条 &#x2F; 十四天”的平均事件速率，并没有真正写入十亿行，也没有模拟完整生产用户基数、完整十四天数据、并发以及全部既有物化视图的写入开销。真实用户数远大于 20 个模拟用户，同样的明细行数可能形成更多用户分钟组合，压缩比和权限过滤成本都会改变。因此不能把表格外推成“生产必然快 3～11 倍”。</p>
+<h2 id="正确性验证与测试库迁移分别证明了什么"><a href="#正确性验证与测试库迁移分别证明了什么" class="headerlink" title="正确性验证与测试库迁移分别证明了什么"></a>正确性验证与测试库迁移分别证明了什么</h2><p>原记录中的验证分为几层：</p>
+<ul>
+<li>Java 定向测试 10 项通过；隔离 ClickHouse 集成测试完成 126 组新旧结果对比，覆盖应用、权限、空数据、一天&#x2F;七天、精确秒边界、历史回填与实时写入。</li>
+<li>回填工具最初 8 项 Python 标准库测试通过；增加一键建表和日期范围后，相关 15 项测试通过。</li>
+<li>默认开启调整后，重新运行 6 项 Mapper SQL 测试和 4 项 Service 测试，合计 10 项通过。该次默认值调整没有改 SQL，因此没有重复执行数据库性能测试。</li>
+<li>测试业务库完成十三天建表与回填，逐日均为 <code>verified: true</code>；另按用户、应用、分钟逐组对比 18 项累计指标，4813 组全部一致；应用、分钟维度的 4486 组三项计数也全部一致。原始表迁移前后均为 51807 行，时间范围未变。</li>
+</ul>
+<p>这些结果分别证明查询路由、汇总公式、回填核对和该测试库的数据一致性。它们不等于新版本接口已经上线加速。按 2026 年 11 月 5 日记录，测试业务库迁移完成，但新业务版本尚未部署，生产环境尚未迁移；测试消费者原本禁用，也保持原状态。</p>
+<h2 id="上线顺序与回退：先迁移，再打开新读取路径"><a href="#上线顺序与回退：先迁移，再打开新读取路径" class="headerlink" title="上线顺序与回退：先迁移，再打开新读取路径"></a>上线顺序与回退：先迁移，再打开新读取路径</h2><p>最终代码默认开启汇总查询，所以部署顺序不能反：</p>
+<ol>
+<li>保持旧版本运行，记录相同条件的原接口结果与耗时，检查没有遗留的关闭开关覆盖值。</li>
+<li>评估真实用户分钟组合数、磁盘余量和回填资源开销。</li>
+<li>在低峰窗口暂停所有原始表写入消费者，确认 Kafka 积压空间和保留时间足够；同时避免历史清理任务继续删除回填源数据。</li>
+<li>建表并按现存日期回填，只写用户汇总，逐日核对页面数、失败数和 JS 错误数。</li>
+<li>恢复消费者，确认积压正常消化、实时汇总持续更新，再部署默认开启汇总的新版本。</li>
+<li>验收全部&#x2F;单应用、单省&#x2F;多省&#x2F;空授权、一天&#x2F;七天、当前&#x2F;上一周期，记录完整接口 P50&#x2F;P95、扫描量、CPU、内存、磁盘与写入延迟。</li>
+</ol>
+<p>回填工具默认只检查，实际写入必须同时提供 <code>--apply --ingest-paused</code>。目标日期已有数据会拒绝重复回填，不自动覆盖或重试。ClickHouse 回填不是跨日期、跨表事务，超时或部分失败后可能已经写入部分块，不能直接重跑整段 <code>INSERT</code>。</p>
+<p>需要回退读取路径时，设置 <code>MONITORING_AGGREGATE_ENABLED=false</code> 并重启即可，无需删表。但这个开关只控制读取，物化视图仍会继续写入，新汇总的资源开销不会随回退消失。</p>
+<p>暂停采集期间页面新增数据会延迟，回填也会争用数据库资源，所以这不是“全程无影响”的在线迁移。把影响说清楚，比承诺一个无法验证的无感上线更可靠。</p>
+<h2 id="下一轮该收集什么"><a href="#下一轮该收集什么" class="headerlink" title="下一轮该收集什么"></a>下一轮该收集什么</h2><p>本轮给出的不是最终容量答案，而是一条可验证的优化路径。后续最值得持续收集的是：</p>
+<ul>
+<li>每日事件增量、真实活跃用户数、用户应用分钟组合数；</li>
+<li>典型省份授权用户数和汇总压缩比；</li>
+<li>各接口 P50&#x2F;P95、扫描行数与字节数；</li>
+<li>查询并发、写入吞吐、物化视图延迟与磁盘增长；</li>
+<li>原始数据实际保留期能否满足十四天精确边界。</li>
+</ul>
+<p>如果用户分钟表接近明细规模，应先看真实扫描和权限范围，再评估排序键、查询路径或更粗的汇总粒度；如果单机资源持续成为瓶颈，再讨论 ClickHouse 多节点分片与副本。架构升级应当由这些证据触发，而不是由“几亿行”这个数字单独触发。</p>
+<h2 id="延伸阅读"><a href="#延伸阅读" class="headerlink" title="延伸阅读"></a>延伸阅读</h2><ul>
+<li><a href="https://zhlifeiy.codes/2026/10/22/2026-10-22-flow-statistics-window-sql/">8.7 秒到 231 毫秒：保留统计口径的 MySQL 窗口函数优化</a></li>
+<li><a href="/2026/11/09/load-test-long-tail-rate-limit/">压测出现 19 秒长尾，为什么还不能怪后端：一次查询与登录限流摸底</a></li>
+<li><a href="/2026/11/09/concurrent-checkin-consistency/">同秒签到冲突之后：用唯一键、事务和条件更新守住一致性</a></li>
+</ul>
+<hr>
+<p><em>本文根据 2026 年 11 月 5 日工程笔记、项目 DDL 与迁移记录整理。项目名称、内网地址、账号和本机路径已省略；性能与测试结果均为原记录结果，本次整理未重新执行业务压测、数据库迁移或生产部署。</em></p>
+]]></content>
+      <categories>
+        <category>工程实践</category>
+      </categories>
+      <tags>
+        <tag>性能优化</tag>
+        <tag>SQL优化</tag>
+        <tag>ClickHouse</tag>
+        <tag>数据汇总</tag>
+        <tag>前端性能</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>同秒签到冲突之后：用唯一键、事务和条件更新守住一致性</title>
+    <url>/2026/11/09/concurrent-checkin-consistency/</url>
+    <content><![CDATA[<p>四个不同组长在同一秒签到，两人成功、两人失败；更麻烦的是，失败请求也留下了在岗记录，装备被占用却没有完整绑定。这不是一个“编号重复”就能概括的问题，而是业务编号、事务边界和状态竞争同时存在缺陷。修复也不只改一行编号生成代码，而是让整次签到真正做到唯一、原子、可回滚。</p>
+<div class="audio-player"><p>🎧 文章导读</p><audio controls preload="none" src="/audio/concurrent-checkin-consistency/narration.mp3">您的浏览器不支持音频播放。</audio></div>
+
+<span id="more"></span>
+
+<h2 id="失败请求为什么留下了成功痕迹"><a href="#失败请求为什么留下了成功痕迹" class="headerlink" title="失败请求为什么留下了成功痕迹"></a>失败请求为什么留下了成功痕迹</h2><p>原签到链路可以概括为三步：创建打卡记录、把装备改为已领用、写入装备绑定。绑定编号使用“<code>B + yyyyMMddHHmmss + 请求内序号</code>”，而每个请求的序号都从 1 开始。</p>
+<p>两个请求只要落在同一秒，且各自生成第一条绑定，就会得到完全相同的编号。数据库上的 <code>uk_eq_bind_sid</code> 唯一约束正确拦截了重复数据，但前面的写入已经发生了：</p>
+<ol>
+<li>打卡记录已经插入，所以失败请求仍可能显示为在岗；</li>
+<li>装备状态已经更新，所以装备仍显示为已领用；</li>
+<li>后续绑定插入失败，前面两步却不会自动撤销。</li>
+</ol>
+<p>原记录中的四人同秒测试正是这样：两人成功、两人失败，八件装备都变为 <code>IN_USE</code>，实际只有四条绑定。这个现场说明唯一约束只是最后一道防线，它无法替代完整的事务设计。</p>
+<p>同时，装备领用原来采用“先查询状态，再无条件更新”。两个请求可能都先查到 <code>IN_STOCK</code>，随后都把同一件装备改成 <code>IN_USE</code>。即使编号不冲突，也仍然存在重复领用窗口。</p>
+<p>因此需要分别回答三个问题：编号怎样全局唯一？多步写入怎样一起失败？共享装备怎样只让一个请求领用成功？</p>
+<h2 id="编号要依赖数据库身份，不要依赖时钟和局部序号"><a href="#编号要依赖数据库身份，不要依赖时钟和局部序号" class="headerlink" title="编号要依赖数据库身份，不要依赖时钟和局部序号"></a>编号要依赖数据库身份，不要依赖时钟和局部序号</h2><p>修复后的绑定编号为：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">B&lt;打卡记录ID&gt;-&lt;装备ID&gt;</span><br></pre></td></tr></table></figure>
+
+<p>打卡记录先插入数据库并取得主键，再用“记录 ID + 装备 ID”区分绑定。这样，不同签到请求天然使用不同记录 ID，不再共享同一秒内从 1 开始的序号空间。</p>
+<p>这个方案还有几个实际好处：</p>
+<ul>
+<li>不需要引入额外随机数或分布式发号器；</li>
+<li>不受服务器时钟精度和时钟回拨影响；</li>
+<li>从编号可以直接看出所属打卡记录和装备，排查更方便；</li>
+<li>保留原唯一约束，历史编号也不需要重写。</li>
+</ul>
+<p>字段长度同样经过边界核对。两个正 <code>BIGINT</code> 最大值各有 19 位，加上开头的 <code>B</code> 和中间的连字符，总长恰好为 <code>1 + 19 + 1 + 19 = 40</code>，不会超出现有 <code>VARCHAR(40)</code>。这里依赖的是数据库主键和装备 ID 的身份语义，而不是“通常 ID 很短”的经验假设。</p>
+<p>唯一性设计应该先问“业务上哪两个身份确定一条记录”，再决定格式。把时间字符串当作并发发号方案，往往只是把冲突藏到了更细的时间粒度里。</p>
+<h2 id="事务覆盖整次签到，失败才不会留下半成品"><a href="#事务覆盖整次签到，失败才不会留下半成品" class="headerlink" title="事务覆盖整次签到，失败才不会留下半成品"></a>事务覆盖整次签到，失败才不会留下半成品</h2><p>签到入口增加：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="meta">@Transactional(rollbackFor = Exception.class)</span></span><br><span class="line"><span class="keyword">public</span> CheckinRecord <span class="title function_">signIn</span><span class="params">(SignInDTO dto)</span> &#123;</span><br><span class="line">    <span class="comment">// 校验、创建打卡记录、条件领用装备、写入绑定</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>现在，打卡记录、装备状态和绑定写入处于同一事务中。第二条绑定失败时，第一条绑定、装备状态和打卡记录都要一起回滚，而不是只让调用方收到一个异常。</p>
+<p><code>rollbackFor = Exception.class</code> 明确了回滚范围，但真正保证一致性的不是注解本身，而是它覆盖了整个写入单元。若只在绑定方法上加事务、或者让异常被内部吞掉，仍然可能留下部分成功。此次修复把事务放在 Service 的公开签到入口，和实际调用链一致。</p>
+<p>事务也让“失败后的重试”变得可验证：故障移除后，同一个账号、同一个合法请求应能重新签到，而不是被上一次失败留下的“在岗”状态或“已领用”装备挡住。</p>
+<h2 id="先查状态只能用于提示，条件更新才负责竞争"><a href="#先查状态只能用于提示，条件更新才负责竞争" class="headerlink" title="先查状态只能用于提示，条件更新才负责竞争"></a>先查状态只能用于提示，条件更新才负责竞争</h2><p>装备查询和业务校验仍然保留，它们可以尽早发现不存在、维修、禁用、非通讯类等非法输入。但并发安全的最后判断必须落在数据库写入上。</p>
+<p>修复后的领用逻辑按装备 ID 排序，再逐件执行带条件的更新。下面是保留关键条件的实现示意：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">equips.sort(Comparator.comparing(Equipment::getId));</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> (Equipment equipment : equips) &#123;</span><br><span class="line">    <span class="type">Equipment</span> <span class="variable">update</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Equipment</span>();</span><br><span class="line">    update.setStatus(<span class="string">&quot;IN_USE&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> <span class="variable">updated</span> <span class="operator">=</span> equipmentMapper.update(</span><br><span class="line">        update,</span><br><span class="line">        <span class="keyword">new</span> <span class="title class_">LambdaUpdateWrapper</span>&lt;Equipment&gt;()</span><br><span class="line">            .eq(Equipment::getId, equipment.getId())</span><br><span class="line">            .eq(Equipment::getStatus, <span class="string">&quot;IN_STOCK&quot;</span>)</span><br><span class="line">            .and(wrapper -&gt; wrapper</span><br><span class="line">                .isNull(Equipment::getEnabled)</span><br><span class="line">                .or().ne(Equipment::getEnabled, <span class="number">0</span>))</span><br><span class="line">    );</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (updated != <span class="number">1</span>) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">BusinessException</span>(<span class="string">&quot;装备状态已变化或已禁用，请重新扫码&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>对应的语义是：只有更新瞬间仍在库且未禁用的装备，才能从 <code>IN_STOCK</code> 变为 <code>IN_USE</code>。两个请求竞争同一件装备时，数据库行锁会把两次更新串行化；后到的请求再评估条件时，状态已经改变，影响行数为 0，于是抛出业务异常并回滚整次签到。</p>
+<p>按装备 ID 排序则让重叠装备集合使用一致的加锁顺序，降低交叉更新形成死锁的风险。它是风险削减，不是“永不死锁”的承诺；数据库超时、其他写入路径和锁等待仍需在目标环境观察。</p>
+<p><img data-src="/images/posts/concurrent-checkin-consistency/flow.svg" alt="并发签到的一致性写入链"><br><em>图 1：唯一编号、原子领用与整体事务共同作用，任何一步失败都不保留部分结果。</em></p>
+<h2 id="自动回归不仅测“成功”，也要制造中途失败"><a href="#自动回归不仅测“成功”，也要制造中途失败" class="headerlink" title="自动回归不仅测“成功”，也要制造中途失败"></a>自动回归不仅测“成功”，也要制造中途失败</h2><p>这次补充了 5 个回归用例，使用 H2、真实 Spring 事务和 MyBatis SQL，覆盖：</p>
+<ol>
+<li>四人同秒并发时绑定编号不重复；</li>
+<li>第二条绑定写入失败时，记录、装备和第一条绑定整体回滚；</li>
+<li>并发竞争共享装备时仅一人成功；</li>
+<li>校验之后被禁用的装备不能继续领用；</li>
+<li>最大 <code>BIGINT</code> ID 组合不会超过编号字段长度。</li>
+</ol>
+<p>第二项尤其重要。普通成功测试无法证明事务边界正确，必须在“已经写入一部分”的位置制造故障，再检查所有相关表和状态。第四项则专门覆盖查询校验与条件更新之间的时间窗口，防止实现退回到只依赖事前校验。</p>
+<p>H2 用例适合快速回归，但不能替代目标数据库验证。因此后续又在真实 Spring Boot、KingbaseES、Redis 链路上执行了接口级回归，而不是只停留在单元测试环境。</p>
+<h2 id="真实链路验证：成功、失败、恢复都要检查"><a href="#真实链路验证：成功、失败、恢复都要检查" class="headerlink" title="真实链路验证：成功、失败、恢复都要检查"></a>真实链路验证：成功、失败、恢复都要检查</h2><p>原记录中的真实环境回归共执行 107 次 HTTP 请求、260 个检查点，全部通过。与这次缺陷最相关的结果包括：</p>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>观察结果</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>四人同秒签到</td>
+<td>数据库确认四条签到同秒发生，4&#x2F;4 成功，八条绑定编号全部不同</td>
+</tr>
+<tr>
+<td>第二条绑定真实写入失败</td>
+<td>对专用测试装备临时增加 CHECK 约束；打卡记录和绑定均为 0，两件装备恢复在库</td>
+</tr>
+<tr>
+<td>故障移除后的重试</td>
+<td>原账号、原请求签到成功，后续离岗与归还正常</td>
+</tr>
+<tr>
+<td>两人竞争共享装备</td>
+<td>恰好一人成功；失败方无记录和绑定残留，独有装备仍在库</td>
+</tr>
+<tr>
+<td>完整离岗链路</td>
+<td>在岗回查、离岗、解绑和归还通过，成功测试数据无 <code>IN_USE</code> 残留</td>
+</tr>
+<tr>
+<td>非法与边界输入</td>
+<td>空装备、数量不足、重复 ID、禁用、维修、非通讯、已领用等被拒绝</td>
+</tr>
+</tbody></table>
+<p>同秒四个签到请求在该轮本机小并发观测中约 42～50 ms。这只能说明当时四个请求的接口观测，不是两万人容量结果，也不是生产 P95。</p>
+<p>验证还没有覆盖手机摄像头、真实定位采集、自动离岗和两万人打卡。把这些未覆盖项写出来，才能避免“接口一致性回归通过”被误读成“整个业务与容量全部验收通过”。</p>
+<h2 id="修复代码不会自动修复历史脏数据"><a href="#修复代码不会自动修复历史脏数据" class="headerlink" title="修复代码不会自动修复历史脏数据"></a>修复代码不会自动修复历史脏数据</h2><p>新实现保证的是后续请求的一致性，不会自动找出并修复此前已经残留的打卡记录、装备状态和绑定。历史数据如果经历过旧版本失败，应按批次单独核对：</p>
+<ul>
+<li>没有有效绑定却仍在岗的记录；</li>
+<li>显示 <code>IN_USE</code> 但没有对应有效绑定的装备；</li>
+<li>已离岗记录对应的未解绑绑定；</li>
+<li>同一装备存在互相矛盾的有效占用关系。</li>
+</ul>
+<p>清理或补偿前应保留证据并确认业务口径，不能只删其中一张表，否则可能制造新的不一致。此次回归也使用独立前缀数据，没有自动删除原有业务记录。</p>
+<h2 id="可复用的并发写入检查清单"><a href="#可复用的并发写入检查清单" class="headerlink" title="可复用的并发写入检查清单"></a>可复用的并发写入检查清单</h2><p>这类多步写入可以按四个问题审查：</p>
+<ol>
+<li><strong>唯一性</strong>：业务编号是否由全局身份确定？唯一约束冲突时会发生什么？</li>
+<li><strong>原子性</strong>：所有相关写入是否在同一事务内？中途异常是否真的向外传播并回滚？</li>
+<li><strong>竞争性</strong>：共享状态的最后判断是否仍在“先查后改”？条件更新失败是否被检查？</li>
+<li><strong>可验证性</strong>：是否有中途失败、共享资源竞争和故障后重试的测试，而不只有正常成功路径？</li>
+</ol>
+<p>这次修复的关键不是某一行代码更巧妙，而是三层防线终于指向同一个结果：要么签到记录、装备状态、绑定全部成功，要么什么都不留下。</p>
+<h2 id="延伸阅读"><a href="#延伸阅读" class="headerlink" title="延伸阅读"></a>延伸阅读</h2><ul>
+<li><a href="/2026/11/09/load-test-long-tail-rate-limit/">压测出现 19 秒长尾，为什么还不能怪后端：一次查询与登录限流摸底</a></li>
+<li><a href="/2026/11/09/clickhouse-monitoring-rollup-performance/">从重复扫描到分钟汇总：ClickHouse 监控页面的分层性能优化</a></li>
+<li><a href="https://zhlifeiy.codes/2026/10/22/2026-10-22-flow-statistics-window-sql/">8.7 秒到 231 毫秒：保留统计口径的 MySQL 窗口函数优化</a></li>
+</ul>
+<hr>
+<p><em>本文根据 2026 年 11 月 3 日至 4 日工程笔记整理，并核对当前相关 Service 实现。业务名称、内部地址和本机路径已省略；测试结果均为原记录结果，本次整理未重新执行业务回归。</em></p>
+]]></content>
+      <categories>
+        <category>工程实践</category>
+      </categories>
+      <tags>
+        <tag>Spring Boot</tag>
+        <tag>MyBatis</tag>
+        <tag>回归测试</tag>
+        <tag>事务</tag>
+        <tag>并发</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>压测出现 19 秒长尾，为什么还不能怪后端：一次查询与登录限流摸底</title>
+    <url>/2026/11/09/load-test-long-tail-rate-limit/</url>
+    <content><![CDATA[<p>同一套服务，局域网压测出现 9～19 秒长尾，测试机回环的短时对照却只有十几到二十几毫秒的 P95。这个差异提示应优先排查网络与压测端路径，但还不能直接排除服务端偶发停顿。同轮登录专项还暴露了另一件事：每分钟 5 次的单 IP 限流，在 200 并发下实际放行了 20 个请求，说明计数存在竞争，而“被限流”也不能被当作登录容量结果。</p>
+<div class="audio-player"><p>🎧 文章导读</p><audio controls preload="none" src="/audio/load-test-long-tail-rate-limit/narration.mp3">您的浏览器不支持音频播放。</audio></div>
+
+<span id="more"></span>
+
+<h2 id="先把验收目标翻译成可执行负载"><a href="#先把验收目标翻译成可执行负载" class="headerlink" title="先把验收目标翻译成可执行负载"></a>先把验收目标翻译成可执行负载</h2><p>这次摸底的业务目标包括 200 人在线、50 人同时提交、十分钟约两万人打卡，以及查询、写入和文件请求的耗时要求。目标如果不转换清楚，脚本再漂亮也证明不了验收结论。</p>
+<p>以“两万人十分钟打卡”为例，若指两万个不同组长各完成一次打卡，那么平均速率是：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">20000 / 600 秒 ≈ 33.33 个完整打卡流程 / 秒</span><br></pre></td></tr></table></figure>
+
+<p>它不是两万人瞬时并发，也不是每秒只发送 33 个 HTTP 请求。一个完整流程可能包含状态查询、排班查询、装备校验、签到和结果回查，应明确哪些请求计入链路、登录是否提前完成。</p>
+<p>同样，若验收写的是“最大耗时不超过 3 秒”，就不能用 P95 小于 3 秒替代；若文件要求是 5 MB，就不能用一个 1714 字节的 Excel、<code>dryRun=true</code> 只校验不落库的结果，宣称 5 MB 上传已经达标。</p>
+<p>本轮工具使用 k6，并检查 HTTP 状态、业务响应、身份和写入后的回查结果。这样可以避免把“请求发出去了”或“HTTP 200”误当业务成功。</p>
+<h2 id="两组查询结果：长尾真实存在，根因仍未定位"><a href="#两组查询结果：长尾真实存在，根因仍未定位" class="headerlink" title="两组查询结果：长尾真实存在，根因仍未定位"></a>两组查询结果：长尾真实存在，根因仍未定位</h2><p>局域网压测由一台本机向独立测试机发起，查询结果如下：</p>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>实际负载</th>
+<th>结果</th>
+<th>严格口径结论</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>在线查询</td>
+<td>200 用户，300 秒</td>
+<td>55584 次业务查询全部成功；P95 345 ms，最大 9702 ms</td>
+<td>有超过 3 秒请求，未通过</td>
+</tr>
+<tr>
+<td>固定吞吐查询</td>
+<td>50 次&#x2F;秒，300 秒</td>
+<td>14998&#x2F;15001 成功；3 次 TCP 读取失败；最大 19189 ms</td>
+<td>未通过，异常待定位</td>
+</tr>
+</tbody></table>
+<p>测试机本机又做了短时回环对照：</p>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th align="right">成功次数</th>
+<th align="right">P95</th>
+<th align="right">最大耗时</th>
+<th align="right">错误</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>50 次&#x2F;秒查询，60 秒</td>
+<td align="right">3000</td>
+<td align="right">13 ms</td>
+<td align="right">49 ms</td>
+<td align="right">无</td>
+</tr>
+<tr>
+<td>200 用户查询，60 秒</td>
+<td align="right">11891</td>
+<td align="right">22 ms</td>
+<td align="right">528 ms</td>
+<td align="right">无</td>
+</tr>
+</tbody></table>
+<p>差异足够明显，说明下一步应同时检查压测端到服务端的网络、代理、连接池、DNS、Docker 转发和服务端停顿，而不是继续只盯着某一条 SQL。</p>
+<p>但这不是严格的同条件实验：局域网和回环样本持续时间不同，负载模型也不完全相同，回环最大 528 ms 仍然高于其 P95 很多。它可以提供排查方向，不能单独证明“后端没有问题”，更不能用一分钟同机结果覆盖五分钟正式样本。</p>
+<p><img data-src="/images/posts/load-test-long-tail-rate-limit/paths.svg" alt="三种压测路径与证据边界"><br><em>图 1：先剔除误经代理的无效样本，再比较直连与回环；对照结果不是根因报告。</em></p>
+<p>这轮还实际遇到过一个工具链问题：最初两组请求误经本机代理，导致连接耗尽。相关结果直接作废，设置目标地址的 <code>NO_PROXY</code>、确认直连后重新执行查询和上报测试。保留这段失败记录很重要，否则异常数据可能被误当成服务容量证据。</p>
+<p>下一步更可靠的定位方式，是在同一时间段采集压测端连接错误、各网络分段耗时、网关与应用日志、JVM 停顿、数据库慢查询和容器资源，并尽量用有线压测机做对照。长尾发生在哪一段，证据就应落在哪一段。</p>
+<h2 id="登录专项：限流拒绝不等于登录容量"><a href="#登录专项：限流拒绝不等于登录容量" class="headerlink" title="登录专项：限流拒绝不等于登录容量"></a>登录专项：限流拒绝不等于登录容量</h2><p>普通业务查询和写入测试提前准备登录态，目的是让负载聚焦在目标接口，这部分本身不测试账号密码校验。随后另做真实登录专项，调用实际登录接口，并用新 token 查询用户资料核验身份；没有复用预置 token 代替登录，也没有关闭限流或伪造来源 IP。</p>
+<p>现有规则是单 IP 每分钟最多 5 次登录。结果如下：</p>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th align="right">成功</th>
+<th align="right">被限流</th>
+<th align="right">其他错误</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>200 并发首轮</td>
+<td align="right">20</td>
+<td align="right">180</td>
+<td align="right">0</td>
+</tr>
+<tr>
+<td>空窗口串行 6 次</td>
+<td align="right">5</td>
+<td align="right">1</td>
+<td align="right">0</td>
+</tr>
+<tr>
+<td>空窗口 200 并发复测</td>
+<td align="right">17</td>
+<td align="right">183</td>
+<td align="right">0</td>
+</tr>
+</tbody></table>
+<p>串行结果符合规则，并发却明显超额放行。复测实际成功 17 个，Redis 最后只计 9 次，说明计数和放行结果并不一致。</p>
+<p>根因在“GET 当前计数 → 判断是否允许 → SET&#x2F;INCR 更新”的分步执行。多个请求可能同时读到同一个旧值，都判断自己仍在额度内，再分别写回；并发越高，这个窗口越容易被放大。</p>
+<p>此外，Docker Desktop 转发后，后端看到的是网关地址，而不是压测机真实来源地址。于是所有压测账号共享同一个单 IP 限流键。此时即使限流完全原子，也不能据此回答“200 个不同来源用户能否同时登录”。</p>
+<p>所以这组数据只能得出两个结论：</p>
+<ol>
+<li>现有计数实现存在并发竞争，需要修复；</li>
+<li>本轮只有 20 个和 17 个账号获准完成登录，没有验证 200 个账号全部同时登录的承载能力。</li>
+</ol>
+<p>成功 token 全部通过身份查询，复测成功登录最大 234 ms，全部响应含限流最大 1039 ms。这些耗时同样只属于获准或 rejected 的本次样本，不能补全未登录用户的容量结论。</p>
+<p>后续可以用 Redis Lua 等方式把计数判断与更新做成原子操作，同时明确真实来源 IP 的传递和信任策略；这是后续修复建议，不是本轮已经完成的改动。修复后还要分别验证“限流是否准确”和“在约定来源与策略下登录能承载多少”，这两个目标不要混在一张表里。</p>
+<h2 id="资源指标也要读对单位"><a href="#资源指标也要读对单位" class="headerlink" title="资源指标也要读对单位"></a>资源指标也要读对单位</h2><p>采样期间，测试机 Windows CPU 峰值约 48%，可用物理内存最低约 26.65 GiB；后端容器峰值内存约 632.9 MiB，没有观察到 OOM 或重启。</p>
+<p>这些数字可以说明采样窗口内没有明显的内存耗尽，却不能证明长期无内存泄漏。后端容器 CPU 峰值约 519.76%，在 Docker 口径里 100% 表示一个逻辑核，因此约相当于 5.2 个核，不是整台 24 逻辑处理器机器的 519.76%。</p>
+<p>资源图与请求时间线还必须对齐。离开具体请求窗口的“CPU 不高”，不能解释某一次 19 秒读取失败；单次峰值也不能替代整个测试过程的资源曲线。</p>
+<h2 id="小并发先暴露业务缺陷，比盲目扩大负载更有价值"><a href="#小并发先暴露业务缺陷，比盲目扩大负载更有价值" class="headerlink" title="小并发先暴露业务缺陷，比盲目扩大负载更有价值"></a>小并发先暴露业务缺陷，比盲目扩大负载更有价值</h2><p>本轮四人小并发签到出现两人成功、两人因绑定编号重复失败，失败请求还留下打卡和装备状态。于是测试停止扩大，先处理一致性，而不是继续把并发拉到几百、几千。</p>
+<p>这个顺序很重要：如果四个不同账号都无法保持业务正确，两万人压测只会制造更多脏数据。后续修复使用数据库身份生成唯一绑定编号、为签到增加整体事务、用条件更新竞争装备，并重新完成自动与真实链路回归，详见延伸阅读的签到文章。</p>
+<p>写入压测还要持续准备新数据。已签到账号、已占用装备、已上报排班不能不加处理地反复使用；也不能只删一张表来“恢复现场”，否则关联数据会残留。登录专项成功后旧 token 被覆盖，后续查询同样需要重新准备登录态。</p>
+<h2 id="一套更可靠的压测推进顺序"><a href="#一套更可靠的压测推进顺序" class="headerlink" title="一套更可靠的压测推进顺序"></a>一套更可靠的压测推进顺序</h2><p>这次摸底可以沉淀成下面的执行顺序：</p>
+<ol>
+<li><strong>固定版本和口径</strong>：记录前后端版本、数据规模、负载模型、成功判定和最大耗时阈值。</li>
+<li><strong>先 smoke，再小并发</strong>：先确认单账号链路，再验证少量并发下的业务正确性。</li>
+<li><strong>按场景准备独立数据</strong>：账号、排班、装备、文件和登录态都要有效，写入场景不能无限复用旧样本。</li>
+<li><strong>分层测量</strong>：压测端、网络、代理、应用、数据库与资源指标同步留证。</li>
+<li><strong>通过后再扩大</strong>：小并发失败先修业务，不用更大流量掩盖问题。</li>
+<li><strong>保留无效与失败样本</strong>：误经代理、连接耗尽、断言失败都要记录原因，不只保留最好看的一轮。</li>
+<li><strong>单独陈述未覆盖项</strong>：未测容量、未测真机、未测完整 SSO 或未测大文件，都应明确列出。</li>
+</ol>
+<p>按原记录，本轮两万人打卡尚未执行，完整外部平台跳转、真实身份桥接、摄像头扫码、GPS 和移动端体验也未覆盖；五十万值班信息、十万排班等代表性数据量仍待补充。因此它是一份可追溯的摸底报告，不是性能验收通过报告。</p>
+<p>性能测试的价值不只是产出一个数字，而是把“知道了什么、还不知道什么、下一步该测哪里”分清楚。面对长尾时，这种边界意识往往比立刻给出一个看似确定的根因更有用。</p>
+<h2 id="延伸阅读"><a href="#延伸阅读" class="headerlink" title="延伸阅读"></a>延伸阅读</h2><ul>
+<li><a href="/2026/11/09/concurrent-checkin-consistency/">同秒签到冲突之后：用唯一键、事务和条件更新守住一致性</a></li>
+<li><a href="/2026/11/09/clickhouse-monitoring-rollup-performance/">从重复扫描到分钟汇总：ClickHouse 监控页面的分层性能优化</a></li>
+<li><a href="https://zhlifeiy.codes/2026/10/22/2026-10-22-flow-statistics-window-sql/">8.7 秒到 231 毫秒：保留统计口径的 MySQL 窗口函数优化</a></li>
+</ul>
+<hr>
+<p><em>本文根据 2026 年 11 月 3 日压测记录及后续修复记录整理。内网地址、账号、令牌和本机路径已省略；全部压测数字均为原记录结果，本次整理未重新执行压测。</em></p>
+]]></content>
+      <categories>
+        <category>工程实践</category>
+      </categories>
+      <tags>
+        <tag>Redis</tag>
+        <tag>故障排查</tag>
+        <tag>性能测试</tag>
+        <tag>k6</tag>
+        <tag>限流</tag>
+      </tags>
+  </entry>
 </search>

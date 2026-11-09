@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="620" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
+  <title id="title">先汇总再组合，避免分钟行笛卡尔积</title>
+  <desc id="desc">左侧展示页面分钟 M 行与请求分钟 N 行直接组合成 M 乘 N 个中间结果，右侧展示两边各自汇总成单行后再组合，最终只有一行。</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#287d8e"/></marker>
+    <style>
+      .bg{fill:#f7f4ee}.panel{fill:#fff;stroke:#cad8dc;stroke-width:2}.warn{fill:#fff3e7;stroke:#d88a55}.ok{fill:#edf7f3;stroke:#58a58b}
+      .title{font:700 30px 'Microsoft YaHei',sans-serif;fill:#183746}.h{font:700 23px 'Microsoft YaHei',sans-serif;fill:#183746}.t{font:18px 'Microsoft YaHei',sans-serif;fill:#284652}.s{font:16px 'Microsoft YaHei',sans-serif;fill:#58707a}.code{font:17px Consolas,monospace;fill:#287d8e}.box{fill:#e3f1f4;stroke:#74a9b5;stroke-width:2}.line{stroke:#287d8e;stroke-width:3;fill:none;marker-end:url(#arrow)}
+    </style>
+  </defs>
+  <rect class="bg" width="1200" height="620" rx="24"/>
+  <text class="title" x="60" y="58">先汇总，再组合：把 M × N 变成 1 × 1</text>
+  <rect class="panel warn" x="50" y="90" width="520" height="440" rx="18"/>
+  <rect class="panel ok" x="630" y="90" width="520" height="440" rx="18"/>
+  <text class="h" x="82" y="132">优化前：分钟行直接组合</text>
+  <text class="h" x="662" y="132">优化后：各自压成一行</text>
+  <rect class="box" x="85" y="170" width="180" height="72" rx="12"/>
+  <rect class="box" x="85" y="278" width="180" height="72" rx="12"/>
+  <text class="t" x="175" y="201" text-anchor="middle">页面分钟</text><text class="code" x="175" y="228" text-anchor="middle">M 行</text>
+  <text class="t" x="175" y="309" text-anchor="middle">请求分钟</text><text class="code" x="175" y="336" text-anchor="middle">N 行</text>
+  <path class="line" d="M265 206 C315 206 315 245 350 258"/><path class="line" d="M265 314 C315 314 315 282 350 270"/>
+  <g fill="#f4c7ab" stroke="#c87d5d">
+    <rect x="365" y="185" width="25" height="25"/><rect x="397" y="185" width="25" height="25"/><rect x="429" y="185" width="25" height="25"/><rect x="461" y="185" width="25" height="25"/>
+    <rect x="365" y="217" width="25" height="25"/><rect x="397" y="217" width="25" height="25"/><rect x="429" y="217" width="25" height="25"/><rect x="461" y="217" width="25" height="25"/>
+    <rect x="365" y="249" width="25" height="25"/><rect x="397" y="249" width="25" height="25"/><rect x="429" y="249" width="25" height="25"/><rect x="461" y="249" width="25" height="25"/>
+    <rect x="365" y="281" width="25" height="25"/><rect x="397" y="281" width="25" height="25"/><rect x="429" y="281" width="25" height="25"/><rect x="461" y="281" width="25" height="25"/>
+    <rect x="365" y="313" width="25" height="25"/><rect x="397" y="313" width="25" height="25"/><rect x="429" y="313" width="25" height="25"/><rect x="461" y="313" width="25" height="25"/>
+  </g>
+  <text class="code" x="425" y="382" text-anchor="middle">M × N</text><text class="s" x="425" y="410" text-anchor="middle">中间组合先膨胀，再聚合</text>
+  <text class="s" x="90" y="472">原理示例：100 × 80 = 8,000 个组合</text>
+  <rect class="box" x="665" y="170" width="190" height="72" rx="12"/><rect class="box" x="665" y="278" width="190" height="72" rx="12"/>
+  <text class="t" x="760" y="201" text-anchor="middle">页面指标汇总</text><text class="code" x="760" y="228" text-anchor="middle">1 行</text>
+  <text class="t" x="760" y="309" text-anchor="middle">请求指标汇总</text><text class="code" x="760" y="336" text-anchor="middle">1 行</text>
+  <path class="line" d="M855 206 C900 206 905 245 935 255"/><path class="line" d="M855 314 C900 314 905 278 935 267"/>
+  <rect x="945" y="210" width="150" height="110" rx="16" fill="#b5e5cf" stroke="#58a58b" stroke-width="2"/>
+  <text class="t" x="1020" y="254" text-anchor="middle">最终结果</text><text class="code" x="1020" y="288" text-anchor="middle">1 × 1 = 1 行</text>
+  <text class="s" x="665" y="405">两个单行子查询仍可 CROSS JOIN</text><text class="s" x="665" y="435">但不会再发生分钟行之间的膨胀</text>
+  <rect x="90" y="552" width="1020" height="42" rx="12" fill="#e7eef0"/>
+  <text class="t" x="600" y="580" text-anchor="middle">关键不是删掉某个 SQL 关键字，而是先缩小参与组合的数据量</text>
+</svg>

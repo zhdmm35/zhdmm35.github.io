@@ -6,7 +6,7 @@
   <link href="https://zhlifeiy.codes/atom.xml" rel="self"/>
   
   <link href="https://zhlifeiy.codes/"/>
-  <updated>2026-11-02T03:39:24.000Z</updated>
+  <updated>2026-11-09T13:33:16.000Z</updated>
   <id>https://zhlifeiy.codes/</id>
   
   <author>
@@ -15,6 +15,90 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>从重复扫描到分钟汇总：ClickHouse 监控页面的分层性能优化</title>
+    <link href="https://zhlifeiy.codes/2026/11/09/clickhouse-monitoring-rollup-performance/"/>
+    <id>https://zhlifeiy.codes/2026/11/09/clickhouse-monitoring-rollup-performance/</id>
+    <published>2026-11-09T13:33:16.000Z</published>
+    <updated>2026-11-09T13:33:16.000Z</updated>
+    
+    
+    <summary type="html">&lt;p&gt;一个监控页面变慢，不能只用“数据有几亿行”解释，也不能一上来就分库分表。这次优化沿着四层展开：先消除 SQL 自己制造的中间结果，再合并重复查询，用分钟汇总承接高频统计，最后取消前端已经不需要的请求。高密度隔离样本中的六组 SQL 快约 3.39～11.20 倍，但低密度样本里有查询反而变慢；这两个结果同样重要。&lt;/p&gt;
+&lt;div class=&quot;audio-player&quot;&gt;&lt;p&gt;🎧 文章导读&lt;/p&gt;&lt;audio controls preload=&quot;none&quot; src=&quot;/audio/clickhouse-monitoring-rollup-performance/narration.mp3&quot;&gt;您的浏览器不支持音频播放。&lt;/audio&gt;&lt;/div&gt;</summary>
+    
+    
+    
+    <category term="工程实践" scheme="https://zhlifeiy.codes/categories/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/"/>
+    
+    
+    <category term="性能优化" scheme="https://zhlifeiy.codes/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/"/>
+    
+    <category term="SQL优化" scheme="https://zhlifeiy.codes/tags/SQL%E4%BC%98%E5%8C%96/"/>
+    
+    <category term="ClickHouse" scheme="https://zhlifeiy.codes/tags/ClickHouse/"/>
+    
+    <category term="数据汇总" scheme="https://zhlifeiy.codes/tags/%E6%95%B0%E6%8D%AE%E6%B1%87%E6%80%BB/"/>
+    
+    <category term="前端性能" scheme="https://zhlifeiy.codes/tags/%E5%89%8D%E7%AB%AF%E6%80%A7%E8%83%BD/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>同秒签到冲突之后：用唯一键、事务和条件更新守住一致性</title>
+    <link href="https://zhlifeiy.codes/2026/11/09/concurrent-checkin-consistency/"/>
+    <id>https://zhlifeiy.codes/2026/11/09/concurrent-checkin-consistency/</id>
+    <published>2026-11-09T13:33:16.000Z</published>
+    <updated>2026-11-09T13:33:16.000Z</updated>
+    
+    
+    <summary type="html">&lt;p&gt;四个不同组长在同一秒签到，两人成功、两人失败；更麻烦的是，失败请求也留下了在岗记录，装备被占用却没有完整绑定。这不是一个“编号重复”就能概括的问题，而是业务编号、事务边界和状态竞争同时存在缺陷。修复也不只改一行编号生成代码，而是让整次签到真正做到唯一、原子、可回滚。&lt;/p&gt;
+&lt;div class=&quot;audio-player&quot;&gt;&lt;p&gt;🎧 文章导读&lt;/p&gt;&lt;audio controls preload=&quot;none&quot; src=&quot;/audio/concurrent-checkin-consistency/narration.mp3&quot;&gt;您的浏览器不支持音频播放。&lt;/audio&gt;&lt;/div&gt;</summary>
+    
+    
+    
+    <category term="工程实践" scheme="https://zhlifeiy.codes/categories/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/"/>
+    
+    
+    <category term="Spring Boot" scheme="https://zhlifeiy.codes/tags/Spring-Boot/"/>
+    
+    <category term="MyBatis" scheme="https://zhlifeiy.codes/tags/MyBatis/"/>
+    
+    <category term="回归测试" scheme="https://zhlifeiy.codes/tags/%E5%9B%9E%E5%BD%92%E6%B5%8B%E8%AF%95/"/>
+    
+    <category term="事务" scheme="https://zhlifeiy.codes/tags/%E4%BA%8B%E5%8A%A1/"/>
+    
+    <category term="并发" scheme="https://zhlifeiy.codes/tags/%E5%B9%B6%E5%8F%91/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>压测出现 19 秒长尾，为什么还不能怪后端：一次查询与登录限流摸底</title>
+    <link href="https://zhlifeiy.codes/2026/11/09/load-test-long-tail-rate-limit/"/>
+    <id>https://zhlifeiy.codes/2026/11/09/load-test-long-tail-rate-limit/</id>
+    <published>2026-11-09T13:33:16.000Z</published>
+    <updated>2026-11-09T13:33:16.000Z</updated>
+    
+    
+    <summary type="html">&lt;p&gt;同一套服务，局域网压测出现 9～19 秒长尾，测试机回环的短时对照却只有十几到二十几毫秒的 P95。这个差异提示应优先排查网络与压测端路径，但还不能直接排除服务端偶发停顿。同轮登录专项还暴露了另一件事：每分钟 5 次的单 IP 限流，在 200 并发下实际放行了 20 个请求，说明计数存在竞争，而“被限流”也不能被当作登录容量结果。&lt;/p&gt;
+&lt;div class=&quot;audio-player&quot;&gt;&lt;p&gt;🎧 文章导读&lt;/p&gt;&lt;audio controls preload=&quot;none&quot; src=&quot;/audio/load-test-long-tail-rate-limit/narration.mp3&quot;&gt;您的浏览器不支持音频播放。&lt;/audio&gt;&lt;/div&gt;</summary>
+    
+    
+    
+    <category term="工程实践" scheme="https://zhlifeiy.codes/categories/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/"/>
+    
+    
+    <category term="Redis" scheme="https://zhlifeiy.codes/tags/Redis/"/>
+    
+    <category term="故障排查" scheme="https://zhlifeiy.codes/tags/%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5/"/>
+    
+    <category term="性能测试" scheme="https://zhlifeiy.codes/tags/%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95/"/>
+    
+    <category term="k6" scheme="https://zhlifeiy.codes/tags/k6/"/>
+    
+    <category term="限流" scheme="https://zhlifeiy.codes/tags/%E9%99%90%E6%B5%81/"/>
+    
+  </entry>
   
   <entry>
     <title>平台显示 SUCCESS，为什么 6 台门禁仍下发失败</title>
@@ -494,91 +578,6 @@
     <category term="项目复盘" scheme="https://zhlifeiy.codes/tags/%E9%A1%B9%E7%9B%AE%E5%A4%8D%E7%9B%98/"/>
     
     <category term="守护进程" scheme="https://zhlifeiy.codes/tags/%E5%AE%88%E6%8A%A4%E8%BF%9B%E7%A8%8B/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>黑曜石移动端 Phase 5：手机第一次写回 GitHub</title>
-    <link href="https://zhlifeiy.codes/2026/09/06/obsidian-mobile-phase5-write-back/"/>
-    <id>https://zhlifeiy.codes/2026/09/06/obsidian-mobile-phase5-write-back/</id>
-    <published>2026-09-06T06:00:00.000Z</published>
-    <updated>2026-09-06T06:00:00.000Z</updated>
-    
-    
-    <summary type="html">&lt;p&gt;「黑曜石移动端」是我做的 Obsidian 知识库 Android 伴侣：GitHub 私有仓库是唯一真相源，手机端 Kotlin + Compose 负责阅读——之前四个阶段都只读。Phase 5 的目标是让手机第一次真正写回 GitHub：编辑已有 Markdown、安全保存、处理好冲突。开发、真机验证、文档、提交同日完成，这篇记录全过程。&lt;/p&gt;</summary>
-    
-    
-    
-    <category term="Android 开发" scheme="https://zhlifeiy.codes/categories/Android-%E5%BC%80%E5%8F%91/"/>
-    
-    
-    <category term="Android" scheme="https://zhlifeiy.codes/tags/Android/"/>
-    
-    <category term="Jetpack Compose" scheme="https://zhlifeiy.codes/tags/Jetpack-Compose/"/>
-    
-    <category term="项目复盘" scheme="https://zhlifeiy.codes/tags/%E9%A1%B9%E7%9B%AE%E5%A4%8D%E7%9B%98/"/>
-    
-    <category term="GitHub API" scheme="https://zhlifeiy.codes/tags/GitHub-API/"/>
-    
-    <category term="Room" scheme="https://zhlifeiy.codes/tags/Room/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>每日单词 App 迭代四：20 词总览模式，两场 AI 对话从计划到落地</title>
-    <link href="https://zhlifeiy.codes/2026/09/06/meiri-words-overview-mode/"/>
-    <id>https://zhlifeiy.codes/2026/09/06/meiri-words-overview-mode/</id>
-    <published>2026-09-06T02:00:00.000Z</published>
-    <updated>2026-09-06T02:00:00.000Z</updated>
-    
-    
-    <summary type="html">&lt;p&gt;「每日单词」是我用 Kotlin + Jetpack Compose + Room + 系统 TTS 做的 Android 单词学习 App：内置 500 个基础词，每天固定学 20 个新词，配合间隔复习和连续天数打卡。9 月 1 日到 9 月 6 日，我通过和 AI 编码助手的两场对话完成了第四个迭代——20 词总览学习模式。这篇记录两场对话的分工、关键设计取舍和踩过的坑。&lt;/p&gt;</summary>
-    
-    
-    
-    <category term="Android 开发" scheme="https://zhlifeiy.codes/categories/Android-%E5%BC%80%E5%8F%91/"/>
-    
-    
-    <category term="Android" scheme="https://zhlifeiy.codes/tags/Android/"/>
-    
-    <category term="Jetpack Compose" scheme="https://zhlifeiy.codes/tags/Jetpack-Compose/"/>
-    
-    <category term="项目复盘" scheme="https://zhlifeiy.codes/tags/%E9%A1%B9%E7%9B%AE%E5%A4%8D%E7%9B%98/"/>
-    
-    <category term="Kotlin" scheme="https://zhlifeiy.codes/tags/Kotlin/"/>
-    
-    <category term="AI 辅助开发" scheme="https://zhlifeiy.codes/tags/AI-%E8%BE%85%E5%8A%A9%E5%BC%80%E5%8F%91/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>「不要做任何加工」：会议室同步钉钉原始数据表落地记</title>
-    <link href="https://zhlifeiy.codes/2026/09/05/2026-09-05-dingtalk-room-raw-snapshot/"/>
-    <id>https://zhlifeiy.codes/2026/09/05/2026-09-05-dingtalk-room-raw-snapshot/</id>
-    <published>2026-09-05T14:00:00.000Z</published>
-    <updated>2026-09-05T14:00:00.000Z</updated>
-    
-    
-    <summary type="html">&lt;h2 id=&quot;导读&quot;&gt;&lt;a href=&quot;#导读&quot; class=&quot;headerlink&quot; title=&quot;导读&quot;&gt;&lt;/a&gt;导读&lt;/h2&gt;&lt;blockquote&gt;
-&lt;p&gt;上级要看会议室同步时钉钉返回的&lt;strong&gt;完整原始数据&lt;/strong&gt;——不做任何加工。需求一句话就说完了，真正的功夫在五个关键决策上，其中一个是对”自作聪明”方案的否决。落表之后还有个意外发现：钉钉返回的会议室比业务表多出 58 间，而原始快照表成了唯一的裁判。&lt;/p&gt;
-&lt;/blockquote&gt;</summary>
-    
-    
-    
-    <category term="项目笔记" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/"/>
-    
-    <category term="南网" scheme="https://zhlifeiy.codes/categories/%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/%E5%8D%97%E7%BD%91/"/>
-    
-    
-    <category term="MyBatis" scheme="https://zhlifeiy.codes/tags/MyBatis/"/>
-    
-    <category term="钉钉集成" scheme="https://zhlifeiy.codes/tags/%E9%92%89%E9%92%89%E9%9B%86%E6%88%90/"/>
-    
-    <category term="数据快照" scheme="https://zhlifeiy.codes/tags/%E6%95%B0%E6%8D%AE%E5%BF%AB%E7%85%A7/"/>
-    
-    <category term="需求对齐" scheme="https://zhlifeiy.codes/tags/%E9%9C%80%E6%B1%82%E5%AF%B9%E9%BD%90/"/>
-    
-    <category term="Flyway" scheme="https://zhlifeiy.codes/tags/Flyway/"/>
     
   </entry>
   

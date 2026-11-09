@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhlifeiy.codes","root":"/","images":"/images","scheme":"Gemini","darkmode":true,"version":"8.28.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat","show_result":true},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":10,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="四个不同组长在同一秒签到，两人成功、两人失败；更麻烦的是，失败请求也留下了在岗记录，装备被占用却没有完整绑定。这不是一个“编号重复”就能概括的问题，而是业务编号、事务边界和状态竞争同时存在缺陷。修复也不只改一行编号生成代码，而是让整次签到真正做到唯一、原子、可回滚。 🎧 文章导读您的浏览器不支持音频播放。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="同秒签到冲突之后：用唯一键、事务和条件更新守住一致性">
+<meta property="og:url" content="https://zhlifeiy.codes/2026/11/09/concurrent-checkin-consistency/index.html">
+<meta property="og:site_name" content="zhlifeiy · 工程笔记">
+<meta property="og:description" content="四个不同组长在同一秒签到，两人成功、两人失败；更麻烦的是，失败请求也留下了在岗记录，装备被占用却没有完整绑定。这不是一个“编号重复”就能概括的问题，而是业务编号、事务边界和状态竞争同时存在缺陷。修复也不只改一行编号生成代码，而是让整次签到真正做到唯一、原子、可回滚。 🎧 文章导读您的浏览器不支持音频播放。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhlifeiy.codes/images/covers/concurrent-checkin-consistency.jpg">
+<meta property="article:published_time" content="2026-11-09T13:33:16.000Z">
+<meta property="article:author" content="zhlifeiy35">
+<meta property="article:tag" content="Spring Boot">
+<meta property="article:tag" content="MyBatis">
+<meta property="article:tag" content="回归测试">
+<meta property="article:tag" content="事务">
+<meta property="article:tag" content="并发">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhlifeiy.codes/images/covers/concurrent-checkin-consistency.jpg">
+
+
+<link rel="canonical" href="https://zhlifeiy.codes/2026/11/09/concurrent-checkin-consistency/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://zhlifeiy.codes/2026/11/09/concurrent-checkin-consistency/","path":"2026/11/09/concurrent-checkin-consistency/","title":"同秒签到冲突之后：用唯一键、事务和条件更新守住一致性"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>同秒签到冲突之后：用唯一键、事务和条件更新守住一致性 | zhlifeiy · 工程笔记</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/atom.xml" title="zhlifeiy · 工程笔记" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">zhlifeiy · 工程笔记</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">把项目里的坑，写成可以复用的答案</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-项目"><a href="/projects/" rel="section"><i class="fa fa-diagram-project fa-fw"></i>项目</a></li><li class="menu-item menu-item-简历"><a href="/resume/" rel="section"><i class="fa fa-id-card fa-fw"></i>简历</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-guestbook"><a href="/guestbook/" rel="section"><i class="fa fa-comment-dots fa-fw"></i>留言板</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%B1%E8%B4%A5%E8%AF%B7%E6%B1%82%E4%B8%BA%E4%BB%80%E4%B9%88%E7%95%99%E4%B8%8B%E4%BA%86%E6%88%90%E5%8A%9F%E7%97%95%E8%BF%B9"><span class="nav-number">1.</span> <span class="nav-text">失败请求为什么留下了成功痕迹</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%96%E5%8F%B7%E8%A6%81%E4%BE%9D%E8%B5%96%E6%95%B0%E6%8D%AE%E5%BA%93%E8%BA%AB%E4%BB%BD%EF%BC%8C%E4%B8%8D%E8%A6%81%E4%BE%9D%E8%B5%96%E6%97%B6%E9%92%9F%E5%92%8C%E5%B1%80%E9%83%A8%E5%BA%8F%E5%8F%B7"><span class="nav-number">2.</span> <span class="nav-text">编号要依赖数据库身份，不要依赖时钟和局部序号</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8B%E5%8A%A1%E8%A6%86%E7%9B%96%E6%95%B4%E6%AC%A1%E7%AD%BE%E5%88%B0%EF%BC%8C%E5%A4%B1%E8%B4%A5%E6%89%8D%E4%B8%8D%E4%BC%9A%E7%95%99%E4%B8%8B%E5%8D%8A%E6%88%90%E5%93%81"><span class="nav-number">3.</span> <span class="nav-text">事务覆盖整次签到，失败才不会留下半成品</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%88%E6%9F%A5%E7%8A%B6%E6%80%81%E5%8F%AA%E8%83%BD%E7%94%A8%E4%BA%8E%E6%8F%90%E7%A4%BA%EF%BC%8C%E6%9D%A1%E4%BB%B6%E6%9B%B4%E6%96%B0%E6%89%8D%E8%B4%9F%E8%B4%A3%E7%AB%9E%E4%BA%89"><span class="nav-number">4.</span> <span class="nav-text">先查状态只能用于提示，条件更新才负责竞争</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%87%AA%E5%8A%A8%E5%9B%9E%E5%BD%92%E4%B8%8D%E4%BB%85%E6%B5%8B%E2%80%9C%E6%88%90%E5%8A%9F%E2%80%9D%EF%BC%8C%E4%B9%9F%E8%A6%81%E5%88%B6%E9%80%A0%E4%B8%AD%E9%80%94%E5%A4%B1%E8%B4%A5"><span class="nav-number">5.</span> <span class="nav-text">自动回归不仅测“成功”，也要制造中途失败</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9C%9F%E5%AE%9E%E9%93%BE%E8%B7%AF%E9%AA%8C%E8%AF%81%EF%BC%9A%E6%88%90%E5%8A%9F%E3%80%81%E5%A4%B1%E8%B4%A5%E3%80%81%E6%81%A2%E5%A4%8D%E9%83%BD%E8%A6%81%E6%A3%80%E6%9F%A5"><span class="nav-number">6.</span> <span class="nav-text">真实链路验证：成功、失败、恢复都要检查</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%AE%E5%A4%8D%E4%BB%A3%E7%A0%81%E4%B8%8D%E4%BC%9A%E8%87%AA%E5%8A%A8%E4%BF%AE%E5%A4%8D%E5%8E%86%E5%8F%B2%E8%84%8F%E6%95%B0%E6%8D%AE"><span class="nav-number">7.</span> <span class="nav-text">修复代码不会自动修复历史脏数据</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%AF%E5%A4%8D%E7%94%A8%E7%9A%84%E5%B9%B6%E5%8F%91%E5%86%99%E5%85%A5%E6%A3%80%E6%9F%A5%E6%B8%85%E5%8D%95"><span class="nav-number">8.</span> <span class="nav-text">可复用的并发写入检查清单</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BB%B6%E4%BC%B8%E9%98%85%E8%AF%BB"><span class="nav-number">9.</span> <span class="nav-text">延伸阅读</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zhlifeiy35</p>
+  <div class="site-description" itemprop="description">记录项目实践、问题排查与工程经验</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">106</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">18</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">311</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zhdmm35" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zhdmm35" rel="noopener me" target="_blank"><i class="fa fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+    
+    <div class="post-gallery-image">
+      <img src="/images/covers/concurrent-checkin-consistency.jpg" itemprop="contentUrl">
+    </div>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhlifeiy.codes/2026/11/09/concurrent-checkin-consistency/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zhlifeiy35">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="记录项目实践、问题排查与工程经验">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="同秒签到冲突之后：用唯一键、事务和条件更新守住一致性 | zhlifeiy · 工程笔记">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          同秒签到冲突之后：用唯一键、事务和条件更新守住一致性
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-11-09 21:33:16" itemprop="dateCreated datePublished" datetime="2026-11-09T21:33:16+08:00">2026-11-09</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" itemprop="url" rel="index"><span itemprop="name">工程实践</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>四个不同组长在同一秒签到，两人成功、两人失败；更麻烦的是，失败请求也留下了在岗记录，装备被占用却没有完整绑定。这不是一个“编号重复”就能概括的问题，而是业务编号、事务边界和状态竞争同时存在缺陷。修复也不只改一行编号生成代码，而是让整次签到真正做到唯一、原子、可回滚。</p>
+<div class="audio-player"><p>🎧 文章导读</p><audio controls preload="none" src="/audio/concurrent-checkin-consistency/narration.mp3">您的浏览器不支持音频播放。</audio></div>
+
+<span id="more"></span>
+
+<h2 id="失败请求为什么留下了成功痕迹"><a href="#失败请求为什么留下了成功痕迹" class="headerlink" title="失败请求为什么留下了成功痕迹"></a>失败请求为什么留下了成功痕迹</h2><p>原签到链路可以概括为三步：创建打卡记录、把装备改为已领用、写入装备绑定。绑定编号使用“<code>B + yyyyMMddHHmmss + 请求内序号</code>”，而每个请求的序号都从 1 开始。</p>
+<p>两个请求只要落在同一秒，且各自生成第一条绑定，就会得到完全相同的编号。数据库上的 <code>uk_eq_bind_sid</code> 唯一约束正确拦截了重复数据，但前面的写入已经发生了：</p>
+<ol>
+<li>打卡记录已经插入，所以失败请求仍可能显示为在岗；</li>
+<li>装备状态已经更新，所以装备仍显示为已领用；</li>
+<li>后续绑定插入失败，前面两步却不会自动撤销。</li>
+</ol>
+<p>原记录中的四人同秒测试正是这样：两人成功、两人失败，八件装备都变为 <code>IN_USE</code>，实际只有四条绑定。这个现场说明唯一约束只是最后一道防线，它无法替代完整的事务设计。</p>
+<p>同时，装备领用原来采用“先查询状态，再无条件更新”。两个请求可能都先查到 <code>IN_STOCK</code>，随后都把同一件装备改成 <code>IN_USE</code>。即使编号不冲突，也仍然存在重复领用窗口。</p>
+<p>因此需要分别回答三个问题：编号怎样全局唯一？多步写入怎样一起失败？共享装备怎样只让一个请求领用成功？</p>
+<h2 id="编号要依赖数据库身份，不要依赖时钟和局部序号"><a href="#编号要依赖数据库身份，不要依赖时钟和局部序号" class="headerlink" title="编号要依赖数据库身份，不要依赖时钟和局部序号"></a>编号要依赖数据库身份，不要依赖时钟和局部序号</h2><p>修复后的绑定编号为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">B&lt;打卡记录ID&gt;-&lt;装备ID&gt;</span><br></pre></td></tr></table></figure>
+
+<p>打卡记录先插入数据库并取得主键，再用“记录 ID + 装备 ID”区分绑定。这样，不同签到请求天然使用不同记录 ID，不再共享同一秒内从 1 开始的序号空间。</p>
+<p>这个方案还有几个实际好处：</p>
+<ul>
+<li>不需要引入额外随机数或分布式发号器；</li>
+<li>不受服务器时钟精度和时钟回拨影响；</li>
+<li>从编号可以直接看出所属打卡记录和装备，排查更方便；</li>
+<li>保留原唯一约束，历史编号也不需要重写。</li>
+</ul>
+<p>字段长度同样经过边界核对。两个正 <code>BIGINT</code> 最大值各有 19 位，加上开头的 <code>B</code> 和中间的连字符，总长恰好为 <code>1 + 19 + 1 + 19 = 40</code>，不会超出现有 <code>VARCHAR(40)</code>。这里依赖的是数据库主键和装备 ID 的身份语义，而不是“通常 ID 很短”的经验假设。</p>
+<p>唯一性设计应该先问“业务上哪两个身份确定一条记录”，再决定格式。把时间字符串当作并发发号方案，往往只是把冲突藏到了更细的时间粒度里。</p>
+<h2 id="事务覆盖整次签到，失败才不会留下半成品"><a href="#事务覆盖整次签到，失败才不会留下半成品" class="headerlink" title="事务覆盖整次签到，失败才不会留下半成品"></a>事务覆盖整次签到，失败才不会留下半成品</h2><p>签到入口增加：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="meta">@Transactional(rollbackFor = Exception.class)</span></span><br><span class="line"><span class="keyword">public</span> CheckinRecord <span class="title function_">signIn</span><span class="params">(SignInDTO dto)</span> &#123;</span><br><span class="line">    <span class="comment">// 校验、创建打卡记录、条件领用装备、写入绑定</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>现在，打卡记录、装备状态和绑定写入处于同一事务中。第二条绑定失败时，第一条绑定、装备状态和打卡记录都要一起回滚，而不是只让调用方收到一个异常。</p>
+<p><code>rollbackFor = Exception.class</code> 明确了回滚范围，但真正保证一致性的不是注解本身，而是它覆盖了整个写入单元。若只在绑定方法上加事务、或者让异常被内部吞掉，仍然可能留下部分成功。此次修复把事务放在 Service 的公开签到入口，和实际调用链一致。</p>
+<p>事务也让“失败后的重试”变得可验证：故障移除后，同一个账号、同一个合法请求应能重新签到，而不是被上一次失败留下的“在岗”状态或“已领用”装备挡住。</p>
+<h2 id="先查状态只能用于提示，条件更新才负责竞争"><a href="#先查状态只能用于提示，条件更新才负责竞争" class="headerlink" title="先查状态只能用于提示，条件更新才负责竞争"></a>先查状态只能用于提示，条件更新才负责竞争</h2><p>装备查询和业务校验仍然保留，它们可以尽早发现不存在、维修、禁用、非通讯类等非法输入。但并发安全的最后判断必须落在数据库写入上。</p>
+<p>修复后的领用逻辑按装备 ID 排序，再逐件执行带条件的更新。下面是保留关键条件的实现示意：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">equips.sort(Comparator.comparing(Equipment::getId));</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> (Equipment equipment : equips) &#123;</span><br><span class="line">    <span class="type">Equipment</span> <span class="variable">update</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Equipment</span>();</span><br><span class="line">    update.setStatus(<span class="string">&quot;IN_USE&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> <span class="variable">updated</span> <span class="operator">=</span> equipmentMapper.update(</span><br><span class="line">        update,</span><br><span class="line">        <span class="keyword">new</span> <span class="title class_">LambdaUpdateWrapper</span>&lt;Equipment&gt;()</span><br><span class="line">            .eq(Equipment::getId, equipment.getId())</span><br><span class="line">            .eq(Equipment::getStatus, <span class="string">&quot;IN_STOCK&quot;</span>)</span><br><span class="line">            .and(wrapper -&gt; wrapper</span><br><span class="line">                .isNull(Equipment::getEnabled)</span><br><span class="line">                .or().ne(Equipment::getEnabled, <span class="number">0</span>))</span><br><span class="line">    );</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (updated != <span class="number">1</span>) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">BusinessException</span>(<span class="string">&quot;装备状态已变化或已禁用，请重新扫码&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>对应的语义是：只有更新瞬间仍在库且未禁用的装备，才能从 <code>IN_STOCK</code> 变为 <code>IN_USE</code>。两个请求竞争同一件装备时，数据库行锁会把两次更新串行化；后到的请求再评估条件时，状态已经改变，影响行数为 0，于是抛出业务异常并回滚整次签到。</p>
+<p>按装备 ID 排序则让重叠装备集合使用一致的加锁顺序，降低交叉更新形成死锁的风险。它是风险削减，不是“永不死锁”的承诺；数据库超时、其他写入路径和锁等待仍需在目标环境观察。</p>
+<p><img data-src="/images/posts/concurrent-checkin-consistency/flow.svg" alt="并发签到的一致性写入链"><br><em>图 1：唯一编号、原子领用与整体事务共同作用，任何一步失败都不保留部分结果。</em></p>
+<h2 id="自动回归不仅测“成功”，也要制造中途失败"><a href="#自动回归不仅测“成功”，也要制造中途失败" class="headerlink" title="自动回归不仅测“成功”，也要制造中途失败"></a>自动回归不仅测“成功”，也要制造中途失败</h2><p>这次补充了 5 个回归用例，使用 H2、真实 Spring 事务和 MyBatis SQL，覆盖：</p>
+<ol>
+<li>四人同秒并发时绑定编号不重复；</li>
+<li>第二条绑定写入失败时，记录、装备和第一条绑定整体回滚；</li>
+<li>并发竞争共享装备时仅一人成功；</li>
+<li>校验之后被禁用的装备不能继续领用；</li>
+<li>最大 <code>BIGINT</code> ID 组合不会超过编号字段长度。</li>
+</ol>
+<p>第二项尤其重要。普通成功测试无法证明事务边界正确，必须在“已经写入一部分”的位置制造故障，再检查所有相关表和状态。第四项则专门覆盖查询校验与条件更新之间的时间窗口，防止实现退回到只依赖事前校验。</p>
+<p>H2 用例适合快速回归，但不能替代目标数据库验证。因此后续又在真实 Spring Boot、KingbaseES、Redis 链路上执行了接口级回归，而不是只停留在单元测试环境。</p>
+<h2 id="真实链路验证：成功、失败、恢复都要检查"><a href="#真实链路验证：成功、失败、恢复都要检查" class="headerlink" title="真实链路验证：成功、失败、恢复都要检查"></a>真实链路验证：成功、失败、恢复都要检查</h2><p>原记录中的真实环境回归共执行 107 次 HTTP 请求、260 个检查点，全部通过。与这次缺陷最相关的结果包括：</p>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>观察结果</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>四人同秒签到</td>
+<td>数据库确认四条签到同秒发生，4&#x2F;4 成功，八条绑定编号全部不同</td>
+</tr>
+<tr>
+<td>第二条绑定真实写入失败</td>
+<td>对专用测试装备临时增加 CHECK 约束；打卡记录和绑定均为 0，两件装备恢复在库</td>
+</tr>
+<tr>
+<td>故障移除后的重试</td>
+<td>原账号、原请求签到成功，后续离岗与归还正常</td>
+</tr>
+<tr>
+<td>两人竞争共享装备</td>
+<td>恰好一人成功；失败方无记录和绑定残留，独有装备仍在库</td>
+</tr>
+<tr>
+<td>完整离岗链路</td>
+<td>在岗回查、离岗、解绑和归还通过，成功测试数据无 <code>IN_USE</code> 残留</td>
+</tr>
+<tr>
+<td>非法与边界输入</td>
+<td>空装备、数量不足、重复 ID、禁用、维修、非通讯、已领用等被拒绝</td>
+</tr>
+</tbody></table>
+<p>同秒四个签到请求在该轮本机小并发观测中约 42～50 ms。这只能说明当时四个请求的接口观测，不是两万人容量结果，也不是生产 P95。</p>
+<p>验证还没有覆盖手机摄像头、真实定位采集、自动离岗和两万人打卡。把这些未覆盖项写出来，才能避免“接口一致性回归通过”被误读成“整个业务与容量全部验收通过”。</p>
+<h2 id="修复代码不会自动修复历史脏数据"><a href="#修复代码不会自动修复历史脏数据" class="headerlink" title="修复代码不会自动修复历史脏数据"></a>修复代码不会自动修复历史脏数据</h2><p>新实现保证的是后续请求的一致性，不会自动找出并修复此前已经残留的打卡记录、装备状态和绑定。历史数据如果经历过旧版本失败，应按批次单独核对：</p>
+<ul>
+<li>没有有效绑定却仍在岗的记录；</li>
+<li>显示 <code>IN_USE</code> 但没有对应有效绑定的装备；</li>
+<li>已离岗记录对应的未解绑绑定；</li>
+<li>同一装备存在互相矛盾的有效占用关系。</li>
+</ul>
+<p>清理或补偿前应保留证据并确认业务口径，不能只删其中一张表，否则可能制造新的不一致。此次回归也使用独立前缀数据，没有自动删除原有业务记录。</p>
+<h2 id="可复用的并发写入检查清单"><a href="#可复用的并发写入检查清单" class="headerlink" title="可复用的并发写入检查清单"></a>可复用的并发写入检查清单</h2><p>这类多步写入可以按四个问题审查：</p>
+<ol>
+<li><strong>唯一性</strong>：业务编号是否由全局身份确定？唯一约束冲突时会发生什么？</li>
+<li><strong>原子性</strong>：所有相关写入是否在同一事务内？中途异常是否真的向外传播并回滚？</li>
+<li><strong>竞争性</strong>：共享状态的最后判断是否仍在“先查后改”？条件更新失败是否被检查？</li>
+<li><strong>可验证性</strong>：是否有中途失败、共享资源竞争和故障后重试的测试，而不只有正常成功路径？</li>
+</ol>
+<p>这次修复的关键不是某一行代码更巧妙，而是三层防线终于指向同一个结果：要么签到记录、装备状态、绑定全部成功，要么什么都不留下。</p>
+<h2 id="延伸阅读"><a href="#延伸阅读" class="headerlink" title="延伸阅读"></a>延伸阅读</h2><ul>
+<li><a href="/2026/11/09/load-test-long-tail-rate-limit/">压测出现 19 秒长尾，为什么还不能怪后端：一次查询与登录限流摸底</a></li>
+<li><a href="/2026/11/09/clickhouse-monitoring-rollup-performance/">从重复扫描到分钟汇总：ClickHouse 监控页面的分层性能优化</a></li>
+<li><a href="https://zhlifeiy.codes/2026/10/22/2026-10-22-flow-statistics-window-sql/">8.7 秒到 231 毫秒：保留统计口径的 MySQL 窗口函数优化</a></li>
+</ul>
+<hr>
+<p><em>本文根据 2026 年 11 月 3 日至 4 日工程笔记整理，并核对当前相关 Service 实现。业务名称、内部地址和本机路径已省略；测试结果均为原记录结果，本次整理未重新执行业务回归。</em></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Spring-Boot/" rel="tag"># Spring Boot</a>
+              <a href="/tags/MyBatis/" rel="tag"># MyBatis</a>
+              <a href="/tags/%E5%9B%9E%E5%BD%92%E6%B5%8B%E8%AF%95/" rel="tag"># 回归测试</a>
+              <a href="/tags/%E4%BA%8B%E5%8A%A1/" rel="tag"># 事务</a>
+              <a href="/tags/%E5%B9%B6%E5%8F%91/" rel="tag"># 并发</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/11/09/load-test-long-tail-rate-limit/" rel="prev" title="压测出现 19 秒长尾，为什么还不能怪后端：一次查询与登录限流摸底">
+                  <i class="fa fa-angle-left"></i> 压测出现 19 秒长尾，为什么还不能怪后端：一次查询与登录限流摸底
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2026/11/09/clickhouse-monitoring-rollup-performance/" rel="next" title="从重复扫描到分钟汇总：ClickHouse 监控页面的分层性能优化">
+                  从重复扫描到分钟汇总：ClickHouse 监控页面的分层性能优化 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  
+  <div class="comments giscus-container">
+  </div>
+  
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">zhlifeiy35</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/zhdmm35" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"zhdmm35/zhdmm35.github.io","repo_id":"R_kgDOON4bhg","category":"Announcements","category_id":"DIC_kwDOON4bhs4C3dEc","mapping":"pathname","strict":0,"reactions_enabled":1,"emit_metadata":0,"theme":"preferred_color_scheme","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+
+<script>
+document.addEventListener('page:loaded', () => {
+  if (!CONFIG.page.comments) return;
+
+  NexT.utils.loadComments('.giscus-container')
+    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
+      attributes: {
+        async                   : true,
+        crossOrigin             : 'anonymous',
+        'data-repo'             : CONFIG.giscus.repo,
+        'data-repo-id'          : CONFIG.giscus.repo_id,
+        'data-category'         : CONFIG.giscus.category,
+        'data-category-id'      : CONFIG.giscus.category_id,
+        'data-mapping'          : CONFIG.giscus.mapping,
+        'data-strict'           : CONFIG.giscus.strict,
+        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
+        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
+        'data-theme'            : CONFIG.giscus.theme,
+        'data-lang'             : CONFIG.giscus.lang,
+        'data-input-position'   : CONFIG.giscus.input_position,
+        'data-loading'          : CONFIG.giscus.loading
+      },
+      parentNode: document.querySelector('.giscus-container')
+    }));
+});
+</script>
+<script defer src="/js/blog-assistant.js" data-endpoint="https://zhlifeiy-blog-assistant.huiyaozhang07.workers.dev/ask"></script>
+
+</body>
+</html>

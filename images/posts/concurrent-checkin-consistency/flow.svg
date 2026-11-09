@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="650" viewBox="0 0 1200 650" role="img" aria-labelledby="title desc">
+  <title id="title">并发签到的一致性写入链</title>
+  <desc id="desc">签到先插入记录取得数据库 ID，再按装备 ID 排序，以在库且未禁用为条件原子领用，最后写入由记录 ID 和装备 ID 组成的唯一绑定。任一步失败，整个事务回滚。</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" fill="#287d8e"/></marker>
+    <style>
+      .bg{fill:#f7f4ee}.title{font:700 30px 'Microsoft YaHei',sans-serif;fill:#183746}.h{font:700 20px 'Microsoft YaHei',sans-serif;fill:#183746}.t{font:17px 'Microsoft YaHei',sans-serif;fill:#284652}.s{font:15px 'Microsoft YaHei',sans-serif;fill:#58707a}.code{font:16px Consolas,monospace;fill:#216f80}.box{fill:#fff;stroke:#9db8c1;stroke-width:2}.ok{fill:#edf7f3;stroke:#58a58b;stroke-width:2}.line{stroke:#287d8e;stroke-width:3;fill:none;marker-end:url(#arrow)}.dash{stroke:#c85f55;stroke-width:3;fill:none;stroke-dasharray:9 7;marker-end:url(#arrow)}
+    </style>
+  </defs>
+  <rect class="bg" width="1200" height="650" rx="24"/>
+  <text class="title" x="55" y="55">把唯一性、状态竞争与事务放回同一条写入链</text>
+  <rect x="50" y="110" width="1100" height="390" rx="22" fill="#e8f2f3" stroke="#74a9b5" stroke-width="2"/>
+  <text class="h" x="85" y="148">同一个事务：全部成功才提交</text>
+  <rect class="box" x="75" y="205" width="180" height="120" rx="15"/>
+  <text class="h" x="165" y="244" text-anchor="middle">① 创建打卡记录</text><text class="t" x="165" y="278" text-anchor="middle">取得数据库记录 ID</text><text class="s" x="165" y="306" text-anchor="middle">不再依赖秒级时间编号</text>
+  <rect class="box" x="300" y="205" width="180" height="120" rx="15"/>
+  <text class="h" x="390" y="244" text-anchor="middle">② 固定领用顺序</text><text class="t" x="390" y="278" text-anchor="middle">按装备 ID 排序</text><text class="s" x="390" y="306" text-anchor="middle">降低交叉等待风险</text>
+  <rect class="box" x="525" y="205" width="220" height="120" rx="15"/>
+  <text class="h" x="635" y="239" text-anchor="middle">③ 条件更新领用</text><text class="code" x="635" y="272" text-anchor="middle">IN_STOCK + 未禁用</text><text class="s" x="635" y="302" text-anchor="middle">影响行数不为 1 就失败</text>
+  <rect class="box" x="790" y="205" width="220" height="120" rx="15"/>
+  <text class="h" x="900" y="239" text-anchor="middle">④ 写入装备绑定</text><text class="code" x="900" y="272" text-anchor="middle">B&lt;记录ID&gt;-&lt;装备ID&gt;</text><text class="s" x="900" y="302" text-anchor="middle">唯一约束继续兜底</text>
+  <path class="line" d="M255 265H300"/><path class="line" d="M480 265H525"/><path class="line" d="M745 265H790"/>
+  <rect class="ok" x="1040" y="205" width="85" height="120" rx="15"/>
+  <text class="h" x="1082" y="254" text-anchor="middle">提交</text><text class="t" x="1082" y="287" text-anchor="middle">一致</text>
+  <path class="line" d="M1010 265H1040"/>
+  <rect x="245" y="390" width="710" height="70" rx="15" fill="#fff0eb" stroke="#c85f55" stroke-width="2"/>
+  <text class="h" x="600" y="433" text-anchor="middle">任一步失败：打卡记录、装备状态、已写绑定一起回滚</text>
+  <path class="dash" d="M635 325V360H600V390"/>
+  <rect x="105" y="550" width="990" height="60" rx="15" fill="#fff" stroke="#cad8dc" stroke-width="2"/>
+  <text class="t" x="600" y="588" text-anchor="middle">事前查询用于校验与提示；并发安全的最后一道判断必须落在原子写入上</text>
+</svg>
